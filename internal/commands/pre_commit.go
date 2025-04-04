@@ -51,6 +51,7 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
         `,
 		),
 	}
+	preCommitCmd.PersistentFlags().Bool("global", false, "Install the hook globally for all repositories")
 
 	preCommitCmd.AddCommand(secretsInstallGitHookCommand(jwtWrapper))
 	preCommitCmd.AddCommand(secretsUninstallGitHookCommand(jwtWrapper))
@@ -89,7 +90,8 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command
 			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return precommit.Install()
+			global, _ := cmd.Flags().GetBool("global")
+			return precommit.Install(global)
 		},
 	}
 
@@ -106,11 +108,9 @@ func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Comma
             $ cx hooks pre-commit secrets-uninstall-git-hook
         `,
 		),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper)
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return precommit.Uninstall()
+			global, _ := cmd.Flags().GetBool("global")
+			return precommit.Uninstall(global)
 		},
 	}
 
@@ -131,7 +131,8 @@ func secretsUpdateGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command 
 			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return precommit.Update()
+			global, _ := cmd.Flags().GetBool("global")
+			return precommit.Update(global)
 		},
 	}
 

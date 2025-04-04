@@ -110,12 +110,11 @@ func isPolicyEvaluated(
 			log.Println("Policy status: ", policyResponseModel.Status)
 			return false, nil, nil
 		}
-	}
-	// Case the policy is evaluated or None
-	logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
-	if policyResponseModel.Status == completedPolicy || policyResponseModel.Status == nonePolicy {
-		logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
-		return true, policyResponseModel, nil
+		logger.PrintIfVerbose("Policy evaluation finished with status: " + policyResponseModel.Status)
+		if policyResponseModel.Status == completedPolicy || policyResponseModel.Status == nonePolicy {
+			logger.PrintIfVerbose("Policy status: " + policyResponseModel.Status)
+			return true, policyResponseModel, nil
+		}
 	}
 	return true, nil, nil
 }

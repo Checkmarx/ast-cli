@@ -338,4 +338,3 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 		})
 	}
 }
-
