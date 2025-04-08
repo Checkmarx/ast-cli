@@ -123,12 +123,12 @@ func LoadConfiguration() {
 	if configFilePath != "" {
 		err := validateConfigFile(configFilePath)
 		if err != nil {
-			fmt.Println("❌", err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
 		viper.SetConfigFile(configFilePath)
 		if err = viper.ReadInConfig(); err != nil {
-			fmt.Println("❌ An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
+			fmt.Println("An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
 			os.Exit(1)
 		}
 	} else {
@@ -156,7 +156,7 @@ func validateConfigFile(configFilePath string) error {
 	}
 
 	if info.IsDir() {
-		return fmt.Errorf("The specified file does not exist. Please check the path and ensure the CLI configuration file is available.")
+		return fmt.Errorf("The specified path points to a directory, not a file. Please provide a valid CLI configuration file path.")
 	}
 
 	file, err := os.OpenFile(configFilePath, os.O_RDONLY, 0644)
