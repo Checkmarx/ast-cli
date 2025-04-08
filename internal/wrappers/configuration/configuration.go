@@ -118,17 +118,54 @@ func SetConfigProperty(propName, propValue string) {
 }
 
 func LoadConfiguration() {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal("Cannot file home directory.", err)
+	configFilePath := viper.GetString(params.ConfigFilePathKey)
+
+	if configFilePath != "" {
+		err := validateConfigFile(configFilePath)
+		if err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
+		viper.SetConfigFile(configFilePath)
+		if err = viper.ReadInConfig(); err != nil {
+			fmt.Println("❌ An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
+			os.Exit(1)
+		}
+	} else {
+		usr, err := user.Current()
+		if err != nil {
+			log.Fatal("Cannot file home directory.", err)
+		}
+		fullPath := usr.HomeDir + configDirName
+		verifyConfigDir(fullPath)
+		viper.AddConfigPath(fullPath)
+		configFile := "checkmarxcli"
+		viper.SetConfigName(configFile)
+		viper.SetConfigType("yaml")
+		_ = viper.ReadInConfig()
 	}
-	fullPath := usr.HomeDir + configDirName
-	verifyConfigDir(fullPath)
-	viper.AddConfigPath(fullPath)
-	configFile := "checkmarxcli"
-	viper.SetConfigName(configFile)
-	viper.SetConfigType("yaml")
-	_ = viper.ReadInConfig()
+}
+
+func validateConfigFile(configFilePath string) error {
+	info, err := os.Stat(configFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("The specified file does not exist. Please check the path and ensure the CLI configuration file is available.")
+		}
+		return fmt.Errorf("An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("The specified file does not exist. Please check the path and ensure the CLI configuration file is available.")
+	}
+
+	file, err := os.OpenFile(configFilePath, os.O_RDONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("Access to the specified file is restricted. Please ensure you have the necessary permissions to access the CLI configuration file")
+	}
+	defer file.Close()
+
+	return nil
 }
 
 func SafeWriteSingleConfigKey(configFilePath, key string, value int) error {
@@ -231,11 +268,16 @@ func SaveConfig(path string, config map[string]interface{}) error {
 }
 
 func GetConfigFilePath() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		return "", fmt.Errorf("error getting current user: %w", err)
+	configFilePath := viper.GetString(params.ConfigFilePathKey)
+
+	if configFilePath == "" {
+		usr, err := user.Current()
+		if err != nil {
+			return "", fmt.Errorf("error getting current user: %w", err)
+		}
+		configFilePath = usr.HomeDir + configDirName + "/checkmarxcli.yaml"
 	}
-	return usr.HomeDir + configDirName + "/checkmarxcli.yaml", nil
+	return configFilePath, nil
 }
 
 func verifyConfigDir(fullPath string) {

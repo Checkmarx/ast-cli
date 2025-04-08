@@ -1,0 +1,7 @@
+cx_base_uri: https://example.com
+cx_base_auth_uri: https://auth.example.com
+cx_tenant: example_tenant
+cx_api_key: example_api_key
+cx_client_id: example_client_id
+cx_client_secret: example_client_secret
+cx_proxy: http://proxy.example.com
