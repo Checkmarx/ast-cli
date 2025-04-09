@@ -108,7 +108,10 @@ func setConfigPropertyQuiet(propName, propValue string) {
 	// SafeWriteConfig() will not update files but it will create them, combined
 	// this code will successfully update files.
 	if viperErr := viper.SafeWriteConfig(); viperErr != nil {
-		_ = viper.WriteConfig()
+		err := viper.WriteConfig()
+		if err != nil {
+			fmt.Println("Error writing config file", err)
+		}
 	}
 }
 
@@ -117,19 +120,17 @@ func SetConfigProperty(propName, propValue string) {
 	setConfigPropertyQuiet(propName, propValue)
 }
 
-func LoadConfiguration() {
+func LoadConfiguration() error {
 	configFilePath := viper.GetString(params.ConfigFilePathKey)
 
 	if configFilePath != "" {
 		err := validateConfigFile(configFilePath)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			return err
 		}
 		viper.SetConfigFile(configFilePath)
 		if err = viper.ReadInConfig(); err != nil {
-			fmt.Println("An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
-			os.Exit(1)
+			return errors.New("An error occurred while accessing the file or environment variable. Please verify the CLI configuration file")
 		}
 	} else {
 		usr, err := user.Current()
@@ -144,6 +145,7 @@ func LoadConfiguration() {
 		viper.SetConfigType("yaml")
 		_ = viper.ReadInConfig()
 	}
+	return nil
 }
 
 func validateConfigFile(configFilePath string) error {
