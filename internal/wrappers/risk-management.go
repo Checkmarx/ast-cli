@@ -4,18 +4,22 @@ import "time"
 
 const (
 	SuspMalwareKey = "suspMalware"
-	ExplPathKey    = "explPath"
-	PubExposedKey  = "pubExposed"
-	RuntimeKey     = "runtime"
+	ExpPathKey     = "explPath"
+	//PubExposedKey  = "pubExposed"
+	//RuntimeKey     = "runtime"
 
 	SuspMalwareValue = "Suspected Malware"
-	ExplPathValue    = "Exploitable Path"
-	PubExposedValue  = "Public Exposed"
-	RuntimeValue     = "Runtime"
+	ExpPathValue     = "Exploitable Path"
+	//PubExposedValue  = "Public Exposed"
+	//RuntimeValue     = "Runtime"
 )
 
 type RiskManagementWrapper interface {
-	GetTopVulnerabilitiesByProjectID(projectID string) (*ASPMResult, *WebError, error)
+	GetTopVulnerabilitiesByProjectID(projectID string, scanID string) (*ASPMResult, *WebError, error)
+}
+
+type GetASPMResultRequest struct {
+	ScanId string `json:"scanID"`
 }
 
 type ApplicationScore struct {
