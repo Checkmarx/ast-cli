@@ -1,6 +1,8 @@
 package util
 
 import (
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 	"os"
 	"strings"
 	"testing"
@@ -47,9 +49,11 @@ func TestGetConfigFilePath_CheckmarxConfigFileExists_Success(t *testing.T) {
 }
 
 func TestWriteSingleConfigKeyToExistingFile_ChangeAscaPortToZero_Success(t *testing.T) {
-	configuration.LoadConfiguration()
+	err := configuration.LoadConfiguration()
+	assert.NilError(t, err)
+
 	configFilePath, _ := configuration.GetConfigFilePath()
-	err := configuration.SafeWriteSingleConfigKey(configFilePath, cxAscaPort, 0)
+	err = configuration.SafeWriteSingleConfigKey(configFilePath, cxAscaPort, 0)
 	assert.NilError(t, err)
 
 	config, err := configuration.LoadConfig(configFilePath)
@@ -78,7 +82,9 @@ func TestWriteSingleConfigKeyNonExistingFile_CreatingTheFileAndWritesTheKey_Succ
 }
 
 func TestChangedOnlyAscaPortInConfigFile_ConfigFileExistsWithDefaultValues_OnlyAscaPortChangedSuccess(t *testing.T) {
-	configuration.LoadConfiguration()
+	err := configuration.LoadConfiguration()
+	assert.NilError(t, err)
+
 	configFilePath, _ := configuration.GetConfigFilePath()
 
 	oldConfig, err := configuration.LoadConfig(configFilePath)
@@ -100,9 +106,11 @@ func TestChangedOnlyAscaPortInConfigFile_ConfigFileExistsWithDefaultValues_OnlyA
 }
 
 func TestWriteSingleConfigKeyStringToExistingFile_UpdateScsScanOverviewPath_Success(t *testing.T) {
-	configuration.LoadConfiguration()
+	err := configuration.LoadConfiguration()
+	assert.NilError(t, err)
+
 	configFilePath, _ := configuration.GetConfigFilePath()
-	err := configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
 	assert.NilError(t, err)
 
 	config, err := configuration.LoadConfig(configFilePath)
@@ -131,7 +139,9 @@ func TestWriteSingleConfigKeyStringNonExistingFile_CreatingTheFileAndWritesTheKe
 }
 
 func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultValues_OnlyScsScanOverviewPathChangedSuccess(t *testing.T) {
-	configuration.LoadConfiguration()
+	err := configuration.LoadConfiguration()
+	assert.NilError(t, err)
+
 	configFilePath, _ := configuration.GetConfigFilePath()
 
 	oldConfig, err := configuration.LoadConfig(configFilePath)
@@ -150,4 +160,13 @@ func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultV
 			asserts.Equal(t, value, config[key])
 		}
 	}
+}
+
+func TestGetConfigFilePath_CustomFile(t *testing.T) {
+	expectedPath := "/custom/path/checkmarxcli.yaml"
+	viper.Set(params.ConfigFilePathKey, expectedPath)
+
+	actualPath, err := configuration.GetConfigFilePath()
+	assert.NilError(t, err)
+	assert.Equal(t, actualPath, expectedPath, "Expected path to match the set value in viper")
 }

@@ -73,4 +73,5 @@ var (
 	ASCAPortKey                         = strings.ToLower(ASCAPortEnv)
 	ScsRepoTokenKey                     = strings.ToLower(ScsRepoTokenEnv)
 	RiskManagementPathKey               = strings.ToLower(RiskManagementPathEnv)
+	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 )
