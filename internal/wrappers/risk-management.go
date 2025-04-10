@@ -2,8 +2,24 @@ package wrappers
 
 import "time"
 
+const (
+	SuspMalwareKey = "suspMalware"
+	ExpPathKey     = "explPath"
+	//PubExposedKey  = "pubExposed"
+	//RuntimeKey     = "runtime"
+
+	SuspMalwareValue = "Suspected Malware"
+	ExpPathValue     = "Exploitable Path"
+	//PubExposedValue  = "Public Exposed"
+	//RuntimeValue     = "Runtime"
+)
+
 type RiskManagementWrapper interface {
-	GetTopVulnerabilitiesByProjectID(projectID string) (*ASPMResult, *WebError, error)
+	GetTopVulnerabilitiesByProjectID(projectID string, scanID string) (*ASPMResult, *WebError, error)
+}
+
+type GetASPMResultRequest struct {
+	ScanId string `json:"scanID"`
 }
 
 type ApplicationScore struct {
@@ -27,6 +43,7 @@ type RiskManagementResult struct {
 	Severity           string             `json:"severity"`
 	RiskScore          float64            `json:"riskScore"`
 	EnrichmentSources  map[string]string  `json:"enrichmentSources"`
+	Traits             map[string]string  `json:"traits"`
 	CreatedAt          time.Time          `json:"createdAt"`
 	ApplicationsScores []ApplicationScore `json:"applicationsScores"`
 }
