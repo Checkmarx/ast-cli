@@ -55,6 +55,7 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	enginesWrapper wrappers.EnginesWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -203,6 +204,8 @@ func NewAstCLI(
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper)
 
+	enginesCmd := NewEnginesCommand(enginesWrapper)
+
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -214,6 +217,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		enginesCmd,
 	)
 
 	rootCmd.SilenceUsage = true
@@ -296,6 +300,14 @@ func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailabl
 	)
 }
 
+// func addOutputFormatFlag added for "output-format" flag
+func addOutputFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(
+		params.OutputFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
+}
+
 func markFlagAsRequired(cmd *cobra.Command, flag string) {
 	err := cmd.MarkPersistentFlagRequired(flag)
 	if err != nil {
@@ -319,6 +331,13 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
+
+// func printByOutputFormat() added due to "output-format"
+func printByOutputFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.OutputFormatFlag)
+	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
