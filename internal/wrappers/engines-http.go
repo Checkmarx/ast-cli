@@ -1,9 +1,5 @@
 package wrappers
 
-const (
-	failedToParseGetAll1 = "Failed to parse list response"
-)
-
 type EnginesHTTPWrapper struct {
 }
 
