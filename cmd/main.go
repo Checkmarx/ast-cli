@@ -205,4 +205,5 @@ func signalHandler(signalChanel chan os.Signal) {
 			os.Exit(failureExitCode)
 		}
 	}
+
 }
