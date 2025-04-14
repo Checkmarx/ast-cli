@@ -11,14 +11,14 @@ type EngineHTTPWrapper struct {
 	contentType string
 }
 
-//get engine API
+// get engine API
 
 func (e *EngineHTTPWrapper) Get(engineName string) (*EnginesCollectionResponseModel, error) {
 
 	return e.getEnginesApiResponse(engineName)
 }
 
-//mocking the response of enginesApiResponse
+// mocking the response of enginesApiResponse
 
 func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCollectionResponseModel, error) {
 
