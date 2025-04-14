@@ -55,12 +55,12 @@ func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCo
 						{
 							ApiURL:      "https://{HOST_NAME}/api/sca/analysis/requests",
 							ApiName:     "SCA File Analysis  API",
-							Description: "Gets Checkmarx SCA File Analysis Service REST API",
+							Description: "CxOne SCA File Analysis Service API",
 						},
 						{
 							ApiURL:      "https://{HOST_NAME}/api/sca/management-of-risk",
-							ApiName:     "SCA Scanner- Management of Risk REST API ",
-							Description: "Crud operations with SCA Scanner-Management of Risk REST API",
+							ApiName:     "SCA Scanner- Management of Risk API ",
+							Description: "SCA Scanner-Management of Risk API",
 						},
 					},
 				},
@@ -83,7 +83,7 @@ func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCo
 						{
 							ApiURL:      "https://{HOST_NAME}/api/dast/mfe-results",
 							ApiName:     "DAST Results Service REST API ",
-							Description: "API to interact with Gets the DAST Results Service",
+							Description: "API to interact with DAST Results Service",
 						},
 					},
 				},
@@ -109,7 +109,7 @@ func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCo
 					{
 						ApiURL:      "https://{HOST_NAME}/api/sast-metadata",
 						ApiName:     "SAST Meta-data API ",
-						Description: "Gets SAST Metadata for one or more scans",
+						Description: "SAST Metadata for one or more scans",
 					},
 				},
 			},
@@ -120,12 +120,12 @@ func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCo
 					{
 						ApiURL:      "https://{HOST_NAME}/api/sca/analysis/requests",
 						ApiName:     "SCA File Analysis  API",
-						Description: "Gets Checkmarx SCA File Analysis Service REST API",
+						Description: "CxOne SCA File Analysis Service API",
 					},
 					{
 						ApiURL:      "https://{HOST_NAME}/api/sca/management-of-risk",
-						ApiName:     "SCA Scanner- Management of Risk REST API ",
-						Description: "Crud operations with SCA Scanner-Management of Risk REST API",
+						ApiName:     "SCA Scanner-Management of Risk API ",
+						Description: "SCA Scanner-Management of Risk API",
 					},
 				},
 			},
@@ -136,12 +136,12 @@ func (e *EngineHTTPWrapper) getEnginesApiResponse(engineName string) (*EnginesCo
 					{
 						ApiURL:      "https://{HOST_NAME}/api/dast/scans",
 						ApiName:     "DAST Scans Service REST API",
-						Description: "Gets Checkmarx DAST Scans Service REST API",
+						Description: "Gets Checkmarx DAST Scans Service API",
 					},
 					{
 						ApiURL:      "https://{HOST_NAME}/api/dast/mfe-results",
 						ApiName:     "DAST Results Service REST API ",
-						Description: "API to interact with Gets the DAST Results Service",
+						Description: "API for DAST Results Service",
 					},
 				},
 			},
