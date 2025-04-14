@@ -73,5 +73,6 @@ const (
 	ASCAPortEnv                         = "CX_ASCA_PORT"
 	ScsRepoTokenEnv                     = "SCS_REPO_TOKEN"
 	RiskManagementPathEnv               = "CX_RISK_MANAGEMENT_PATH"
+	EnginePathEnv                       = "CX_ENGINE_PATH"
 	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 )
