@@ -74,4 +74,5 @@ var EnvVarsBinds = []struct {
 	{ASCAPortKey, ASCAPortEnv, ""},
 	{ScsRepoTokenKey, ScsRepoTokenEnv, ""},
 	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results"},
+	{EnginePathKey, EnginePathEnv, "api/engines"},
 }
