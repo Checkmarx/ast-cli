@@ -123,7 +123,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
-
+	enginesWrapper := wrappers.NewHTTPEnginesWrapper()
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
@@ -159,6 +159,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 		containerResolverWrapper,
+		enginesWrapper,
 	)
 	return astCli
 }
