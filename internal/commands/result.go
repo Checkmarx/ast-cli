@@ -201,7 +201,7 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
-	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper)
+	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper, featureFlagsWrapper)
 	resultCmd.AddCommand(
 		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand, riskManagementSubCommand,
 	)
@@ -226,7 +226,8 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 
 	return exitCodeCmd
 }
-func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper) *cobra.Command {
+func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
 	riskManagementCmd := &cobra.Command{
 		Use:   "risk-management",
 		Short: "Show risk-management results of a project",
@@ -236,7 +237,7 @@ func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper) *co
 			$ cx results risk-management --project-id <project Id> --limit <limit> (1-50, default: 50)
 		`,
 		),
-		RunE: runRiskManagementCommand(riskManagement),
+		RunE: runRiskManagementCommand(riskManagement, featureFlagsWrapper),
 	}
 
 	riskManagementCmd.PersistentFlags().String(commonParams.ProjectIDFlag, "", "Project ID")
@@ -350,11 +351,17 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) func(cmd *cobra.Command, args []string) error {
+func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		limit, _ := cmd.Flags().GetInt(commonParams.LimitFlag)
 
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RiskManagementEnabled)
+		ASPMEnabled := flagResponse.Status
+		if !ASPMEnabled {
+			return errors.Errorf("%s", "Risk management results are currently unavailable for your tenant.")
+		}
 		results, err := getRiskManagementResults(riskManagement, projectID)
 		if err != nil {
 			return err
@@ -1536,11 +1543,13 @@ func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackag
 	for _, pkg := range packages {
 		pkg := pkg
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
-			ID:                  pkg.ID,
-			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
-			Outdated:            pkg.Outdated,
-			IsDirectDependency:  pkg.IsDirectDependency,
+			ID:                      pkg.ID,
+			Locations:               pkg.Locations,
+			DependencyPathArray:     parsePackagePathToDependencyPath(&pkg),
+			Outdated:                pkg.Outdated,
+			IsDirectDependency:      pkg.IsDirectDependency,
+			IsDevelopmentDependency: pkg.IsDevelopmentDependency,
+			IsTestDependency:        pkg.IsTestDependency,
 		})
 	}
 	return &scaPackages

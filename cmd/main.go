@@ -27,7 +27,8 @@ func main() {
 	var err error
 	bindProxy()
 	bindKeysToEnvAndDefault()
-	configuration.LoadConfiguration()
+	err = configuration.LoadConfiguration()
+	exitIfError(err)
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
@@ -85,7 +86,7 @@ func main() {
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath, featureFlagsWrapper)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
