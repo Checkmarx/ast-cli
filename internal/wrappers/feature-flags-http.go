@@ -77,7 +77,7 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 	}()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, err
+		return nil, errors.New("feature flags service internal error")
 	case http.StatusOK:
 		model := FeatureFlagResponseModel{}
 		err = decoder.Decode(&model)

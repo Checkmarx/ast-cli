@@ -27,7 +27,8 @@ func main() {
 	var err error
 	bindProxy()
 	bindKeysToEnvAndDefault()
-	configuration.LoadConfiguration()
+	err = configuration.LoadConfiguration()
+	exitIfError(err)
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
