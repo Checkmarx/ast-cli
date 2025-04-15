@@ -217,6 +217,9 @@ const (
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
+
+	//Engines Command Flags
+	EngineName = "engine-name"
 )
 
 // Parameter values

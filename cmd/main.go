@@ -29,6 +29,7 @@ func main() {
 	bindKeysToEnvAndDefault()
 	configuration.LoadConfiguration()
 	scans := viper.GetString(params.ScansPathKey)
+	engines := viper.GetString(params.EnginesPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
 	projects := viper.GetString(params.ProjectsPathKey)
@@ -58,6 +59,7 @@ func main() {
 
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
+	enginesWrapper := wrappers.NewHTTPEnginesWrapper(engines)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
@@ -94,6 +96,7 @@ func main() {
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
+		enginesWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
 		resultsPredicatesWrapper,

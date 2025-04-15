@@ -23,6 +23,7 @@ import (
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	engineWrapper wrappers.EnginesWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
@@ -158,6 +159,9 @@ func NewAstCLI(
 		featureFlagsWrapper,
 		containerResolverWrapper,
 	)
+
+	engineCmd := NewEnginesCommand(engineWrapper, exportWrapper, logsWrapper, groupsWrapper, jwtWrapper)
+
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
 	resultsCmd := NewResultsCommand(
@@ -205,6 +209,7 @@ func NewAstCLI(
 
 	rootCmd.AddCommand(
 		scanCmd,
+		engineCmd,
 		projectCmd,
 		resultsCmd,
 		triageCmd,
