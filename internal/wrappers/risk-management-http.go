@@ -1,7 +1,6 @@
 package wrappers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,11 +23,8 @@ func NewHTTPRiskManagementWrapper(path string) RiskManagementWrapper {
 func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID string, scanID string) (*ASPMResult, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
-	model := GetASPMResultRequest{ScanId: scanID}
-	jsonBytes, err := json.Marshal(model)
-
-	path := fmt.Sprintf(r.path, projectID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	path := fmt.Sprintf(r.path, projectID, scanID)
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
