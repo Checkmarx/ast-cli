@@ -55,6 +55,7 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	enginesWrapper wrappers.EnginesWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -195,6 +196,7 @@ func NewAstCLI(
 		applicationsWrapper,
 		byorWrapper,
 		featureFlagsWrapper,
+		enginesWrapper,
 	)
 
 	configCmd := util.NewConfigCommand()
@@ -202,7 +204,7 @@ func NewAstCLI(
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper)
-
+	enginesCmd := NewEnginesCommand(enginesWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -214,6 +216,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		enginesCmd,
 	)
 
 	rootCmd.SilenceUsage = true
@@ -321,5 +324,10 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 }
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
+	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+
+func printByOutputFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.OutputFormat)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }

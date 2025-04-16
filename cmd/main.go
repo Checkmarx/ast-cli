@@ -91,6 +91,7 @@ func main() {
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
+	enginesWrapper := wrappers.NewHttpEnginesWrapper()
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -127,6 +128,7 @@ func main() {
 		accessManagementWrapper,
 		byorWrapper,
 		containerResolverWrapper,
+		enginesWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
