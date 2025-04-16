@@ -616,7 +616,7 @@ func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
 }
 
 func TestRiskManagementResults_ReturnResults(t *testing.T) {
-	projectName := "ast-phoenix-test-project"
+	projectName := GenerateRandomProjectNameForScan()
 	_ = executeCmdNilAssertion(
 		t, "Create project should pass",
 		"project", "create",
