@@ -3,6 +3,7 @@ package printer
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-yaml/yaml"
 	"io"
 	"reflect"
 	"strconv"
@@ -30,6 +31,7 @@ const (
 	FormatXML             = "xml"
 	FormatGLSast          = "gl-sast"
 	FormatGLSca           = "gl-sca"
+	FormatYAML            = "yaml"
 )
 
 func Print(w io.Writer, view interface{}, format string) error {
@@ -51,6 +53,12 @@ func Print(w io.Writer, view interface{}, format string) error {
 	} else if IsFormat(format, FormatTable) {
 		entities := toEntities(view)
 		printTable(w, entities)
+	} else if IsFormat(format, FormatYAML) {
+		viewYaml, err := yaml.Marshal(view)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintln(w, string(viewYaml))
 	} else {
 		return errors.Errorf("Invalid format %s", format)
 	}
