@@ -196,7 +196,6 @@ func NewAstCLI(
 		applicationsWrapper,
 		byorWrapper,
 		featureFlagsWrapper,
-		enginesWrapper,
 	)
 
 	configCmd := util.NewConfigCommand()

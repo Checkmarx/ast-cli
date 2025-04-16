@@ -45,7 +45,6 @@ func NewUtilsCommand(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	enginesWrapper wrappers.EnginesWrapper,
 ) *cobra.Command {
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
