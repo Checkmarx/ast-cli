@@ -236,6 +236,10 @@ func PrintConfiguration() {
 	}
 }
 
+func getWorkingDirectory() string {
+	dir, _ := os.Getwd()
+	return dir
+}
 func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	filters, _ := cmd.Flags().GetStringSlice(params.FilterFlag)
 	allFilters := make(map[string]string)

@@ -1559,6 +1559,10 @@ func exportSarifResults(targetFile string, results *wrappers.ScanResultsCollecti
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedGettingAll)
 	}
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
+	if err != nil {
+		log.Printf("SARIF report created under next location %s//%s", getWorkingDirectory(), targetFile)
+	}
+	log.Printf(string(resultsJSON))
 	_ = f.Close()
 	return nil
 }
@@ -1978,7 +1982,7 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	} else {
 		location = ""
 	}
-	return (location)
+	return location
 }
 func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
