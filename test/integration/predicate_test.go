@@ -16,8 +16,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var projectID string
-
 func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")

@@ -631,20 +631,21 @@ func TestRiskManagementResults_ReturnResults(t *testing.T) {
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTypes), params.SastType,
 	}
-	_, projectID := executeCreateScan(t, args)
+	scanId, projectId := executeCreateScan(t, args)
 
 	defer func() {
 		_ = executeCmdNilAssertion(
 			t, "Delete project should pass",
 			"project", "delete",
-			flag(params.ProjectIDFlag), projectID,
+			flag(params.ProjectIDFlag), projectId,
 		)
 	}()
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Results risk-management generating JSON report should pass",
 		"results", "risk-management",
-		flag(params.ProjectIDFlag), projectID,
+		flag(params.ProjectIDFlag), projectId,
+		flag(params.ScanIDFlag), scanId,
 		flag(params.LimitFlag), "20",
 	)
 	result := wrappers.ASPMResult{}
