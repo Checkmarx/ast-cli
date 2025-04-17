@@ -234,13 +234,14 @@ func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, fea
 		Long:  "The risk-management command displays risk management results for a specific project in Checkmarx One",
 		Example: heredoc.Doc(
 			`
-			$ cx results risk-management --project-id <project Id> --limit <limit> (1-50, default: 50)
+			$ cx results risk-management --project-id <project Id> --scan-id <scan ID> --limit <limit> (1-50, default: 50)
 		`,
 		),
 		RunE: runRiskManagementCommand(riskManagement, featureFlagsWrapper),
 	}
 
 	riskManagementCmd.PersistentFlags().String(commonParams.ProjectIDFlag, "", "Project ID")
+	riskManagementCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID")
 	riskManagementCmd.PersistentFlags().Int(commonParams.LimitFlag, -1, "Limit")
 
 	addFormatFlag(riskManagementCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
@@ -355,6 +356,8 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, fea
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+
 		limit, _ := cmd.Flags().GetInt(commonParams.LimitFlag)
 
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RiskManagementEnabled)
@@ -362,7 +365,7 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, fea
 		if !ASPMEnabled {
 			return errors.Errorf("%s", "Risk management results are currently unavailable for your tenant.")
 		}
-		results, err := getRiskManagementResults(riskManagement, projectID)
+		results, err := getRiskManagementResults(riskManagement, projectID, scanID)
 		if err != nil {
 			return err
 		}
@@ -372,8 +375,8 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, fea
 	}
 }
 
-func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID string) (*wrappers.ASPMResult, error) {
-	ASPMResult, errorModel, err := riskManagement.GetTopVulnerabilitiesByProjectID(projectID)
+func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID, scanID string) (*wrappers.ASPMResult, error) {
+	ASPMResult, errorModel, err := riskManagement.GetTopVulnerabilitiesByProjectID(projectID, scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
