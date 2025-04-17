@@ -15,7 +15,7 @@ type RiskManagementHTTPWrapper struct {
 }
 
 func NewHTTPRiskManagementWrapper(path string) RiskManagementWrapper {
-	validPath := setDefaultPath(path, riskManagementDefaultPath)
+	validPath := setDefaultPath(path, commonParams.RiskManagementPathKey, riskManagementDefaultPath)
 	return &RiskManagementHTTPWrapper{
 		path: validPath,
 	}
