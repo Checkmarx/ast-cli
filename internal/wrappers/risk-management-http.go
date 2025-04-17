@@ -69,7 +69,7 @@ func setRMDefaultPath(path string) string {
 		}
 		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.RiskManagementPathKey, riskManagementDefaultPath)
 		if err != nil {
-			logger.PrintfIfVerbose("Error writing Scan Overview path to config file: %v", err)
+			logger.PrintfIfVerbose("Error writing Risk Management path to config file: %v", err)
 		}
 	}
 	return riskManagementDefaultPath
