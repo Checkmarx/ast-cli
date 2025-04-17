@@ -97,7 +97,7 @@ func getRootProject(t *testing.T) (string, string) {
 	testInstance = t
 
 	if len(rootProjectId) > 0 {
-		fmt.Printf("Using the projectID: " + rootProjectId)
+		fmt.Printf("Using the projectID: %s", rootProjectId)
 		log.Println("Using the projectID: ", rootProjectId)
 		log.Println("Using the projectName: ", rootProjectName)
 		return rootProjectId, rootProjectName
