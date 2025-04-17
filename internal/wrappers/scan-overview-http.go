@@ -15,7 +15,7 @@ type ScanOverviewHTTPWrapper struct {
 }
 
 func NewHTTPScanOverviewWrapper(path string) ScanOverviewWrapper {
-	validPath := setDefaultPath(path, scanOverviewDefaultPath)
+	validPath := setDefaultPath(path, commonParams.ScsScanOverviewPathKey, scanOverviewDefaultPath)
 	return &ScanOverviewHTTPWrapper{
 		path: validPath,
 	}
