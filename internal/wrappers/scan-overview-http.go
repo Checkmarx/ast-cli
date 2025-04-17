@@ -3,6 +3,8 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -10,12 +12,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultPath = "api/micro-engines/read/scans/%s/scan-overview"
+
 type ScanOverviewHTTPWrapper struct {
 	path string
 }
 
 func NewHTTPScanOverviewWrapper(path string) ScanOverviewWrapper {
-	validPath := setDefaultPath(path, commonParams.ScsScanOverviewPathKey, scanOverviewDefaultPath)
+	validPath := setDefaultPath(path)
 	return &ScanOverviewHTTPWrapper{
 		path: validPath,
 	}
@@ -58,4 +62,19 @@ func (r *ScanOverviewHTTPWrapper) GetSCSOverviewByScanID(scanID string) (
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+// setDefaultPath checks if the path is the default path, if not it writes the default path to the config file
+func setDefaultPath(path string) string {
+	if path != defaultPath {
+		configFilePath, err := configuration.GetConfigFilePath()
+		if err != nil {
+			logger.PrintfIfVerbose("Error getting config file path: %v", err)
+		}
+		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.ScsScanOverviewPathKey, defaultPath)
+		if err != nil {
+			logger.PrintfIfVerbose("Error writing Scan Overview path to config file: %v", err)
+		}
+	}
+	return defaultPath
 }
