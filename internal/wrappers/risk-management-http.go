@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const riskManagementDefaultPath = "api/micro-engines/read/scans/%s/scan-overview"
+const riskManagementDefaultPath = "api/risk-management/projects/%s/results?scanID=%s"
 
 type RiskManagementHTTPWrapper struct {
 	path string
