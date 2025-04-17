@@ -55,6 +55,7 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	engineWrapper wrappers.EngineWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -173,7 +174,7 @@ func NewAstCLI(
 		policyWrapper,
 		featureFlagsWrapper,
 	)
-
+	enginesCmd := EngineCommand(engineWrapper)
 	versionCmd := util.NewVersionCommand()
 	authCmd := NewAuthCommand(authWrapper)
 	utilsCmd := util.NewUtilsCommand(
@@ -209,6 +210,7 @@ func NewAstCLI(
 		resultsCmd,
 		triageCmd,
 		versionCmd,
+		enginesCmd,
 		authCmd,
 		utilsCmd,
 		configCmd,
@@ -319,7 +321,15 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
+
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
+	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+
+// print by --output-format flag
+
+func printByOutputFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.EngineOutputFormat)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }

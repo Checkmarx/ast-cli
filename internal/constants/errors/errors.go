@@ -23,6 +23,9 @@ const (
 	FailedUploadFileMsgWithDomain          = "Unable to upload the file to the pre-signed URL. Try adding the domain: %s to your allow list."
 	FailedUploadFileMsgWithURL             = "Unable to upload the file to the pre-signed URL. Try adding the URL: %s to your allow list."
 
+	// engine
+	EngineDoesNotExist = "Engine does not exits or user has no permission to the engine "
+
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
 )
