@@ -3,6 +3,8 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -10,12 +12,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+const riskManagementDefaultPath = "api/micro-engines/read/scans/%s/scan-overview"
+
 type RiskManagementHTTPWrapper struct {
 	path string
 }
 
 func NewHTTPRiskManagementWrapper(path string) RiskManagementWrapper {
-	validPath := setDefaultPath(path, commonParams.RiskManagementPathKey, riskManagementDefaultPath)
+	validPath := setRMDefaultPath(path)
 	return &RiskManagementHTTPWrapper{
 		path: validPath,
 	}
@@ -55,4 +59,18 @@ func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID s
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func setRMDefaultPath(path string) string {
+	if path != riskManagementDefaultPath {
+		configFilePath, err := configuration.GetConfigFilePath()
+		if err != nil {
+			logger.PrintfIfVerbose("Error getting config file path: %v", err)
+		}
+		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.RiskManagementPathKey, riskManagementDefaultPath)
+		if err != nil {
+			logger.PrintfIfVerbose("Error writing Scan Overview path to config file: %v", err)
+		}
+	}
+	return riskManagementDefaultPath
 }
