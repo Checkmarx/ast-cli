@@ -217,6 +217,10 @@ const (
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
+
+	//Engines
+	EngineName         = "engine-name"
+	EngineOutputFormat = "output-format"
 )
 
 // Parameter values
