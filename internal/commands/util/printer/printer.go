@@ -3,7 +3,7 @@ package printer
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-yaml/yaml"
+	"gopkg.in/yaml.v3"
 	"io"
 	"reflect"
 	"strconv"
