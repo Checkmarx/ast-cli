@@ -249,7 +249,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
 		if len(filterKeyVal) != params.KeyValuePairSize {
-			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
+			return nil, errors.New("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
 		filterKeyVal = validateExtraFilters(filterKeyVal)
 		allFilters[filterKeyVal[0]] = strings.Replace(
