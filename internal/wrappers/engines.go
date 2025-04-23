@@ -16,6 +16,7 @@ type EngineResponseModel struct {
 	Apis       []EngineAPIModel `json:"apis"`
 }
 
+// engineWrapper
 type EngineWrapper interface {
 	Get(engineName string) (*EnginesCollectionResponseModel, error)
 }
