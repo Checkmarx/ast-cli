@@ -75,4 +75,5 @@ var (
 	RiskManagementPathKey               = strings.ToLower(RiskManagementPathEnv)
 	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 	EnginePathKey                       = strings.ToLower(ResultsPathKey)
+	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 )

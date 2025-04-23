@@ -76,5 +76,5 @@ var EnvVarsBinds = []struct {
 	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results?scanID=%s"},
 	{ConfigFilePathKey, ConfigFilePathEnv, ""},
 	{EnginePathKey, EnginePathEnv, "api/engines"},
-
 }
+
