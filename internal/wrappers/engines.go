@@ -10,6 +10,7 @@ type EngineAPIModel struct {
 	Description string `json:"description"`
 }
 
+/* EngineResponseModel*/
 type EngineResponseModel struct {
 	EngineID   string           `json:"engine_id"`
 	EngineName string           `json:"engine_name"`
