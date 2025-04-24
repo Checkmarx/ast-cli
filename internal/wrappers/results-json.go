@@ -24,6 +24,7 @@ type ScanResult struct {
 	Label                string               `json:"label,omitempty"`
 	ID                   string               `json:"id,omitempty"`
 	SimilarityID         string               `json:"similarityId,omitempty"`
+	AlternateID          string               `json:"alternateId,omitempty"`
 	Status               string               `json:"status,omitempty"`
 	State                string               `json:"state,omitempty"`
 	Severity             string               `json:"severity,omitempty"`
