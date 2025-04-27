@@ -57,7 +57,6 @@ func bindProxy(t *testing.T) {
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
-	configuration.LoadConfiguration()
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
 	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
