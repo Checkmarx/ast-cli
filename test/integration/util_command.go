@@ -14,7 +14,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -57,7 +56,6 @@ func bindProxy(t *testing.T) {
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
-	configuration.LoadConfiguration()
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
 	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
