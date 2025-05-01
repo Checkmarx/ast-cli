@@ -63,7 +63,7 @@ var (
 	DescriptionsPathKey                 = strings.ToLower(DescriptionsPathEnv)
 	TenantConfigurationPathKey          = strings.ToLower(TenantConfigurationPathEnv)
 	ResultsPdfReportPathKey             = strings.ToLower(ResultsPdfReportPathEnv)
-	ResultsJSONReportPathKey            = strings.ToLower(ResultsJSONReportPathEnv)
+	ResultsJsonReportPathKey            = strings.ToLower(ResultsJsonReportPathEnv)
 	ExportPathKey                       = strings.ToLower(ExportPathEnv)
 	FeatureFlagsKey                     = strings.ToLower(FeatureFlagsEnv)
 	PolicyEvaluationPathKey             = strings.ToLower(PolicyEvaluationPathEnv)
