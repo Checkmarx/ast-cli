@@ -83,6 +83,8 @@ const (
 	TargetFormatFlag             = "report-format"
 	ReportFormatPdfToEmailFlag   = "report-pdf-email"
 	ReportFormatPdfOptionsFlag   = "report-pdf-options"
+	ReportFormatJsonToEmailFlag  = "report-json-email"
+	ReportFormatJsonOptionsFlag  = "report-json-options"
 	ReportSbomFormatFlag         = "report-sbom-format"
 	ProjectName                  = "project-name"
 	ScanTypes                    = "scan-types"
