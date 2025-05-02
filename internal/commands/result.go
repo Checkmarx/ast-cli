@@ -1806,6 +1806,7 @@ func exportJSONResults1(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappe
 	jsonReportsPayload.ReportType = "cli"
 	jsonReportsPayload.FileFormat = printer.FormatJSON
 	jsonReportsPayload.Data.ScanID = summary.ScanID
+	jsonReportsPayload.Data.ProjectID = summary.ProjectID
 	jsonReportsPayload.Data.BranchName = summary.BranchName
 	jsonReportsPayload.Data.Scanners = jsonOptionsEngines
 	jsonReportsPayload.Data.Sections = jsonOptionsSections
@@ -1831,7 +1832,7 @@ func exportJSONResults1(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappe
 		log.Println("Sending JSON report to: ", jsonReportsPayload.Data.Email)
 		return nil
 	}
-	log.Println("Generating PDF report")
+	log.Println("Generating JSON report")
 	pollingResp.Status = startedStatus
 	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
 		pollingResp, webErr, err = jsonWrapper.CheckJsonReportStatus(jsonReportID.ReportID)
@@ -1854,7 +1855,7 @@ func exportJSONResults1(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappe
 	}
 	err = jsonWrapper.DownloadJsonReport(infoPathType, summaryRpt, minioEnabled.Status)
 	if err != nil {
-		return errors.Wrapf(err, "%s", "Failed downloading PDF report")
+		return errors.Wrapf(err, "%s", "Failed downloading JSON report")
 	}
 	return nil
 }
