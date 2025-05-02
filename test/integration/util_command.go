@@ -80,7 +80,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationAzurePath := viper.GetString(params.PRDecorationAzurePathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsJsonPath := viper.GetString(params.ResultsJSONReportPathKey)
+	resultsJsonPath := viper.GetString(params.ResultsJsonReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
@@ -92,7 +92,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsJSONReportsWrapper := wrappers.NewResultsJSONReportsHTTPWrapper(resultsJsonPath)
+	resultsJsonReportsWrapper := wrappers.NewResultsJsonReportsHTTPWrapper(resultsJsonPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 
@@ -131,7 +131,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
-		resultsJSONReportsWrapper,
+		resultsJsonReportsWrapper,
 		resultsPredicatesWrapper,
 		customStatesWrapper,
 		codeBashingWrapper,
