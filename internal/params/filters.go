@@ -137,6 +137,8 @@ var BaseIncludeFilters = []string{
 	"Directory.Packages.props",
 	"*.rs",
 	"*.jsx",
+	"NuGet.Config",
+	".npmrc",
 }
 
 var BaseExcludeFilters = []string{
