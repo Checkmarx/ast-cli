@@ -123,7 +123,7 @@ func GetClient(timeout uint) *http.Client {
 
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) > 1 {
-			return fmt.Errorf("too many redirects")
+			return errors.New("too many redirects")
 		}
 		if len(via) != 0 && req.Response.StatusCode == http.StatusMovedPermanently {
 			for attr, val := range via[0].Header {
@@ -349,7 +349,7 @@ func addTenantAuthURI(baseAuthURI string) (string, error) {
 	tenant := viper.GetString(commonParams.TenantKey)
 
 	if tenant == "" {
-		return "", errors.Errorf(MissingTenant)
+		return "", errors.New(MissingTenant)
 	}
 
 	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
@@ -454,9 +454,9 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+		return "", errors.Errorf(FailedToAuth, "access key ID")
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
 	authURI, err := GetAuthURI()
@@ -642,12 +642,12 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 func handleRedirect(resp *http.Response, req *http.Request, body []byte) (*http.Request, error) {
 	redirectURL := resp.Header.Get("Location")
 	if redirectURL == "" {
-		return nil, fmt.Errorf(applicationErrors.RedirectURLNotFound)
+		return nil, errors.New(applicationErrors.RedirectURLNotFound)
 	}
 
 	method := GetHTTPMethod(req)
 	if method == "" {
-		return nil, fmt.Errorf(applicationErrors.HTTPMethodNotFound)
+		return nil, errors.New(applicationErrors.HTTPMethodNotFound)
 	}
 
 	newReq, err := recreateRequest(req, method, redirectURL, body)
@@ -764,7 +764,7 @@ func GetURL(path, accessToken string) (string, error) {
 	}
 
 	if cleanURL == "" {
-		return "", errors.Errorf(MissingURI)
+		return "", errors.New(MissingURI)
 	}
 
 	cleanURL = strings.Trim(cleanURL, "/")

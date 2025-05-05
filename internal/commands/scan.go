@@ -60,7 +60,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.5"
+	containerImage                          = "checkmarx/kics:v2.1.7"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -88,6 +88,7 @@ const (
 	configIncremental                       = "incremental"
 	configFastScan                          = "fastScanMode"
 	configPresetName                        = "presetName"
+	configPresetID                          = "presetId"
 	configEngineVerbose                     = "engineVerbose"
 	configLanguageMode                      = "languageMode"
 	ConfigContainersFilesFilterKey          = "filesFilter"
@@ -553,7 +554,10 @@ func scanCreateSubCommand(
 		false,
 		"Incremental SAST scan should be performed.",
 	)
+
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
+	createScanCmd.PersistentFlags().String(commonParams.IacsPresetIDFlag, "", commonParams.IacsPresetIDUsage)
+
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
@@ -718,7 +722,7 @@ func setupScanTypeProjectAndConfig(
 	if newProjectName != "" {
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	} else {
-		return errors.Errorf("Project name is required")
+		return errors.New("Project name is required")
 	}
 
 	// We need to convert the project name into an ID
@@ -898,6 +902,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		kicsMapConfig[resultsMapType] = commonParams.KicsType
 		kicsConfig.Filter = deprecatedFlagValue(cmd, commonParams.KicsFilterFlag, commonParams.IacsFilterFlag)
 		kicsConfig.Platforms = deprecatedFlagValue(cmd, commonParams.KicsPlatformsFlag, commonParams.IacsPlatformsFlag)
+		kicsConfig.PresetID, _ = cmd.Flags().GetString(commonParams.IacsPresetIDFlag)
 		for _, config := range resubmitConfig {
 			if config.Type == commonParams.KicsType {
 				resubmitFilter := config.Value[configFilterKey]
@@ -907,6 +912,10 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 				resubmitPlatforms := config.Value[configFilterPlatforms]
 				if resubmitPlatforms != nil && kicsConfig.Platforms == "" {
 					kicsConfig.Platforms = resubmitPlatforms.(string)
+				}
+				resubmitPresetID := config.Value[configPresetID]
+				if resubmitPresetID != nil && kicsConfig.PresetID == "" {
+					kicsConfig.PresetID = resubmitPresetID.(string)
 				}
 			}
 		}
@@ -1063,7 +1072,7 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
 		if userScanTypes != "" {
-			return false, errors.Errorf(ScsRepoRequiredMsg)
+			return false, errors.New(ScsRepoRequiredMsg)
 		}
 		fmt.Println(ScsRepoWarningMsg)
 		return false, nil
@@ -1123,7 +1132,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
-	containerEngineCLIEnabled, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
+	runContainerEngineCLI := isContainersEngineEnabled(featureFlagsWrapper)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -1140,7 +1149,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
-			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(containerEngineCLIEnabled.Status)) {
+			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(runContainerEngineCLI)) {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
@@ -1156,7 +1165,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 	} else {
 		for k := range allowedEngines {
-			if k == commonParams.ContainersType && !(containerEngineCLIEnabled.Status) {
+			if k == commonParams.ContainersType && !(runContainerEngineCLI) {
 				continue
 			}
 			scanTypes = append(scanTypes, k)
@@ -1167,6 +1176,16 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
 	return nil
+}
+
+func isContainersEngineEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) bool {
+	containerEngineCLIEnabled, err := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
+	if err != nil {
+		logger.PrintfIfVerbose("Failed to fetch CONTAINER_ENGINE_CLI_ENABLED FF, defaulting to `false`. Error: %s", err)
+		return false
+	}
+
+	return containerEngineCLIEnabled.Status
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -2118,7 +2137,7 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	parts := strings.Split(limit, "=")
 	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
 	if len(parts) <= 1 {
-		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+		return engineName, 0, errors.New("Error parsing threshold limit: missing values\n")
 	}
 	intLimit, err = strconv.Atoi(parts[1])
 	if err != nil {
@@ -2226,7 +2245,7 @@ func isScanRunning(
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)
@@ -2789,6 +2808,12 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	err = validateBooleanString(projectPrivatePackage)
 	if err != nil {
 		return errors.Errorf("Invalid value for --project-private-package flag. The value must be true or false.")
+	}
+
+	if kicsPresetID, _ := cmd.Flags().GetString(commonParams.IacsPresetIDFlag); kicsPresetID != "" {
+		if _, err := uuid.Parse(kicsPresetID); err != nil {
+			return fmt.Errorf("Invalid value for --%s flag. Must be a valid UUID.", commonParams.IacsPresetIDFlag)
+		}
 	}
 
 	return nil

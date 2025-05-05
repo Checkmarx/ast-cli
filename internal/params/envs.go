@@ -72,4 +72,6 @@ const (
 	AiProxyCheckmarxAiRouteEnv          = "CX_AIPROXY_CHECKMARXAI_ROUTE"
 	ASCAPortEnv                         = "CX_ASCA_PORT"
 	ScsRepoTokenEnv                     = "SCS_REPO_TOKEN"
+	RiskManagementPathEnv               = "CX_RISK_MANAGEMENT_PATH"
+	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 )

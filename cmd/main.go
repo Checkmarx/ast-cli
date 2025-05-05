@@ -27,7 +27,8 @@ func main() {
 	var err error
 	bindProxy()
 	bindKeysToEnvAndDefault()
-	configuration.LoadConfiguration()
+	err = configuration.LoadConfiguration()
+	exitIfError(err)
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
@@ -36,6 +37,7 @@ func main() {
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	riskManagement := viper.GetString(params.RiskManagementPathKey)
 	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
 	codebashing := viper.GetString(params.CodeBashingPathKey)
@@ -65,6 +67,7 @@ func main() {
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
@@ -83,7 +86,7 @@ func main() {
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath, featureFlagsWrapper)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
@@ -101,6 +104,7 @@ func main() {
 		projectsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
+		riskManagementWrapper,
 		scsScanOverviewWrapper,
 		authWrapper,
 		logsWrapper,

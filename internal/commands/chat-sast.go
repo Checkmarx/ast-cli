@@ -104,7 +104,7 @@ func getSastConversationDetails(cmd *cobra.Command, chatConversationID string, s
 		if userInput == "" {
 			msg := fmt.Sprintf(UserInputRequiredErrorFormat, params.ChatUserInput, params.ChatConversationID)
 			logger.PrintIfVerbose(msg)
-			return false, "", uuid.UUID{}, outputError(cmd, uuid.Nil, errors.Errorf(msg))
+			return false, "", uuid.UUID{}, outputError(cmd, uuid.Nil, errors.New(msg))
 		}
 	}
 
