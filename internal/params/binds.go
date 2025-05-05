@@ -73,6 +73,7 @@ var EnvVarsBinds = []struct {
 	{AiProxyCheckmarxAiRouteKey, AiProxyCheckmarxAiRouteEnv, "api/ai-proxy/redirect/azure"},
 	{ASCAPortKey, ASCAPortEnv, ""},
 	{ScsRepoTokenKey, ScsRepoTokenEnv, ""},
-	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results?scanID=%s"},
+	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results"},
+	{EnginePathKey, EnginePathEnv, "api/engines"},
 	{ConfigFilePathKey, ConfigFilePathEnv, ""},
 }
