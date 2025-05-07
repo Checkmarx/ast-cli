@@ -625,7 +625,7 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
 		}
-		if resp != nil && err == nil {
+		if resp != nil && err == nil && !retryHTTPResponse(resp) {
 			if hasRedirectStatusCode(resp) {
 				req, err = handleRedirect(resp, req, body)
 				continue
@@ -633,7 +633,11 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 			logger.PrintResponse(resp, responseBody)
 			return resp, nil
 		}
-		logger.PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))
+		if !retryHTTPResponse(resp) {
+			logger.PrintIfVerbose(fmt.Sprintf("Request failed in attempt %d", try+tryPrintOffset))
+		} else {
+			logger.PrintIfVerbose(fmt.Sprintf("Encountered HTTP %s response — will attempt retry in %d seconds", resp.Status, retryWaitTimeSeconds))
+		}
 		time.Sleep(time.Duration(retryWaitTimeSeconds) * time.Second)
 	}
 	return nil, err
@@ -696,6 +700,18 @@ func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
+// Add retry logic for 5XX responses
+func retryHTTPResponse(resp *http.Response) bool {
+	if resp.StatusCode == http.StatusInternalServerError ||
+		resp.StatusCode == http.StatusNotImplemented ||
+		resp.StatusCode == http.StatusBadGateway ||
+		resp.StatusCode == http.StatusServiceUnavailable ||
+		resp.StatusCode == http.StatusGatewayTimeout {
+		return true
+	} else {
+		return false
+	}
+}
 func GetAuthURI() (string, error) {
 	var authURI string
 	var err error
