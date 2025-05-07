@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
+	"github.com/checkmarx/ast-cli/internal/commands/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -211,6 +212,8 @@ func NewScanCommand(
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
+	ossRealtimeCmd := scanOssRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -230,6 +233,7 @@ func NewScanCommand(
 		logsCmd,
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
+		ossRealtimeCmd,
 	)
 	return scanCmd
 }
@@ -439,6 +443,36 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"The file source should be the path to a single file",
 	)
 	return scanASCACmd
+}
+
+func scanOssRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanOssRealtimeCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "oss-realtime",
+		Short:  "Run a OSS-Realtime scan",
+		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan oss-realtime --file-source <path to a manifest file>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+			`,
+			),
+		},
+		RunE: ossrealtime.RunScanOssRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+	}
+
+	scanOssRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file",
+	)
+	return scanOssRealtimeCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
