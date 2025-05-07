@@ -354,6 +354,88 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
+func TestResultsGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.ReportFormatJsonOptionsFlag), "invalid_option",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "report option \"invalid_option\" unavailable")
+}
+
+func TestResultsGeneratingJsonReportWithInvalidEmail(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	args := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.ReportFormatJsonToEmailFlag), "valid@mail.com,invalid_email",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assertError(t, err, "report not sent, invalid email address: invalid_email")
+}
+
+func TestResultsGeneratingJsonReportWithJsonOptionsWithoutNotExploitable(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=exclude_not_exploitable",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestResultsGeneratingJsonReportWithJsonOptions(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.TargetFlag), fileName,
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
+func TestResultsGeneratingJsonReportAndSendToEmail(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating PDF report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
+	)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
 func TestResultsGeneratingSBOMWrongScanType(t *testing.T) {
 	scanID, _ := getRootScan(t)
 

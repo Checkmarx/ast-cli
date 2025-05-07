@@ -87,9 +87,11 @@ const (
 	completedStatus           = "completed"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
+	jsonToEmailFlagDescription = "Send the json report to the specified email address." +
+		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
-	jsonOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
+	jsonOptionsFlagDescription = "Sections to generate Json report. Available options: Iac-Security,Sast,Sca," +
 		defaultJsonOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	reportNameScanReport                    = "scan-report"
@@ -279,6 +281,7 @@ func resultShowSubCommand(
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
+		printer.FormatJSONReport,
 		printer.FormatSummary,
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
@@ -290,6 +293,7 @@ func resultShowSubCommand(
 		printer.FormatGLSca,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJsonToEmailFlag, "", jsonToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJsonOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
@@ -1408,7 +1412,11 @@ func createReport(format,
 	}
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
-		return exportJSONResults1(resultsJsonReportsWrapper, summary, jsonRpt, formatJsonToEmail, formatJsonOptions, featureFlagsWrapper)
+		return exportJSONResults(jsonRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatJSONReport) && isValidScanStatus(summary.Status, printer.FormatJSONReport) {
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
+		return exportJSONReportResults(resultsJsonReportsWrapper, summary, summaryRpt, formatJsonToEmail, formatJsonOptions, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
@@ -1786,7 +1794,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
-func exportJSONResults1(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJsonToEmail,
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJsonToEmail,
 	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JsonReportsPayload{}
 	pollingResp := &wrappers.JsonPollingResponse{}

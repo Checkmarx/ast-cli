@@ -9,21 +9,21 @@ import (
 
 type ResultsJsonWrapper struct{}
 
-// GeneratePdfReport mock for tests
+// GenerateJsonReport mock for tests
 func (*ResultsJsonWrapper) GenerateJsonReport(_ *wrappers.JsonReportsPayload) (*wrappers.JsonReportsResponse, *wrappers.WebError, error) {
 	return &wrappers.JsonReportsResponse{
 		ReportID: "reportId",
 	}, nil, nil
 }
 
-// CheckPdfReportStatus mock for tests
+// CheckJsonReportStatus mock for tests
 func (*ResultsJsonWrapper) CheckJsonReportStatus(_ string) (*wrappers.JsonPollingResponse, *wrappers.WebError, error) {
 	return &wrappers.JsonPollingResponse{
 		Status: "completed",
 	}, nil, nil
 }
 
-// DownloadPdfReport mock for tests
+// DownloadJsonReport mock for tests
 func (*ResultsJsonWrapper) DownloadJsonReport(_, targetFile string, b bool) error {
 	file, err := os.Create(targetFile)
 	defer func() {
