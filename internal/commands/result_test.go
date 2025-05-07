@@ -732,6 +732,97 @@ func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
 }
 
+func TestRunGetResultsGeneratingJsonReportWithInvalidEmail(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-json-email", "ab@cd.pt,invalid")
+	assert.Equal(t, err.Error(), "report not sent, invalid email address: invalid", "Wrong expected error message")
+}
+
+func TestRunGetResultsGeneratingJsonReportWithInvalidOptions(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-json-options", "invalid")
+	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
+}
+
+func TestRunGetResultsGeneratingJsonReportWithInvalidImprovedOptions(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	err := execCmdNotNilAssertion(t,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-json-options", "scan-information")
+	assert.Equal(t, err.Error(), "report option \"scan-information\" unavailable", "Wrong expected error message")
+}
+
+func TestRunGetResultsGeneratingJsonReportWithEmailAndOptions(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
+	assert.NilError(t, err)
+}
+
+func TestRunGetResultsGeneratingJsonReportWithOptionsImprovedMappingHappens(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-pdf-email", "ab@cd.pt,test@test.pt",
+		"--report-pdf-options", "Iac-Security,Sast,Sca,scansummary,scanresults")
+	assert.NilError(t, err)
+}
+
+func TestRunGetResultsGeneratingJsonReportWithInvalidOptionsImproved(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--report-json-email", "ab@cd.pt,test@test.pt",
+		"--report-json-options", "Iac-Security,Sast,Sca,scan-information")
+	assert.Error(t, err, "report option \"scan-information\" unavailable")
+}
+
+func TestRunGetResultsGeneratingJsonReportWithOptions(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "jsonReport",
+		"--scan-id", "MOCK",
+		"--output-name", fileName,
+		"--report-json-options", "Iac-Security,Sast,Sca,ScanSummary")
+	defer func() {
+		removeFileBySuffix(t, printer.FormatJSON)
+		fmt.Println("test file removed!")
+	}()
+	assert.NilError(t, err)
+	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatJSON)
+}
+
 func TestSBOMReportInvalidSBOMOption(t *testing.T) {
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
