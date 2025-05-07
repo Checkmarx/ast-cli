@@ -7,24 +7,24 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ResultsJSONWrapper struct{}
+type ResultsJsonWrapper struct{}
 
-// GenerateJSONReport mock for tests
-func (*ResultsJSONWrapper) GenerateJSONReport(_ *wrappers.JSONReportsPayload) (*wrappers.JSONReportsResponse, *wrappers.WebError, error) {
-	return &wrappers.JSONReportsResponse{
+// GenerateJsonReport mock for tests
+func (*ResultsJsonWrapper) GenerateJsonReport(_ *wrappers.JsonReportsPayload) (*wrappers.JsonReportsResponse, *wrappers.WebError, error) {
+	return &wrappers.JsonReportsResponse{
 		ReportID: "reportId",
 	}, nil, nil
 }
 
-// CheckJSONReportStatus mock for tests
-func (*ResultsJSONWrapper) CheckJSONReportStatus(_ string) (*wrappers.JSONPollingResponse, *wrappers.WebError, error) {
-	return &wrappers.JSONPollingResponse{
+// CheckJsonReportStatus mock for tests
+func (*ResultsJsonWrapper) CheckJsonReportStatus(_ string) (*wrappers.JsonPollingResponse, *wrappers.WebError, error) {
+	return &wrappers.JsonPollingResponse{
 		Status: "completed",
 	}, nil, nil
 }
 
-// DownloadJSONReport mock for tests
-func (*ResultsJSONWrapper) DownloadJSONReport(_, targetFile string, b bool) error {
+// DownloadJsonReport mock for tests
+func (*ResultsJsonWrapper) DownloadJsonReport(_, targetFile string, b bool) error {
 	file, err := os.Create(targetFile)
 	defer func() {
 		err = file.Close()
