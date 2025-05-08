@@ -1,0 +1,144 @@
+package ossrealtime
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"github.com/Checkmarx/manifest-parser/pkg/parser"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
+)
+
+type RealtimeScannerWrapperParams struct {
+	JwtWrapper             wrappers.JWTWrapper
+	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
+	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
+}
+
+// Run performs an OSS realtime scan on the given manifest file.
+func Run(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, filePath string) (*wrappers.OssPackageResponse, error) {
+	if filePath == "" {
+		return nil, nil
+	}
+
+	if err := ensureLicense(realtimeScannerWrapperParams); err != nil {
+		return nil, err
+	}
+
+	pkgs, err := parseManifest(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	response, toScan := prepareScan(pkgs)
+	if len(toScan) > 0 {
+		if err = scanAndCache(realtimeScannerWrapperParams, toScan, &response); err != nil {
+			return nil, err
+		}
+	}
+
+	return &response, nil
+}
+
+func ensureLicense(realtimeScannerWrapperParams *RealtimeScannerWrapperParams) error {
+	allowed, err := realtimeScannerWrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
+	if err != nil {
+		return errors.Wrap(err, "checking oss-realtime license")
+	}
+	if !allowed {
+		return errors.New("oss-realtime engine not permitted")
+	}
+	return nil
+}
+
+func parseManifest(filePath string) ([]models.Package, error) {
+	p := parser.ParsersFactory(filePath)
+	if p == nil {
+		return nil, errors.Errorf("no parser available for file: %s", filePath)
+	}
+	pkgs, err := p.Parse(filePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing manifest file")
+	}
+	return pkgs, nil
+}
+
+func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers.OssPackageRequest) {
+	var resp wrappers.OssPackageResponse
+	req := make([]wrappers.OssPackageRequest, 0, len(pkgs))
+	resp.Packages = make([]wrappers.OssResults, 0, len(pkgs))
+
+	cache := osscache.ReadCache()
+	if cache == nil {
+		for _, pkg := range pkgs {
+			req = append(req, pkgToRequest(pkg))
+		}
+		return resp, req
+	}
+
+	cacheMap := buildCacheMap(*cache)
+	for _, pkg := range pkgs {
+		key := cacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
+		if status, found := cacheMap[key]; found {
+			resp.Packages = append(resp.Packages, wrappers.OssResults{
+				PackageManager: pkg.PackageManager,
+				PackageName:    pkg.PackageName,
+				Version:        pkg.Version,
+				Status:         status,
+			})
+		} else {
+			req = append(req, pkgToRequest(pkg))
+		}
+	}
+	return resp, req
+}
+
+func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, requestPackages []wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
+	result, err := realtimeScannerWrapperParams.RealtimeScannerWrapper.Scan(requestPackages)
+	if err != nil {
+		return errors.Wrap(err, "scanning packages via realtime service")
+	}
+	if len(result.Packages) == 0 {
+		return errors.New("empty response from oss-realtime scan")
+	}
+
+	for _, pkg := range result.Packages {
+		resp.Packages = append(resp.Packages, wrappers.OssResults{
+			PackageManager: pkg.PackageManager,
+			PackageName:    pkg.PackageName,
+			Version:        pkg.Version,
+			Status:         pkg.Status,
+		})
+	}
+
+	if err = osscache.AppendToCache(result); err != nil {
+		log.Printf("ossrealtime: failed to update cache: %v", err)
+	}
+	return nil
+}
+
+// buildCacheMap creates a lookup map from cache entries.
+func buildCacheMap(cache osscache.Cache) map[string]string {
+	m := make(map[string]string, len(cache.Packages))
+	for _, pkg := range cache.Packages {
+		m[cacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
+	}
+	return m
+}
+
+// cacheKey constructs a unique key for a package.
+func cacheKey(manager, name, version string) string {
+	return fmt.Sprintf("%s-%s-%s", manager, name, version)
+}
+
+// pkgToRequest transforms a parsed package into a scan request.
+func pkgToRequest(pkg models.Package) wrappers.OssPackageRequest {
+	return wrappers.OssPackageRequest{
+		PackageManager: pkg.PackageManager,
+		PackageName:    pkg.PackageName,
+		Version:        pkg.Version,
+	}
+}

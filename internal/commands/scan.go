@@ -160,6 +160,7 @@ func NewScanCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -212,7 +213,7 @@ func NewScanCommand(
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
-	ossRealtimeCmd := scanOssRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -445,7 +446,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	return scanASCACmd
 }
 
-func scanOssRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanOssRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "oss-realtime",
@@ -463,7 +464,7 @@ func scanOssRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapp
 			`,
 			),
 		},
-		RunE: ossrealtime.RunScanOssRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: ossrealtime.RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanOssRealtimeCmd.PersistentFlags().StringP(

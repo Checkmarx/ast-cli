@@ -55,6 +55,7 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	realTimeWrapper wrappers.RealtimeScannerWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -157,6 +158,7 @@ func NewAstCLI(
 		accessManagementWrapper,
 		featureFlagsWrapper,
 		containerResolverWrapper,
+		realTimeWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
