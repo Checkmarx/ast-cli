@@ -1,7 +1,6 @@
 package ossrealtime
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/Checkmarx/manifest-parser/pkg/models"
@@ -18,8 +17,8 @@ type RealtimeScannerWrapperParams struct {
 	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
 }
 
-// Run performs an OSS realtime scan on the given manifest file.
-func Run(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, filePath string) (*wrappers.OssPackageResponse, error) {
+// RunOssRealtimeScan performs an OSS realtime scan on the given manifest file.
+func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, filePath string) (*wrappers.OssPackageResponse, error) {
 	if filePath == "" {
 		return nil, nil
 	}
@@ -55,11 +54,11 @@ func ensureLicense(realtimeScannerWrapperParams *RealtimeScannerWrapperParams) e
 }
 
 func parseManifest(filePath string) ([]models.Package, error) {
-	p := parser.ParsersFactory(filePath)
-	if p == nil {
+	manifestParser := parser.ParsersFactory(filePath)
+	if manifestParser == nil {
 		return nil, errors.Errorf("no parser available for file: %s", filePath)
 	}
-	pkgs, err := p.Parse(filePath)
+	pkgs, err := manifestParser.Parse(filePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing manifest file")
 	}
@@ -80,9 +79,9 @@ func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers
 		return resp, req
 	}
 
-	cacheMap := buildCacheMap(*cache)
+	cacheMap := osscache.BuildCacheMap(*cache)
 	for _, pkg := range pkgs {
-		key := cacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
+		key := osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		if status, found := cacheMap[key]; found {
 			resp.Packages = append(resp.Packages, wrappers.OssResults{
 				PackageManager: pkg.PackageManager,
@@ -120,20 +119,6 @@ func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, re
 		log.Printf("ossrealtime: failed to update cache: %v", err)
 	}
 	return nil
-}
-
-// buildCacheMap creates a lookup map from cache entries.
-func buildCacheMap(cache osscache.Cache) map[string]string {
-	m := make(map[string]string, len(cache.Packages))
-	for _, pkg := range cache.Packages {
-		m[cacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
-	}
-	return m
-}
-
-// cacheKey constructs a unique key for a package.
-func cacheKey(manager, name, version string) string {
-	return fmt.Sprintf("%s-%s-%s", manager, name, version)
 }
 
 // pkgToRequest transforms a parsed package into a scan request.

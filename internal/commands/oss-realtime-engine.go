@@ -22,7 +22,7 @@ func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 			FeatureFlagWrapper:     featureFlagWrapper,
 		}
 
-		packages, err := ossrealtime.Run(&wrapperParams, fileSourceFlag)
+		packages, err := ossrealtime.RunOssRealtimeScan(&wrapperParams, fileSourceFlag)
 		if err != nil {
 			return errors.New("failed to run oss-realtime scan: " + err.Error())
 		}

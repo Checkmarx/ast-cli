@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	cacheFileName = "oss-realtime-cache.json"
-	ttl           = 1 * time.Hour
+	cacheFileName  = "oss-realtime-cache.json"
+	ttlHoursNumber = 4
+	ttl            = ttlHoursNumber * time.Hour
 )
 
 func ReadCache() *Cache {
@@ -82,4 +83,18 @@ func AppendToCache(packages *wrappers.OssPackageResponse) error {
 func GetCacheFilePath() string {
 	tempFolder := os.TempDir()
 	return fmt.Sprint(tempFolder, "/", cacheFileName)
+}
+
+// BuildCacheMap creates a lookup map from cache entries.
+func BuildCacheMap(cache Cache) map[string]string {
+	m := make(map[string]string, len(cache.Packages))
+	for _, pkg := range cache.Packages {
+		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
+	}
+	return m
+}
+
+// GenerateCacheKey constructs a unique key for a package.
+func GenerateCacheKey(manager, name, version string) string {
+	return fmt.Sprintf("%s-%s-%s", manager, name, version)
 }

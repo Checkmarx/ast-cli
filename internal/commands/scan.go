@@ -453,7 +453,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan oss-realtime --file-source <path to a manifest file>
+			$ cx scan oss-realtime -s <path to a manifest files separated by commas>
 		`,
 		),
 		Annotations: map[string]string{
