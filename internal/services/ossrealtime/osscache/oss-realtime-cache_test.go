@@ -101,3 +101,45 @@ func TestAppendToCache(t *testing.T) {
 		t.Errorf("cache TTL expired (%v); want TTL in the future", cache.TTL)
 	}
 }
+
+func Test_buildCacheMap(t *testing.T) {
+	type args struct {
+		cache Cache
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := BuildCacheMap(tt.args.cache); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("buildCacheMap() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_cacheKey(t *testing.T) {
+	type args struct {
+		manager string
+		name    string
+		version string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := GenerateCacheKey(tt.args.manager, tt.args.name, tt.args.version); got != tt.want {
+				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

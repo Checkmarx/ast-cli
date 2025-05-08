@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/Checkmarx/manifest-parser/pkg/models"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
@@ -24,55 +23,13 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Run(tt.args.realtimeScannerWrapperParams, tt.args.filePath)
+			got, err := RunOssRealtimeScan(tt.args.realtimeScannerWrapperParams, tt.args.filePath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Run() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_buildCacheMap(t *testing.T) {
-	type args struct {
-		cache osscache.Cache
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[string]string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := buildCacheMap(tt.args.cache); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildCacheMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_cacheKey(t *testing.T) {
-	type args struct {
-		manager string
-		name    string
-		version string
-	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := cacheKey(tt.args.manager, tt.args.name, tt.args.version); got != tt.want {
-				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
 			}
 		})
 	}
