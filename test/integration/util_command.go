@@ -159,6 +159,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 		containerResolverWrapper,
+		realtimeScannerWrapper,
 	)
 	return astCli
 }
