@@ -75,4 +75,5 @@ var EnvVarsBinds = []struct {
 	{ScsRepoTokenKey, ScsRepoTokenEnv, ""},
 	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results?scanID=%s"},
 	{ConfigFilePathKey, ConfigFilePathEnv, ""},
+	{RealtimeScannerPathKey, RealtimeScannerPathEnv, "api/realtime-scanner"},
 }
