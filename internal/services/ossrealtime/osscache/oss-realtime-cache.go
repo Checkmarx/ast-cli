@@ -38,8 +38,7 @@ func ReadCache() *Cache {
 }
 
 func WriteCache(cache Cache, cacheTTL *time.Time) error {
-	tempFolder := os.TempDir()
-	cacheFilePath := fmt.Sprint(tempFolder, "/", cacheFileName)
+	cacheFilePath := GetCacheFilePath()
 	file, err := os.Create(cacheFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create osscache file: %w", err)
@@ -78,4 +77,9 @@ func AppendToCache(packages *wrappers.OssPackageResponse) error {
 		}
 	}
 	return WriteCache(*cache, &cache.TTL)
+}
+
+func GetCacheFilePath() string {
+	tempFolder := os.TempDir()
+	return fmt.Sprint(tempFolder, "/", cacheFileName)
 }
