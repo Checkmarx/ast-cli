@@ -8,6 +8,7 @@ import (
 )
 
 type RealtimeScannerMockWrapper struct {
+	CustomScan func(packages []wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error)
 }
 
 func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
@@ -15,6 +16,9 @@ func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
 }
 
 func (r RealtimeScannerMockWrapper) Scan(packages []wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
+	if r.CustomScan != nil {
+		return r.CustomScan(packages)
+	}
 	return generateMockResponse(packages), nil
 }
 

@@ -470,7 +470,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
-		"The file source should be the path to a single file",
+		"The file source should be the path to a single file or multiple files separated by commas",
 	)
 	return scanOssRealtimeCmd
 }
