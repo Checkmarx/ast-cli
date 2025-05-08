@@ -60,7 +60,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.5"
+	containerImage                          = "checkmarx/kics:v2.1.7"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -722,7 +722,7 @@ func setupScanTypeProjectAndConfig(
 	if newProjectName != "" {
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	} else {
-		return errors.Errorf("Project name is required")
+		return errors.New("Project name is required")
 	}
 
 	// We need to convert the project name into an ID
@@ -1072,7 +1072,7 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
 		if userScanTypes != "" {
-			return false, errors.Errorf(ScsRepoRequiredMsg)
+			return false, errors.New(ScsRepoRequiredMsg)
 		}
 		fmt.Println(ScsRepoWarningMsg)
 		return false, nil
@@ -2137,7 +2137,7 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	parts := strings.Split(limit, "=")
 	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
 	if len(parts) <= 1 {
-		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+		return engineName, 0, errors.New("Error parsing threshold limit: missing values\n")
 	}
 	intLimit, err = strconv.Atoi(parts[1])
 	if err != nil {
@@ -2245,7 +2245,7 @@ func isScanRunning(
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)

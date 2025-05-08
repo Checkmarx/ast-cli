@@ -3,6 +3,8 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -10,24 +12,24 @@ import (
 	"github.com/spf13/viper"
 )
 
+const riskManagementDefaultPath = "api/risk-management/projects/%s/results?scanID=%s"
+
 type RiskManagementHTTPWrapper struct {
 	path string
 }
 
 func NewHTTPRiskManagementWrapper(path string) RiskManagementWrapper {
+	validPath := setRMDefaultPath(path)
 	return &RiskManagementHTTPWrapper{
-		path: path,
+		path: validPath,
 	}
 }
 
-func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID string) (
-	*ASPMResult,
-	*WebError,
-	error,
-) {
+func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID string, scanID string) (*ASPMResult, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf(r.path, projectID)
-	resp, err := SendHTTPRequest(http.MethodGet, path, http.NoBody, true, clientTimeout)
+
+	path := fmt.Sprintf(r.path, projectID, scanID)
+	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -57,4 +59,18 @@ func (r *RiskManagementHTTPWrapper) GetTopVulnerabilitiesByProjectID(projectID s
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func setRMDefaultPath(path string) string {
+	if path != riskManagementDefaultPath {
+		configFilePath, err := configuration.GetConfigFilePath()
+		if err != nil {
+			logger.PrintfIfVerbose("Error getting config file path: %v", err)
+		}
+		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.RiskManagementPathKey, riskManagementDefaultPath)
+		if err != nil {
+			logger.PrintfIfVerbose("Error writing Risk Management path to config file: %v", err)
+		}
+	}
+	return riskManagementDefaultPath
 }

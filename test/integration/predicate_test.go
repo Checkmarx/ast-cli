@@ -16,8 +16,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var projectID string
-
 func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
@@ -101,7 +99,6 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 }
 
 func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
-
 	err, _ := executeCommand(
 		t, "triage", "update",
 		flag(params.ProjectIDFlag), "1234",
