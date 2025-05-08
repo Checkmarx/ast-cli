@@ -617,6 +617,7 @@ func scanCreateSubCommand(
 		createScanCmd,
 		printer.FormatSummaryConsole,
 		printer.FormatJSON,
+		printer.FormatJSONReport,
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatSbom,
@@ -631,6 +632,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJsonToEmailFlag, "", jsonToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJsonOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
