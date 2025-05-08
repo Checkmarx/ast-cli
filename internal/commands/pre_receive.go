@@ -1,7 +1,7 @@
 package commands
 
 import (
-	pre_receive "github.com/Checkmarx/secret-detection/pkg/hooks/pre-receive"
+	prereceive "github.com/Checkmarx/secret-detection/pkg/hooks/pre-receive"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
@@ -15,98 +15,37 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		Long:  "The pre-receive command enables the ability to manage Git pre-receive hooks for secret detection.",
 		Example: heredoc.Doc(
 			`
-            $ cx hooks pre-receive install
-            $ cx hooks pre-receive scan
+            $ cx hooks pre-receive secrets-scan
         `,
 		),
 	}
-	preReceiveCmd.PersistentFlags().Bool("global", false, "Install the hook globally for all repositories")
 
-	preReceiveCmd.AddCommand(installPreReceiveHookCommand(jwtWrapper))
-	preReceiveCmd.AddCommand(uninstallPreReceiveHookCommand(jwtWrapper))
-	preReceiveCmd.AddCommand(updatePreReceiveHookCommand(jwtWrapper))
-	preReceiveCmd.AddCommand(testPreReceiveHookCommand(jwtWrapper))
+	preReceiveCmd.AddCommand(preReceiveSecretsScanCommand(jwtWrapper))
 
 	return preReceiveCmd
 }
 
-func installPreReceiveHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+func preReceiveSecretsScanCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+	var configPath string
+
 	cmd := &cobra.Command{
-		Use:   "install",
-		Short: "Install the pre-receive hook",
-		Long:  "Install the pre-receive hook for secret detection in your repository.",
+		Use:   "secrets-scan",
+		Short: "Scan all commits about to enter the remote git repository.",
 		Example: heredoc.Doc(
 			`
-            $ cx hooks pre-receive install
+			$ cx hooks pre-receive secrets-scan
+            $ cx hooks pre-receive secrets-scan --config /path/to/config.yaml
         `,
 		),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return validateLicense(jwtWrapper)
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			global, _ := cmd.Flags().GetBool("global")
-			return pre_receive.Install(global)
+			return prereceive.Scan(configPath)
 		},
 	}
 
-	return cmd
-}
-
-func uninstallPreReceiveHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "uninstall",
-		Short: "Uninstall the pre-receive hook",
-		Long:  "Uninstall the pre-receive hook for secret detection from your repository.",
-		Example: heredoc.Doc(
-			`
-            $ cx hooks pre-receive uninstall
-        `,
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			global, _ := cmd.Flags().GetBool("global")
-			return pre_receive.Uninstall(global)
-		},
-	}
-
-	return cmd
-}
-
-func updatePreReceiveHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "update",
-		Short: "Update the pre-receive hook",
-		Long:  "Update the pre-receive hook for secret detection to the latest version.",
-		Example: heredoc.Doc(
-			`
-            $ cx hooks pre-receive update
-        `,
-		),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			return validateLicense(jwtWrapper)
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			global, _ := cmd.Flags().GetBool("global")
-			return pre_receive.Update(global)
-		},
-	}
-
-	return cmd
-}
-
-func testPreReceiveHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "test-hook",
-		Short: "Test the pre-receive hook",
-		Long:  "Test the pre-receive hook to ensure it is working correctly.",
-		Example: heredoc.Doc(
-			`
-            $ cx hooks pre-receive test-hook
-        `,
-		),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return nil
-		},
-	}
+	cmd.Flags().StringVarP(&configPath, "config", "c", "", "path to configuration file")
 
 	return cmd
 }

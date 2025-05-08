@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	precommit "github.com/Checkmarx/secret-detection/pkg/hooks"
+	precommit "github.com/Checkmarx/secret-detection/pkg/hooks/pre-commit"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -10,33 +10,6 @@ import (
 	"github.com/spf13/cobra"
 	"strings"
 )
-
-// NewHooksCommand creates the hooks command with pre-commit subcommand
-func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
-	hooksCmd := &cobra.Command{
-		Use:   "hooks",
-		Short: "Manage Git hooks",
-		Long:  "The hooks command enables the ability to manage Git hooks for Checkmarx One.",
-		Example: heredoc.Doc(
-			`
-            $ cx hooks pre-commit secrets-install-git-hook
-            $ cx hooks pre-commit secrets-scan
-        `,
-		),
-		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(
-				`
-                https://checkmarx.com/resource/documents/en/xxxxx-xxxxx-hooks.html
-            `,
-			),
-		},
-	}
-
-	// Add pre-commit subcommand
-	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper))
-
-	return hooksCmd
-}
 
 // PreCommitCommand creates the pre-commit subcommand
 func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
