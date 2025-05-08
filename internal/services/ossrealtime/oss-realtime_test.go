@@ -8,7 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-func TestRun(t *testing.T) {
+func TestRunOssRealtimeScan(t *testing.T) {
 	type args struct {
 		realtimeScannerWrapperParams *RealtimeScannerWrapperParams
 		filePath                     string
