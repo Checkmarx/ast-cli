@@ -1676,6 +1676,7 @@ func TestScanGeneratingJsonReportWithJsonOptions(t *testing.T) {
 		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 		log.Println("test file removed!")
 	}()
+	
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
