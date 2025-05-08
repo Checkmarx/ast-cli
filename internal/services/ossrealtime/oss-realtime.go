@@ -66,6 +66,7 @@ func parseManifest(filePath string) ([]models.Package, error) {
 	return pkgs, nil
 }
 
+// prepareScan processes a list of packages, separates cached and uncached packages, and returns both response and request data to be sent to the scanner.
 func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers.OssPackageRequest) {
 	var resp wrappers.OssPackageResponse
 	req := make([]wrappers.OssPackageRequest, 0, len(pkgs))
@@ -96,6 +97,7 @@ func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers
 	return resp, req
 }
 
+// scanAndCache performs a scan on the provided packages and caches the results.
 func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, requestPackages []wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
 	result, err := realtimeScannerWrapperParams.RealtimeScannerWrapper.Scan(requestPackages)
 	if err != nil {

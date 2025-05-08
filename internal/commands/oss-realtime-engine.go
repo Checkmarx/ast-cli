@@ -1,4 +1,4 @@
-package ossrealtime
+package commands
 
 import (
 	"errors"

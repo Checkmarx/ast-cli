@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
-	"github.com/checkmarx/ast-cli/internal/commands/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -464,7 +463,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 			`,
 			),
 		},
-		RunE: ossrealtime.RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanOssRealtimeCmd.PersistentFlags().StringP(
