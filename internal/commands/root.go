@@ -19,7 +19,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	scansWrapper wrappers.ScansWrapper,
@@ -55,8 +54,9 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	enginesWrapper wrappers.EnginesWrapper,
 ) *cobra.Command {
-	// Create the root
+
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx One CLI",
@@ -77,7 +77,6 @@ func NewAstCLI(
 		},
 	}
 
-	// Load default flags
 	rootCmd.PersistentFlags().Bool(params.DebugFlag, false, params.DebugUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeyIDFlag, "", params.AccessKeyIDFlagUsage)
 	rootCmd.PersistentFlags().String(params.AccessKeySecretFlag, "", params.AccessKeySecretFlagUsage)
@@ -99,8 +98,6 @@ func NewAstCLI(
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 
-	// This monitors and traps situations where "extra/garbage" commands
-	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		PrintConfiguration()
 		// Need to check the __complete command to allow correct behavior of the autocomplete
@@ -109,7 +106,7 @@ func NewAstCLI(
 			os.Exit(0)
 		}
 	}
-	// Link the environment variable to the CLI argument(s).
+
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
 	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(params.BaseURIFlag))
@@ -203,6 +200,8 @@ func NewAstCLI(
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper)
 
+	enginesCmd := NewEnginesCommand(enginesWrapper)
+
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -214,6 +213,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		enginesCmd,
 	)
 
 	rootCmd.SilenceUsage = true
@@ -257,7 +257,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 }
 
 func validateExtraFilters(filterKeyVal []string) []string {
-	// Add support for state = exclude-not-exploitable, will replace all values of filter flag state to "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT"
+
 	if extraFilter[filterKeyVal[0]] != nil {
 		for privateFilter, value := range extraFilter[filterKeyVal[0]] {
 			if strings.Contains(filterKeyVal[1], privateFilter) {
@@ -296,6 +296,13 @@ func addResultFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailabl
 	)
 }
 
+func addOutputFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(
+		params.OutputFormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
+}
+
 func markFlagAsRequired(cmd *cobra.Command, flag string) {
 	err := cmd.MarkPersistentFlagRequired(flag)
 	if err != nil {
@@ -319,6 +326,12 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
+
+func printByOutputFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.OutputFormatFlag)
+	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
