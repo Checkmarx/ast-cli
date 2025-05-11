@@ -2,6 +2,7 @@ package ossrealtime
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -43,7 +44,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
 	}
 
-	const filePath = "../data/manifests/package.json"
+	const filePath = "../commands/data/manifests/package.json"
 
 	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
 
@@ -59,7 +60,11 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
 	}
 
-	const filePath = "../data/manifests/package.json"
+	const filePath = "../commands/data/manifests/package.json"
+	err := exec.Command("pwd").Run()
+	if err != nil {
+		return
+	}
 
 	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
 
