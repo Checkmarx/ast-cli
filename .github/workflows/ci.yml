@@ -47,8 +47,8 @@ jobs:
         run: go install github.com/wadey/gocovmerge@latest
       - name: Install pre-commit
         run: |
-         pip install pre-commit
-         pre-commit install
+          pip install pre-commit
+          pre-commit install
       - name: Go Integration test
         shell: bash
         env:
@@ -71,7 +71,7 @@ jobs:
           PR_GITHUB_NAMESPACE: "checkmarx"
           PR_GITHUB_REPO_NAME: "ast-cli"
           PR_GITHUB_NUMBER: 983
-          PR_GITLAB_TOKEN : ${{ secrets.PR_GITLAB_TOKEN }}
+          PR_GITLAB_TOKEN: ${{ secrets.PR_GITLAB_TOKEN }}
           PR_GITLAB_NAMESPACE: ${{ secrets.PR_GITLAB_NAMESPACE }}
           PR_GITLAB_REPO_NAME: ${{ secrets.PR_GITLAB_REPO_NAME }}
           PR_GITLAB_PROJECT_ID: ${{ secrets.PR_GITLAB_PROJECT_ID }}
@@ -121,27 +121,19 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:
           go-version-file: go.mod
-
-      - name: Clean Go’s caches
-        run: |
-          go clean -cache -modcache
-          go mod tidy
-
-      - name: Fetch modules
-        run: go mod download
-
+      - run: go version
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 #v8.0.0
+        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc #v3
         with:
-          version: v2.1.6
           skip-pkg-cache: true
-          args: -c .golangci.yml --timeout 5m
+          version: v1.54.2
+          args: -c .golangci.yml
+            --timeout 5m
           only-new-issues: true
 
   govulncheck:
@@ -172,7 +164,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build the project
-        run:  go build -o ./cx ./cmd
+        run: go build -o ./cx ./cmd
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
       - name: Run Trivy scanner without downloading DBs
@@ -187,7 +179,7 @@ jobs:
           output: './trivy-image-results.txt'
         env:
           TRIVY_SKIP_JAVA_DB_UPDATE: true
-      
+
       - name: Inspect action report
         if: always()
         shell: bash
