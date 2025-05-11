@@ -121,7 +121,7 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 		_ = resp.Body.Close()
 		time.Sleep(baseDelayInMilliSec * (1 << attempt))
 	}
-	return resp, nil
+	return nil, err
 }
 
 func setAgentNameAndOrigin(req *http.Request) {
