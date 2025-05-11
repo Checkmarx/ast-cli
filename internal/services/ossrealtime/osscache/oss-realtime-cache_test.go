@@ -49,7 +49,7 @@ func TestWriteAndReadCache(t *testing.T) {
 		t.Fatal("ReadCache() returned nil; want non-nil")
 	}
 	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("ReadCache() = %+v; want %+v", got, want)
+		t.Errorf("ReadCache() = %+v; want %+v", *got, want)
 	}
 }
 
