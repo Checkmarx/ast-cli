@@ -74,7 +74,7 @@ func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers
 	cache := osscache.ReadCache()
 	if cache == nil {
 		for _, pkg := range pkgs {
-			req = append(req, pkgToRequest(pkg))
+			req = append(req, pkgToRequest(&pkg))
 		}
 		return resp, req
 	}
@@ -90,7 +90,7 @@ func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers
 				Status:         status,
 			})
 		} else {
-			req = append(req, pkgToRequest(pkg))
+			req = append(req, pkgToRequest(&pkg))
 		}
 	}
 	return resp, req
@@ -122,7 +122,7 @@ func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, re
 }
 
 // pkgToRequest transforms a parsed package into a scan request.
-func pkgToRequest(pkg models.Package) wrappers.OssPackageRequest {
+func pkgToRequest(pkg *models.Package) wrappers.OssPackageRequest {
 	return wrappers.OssPackageRequest{
 		PackageManager: pkg.PackageManager,
 		PackageName:    pkg.PackageName,

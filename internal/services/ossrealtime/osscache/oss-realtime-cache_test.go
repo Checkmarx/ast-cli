@@ -92,7 +92,8 @@ func TestAppendToCache(t *testing.T) {
 			Status:         e.Status,
 		})
 	}
-	want := append(first.Packages, second.Packages...)
+	want := append([]wrappers.OssResults{}, first.Packages...)
+	want = append(want, second.Packages...)
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("cached packages = %+v; want %+v", got, want)
 	}

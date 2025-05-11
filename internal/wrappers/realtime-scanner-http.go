@@ -21,34 +21,36 @@ func NewRealtimeScannerHTTPWrapper(path string, jwtWrapper JWTWrapper, featureFl
 }
 
 func (r RealtimeScannerHTTPWrapper) Scan(packages []OssPackageRequest) (*OssPackageResponse, error) {
-	//clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	//jsonBytes, err := json.Marshal(packages)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//fn := func() (*http.Response, error) {
-	//	return SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	//}
-	//resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer func() {
-	//	if err == nil {
-	//		_ = resp.Body.Close()
-	//	}
-	//}()
-	//decoder := json.NewDecoder(resp.Body)
-	//switch resp.StatusCode {
-	//case http.StatusBadRequest, http.StatusInternalServerError:
-	//	return nil, errors.Errorf("Failed to scan packages, status code: %d", resp.Status)
-	//}
-	//var model OssPackageResponse
-	//err = decoder.Decode(&model)
-	//if err != nil {
-	//	return nil, errors.Wrapf(err, "failed to parse scan result")
-	//}
+	/*
+		clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+		jsonBytes, err := json.Marshal(packages)
+		if err != nil {
+			return nil, err
+		}
+
+		fn := func() (*http.Response, error) {
+			return SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		}
+		resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if err == nil {
+				_ = resp.Body.Close()
+			}
+		}()
+		decoder := json.NewDecoder(resp.Body)
+		switch resp.StatusCode {
+		case http.StatusBadRequest, http.StatusInternalServerError:
+			return nil, errors.Errorf("Failed to scan packages, status code: %d", resp.Status)
+		}
+		var model OssPackageResponse
+		err = decoder.Decode(&model)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse scan result")
+		}
+	*/
 	return generateMockResponse(packages), nil
 }
 
