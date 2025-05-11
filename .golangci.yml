@@ -1,3 +1,5 @@
+version: '2'
+
 linters-settings:
   #  https://golangci-lint.run/usage/linters/#depguard
   depguard:
@@ -69,9 +71,8 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon. 
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
     - bodyclose
@@ -108,19 +109,13 @@ linters:
     - unused
     - varcheck
     - whitespace
-  # don't enable:
-  # - gochecknoglobals
-  # - gocognit
-  # - godox
-  # - maligned
-  # - prealloc
 
 issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
   exclude-rules:
     - path: _test\.go
       linters:
         - gomnd
+
 run:
   skip-dirs:
     - test/testdata_etc
@@ -128,11 +123,8 @@ run:
     - internal/renameio
     - internal/robustio
 
-  # In case of linter atoi() erros
-  # go: '^1.21'
-
 # golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
+# (ignored by the CLI, but kept for reference)
 service:
   golangci-lint-version: 1.54.2 # use the fixed version to not introduce new linters unexpectedly
   prepare:
