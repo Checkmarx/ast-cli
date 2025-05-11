@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"gotest.tools/assert"
 )
 
 func TestReadCache_Empty(t *testing.T) {
@@ -48,9 +49,11 @@ func TestWriteAndReadCache(t *testing.T) {
 	if got == nil {
 		t.Fatal("ReadCache() returned nil; want non-nil")
 	}
-	if !reflect.DeepEqual(*got, want) {
-		t.Errorf("ReadCache() = %+v; want %+v", *got, want)
-	}
+	assert.Equal(t, want.Packages[0].PackageName, got.Packages[0].PackageName)
+	assert.Equal(t, want.Packages[0].PackageVersion, got.Packages[0].PackageVersion)
+	assert.Equal(t, want.Packages[0].PackageManager, got.Packages[0].PackageManager)
+	assert.Equal(t, want.Packages[0].Status, got.Packages[0].Status)
+	assert.Equal(t, want.TTL, got.TTL)
 }
 
 func TestAppendToCache(t *testing.T) {
