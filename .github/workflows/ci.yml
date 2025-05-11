@@ -139,7 +139,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.54.2
+          version: v2.1.6
           skip-pkg-cache: true
           args: -c .golangci.yml --timeout 5m
           only-new-issues: true
