@@ -34,7 +34,7 @@ func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperPara
 
 	response, toScan := prepareScan(pkgs)
 	if len(toScan) > 0 {
-		if err = scanAndCache(realtimeScannerWrapperParams, toScan, &response); err != nil {
+		if err := scanAndCache(realtimeScannerWrapperParams, toScan, &response); err != nil {
 			return nil, err
 		}
 	}

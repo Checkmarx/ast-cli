@@ -10,7 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		if fileSourceFlag == "" {
