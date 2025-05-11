@@ -43,7 +43,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
 	}
 
-	const filePath = "data/manifests/package.json"
+	const filePath = "../data/manifests/package.json"
 
 	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
 
@@ -59,7 +59,7 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
 	}
 
-	const filePath = "data/manifests/package.json"
+	const filePath = "../data/manifests/package.json"
 
 	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
 
