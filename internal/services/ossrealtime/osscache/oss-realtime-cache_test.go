@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	asserts "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
 )
 
@@ -53,7 +54,7 @@ func TestWriteAndReadCache(t *testing.T) {
 	assert.Equal(t, want.Packages[0].PackageVersion, got.Packages[0].PackageVersion)
 	assert.Equal(t, want.Packages[0].PackageManager, got.Packages[0].PackageManager)
 	assert.Equal(t, want.Packages[0].Status, got.Packages[0].Status)
-	assert.Equal(t, want.TTL, got.TTL)
+	asserts.True(t, want.TTL.Equal(got.TTL))
 }
 
 func TestAppendToCache(t *testing.T) {
