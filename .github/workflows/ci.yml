@@ -121,20 +121,29 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
-      - name: Set up Go version
-        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
         with:
           go-version-file: go.mod
-      - run: go version
+
+      - name: Clean Go’s caches
+        run: |
+          go clean -cache -modcache
+          go mod tidy
+
+      - name: Fetch modules
+        run: go mod download
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc #v3
+        uses: golangci/golangci-lint-action@v3
         with:
-          skip-pkg-cache: true
           version: v1.54.2
-          args: -c .golangci.yml
-            --timeout 5m
+          skip-pkg-cache: true
+          args: -c .golangci.yml --timeout 5m
           only-new-issues: true
+
   govulncheck:
     runs-on: ubuntu-latest
     name: govulncheck
