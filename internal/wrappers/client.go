@@ -112,7 +112,7 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 		}
 		if resp.StatusCode >= 500 && resp.StatusCode <= 504 {
 			logger.PrintIfVerbose(fmt.Sprintf("Encountered HTTP %s response — will retry ", resp.Status))
-		} else if resp.StatusCode == http.StatusInternalServerError {
+		} else if resp.StatusCode == http.StatusUnauthorized {
 			logger.PrintIfVerbose("Unauthorized request (401), refreshing token")
 			_, _ = configureClientCredentialsAndGetNewToken()
 		} else {
