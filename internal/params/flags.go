@@ -296,3 +296,6 @@ const NotExploitable = "NOT_EXPLOITABLE"
 const ProposedNotExploitable = "PROPOSED_NOT_EXPLOITABLE"
 const CONFIRMED = "CONFIRMED"
 const URGENT = "URGENT"
+
+// Output format flag
+const OutputFormatFlag = "output-format"
