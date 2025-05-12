@@ -9,6 +9,8 @@ linters-settings:
           - github.com/checkmarx/ast-cli/internal
           - github.com/gookit/color
           - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
+          - github.com/Checkmarx/manifest-parser/pkg/models
+          - github.com/Checkmarx/manifest-parser/pkg/parser
           - github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation
           - github.com/spf13/viper
           - github.com/Checkmarx/gen-ai-wrapper
@@ -132,6 +134,6 @@ run:
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 service:
-  golangci-lint-version: 1.54.2 # use the fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.64.2 # use the fixed version to not introduce new linters unexpectedly
   prepare:
     - echo "here I can run custom commands, but no preparation needed for this repo"
