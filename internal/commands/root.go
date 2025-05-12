@@ -225,6 +225,7 @@ const configFormatString = "%30v: %s"
 var extraFilter = map[string]map[string]string{
 	"state": {
 		"exclude_not_exploitable": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
+		"EXCLUDE_NOT_EXPLOITABLE": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
 	},
 	"severity": {},
 	"status":   {},

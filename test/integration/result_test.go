@@ -551,6 +551,26 @@ func TestResultsGeneratingReportWithExcludeNotExploitableStateAndSeverityAndStat
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
+func TestResultsGeneratingReportWithExcludeNotExploitableUpperCaseStateAndSeverityAndStatus(t *testing.T) {
+	scanID, _ := getRootScan(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Results show generating Json report with severity and state",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetFlag), fileName,
+		flag(params.FilterFlag), "state=EXCLUDE_NOT_EXPLOITABLE;TO_VERIFY,severity=High;Low,status=new;recurrent",
+	)
+	defer func() {
+		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+		log.Println("test file removed!")
+	}()
+	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
 func TestResultsShow_ScanIDWithSnoozedAndMutedAllVulnerabilities_NoVulnerabilitiesInScan(t *testing.T) {
 	reportFilePath := fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON)
 
