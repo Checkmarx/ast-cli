@@ -2,7 +2,9 @@ package commands
 
 import (
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -35,4 +37,17 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper))
 
 	return hooksCmd
+}
+
+// validateLicense verifies the user has the required license for secret detection
+func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
+
+	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
+	if err != nil {
+		return errors.Wrapf(err, "Failed checking license")
+	}
+	if !allowed {
+		return errors.New("Error: License validation failed. Please verify your CxOne license includes Enterprise Secrets.")
+	}
+	return nil
 }

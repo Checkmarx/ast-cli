@@ -4,9 +4,7 @@ import (
 	"fmt"
 	precommit "github.com/Checkmarx/secret-detection/pkg/hooks/pre-commit"
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -34,19 +32,6 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preCommitCmd.AddCommand(secretsHelpCommand())
 
 	return preCommitCmd
-}
-
-// / validateLicense verifies the user has the required license for secret detection
-func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
-
-	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
-	if err != nil {
-		return errors.Wrapf(err, "Failed checking license")
-	}
-	if !allowed {
-		return errors.New("Error: License validation failed. Please verify your CxOne license includes Enterprise Secrets.")
-	}
-	return nil
 }
 
 func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
