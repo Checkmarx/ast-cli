@@ -51,14 +51,14 @@ func handleResponse(resp *http.Response, err error, queryID string) (*[]*LearnMo
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, fmt.Sprintf(failedToGetDescriptions, queryID))
+			return nil, nil, errors.Wrap(err, fmt.Sprintf(failedToGetDescriptions, queryID))
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		model := []*LearnMoreResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, fmt.Sprintf(failedToGetDescriptions, queryID))
+			return nil, nil, errors.Wrap(err, fmt.Sprintf(failedToGetDescriptions, queryID))
 		}
 		return &model, nil, nil
 	case http.StatusNotFound:
