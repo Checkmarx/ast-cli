@@ -75,8 +75,8 @@ github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63/go.mod h1:MI6lfLerXU+5eTV/EPTDavgnV3owz3GPT4g/msZBWPo=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2 h1:T6X40+4hYnwfDsvkjWs9VIcE6s1O+8DUu0+sDdCY3GI=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2/go.mod h1:xwRLefezwNNnRGu1EjGS6wNiR9FVV/eP9D+oXwLViVM=
-github.com/Checkmarx/secret-detection v0.0.3-0.20250508160219-2ff07ab8872b h1:eCoksMh263UqfjmKLx1Hz/aEwiV0/lJPZq3iE/if6K8=
-github.com/Checkmarx/secret-detection v0.0.3-0.20250508160219-2ff07ab8872b/go.mod h1:bnWrgf+52LUHpGeO570W6JjnoOM8S3bbfgxq27cgdEs=
+github.com/Checkmarx/secret-detection v0.0.3-0.20250514105613-7f9ca93e1391 h1:Fr77nC0QgXQgQ2zhjh0bCHFmzFrogkuiPujBp+XzwHY=
+github.com/Checkmarx/secret-detection v0.0.3-0.20250514105613-7f9ca93e1391/go.mod h1:bnWrgf+52LUHpGeO570W6JjnoOM8S3bbfgxq27cgdEs=
 github.com/CycloneDX/cyclonedx-go v0.9.2 h1:688QHn2X/5nRezKe2ueIVCt+NRqf7fl3AVQk+vaFcIo=
 github.com/CycloneDX/cyclonedx-go v0.9.2/go.mod h1:vcK6pKgO1WanCdd61qx4bFnSsDJQ6SbM2ZuMIgq86Jg=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=
