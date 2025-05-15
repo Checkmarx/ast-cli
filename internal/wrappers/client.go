@@ -542,6 +542,12 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	var body []byte
 	if req.Body != nil {
 		body, err = io.ReadAll(req.Body)
+		if err != nil {
+			fmt.Errorf("failed to read request body: %w", err)
+		}
+		if req.Body != nil {
+			req.Body.Close()
+		}
 	}
 	fn := func() (*http.Response, error) {
 		if body != nil {
