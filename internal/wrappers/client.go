@@ -119,7 +119,7 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 			return resp, nil
 		}
 		_ = resp.Body.Close()
-		time.Sleep(baseDelayInMilliSec * (1 << attempt))
+		time.Sleep(baseDelayInMilliSec * (3 << attempt))
 	}
 	return nil, err
 }

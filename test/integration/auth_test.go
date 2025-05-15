@@ -137,6 +137,7 @@ func TestAuthRegisterWithEmptyParameters(t *testing.T) {
 }
 
 // Register with credentials and validate the obtained id/secret pair
+// TODO In order that test will passed need to update to valide CX_AST_PASSWORD and CX_AST_USERNAME variables
 func TestAuthRegister(t *testing.T) {
 	registerCommand, _ := createRedirectedTestCommand(t)
 
@@ -146,6 +147,7 @@ func TestAuthRegister(t *testing.T) {
 		flag(params.UsernameFlag), viper.GetString(AstUsernameEnv),
 		flag(params.PasswordFlag), viper.GetString(AstPasswordEnv),
 		flag(params.ClientRolesFlag), strings.Join(commands.RoleSlice, ","),
+		flag(params.DebugFlag),
 	)
 	// Ignored assert as auth register has issues with MFA enabled users
 	// AND the CLI user agent is rejected in prod for this command by cloudfront
