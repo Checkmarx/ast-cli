@@ -207,3 +207,73 @@ func TestSetAgentNameAndOrigin(t *testing.T) {
 		t.Errorf("Origin header mismatch: got %v, want %v", origin, expectedOrigin)
 	}
 }
+
+func TestRetryIAMHTTPRequest_Success(t *testing.T) {
+	fn := func() (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       &mockReadCloser{},
+		}, nil
+	}
+
+	resp, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestRetryHTTPIAMRequest_RetryOnBadGateway(t *testing.T) {
+	attempts := 0
+	fn := func() (*http.Response, error) {
+		attempts++
+		if attempts < retryAttempts {
+			return &http.Response{
+				StatusCode: http.StatusBadGateway,
+				Body:       &mockReadCloser{},
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       &mockReadCloser{},
+		}, nil
+	}
+
+	resp, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, retryAttempts, attempts)
+}
+
+func TestRetryHTTPIAMRequest_RetryOnStatusNotImplemented(t *testing.T) {
+	attempts := 0
+	fn := func() (*http.Response, error) {
+		attempts++
+		if attempts < retryAttempts {
+			return &http.Response{
+				StatusCode: http.StatusNotImplemented,
+				Body:       &mockReadCloser{},
+			}, nil
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       &mockReadCloser{},
+		}, nil
+	}
+
+	resp, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Equal(t, retryAttempts, attempts)
+}
+
+func TestRetryHTTPIAMRequest_Fail(t *testing.T) {
+	fn := func() (*http.Response, error) {
+		return nil, errors.New("Resource Unavailable")
+	}
+
+	resp, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+	assert.Error(t, err)
+	assert.Nil(t, resp)
+}
