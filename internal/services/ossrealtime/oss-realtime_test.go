@@ -160,7 +160,7 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 	assert.Equal(t, "OK", resp.Packages[0].Status)
 
 	assert.NotNil(t, toScan)
-	assert.Len(t, toScan, 0)
+	assert.Len(t, toScan.Packages, 0)
 }
 
 func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
