@@ -31,7 +31,6 @@ linters:
     - nakedret
     - revive             # replacement for golint
     - rowserrcheck
-    - shadow             # standalone shadow-checking
     - staticcheck
     - stylecheck
     - typecheck
