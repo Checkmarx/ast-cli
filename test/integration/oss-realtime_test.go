@@ -29,7 +29,6 @@ func TestOssRealtimeScan_PackageJsonFile_Success(t *testing.T) {
 func validateCacheFileExist() bool {
 	cacheFilePath := os.TempDir() + "/oss-realtime-cache.json"
 	if _, err := os.Stat(cacheFilePath); os.IsNotExist(err) {
-		t.Errorf("Cache file does not exist: %s", cacheFilePath)
 		return false
 	}
 	return true
