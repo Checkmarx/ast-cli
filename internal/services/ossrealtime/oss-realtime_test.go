@@ -188,7 +188,7 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 
 	resp, toScan := prepareScan(pkgs)
 
-	err := scanAndCache(&realtimeScannerWrapperParams, toScan, &resp)
+	err := scanAndCache(&realtimeScannerWrapperParams, toScan, resp)
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()
@@ -241,7 +241,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 		},
 	}
 
-	err = scanAndCache(&realtimeScannerWrapperParams, toScan, &resp)
+	err = scanAndCache(&realtimeScannerWrapperParams, toScan, resp)
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()
