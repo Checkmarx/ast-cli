@@ -223,9 +223,9 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	resp, toScan := prepareScan(pkgs)
 
 	realtimeScannerWrapperParams.RealtimeScannerWrapper = &mock.RealtimeScannerMockWrapper{
-		CustomScan: func(packages []wrappers.OssPackage) (*wrappers.OssPackageResponse, error) {
+		CustomScan: func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
 			var response wrappers.OssPackageResponse
-			for _, pkg := range packages {
+			for _, pkg := range packages.Packages {
 				status := "OK"
 				if pkg.PackageName == "express" {
 					status = "Malicious"
