@@ -13,7 +13,7 @@ import (
 func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		if fileSourceFlag == "" {
 			return errors.New("file source flag is required")

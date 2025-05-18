@@ -43,6 +43,9 @@ func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperPara
 
 func ensureLicense(realtimeScannerWrapperParams *RealtimeScannerWrapperParams) error {
 	// For the 60-day delivery, there is no license check
+	if realtimeScannerWrapperParams.JwtWrapper == nil {
+		return errors.New("jwt wrapper not provided")
+	}
 	return nil
 }
 
