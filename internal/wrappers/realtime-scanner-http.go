@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-	_ "time"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
@@ -49,7 +48,7 @@ func (r RealtimeScannerHTTPWrapper) Scan(packages *OssPackageRequest) (*OssPacka
 	decoder := json.NewDecoder(resp.Body)
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, errors.Errorf("Failed to scan packages, status code: %d", resp.Status)
+		return nil, errors.Errorf("Failed to scan packages, status code: %s", resp.Status)
 	}
 	var model OssPackageResponse
 	err = decoder.Decode(&model)
