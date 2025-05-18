@@ -17,7 +17,6 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref      # replacement for scopelint
     - funlen
     - gochecknoinits
     - goconst
@@ -26,9 +25,9 @@ linters:
     - gofmt
     - goimports
     - ineffassign
-    - maligned
     - mnd                # replacement for gomnd
     - nakedret
+    - revive             # replacement for golint
     - rowserrcheck
     - staticcheck
     - stylecheck
