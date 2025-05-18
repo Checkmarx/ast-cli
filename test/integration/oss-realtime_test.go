@@ -35,6 +35,6 @@ func validateCacheFileExist() bool {
 	return true
 }
 
-func deleteCacheFile(t *testing.T) {
+func deleteCacheFile() {
 	_ = os.Remove(os.TempDir() + "/oss-realtime-cache.json")
 }
