@@ -32,13 +32,13 @@ func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperPara
 	}
 
 	response, toScan := prepareScan(pkgs)
-	if len(toScan) > 0 {
-		if err := scanAndCache(realtimeScannerWrapperParams, toScan, &response); err != nil {
+	if len(toScan.Packages) > 0 {
+		if err := scanAndCache(realtimeScannerWrapperParams, toScan, response); err != nil {
 			return nil, err
 		}
 	}
 
-	return &response, nil
+	return response, nil
 }
 
 func ensureLicense(realtimeScannerWrapperParams *RealtimeScannerWrapperParams) error {
@@ -59,17 +59,18 @@ func parseManifest(filePath string) ([]models.Package, error) {
 }
 
 // prepareScan processes a list of packages, separates cached and uncached packages, and returns both response and request data to be sent to the scanner.
-func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers.OssPackage) {
+func prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers.OssPackageRequest) {
 	var resp wrappers.OssPackageResponse
-	req := make([]wrappers.OssPackage, 0, len(pkgs))
+	var req wrappers.OssPackageRequest
+
 	resp.Packages = make([]wrappers.OssResults, 0, len(pkgs))
 
 	cache := osscache.ReadCache()
 	if cache == nil {
 		for _, pkg := range pkgs {
-			req = append(req, pkgToRequest(&pkg))
+			req.Packages = append(req.Packages, pkgToRequest(&pkg))
 		}
-		return resp, req
+		return &resp, &req
 	}
 
 	cacheMap := osscache.BuildCacheMap(*cache)
@@ -83,18 +84,15 @@ func prepareScan(pkgs []models.Package) (wrappers.OssPackageResponse, []wrappers
 				Status:         status,
 			})
 		} else {
-			req = append(req, pkgToRequest(&pkg))
+			req.Packages = append(req.Packages, pkgToRequest(&pkg))
 		}
 	}
-	return resp, req
+	return &resp, &req
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, requestPackages []wrappers.OssPackage, resp *wrappers.OssPackageResponse) error {
-	request := wrappers.OssPackageRequest{
-		Packages: requestPackages,
-	}
-	result, err := realtimeScannerWrapperParams.RealtimeScannerWrapper.Scan(&request)
+func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, requestPackages *wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
+	result, err := realtimeScannerWrapperParams.RealtimeScannerWrapper.Scan(requestPackages)
 	if err != nil {
 		return errors.Wrap(err, "scanning packages via realtime service")
 	}
