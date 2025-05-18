@@ -29,7 +29,6 @@ linters:
     - maligned
     - mnd                # replacement for gomnd
     - nakedret
-    - revive             # replacement for golint
     - rowserrcheck
     - staticcheck
     - stylecheck
