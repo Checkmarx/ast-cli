@@ -26,12 +26,6 @@ func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
 	}
 }
 
-type RealtimeScannerWrapperParams struct {
-	JwtWrapper             wrappers.JWTWrapper
-	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
-	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
-}
-
 // RunOssRealtimeScan performs an OSS realtime scan on the given manifest file.
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssPackageResponse, error) {
 	if filePath == "" {
