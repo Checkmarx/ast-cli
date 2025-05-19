@@ -29,7 +29,7 @@ func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
 // RunOssRealtimeScan performs an OSS realtime scan on the given manifest file.
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssPackageResponse, error) {
 	if filePath == "" {
-		return nil, nil
+		return nil, errors.New("file path is required")
 	}
 
 	if err := o.ensureLicense(); err != nil {
