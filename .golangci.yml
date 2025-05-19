@@ -47,7 +47,7 @@ linters-settings:
           - github.com/checkmarx/ast-cli/internal
           - github.com/gookit/color
           - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
-          - github.com/Checkmarx/manifest-parser/pkg/models
+          - github.com/Checkmarx/manifest-parser/pkg/parser/models
           - github.com/Checkmarx/manifest-parser/pkg/parser
           - github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation
           - github.com/spf13/viper

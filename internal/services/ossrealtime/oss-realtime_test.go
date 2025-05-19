@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Checkmarx/manifest-parser/pkg/models"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"

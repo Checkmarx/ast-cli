@@ -3,8 +3,8 @@ package ossrealtime
 import (
 	"log"
 
-	"github.com/Checkmarx/manifest-parser/pkg/models"
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
+	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -30,6 +30,14 @@ func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssPackageResponse, error) {
 	if filePath == "" {
 		return nil, errors.New("file path is required")
+	}
+
+	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get feature flag")
+	}
+	if !enabled.Status {
+		return nil, errors.New("feature flag is disabled")
 	}
 
 	if err := o.ensureLicense(); err != nil {
