@@ -50,10 +50,10 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		return nil, err
 	}
 
-	packageMap := createPackageMap(pkgs)
 	response, toScan := prepareScan(pkgs)
 
 	if len(toScan.Packages) > 0 {
+		packageMap := createPackageMap(pkgs)
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning packages via realtime service")
