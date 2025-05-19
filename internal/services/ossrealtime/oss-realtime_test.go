@@ -37,6 +37,7 @@ func cleanCacheFile(t *testing.T) {
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
@@ -69,6 +70,7 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
@@ -84,6 +86,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T
 }
 
 func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequestIsCalledPartially(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
@@ -111,6 +114,7 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 }
 
 func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerRequestIsCalledFully(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
@@ -135,6 +139,7 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 }
 
 func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
@@ -153,6 +158,7 @@ func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
 }
 
 func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
@@ -180,6 +186,7 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 }
 
 func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
@@ -215,6 +222,7 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 }
 
 func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 
 	ossRealtimeService := NewOssRealtimeService(
