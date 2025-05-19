@@ -86,6 +86,8 @@ const (
 	configFilterPlatforms                   = "platforms"
 	configIncremental                       = "incremental"
 	configFastScan                          = "fastScanMode"
+	configLightQueries                      = "lightQueries"
+	configRecommendedExclusions             = "recommendedExclusions"
 	configPresetName                        = "presetName"
 	configPresetID                          = "presetId"
 	configEngineVerbose                     = "engineVerbose"
@@ -629,6 +631,18 @@ func scanCreateSubCommand(
 		"Enable SAST Fast Scan configuration",
 	)
 
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastLightQueriesFlag,
+		false,
+		"Enable SAST scan using light query configuration",
+	)
+
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastRecommendedExclusionsFlags,
+		true,
+		"Enable recommended exclusions configuration for SAST scan",
+	)
+
 	createScanCmd.PersistentFlags().StringSlice(
 		commonParams.IacsPlatformsFlag,
 		[]string{},
@@ -877,11 +891,24 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastMapConfig[resultsMapType] = commonParams.SastType
 
 	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastLightQueryChanged := cmd.Flags().Changed(commonParams.SastLightQueriesFlag)
+	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
+
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
+	}
+
+	if sastLightQueryChanged {
+		lightQuery, _ := cmd.Flags().GetBool(commonParams.SastLightQueriesFlag)
+		sastConfig.LightQueries = strconv.FormatBool(lightQuery)
+	}
+
+	if sastRecommendedExclusionsChanged {
+		recommendedExclusions, _ := cmd.Flags().GetBool(commonParams.SastRecommendedExclusionsFlags)
+		sastConfig.RecommendedExclusions = strconv.FormatBool(recommendedExclusions)
 	}
 
 	if sastIncrementalChanged {
@@ -897,14 +924,14 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, &sastConfig, config)
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, sastLightQueryChanged bool, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
@@ -916,6 +943,14 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, s
 	}
 	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
+	}
+
+	if resubmitLightQuery := config.Value[configLightQueries]; resubmitLightQuery != nil && !sastLightQueryChanged {
+		sastConfig.LightQueries = resubmitLightQuery.(string)
+	}
+
+	if resubmitRecommendedExclusions := config.Value[configRecommendedExclusions]; resubmitRecommendedExclusions != nil && !sastRecommendedExclusionsChanged {
+		sastConfig.RecommendedExclusions = resubmitRecommendedExclusions.(string)
 	}
 
 	setIfEmpty(&sastConfig.PresetName, config.Value[configPresetName])
