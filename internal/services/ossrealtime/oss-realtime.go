@@ -11,24 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// OssPackage represents a package's details for OSS scanning.
-type OssPackage struct {
-	PackageManager string `json:"PackageManager"`
-	PackageName    string `json:"PackageName"`
-	PackageVersion string `json:"PackageVersion"`
-	FilePath       string `json:"FilePath"`
-	LineStart      int    `json:"LineStart"`
-	LineEnd        int    `json:"LineEnd"`
-	StartIndex     int    `json:"StartIndex"`
-	EndIndex       int    `json:"EndIndex"`
-	Status         string `json:"Status"`
-}
-
-// OssPackageResults holds the results of an OSS scan.
-type OssPackageResults struct {
-	Packages []OssPackage `json:"Packages"`
-}
-
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
@@ -87,12 +69,7 @@ func enrichResponseWithRealtimeScannerResults(
 	packageMap map[string]OssPackage,
 ) {
 	for _, pkg := range result.Packages {
-		var entry OssPackage
-		if value, found := packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)]; found {
-			entry = value
-		} else {
-			entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
-		}
+		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
@@ -105,6 +82,19 @@ func enrichResponseWithRealtimeScannerResults(
 			Status:         pkg.Status,
 		})
 	}
+}
+
+func getPackageEntryFromPackageMap(
+	packageMap map[string]OssPackage,
+	pkg *wrappers.RealtimeScannerResults,
+) *OssPackage {
+	var entry OssPackage
+	if value, found := packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)]; found {
+		entry = value
+	} else {
+		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
+	}
+	return &entry
 }
 
 // isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
