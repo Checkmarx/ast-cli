@@ -37,15 +37,15 @@ func cleanCacheFile(t *testing.T) {
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
-	realtimeScannerWrapperParams := RealtimeScannerWrapperParams{
-		RealtimeScannerWrapper: &mock.RealtimeScannerMockWrapper{},
-		JwtWrapper:             &mock.JWTMockWrapper{},
-		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
-	}
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 
 	const filePath = "../../commands/data/manifests/package.json"
 
-	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
@@ -54,30 +54,30 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 
 func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T) {
 	t.Skip() // Skip this test for now, no license check implemented
-	realtimeScannerWrapperParams := RealtimeScannerWrapperParams{
-		RealtimeScannerWrapper: &mock.RealtimeScannerMockWrapper{},
-		JwtWrapper:             &mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
-		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
-	}
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 
 	const filePath = "../../commands/data/manifests/package.json"
 
-	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, response)
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T) {
-	realtimeScannerWrapperParams := RealtimeScannerWrapperParams{
-		RealtimeScannerWrapper: &mock.RealtimeScannerMockWrapper{},
-		JwtWrapper:             &mock.JWTMockWrapper{},
-		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
-	}
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 
 	const filePath = "not-supported-manifest.ruby"
 
-	response, err := RunOssRealtimeScan(&realtimeScannerWrapperParams, filePath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
 	assert.NotNil(t, err)
 	assert.Nil(t, response)
@@ -85,7 +85,11 @@ func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T
 
 func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequestIsCalledPartially(t *testing.T) {
 	cleanCacheFile(t)
-
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
@@ -94,7 +98,7 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 
 	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
 
-	resp, toScan := prepareScan(allPackages)
+	resp, toScan := ossRealtimeService.prepareScan(allPackages)
 
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 1)
@@ -108,7 +112,11 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 
 func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerRequestIsCalledFully(t *testing.T) {
 	cleanCacheFile(t)
-
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
@@ -117,7 +125,7 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 
 	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
 
-	resp, toScan := prepareScan(allPackages)
+	resp, toScan := ossRealtimeService.prepareScan(allPackages)
 
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 0)
@@ -128,10 +136,14 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 
 func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
 	cleanCacheFile(t)
-
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 	allPackages := setupPackages()
 
-	resp, toScan := prepareScan(allPackages)
+	resp, toScan := ossRealtimeService.prepareScan(allPackages)
 
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 0)
@@ -142,7 +154,11 @@ func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
 
 func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) {
 	cleanCacheFile(t)
-
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 	singlePackage := setupSinglePackage()
 	storedPackages := []osscache.PackageEntry{
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
@@ -151,7 +167,7 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 
 	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
 
-	resp, toScan := prepareScan(singlePackage)
+	resp, toScan := ossRealtimeService.prepareScan(singlePackage)
 
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 1)
@@ -165,9 +181,10 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 
 func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 	cleanCacheFile(t)
-
-	realtimeScannerWrapperParams := RealtimeScannerWrapperParams{
-		RealtimeScannerWrapper: &mock.RealtimeScannerMockWrapper{
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{
 			CustomScan: func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
 				var response wrappers.OssPackageResponse
 				for _, pkg := range packages.Packages {
@@ -181,15 +198,13 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 				return &response, nil
 			},
 		},
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
-	}
+	)
 
 	pkgs := setupSinglePackage()
 
-	resp, toScan := prepareScan(pkgs)
+	resp, toScan := ossRealtimeService.prepareScan(pkgs)
 
-	err := scanAndCache(&realtimeScannerWrapperParams, toScan, resp)
+	err := ossRealtimeService.scanAndCache(toScan, resp)
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()
@@ -202,11 +217,11 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	cleanCacheFile(t)
 
-	realtimeScannerWrapperParams := RealtimeScannerWrapperParams{
-		RealtimeScannerWrapper: &mock.RealtimeScannerMockWrapper{},
-		JwtWrapper:             &mock.JWTMockWrapper{},
-		FeatureFlagWrapper:     &mock.FeatureFlagsMockWrapper{},
-	}
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
 
 	pkgs := []models.Package{
 		{PackageManager: "npm", PackageName: "lodash", Version: "4.17.21"},
@@ -221,9 +236,9 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	err := osscache.WriteCache(storedCache, &storedCache.TTL)
 	assert.Nil(t, err)
 
-	resp, toScan := prepareScan(pkgs)
+	resp, toScan := ossRealtimeService.prepareScan(pkgs)
 
-	realtimeScannerWrapperParams.RealtimeScannerWrapper = &mock.RealtimeScannerMockWrapper{
+	ossRealtimeService.RealtimeScannerWrapper = &mock.RealtimeScannerMockWrapper{
 		CustomScan: func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
 			var response wrappers.OssPackageResponse
 			for _, pkg := range packages.Packages {
@@ -242,7 +257,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 		},
 	}
 
-	err = scanAndCache(&realtimeScannerWrapperParams, toScan, resp)
+	err = ossRealtimeService.scanAndCache(toScan, resp)
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()

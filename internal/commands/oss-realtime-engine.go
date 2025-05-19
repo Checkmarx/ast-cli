@@ -18,13 +18,9 @@ func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		if fileSourceFlag == "" {
 			return errors.New("file source flag is required")
 		}
-		wrapperParams := ossrealtime.RealtimeScannerWrapperParams{
-			RealtimeScannerWrapper: realtimeScannerWrapper,
-			JwtWrapper:             jwtWrapper,
-			FeatureFlagWrapper:     featureFlagWrapper,
-		}
+		ossRealtimeService := ossrealtime.NewOssRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
-		packages, err := ossrealtime.RunOssRealtimeScan(&wrapperParams, fileSourceFlag)
+		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag)
 		if err != nil {
 			return errors.New("failed to run oss-realtime scan: " + err.Error())
 		}

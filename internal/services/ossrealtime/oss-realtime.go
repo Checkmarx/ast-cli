@@ -10,6 +10,22 @@ import (
 	"github.com/pkg/errors"
 )
 
+type OssRealtimeService struct {
+	JwtWrapper             wrappers.JWTWrapper
+	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
+	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
+}
+
+func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper) *OssRealtimeService {
+	return &OssRealtimeService{
+		JwtWrapper:             jwtWrapper,
+		FeatureFlagWrapper:     featureFlagWrapper,
+		RealtimeScannerWrapper: realtimeScannerWrapper,
+	}
+}
+
 type RealtimeScannerWrapperParams struct {
 	JwtWrapper             wrappers.JWTWrapper
 	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
@@ -17,23 +33,23 @@ type RealtimeScannerWrapperParams struct {
 }
 
 // RunOssRealtimeScan performs an OSS realtime scan on the given manifest file.
-func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, filePath string) (*wrappers.OssPackageResponse, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssPackageResponse, error) {
 	if filePath == "" {
 		return nil, nil
 	}
 
-	if err := ensureLicense(realtimeScannerWrapperParams); err != nil {
+	if err := o.ensureLicense(); err != nil {
 		return nil, err
 	}
 
-	pkgs, err := parseManifest(filePath)
+	pkgs, err := o.parseManifest(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	response, toScan := prepareScan(pkgs)
+	response, toScan := o.prepareScan(pkgs)
 	if len(toScan.Packages) > 0 {
-		if err := scanAndCache(realtimeScannerWrapperParams, toScan, response); err != nil {
+		if err := o.scanAndCache(toScan, response); err != nil {
 			return nil, err
 		}
 	}
@@ -41,15 +57,15 @@ func RunOssRealtimeScan(realtimeScannerWrapperParams *RealtimeScannerWrapperPara
 	return response, nil
 }
 
-func ensureLicense(realtimeScannerWrapperParams *RealtimeScannerWrapperParams) error {
+func (o *OssRealtimeService) ensureLicense() error {
 	// For the 60-day delivery, there is no license check
-	if realtimeScannerWrapperParams.JwtWrapper == nil {
+	if o.JwtWrapper == nil {
 		return errors.New("jwt wrapper not provided")
 	}
 	return nil
 }
 
-func parseManifest(filePath string) ([]models.Package, error) {
+func (o *OssRealtimeService) parseManifest(filePath string) ([]models.Package, error) {
 	manifestParser := parser.ParsersFactory(filePath)
 	if manifestParser == nil {
 		return nil, errors.Errorf("no parser available for file: %s", filePath)
@@ -62,7 +78,7 @@ func parseManifest(filePath string) ([]models.Package, error) {
 }
 
 // prepareScan processes a list of packages, separates cached and uncached packages, and returns both response and request data to be sent to the scanner.
-func prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers.OssPackageRequest) {
+func (o *OssRealtimeService) prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers.OssPackageRequest) {
 	var resp wrappers.OssPackageResponse
 	var req wrappers.OssPackageRequest
 
@@ -71,7 +87,7 @@ func prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers
 	cache := osscache.ReadCache()
 	if cache == nil {
 		for _, pkg := range pkgs {
-			req.Packages = append(req.Packages, pkgToRequest(&pkg))
+			req.Packages = append(req.Packages, o.pkgToRequest(&pkg))
 		}
 		return &resp, &req
 	}
@@ -87,15 +103,15 @@ func prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers
 				Status:         status,
 			})
 		} else {
-			req.Packages = append(req.Packages, pkgToRequest(&pkg))
+			req.Packages = append(req.Packages, o.pkgToRequest(&pkg))
 		}
 	}
 	return &resp, &req
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, requestPackages *wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
-	result, err := realtimeScannerWrapperParams.RealtimeScannerWrapper.Scan(requestPackages)
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
+	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
 	if err != nil {
 		return errors.Wrap(err, "scanning packages via realtime service")
 	}
@@ -119,7 +135,7 @@ func scanAndCache(realtimeScannerWrapperParams *RealtimeScannerWrapperParams, re
 }
 
 // pkgToRequest transforms a parsed package into a scan request.
-func pkgToRequest(pkg *models.Package) wrappers.OssPackage {
+func (o *OssRealtimeService) pkgToRequest(pkg *models.Package) wrappers.OssPackage {
 	return wrappers.OssPackage{
 		PackageManager: pkg.PackageManager,
 		PackageName:    pkg.PackageName,
