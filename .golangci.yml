@@ -89,6 +89,11 @@ linters-settings:
     settings:
       mnd:
         checks: argument,case,condition,return
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
   govet:
     settings:
       printf:
