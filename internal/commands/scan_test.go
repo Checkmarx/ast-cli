@@ -860,6 +860,50 @@ func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
 	}
 }
 
+func TestAddSastScan_WithLightQueryAndRecommendedExclusions_ShouldPass(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project with SAST fast scan configuration`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "false")
+	_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, "false")
+	_ = cmdCommand.Flags().Set(commonParams.SastLightQueriesFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastRecommendedExclusionsFlags, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:            "test",
+		Filter:                "test",
+		Incremental:           "false",
+		FastScanMode:          "false",
+		LightQueries:          "true",
+		RecommendedExclusions: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+}
+
 func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
 
@@ -868,6 +912,26 @@ func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
 
 	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Fast-Scan", "true")...)
 	assert.ErrorContains(t, err, "unknown flag: --Sast-Fast-Scan", err.Error())
+}
+
+func TestCreateScanWithLightQueryIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-LIGHT-QUERIES", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-LIGHT-QUERIES", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Light-Queries", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Light-Queries", err.Error())
+}
+
+func TestCreateScanWithRecommendedExclusionsIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-RECOMMENDED-EXCLUSIONS", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-RECOMMENDED-EXCLUSIONS", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Recommended-Exclusions", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Recommended-Exclusions", err.Error())
 }
 
 func TestAddSastScan(t *testing.T) {
@@ -883,20 +947,26 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
 	_ = cmdCommand.Execute()
 
 	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
 	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
 	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastLightQueriesFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastRecommendedExclusionsFlags, "true")
 
 	result := addSastScan(cmdCommand, resubmitConfig)
 
 	sastConfig := wrappers.SastConfig{
-		PresetName:   "test",
-		Filter:       "test",
-		Incremental:  "true",
-		FastScanMode: "",
+		PresetName:            "test",
+		Filter:                "test",
+		Incremental:           "true",
+		FastScanMode:          "",
+		LightQueries:          "true",
+		RecommendedExclusions: "true",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
@@ -1783,77 +1853,181 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 
 	tests := []struct {
-		name                   string
-		requiredIncrementalSet bool
-		requiredFastScanSet    bool
-		fastScanFlag           string
-		incrementalFlag        string
-		expectedConfig         wrappers.SastConfig
+		name                             string
+		requiredIncrementalSet           bool
+		requiredFastScanSet              bool
+		requiredLightQueriesSet          bool
+		requiredRecommendedExclusionsSet bool
+		fastScanFlag                     string
+		incrementalFlag                  string
+		lightQueriesFlag                 string
+		recommendedExclusionsFlag        string
+		expectedConfig                   wrappers.SastConfig
 	}{
 		{
-			name:                   "Fast scan and Incremental scan both false",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "false",
-			incrementalFlag:        "false",
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion are false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
 			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "false",
-				Incremental:  "false",
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
 			},
 		},
 		{
-			name:                   "Fast scan and Incremental scan both true",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "true",
-			incrementalFlag:        "true",
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion are true",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion not set",
+			requiredIncrementalSet:           false,
+			requiredFastScanSet:              false,
+			requiredLightQueriesSet:          false,
+			requiredRecommendedExclusionsSet: false,
+			expectedConfig:                   wrappers.SastConfig{},
+		},
+		{
+			name:                             "Fast scan is true, Incremental is false, Light Queries is false and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is true, Light Queries is false and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "true",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is false, Light Queries is true and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "true",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is false, Light Queries is false and Recommended Exclusions is true",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is not set , Incremental is true , Light Queries is true and Recommended Exclusion is true",
+			requiredIncrementalSet:           true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				Incremental:           "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is true , Incremental is not set , Light Queries is true and Recommended Exclusion is true",
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is true , Incremental is true , Light Queries is not set and Recommended Exclusion is true",
+			requiredFastScanSet:              true,
+			requiredIncrementalSet:           true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                    "Fast scan is true , Incremental is true , Light Queries is true and Recommended Exclusion is not set",
+			requiredFastScanSet:     true,
+			requiredIncrementalSet:  true,
+			requiredLightQueriesSet: true,
+			fastScanFlag:            "true",
+			incrementalFlag:         "true",
+			lightQueriesFlag:        "true",
 			expectedConfig: wrappers.SastConfig{
 				FastScanMode: "true",
 				Incremental:  "true",
-			},
-		},
-		{
-			name:                   "Fast scan and Incremental not set",
-			requiredIncrementalSet: false,
-			requiredFastScanSet:    false,
-			expectedConfig:         wrappers.SastConfig{},
-		},
-		{
-			name:                   "Fast scan is true and Incremental is false",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "true",
-			incrementalFlag:        "false",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "true",
-				Incremental:  "false",
-			},
-		},
-		{
-			name:                   "Fast scan is false and Incremental is true",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "false",
-			incrementalFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "false",
-				Incremental:  "true",
-			},
-		},
-		{
-			name:                   "Fast scan is not set and Incremental is true",
-			requiredIncrementalSet: true,
-			incrementalFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				Incremental: "true",
-			},
-		},
-		{
-			name:                "Fast scan is true and Incremental is not set",
-			requiredFastScanSet: true,
-			fastScanFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "true",
+				LightQueries: "true",
 			},
 		},
 	}
@@ -1874,6 +2048,8 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
 			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+			cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+			cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
 			_ = cmdCommand.Execute()
 
@@ -1882,6 +2058,14 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			if tt.requiredIncrementalSet {
 				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+
+			if tt.requiredLightQueriesSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastLightQueriesFlag, tt.lightQueriesFlag)
+			}
+
+			if tt.requiredRecommendedExclusionsSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastRecommendedExclusionsFlags, tt.recommendedExclusionsFlag)
 			}
 
 			result := addSastScan(cmdCommand, resubmitConfig)

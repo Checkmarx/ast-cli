@@ -640,7 +640,7 @@ func scanCreateSubCommand(
 
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.SastRecommendedExclusionsFlags,
-		true,
+		false,
 		"Enable recommended exclusions configuration for SAST scan",
 	)
 
