@@ -58,7 +58,7 @@ func WriteCache(cache Cache, cacheTTL *time.Time) error {
 	return nil
 }
 
-func AppendToCache(packages *wrappers.OssPackageResponse) error {
+func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
 	cache := ReadCache()
 	if cache == nil {
 		cache = &Cache{

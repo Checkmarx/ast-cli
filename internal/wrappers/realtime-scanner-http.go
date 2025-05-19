@@ -26,7 +26,7 @@ func NewRealtimeScannerHTTPWrapper(path string, jwtWrapper JWTWrapper, featureFl
 	}
 }
 
-func (r RealtimeScannerHTTPWrapper) Scan(packages *OssPackageRequest) (*OssPackageResponse, error) {
+func (r RealtimeScannerHTTPWrapper) Scan(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(packages)
 	if err != nil {
@@ -50,7 +50,7 @@ func (r RealtimeScannerHTTPWrapper) Scan(packages *OssPackageRequest) (*OssPacka
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		return nil, errors.Errorf("Failed to scan packages, status code: %s", resp.Status)
 	}
-	var model OssPackageResponse
+	var model RealtimeScannerPackageResponse
 	err = decoder.Decode(&model)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse scan result")

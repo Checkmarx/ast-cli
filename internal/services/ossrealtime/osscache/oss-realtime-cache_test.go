@@ -62,8 +62,8 @@ func TestAppendToCache(t *testing.T) {
 	defer os.Remove(cacheFile)
 
 	// first batch
-	first := &wrappers.OssPackageResponse{
-		Packages: []wrappers.OssResults{
+	first := &wrappers.RealtimeScannerPackageResponse{
+		Packages: []wrappers.RealtimeScannerResults{
 			{PackageManager: "npm", PackageName: "lodash", Version: "4.17.21", Status: "OK"},
 		},
 	}
@@ -72,8 +72,8 @@ func TestAppendToCache(t *testing.T) {
 	}
 
 	// second batch
-	second := &wrappers.OssPackageResponse{
-		Packages: []wrappers.OssResults{
+	second := &wrappers.RealtimeScannerPackageResponse{
+		Packages: []wrappers.RealtimeScannerResults{
 			{PackageManager: "npm", PackageName: "express", Version: "4.17.1", Status: "Malicious"},
 		},
 	}
@@ -87,16 +87,16 @@ func TestAppendToCache(t *testing.T) {
 		t.Fatal("ReadCache() returned nil; want non-nil")
 	}
 
-	var got []wrappers.OssResults
+	var got []wrappers.RealtimeScannerResults
 	for _, e := range cache.Packages {
-		got = append(got, wrappers.OssResults{
+		got = append(got, wrappers.RealtimeScannerResults{
 			PackageManager: e.PackageManager,
 			PackageName:    e.PackageName,
 			Version:        e.PackageVersion,
 			Status:         e.Status,
 		})
 	}
-	want := append([]wrappers.OssResults{}, first.Packages...)
+	want := append([]wrappers.RealtimeScannerResults{}, first.Packages...)
 	want = append(want, second.Packages...)
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("cached packages = %+v; want %+v", got, want)

@@ -1,6 +1,7 @@
 package ossrealtime
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -10,15 +11,37 @@ import (
 	"github.com/pkg/errors"
 )
 
+// OssPackage represents a package's details for OSS scanning.
+type OssPackage struct {
+	PackageManager string `json:"PackageManager"`
+	PackageName    string `json:"PackageName"`
+	PackageVersion string `json:"PackageVersion"`
+	FilePath       string `json:"FilePath"`
+	LineStart      int    `json:"LineStart"`
+	LineEnd        int    `json:"LineEnd"`
+	StartIndex     int    `json:"StartIndex"`
+	EndIndex       int    `json:"EndIndex"`
+	Status         string `json:"Status"`
+}
+
+// OssPackageResults holds the results of an OSS scan.
+type OssPackageResults struct {
+	Packages []OssPackage `json:"Packages"`
+}
+
+// OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
 	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
 	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
 }
 
-func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
+// NewOssRealtimeService creates a new OssRealtimeService.
+func NewOssRealtimeService(
+	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper,
-	realtimeScannerWrapper wrappers.RealtimeScannerWrapper) *OssRealtimeService {
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+) *OssRealtimeService {
 	return &OssRealtimeService{
 		JwtWrapper:             jwtWrapper,
 		FeatureFlagWrapper:     featureFlagWrapper,
@@ -26,18 +49,14 @@ func NewOssRealtimeService(jwtWrapper wrappers.JWTWrapper,
 	}
 }
 
-// RunOssRealtimeScan performs an OSS realtime scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssPackageResponse, error) {
+// RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
 	if filePath == "" {
 		return nil, errors.New("file path is required")
 	}
 
-	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get feature flag")
-	}
-	if !enabled.Status {
-		return nil, errors.New("feature flag is disabled")
+	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
+		return nil, err
 	}
 
 	if err := o.ensureLicense(); err != nil {
@@ -49,9 +68,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssP
 		return nil, err
 	}
 
+	packageMap := o.createPackageMap(pkgs)
 	response, toScan := o.prepareScan(pkgs)
+
 	if len(toScan.Packages) > 0 {
-		if err := o.scanAndCache(toScan, response); err != nil {
+		if err := o.scanAndCache(toScan, response, packageMap); err != nil {
 			return nil, err
 		}
 	}
@@ -59,14 +80,24 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*wrappers.OssP
 	return response, nil
 }
 
+// isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
+func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
+	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get feature flag")
+	}
+	return enabled.Status, nil
+}
+
+// ensureLicense validates that a valid JWT wrapper is available.
 func (o *OssRealtimeService) ensureLicense() error {
-	// For the 60-day delivery, there is no license check
 	if o.JwtWrapper == nil {
 		return errors.New("jwt wrapper not provided")
 	}
 	return nil
 }
 
+// parseManifest parses the manifest file and returns a list of packages.
 func (o *OssRealtimeService) parseManifest(filePath string) ([]models.Package, error) {
 	manifestParser := parser.ParsersFactory(filePath)
 	if manifestParser == nil {
@@ -79,12 +110,12 @@ func (o *OssRealtimeService) parseManifest(filePath string) ([]models.Package, e
 	return pkgs, nil
 }
 
-// prepareScan processes a list of packages, separates cached and uncached packages, and returns both response and request data to be sent to the scanner.
-func (o *OssRealtimeService) prepareScan(pkgs []models.Package) (*wrappers.OssPackageResponse, *wrappers.OssPackageRequest) {
-	var resp wrappers.OssPackageResponse
-	var req wrappers.OssPackageRequest
+// prepareScan processes the list of packages and separates cached and uncached packages.
+func (o *OssRealtimeService) prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeScannerPackageRequest) {
+	var resp OssPackageResults
+	var req wrappers.RealtimeScannerPackageRequest
 
-	resp.Packages = make([]wrappers.OssResults, 0, len(pkgs))
+	resp.Packages = make([]OssPackage, 0, len(pkgs))
 
 	cache := osscache.ReadCache()
 	if cache == nil {
@@ -98,10 +129,14 @@ func (o *OssRealtimeService) prepareScan(pkgs []models.Package) (*wrappers.OssPa
 	for _, pkg := range pkgs {
 		key := osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		if status, found := cacheMap[key]; found {
-			resp.Packages = append(resp.Packages, wrappers.OssResults{
+			resp.Packages = append(resp.Packages, OssPackage{
 				PackageManager: pkg.PackageManager,
 				PackageName:    pkg.PackageName,
-				Version:        pkg.Version,
+				PackageVersion: pkg.Version,
+				LineStart:      pkg.LineStart,
+				LineEnd:        pkg.LineEnd,
+				FilePath:       pkg.Filepath,
+				StartIndex:     pkg.StartIndex,
 				Status:         status,
 			})
 		} else {
@@ -111,8 +146,31 @@ func (o *OssRealtimeService) prepareScan(pkgs []models.Package) (*wrappers.OssPa
 	return &resp, &req
 }
 
+// createPackageMap generates a map of packages for quicker access during scanning.
+func (o *OssRealtimeService) createPackageMap(pkgs []models.Package) map[string]OssPackage {
+	packageMap := make(map[string]OssPackage)
+	for _, pkg := range pkgs {
+		packageMap[o.generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = OssPackage{
+			PackageManager: pkg.PackageManager,
+			PackageName:    pkg.PackageName,
+			PackageVersion: pkg.Version,
+			FilePath:       pkg.Filepath,
+			LineStart:      pkg.LineStart,
+			LineEnd:        pkg.LineEnd,
+			StartIndex:     pkg.StartIndex,
+			EndIndex:       pkg.EndIndex,
+		}
+	}
+	return packageMap
+}
+
+// generatePackageMapEntry generates a unique key for the package map.
+func (o *OssRealtimeService) generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
+	return fmt.Sprintf("%s_%s_%s", pkgManager, pkgName, pkgVersion)
+}
+
 // scanAndCache performs a scan on the provided packages and caches the results.
-func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.OssPackageRequest, resp *wrappers.OssPackageResponse) error {
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest, resp *OssPackageResults, pkgMap map[string]OssPackage) error {
 	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
 	if err != nil {
 		return errors.Wrap(err, "scanning packages via realtime service")
@@ -121,15 +179,28 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.OssPackageRe
 		return errors.New("empty response from oss-realtime scan")
 	}
 
+	// Process scan results and update the response.
 	for _, pkg := range result.Packages {
-		resp.Packages = append(resp.Packages, wrappers.OssResults{
+		var entry OssPackage
+		if value, found := pkgMap[o.generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)]; found {
+			entry = value
+		} else {
+			entry = pkgMap[o.generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
+		}
+		resp.Packages = append(resp.Packages, OssPackage{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
-			Version:        pkg.Version,
+			PackageVersion: pkg.Version,
+			FilePath:       entry.FilePath,
+			LineStart:      entry.LineStart,
+			LineEnd:        entry.LineEnd,
+			StartIndex:     entry.StartIndex,
+			EndIndex:       entry.EndIndex,
 			Status:         pkg.Status,
 		})
 	}
 
+	// Update cache with scan results.
 	if err = osscache.AppendToCache(result); err != nil {
 		log.Printf("ossrealtime: failed to update cache: %v", err)
 	}
@@ -137,8 +208,8 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.OssPackageRe
 }
 
 // pkgToRequest transforms a parsed package into a scan request.
-func (o *OssRealtimeService) pkgToRequest(pkg *models.Package) wrappers.OssPackage {
-	return wrappers.OssPackage{
+func (o *OssRealtimeService) pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
+	return wrappers.RealtimeScannerPackage{
 		PackageManager: pkg.PackageManager,
 		PackageName:    pkg.PackageName,
 		Version:        pkg.Version,

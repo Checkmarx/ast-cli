@@ -8,24 +8,24 @@ import (
 )
 
 type RealtimeScannerMockWrapper struct {
-	CustomScan func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error)
+	CustomScan func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error)
 }
 
 func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
 	return &RealtimeScannerMockWrapper{}
 }
 
-func (r RealtimeScannerMockWrapper) Scan(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
+func (r RealtimeScannerMockWrapper) Scan(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 	if r.CustomScan != nil {
 		return r.CustomScan(packages)
 	}
 	return generateMockResponse(packages), nil
 }
 
-func generateMockResponse(packages *wrappers.OssPackageRequest) *wrappers.OssPackageResponse {
-	var response wrappers.OssPackageResponse
+func generateMockResponse(packages *wrappers.RealtimeScannerPackageRequest) *wrappers.RealtimeScannerPackageResponse {
+	var response wrappers.RealtimeScannerPackageResponse
 	for _, pkg := range packages.Packages {
-		response.Packages = append(response.Packages, wrappers.OssResults{
+		response.Packages = append(response.Packages, wrappers.RealtimeScannerResults{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			Version:        pkg.Version,

@@ -106,7 +106,7 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 1)
 	assert.Equal(t, "lodash", resp.Packages[0].PackageName)
-	assert.Equal(t, "4.17.21", resp.Packages[0].Version)
+	assert.Equal(t, "4.17.21", resp.Packages[0].PackageVersion)
 	assert.Equal(t, "OK", resp.Packages[0].Status)
 
 	assert.NotNil(t, toScan)
@@ -178,7 +178,7 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 	assert.NotNil(t, resp)
 	assert.Len(t, resp.Packages, 1)
 	assert.Equal(t, "lodash", resp.Packages[0].PackageName)
-	assert.Equal(t, "4.17.21", resp.Packages[0].Version)
+	assert.Equal(t, "4.17.21", resp.Packages[0].PackageVersion)
 	assert.Equal(t, "OK", resp.Packages[0].Status)
 
 	assert.NotNil(t, toScan)
@@ -192,10 +192,10 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 		&mock.JWTMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
-			CustomScan: func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
-				var response wrappers.OssPackageResponse
+			CustomScan: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+				var response wrappers.RealtimeScannerPackageResponse
 				for _, pkg := range packages.Packages {
-					response.Packages = append(response.Packages, wrappers.OssResults{
+					response.Packages = append(response.Packages, wrappers.RealtimeScannerResults{
 						PackageManager: pkg.PackageManager,
 						PackageName:    pkg.PackageName,
 						Version:        pkg.Version,
@@ -211,7 +211,7 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 
 	resp, toScan := ossRealtimeService.prepareScan(pkgs)
 
-	err := ossRealtimeService.scanAndCache(toScan, resp)
+	err := ossRealtimeService.scanAndCache(toScan, resp, make(map[string]OssPackage))
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()
@@ -247,14 +247,14 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	resp, toScan := ossRealtimeService.prepareScan(pkgs)
 
 	ossRealtimeService.RealtimeScannerWrapper = &mock.RealtimeScannerMockWrapper{
-		CustomScan: func(packages *wrappers.OssPackageRequest) (*wrappers.OssPackageResponse, error) {
-			var response wrappers.OssPackageResponse
+		CustomScan: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+			var response wrappers.RealtimeScannerPackageResponse
 			for _, pkg := range packages.Packages {
 				status := "OK"
 				if pkg.PackageName == "express" {
 					status = "Malicious"
 				}
-				response.Packages = append(response.Packages, wrappers.OssResults{
+				response.Packages = append(response.Packages, wrappers.RealtimeScannerResults{
 					PackageManager: pkg.PackageManager,
 					PackageName:    pkg.PackageName,
 					Version:        pkg.Version,
@@ -265,7 +265,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 		},
 	}
 
-	err = ossRealtimeService.scanAndCache(toScan, resp)
+	err = ossRealtimeService.scanAndCache(toScan, resp, make(map[string]OssPackage))
 	assert.Nil(t, err)
 
 	cache := osscache.ReadCache()
