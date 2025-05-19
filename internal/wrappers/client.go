@@ -99,6 +99,28 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 	return resp, nil
 }
 
+// "Check the response status; if it is one of 500, 501, 502, 503, or 504 the request will be resending (only 4 retries)."
+func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
+
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; attempt < retries; attempt++ {
+		resp, err = requestFunc()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode >= 500 && resp.StatusCode <= 504 {
+			logger.PrintIfVerbose(fmt.Sprintf("Encountered HTTP %s response — will retry ", resp.Status))
+		} else {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+		time.Sleep(baseDelayInMilliSec * (3 << attempt))
+	}
+	return nil, err
+}
+
 func setAgentNameAndOrigin(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
@@ -513,7 +535,26 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	client := GetClient(clientTimeout)
 
-	res, err := doPrivateRequest(client, req)
+	//Save body for retry logic
+	var body []byte
+	if req.Body != nil {
+		body, err = io.ReadAll(req.Body)
+		if err != nil {
+			fmt.Errorf("failed to read request body: %w", err)
+		}
+		if req.Body != nil {
+			req.Body.Close()
+		}
+	}
+	fn := func() (*http.Response, error) {
+		if body != nil {
+			_ = req.Body.Close()
+			req.Body = io.NopCloser(bytes.NewBuffer(body))
+		}
+		return doPrivateRequest(client, req)
+	}
+	res, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+
 	if err != nil {
 		authURL, _ := GetAuthURI()
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
@@ -528,7 +569,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 
-	body, _ := ioutil.ReadAll(res.Body)
+	body, _ = ioutil.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		credentialsErr := ClientCredentialsError{}
 		err = json.Unmarshal(body, &credentialsErr)
