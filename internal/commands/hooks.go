@@ -31,7 +31,7 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		},
 	}
 
-	// Add pre-commitand pre-receive subcommand
+	// Add pre-commit and pre-receive subcommand
 	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper))
 	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper))
 
