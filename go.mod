@@ -6,6 +6,7 @@ require (
 	github.com/Checkmarx/containers-resolver v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
+	github.com/Checkmarx/manifest-parser v0.0.4
 	github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
