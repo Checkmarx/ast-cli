@@ -118,7 +118,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
-	actualScanTypes         = "sast,kics,sca,scs"
+	actualScanTypes         = "sast,kics,sca,scs,containers"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
 		strings.Join(
@@ -760,7 +760,6 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 	}
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
 	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
@@ -770,7 +769,7 @@ func setupScanTypeProjectAndConfig(
 	if kicsConfig != nil {
 		configArr = append(configArr, kicsConfig)
 	}
-	var scaConfig = addScaScan(cmd, resubmitConfig, userAllowedEngines[commonParams.ContainersType])
+	var scaConfig = addScaScan(cmd, resubmitConfig)
 	if scaConfig != nil {
 		configArr = append(configArr, scaConfig)
 	}
@@ -778,7 +777,7 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan(cmd, resubmitConfig, containerEngineCLIEnabled.Status)
+	var containersConfig = addContainersScan(cmd, resubmitConfig)
 	if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
@@ -925,7 +924,7 @@ func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	return nil
 }
 
-func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContainerLicense bool) map[string]interface{} {
+func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
 	if scanTypeEnabled(commonParams.ScaType) {
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
@@ -933,9 +932,6 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
-		if hasContainerLicense {
-			scaConfig.EnableContainersScan = false
-		}
 		exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 		if exploitablePath != "" {
 			scaConfig.ExploitablePath = strings.ToLower(exploitablePath)
@@ -954,35 +950,35 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, containerEngineCLIEnabled bool) map[string]interface{} {
-	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
-		return nil
-	}
-	containerMapConfig := make(map[string]interface{})
-	containerMapConfig[resultsMapType] = commonParams.ContainersType
-	containerConfig := wrappers.ContainerConfig{}
+func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
+	if scanTypeEnabled(commonParams.ContainersType) {
+		containerMapConfig := make(map[string]interface{})
+		containerMapConfig[resultsMapType] = commonParams.ContainersType
+		containerConfig := wrappers.ContainerConfig{}
 
-	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig)
+		initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig)
 
-	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
-	if fileFolderFilter != "" {
-		containerConfig.FilesFilter = fileFolderFilter
-	}
-	packageFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersPackageFilterFlag)
-	if packageFilter != "" {
-		containerConfig.PackagesFilter = packageFilter
-	}
-	excludeNonFinalStages, _ := cmd.PersistentFlags().GetBool(commonParams.ContainersExcludeNonFinalStagesFlag)
-	if cmd.PersistentFlags().Changed(commonParams.ContainersExcludeNonFinalStagesFlag) {
-		containerConfig.NonFinalStagesFilter = strconv.FormatBool(excludeNonFinalStages)
-	}
-	imageTagFilter, _ := cmd.Flags().GetString(commonParams.ContainersImageTagFilterFlag)
-	if imageTagFilter != "" {
-		containerConfig.ImagesFilter = imageTagFilter
-	}
+		fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
+		if fileFolderFilter != "" {
+			containerConfig.FilesFilter = fileFolderFilter
+		}
+		packageFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersPackageFilterFlag)
+		if packageFilter != "" {
+			containerConfig.PackagesFilter = packageFilter
+		}
+		excludeNonFinalStages, _ := cmd.PersistentFlags().GetBool(commonParams.ContainersExcludeNonFinalStagesFlag)
+		if cmd.PersistentFlags().Changed(commonParams.ContainersExcludeNonFinalStagesFlag) {
+			containerConfig.NonFinalStagesFilter = strconv.FormatBool(excludeNonFinalStages)
+		}
+		imageTagFilter, _ := cmd.Flags().GetString(commonParams.ContainersImageTagFilterFlag)
+		if imageTagFilter != "" {
+			containerConfig.ImagesFilter = imageTagFilter
+		}
 
-	containerMapConfig[resultsMapValue] = &containerConfig
-	return containerMapConfig
+		containerMapConfig[resultsMapValue] = &containerConfig
+		return containerMapConfig
+	}
+	return nil
 }
 
 func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
@@ -1132,7 +1128,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
-	runContainerEngineCLI := isContainersEngineEnabled(featureFlagsWrapper)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -1149,7 +1144,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
-			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(runContainerEngineCLI)) {
+			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
@@ -1165,9 +1160,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 	} else {
 		for k := range allowedEngines {
-			if k == commonParams.ContainersType && !(runContainerEngineCLI) {
-				continue
-			}
 			scanTypes = append(scanTypes, k)
 		}
 	}
@@ -1176,16 +1168,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
 	return nil
-}
-
-func isContainersEngineEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) bool {
-	containerEngineCLIEnabled, err := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
-	if err != nil {
-		logger.PrintfIfVerbose("Failed to fetch CONTAINER_ENGINE_CLI_ENABLED FF, defaulting to `false`. Error: %s", err)
-		return false
-	}
-
-	return containerEngineCLIEnabled.Status
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -1477,9 +1459,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
-	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && containerEngineCLIEnabled.Status
+	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType)
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)

@@ -17,7 +17,7 @@ type ResultSummary struct {
 	SastIssues       int
 	KicsIssues       int
 	ScaIssues        int
-	ContainersIssues *int         `json:"ContainersIssues,omitempty"`
+	ContainersIssues int          `json:"ContainersIssues,omitempty"`
 	ScsIssues        *int         `json:"ScsIssues,omitempty"`
 	SCSOverview      *SCSOverview `json:"ScsOverview,omitempty"`
 	APISecurity      APISecResult
@@ -80,8 +80,6 @@ type EngineResultSummary struct {
 type EnginesResultsSummary map[string]*EngineResultSummary
 
 var IsSCSEnabled bool
-
-var IsContainersEnabled bool
 
 func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
 	criticalIssues := 0
@@ -154,11 +152,9 @@ func (r *ResultSummary) HasEngine(engine string) bool {
 func (r *ResultSummary) HasAPISecurity() bool {
 	return r.HasEngine(params.APISecType)
 }
-func (r *ResultSummary) ContainersEnabled() bool {
-	return IsContainersEnabled
-}
+
 func (r *ResultSummary) ContainersIssuesValue() int {
-	return *r.ContainersIssues
+	return r.ContainersIssues
 }
 
 func (r *ResultSummary) SCSEnabled() bool {
@@ -783,7 +779,7 @@ const nonAsyncSummary = `<div class="top-row">
                     <div class="legend"><span class="engines-legend-dot">SCA</span>
                         <div class="severity-engines-text bg-sca"></div>
                     </div>
-					{{if .ContainersEnabled}}<div class="legend"><span class="engines-legend-dot">Containers</span>
+					<div class="legend"><span class="engines-legend-dot">Containers</span>
                         <div class="severity-engines-text bg-containers"></div>
                     </div>{{end}}
 					{{if .SCSEnabled}}<div class="legend"><span class="engines-legend-dot">SCS</span>
@@ -796,7 +792,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
-							{{if .ContainersEnabled}}<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
+							<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
 							{{if .SCSEnabled}}<div class="progress-bar bg-scs value">{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}}</div>{{end}}
                         </div>
                     </div>
@@ -871,9 +867,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS |{{end}}{{if .ContainersEnabled}} Containers |{{end}}
-|:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|{{end}}{{if .ContainersEnabled}} :----------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if .ContainersEnabled}}{{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
+| SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS |{{end}} Containers |{{end}}
+|:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|{{end}} :----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 
