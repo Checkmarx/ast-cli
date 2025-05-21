@@ -1108,7 +1108,6 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 }
 
 func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
-
 	if scsRepoToken == "" || scsRepoURL == "" {
 
 		// with --scs-engine "scorecard" set, if flags not defined, scorecard will launch an error
@@ -1214,7 +1213,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
 			return err
 		}
-
 	} else {
 		for k := range allowedEngines {
 			if k == commonParams.ContainersType && !(runContainerEngineCLI) {
