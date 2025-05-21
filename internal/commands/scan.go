@@ -1106,7 +1106,7 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 	return isGithubURL
 }
 
-func isScorecardRunnable(isScsEnginesFlagSet bool, scsScorecardSelected bool, scsRepoToken string, scsRepoURL string, userScanTypes string) (bool, error) {
+func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 
 	if scsRepoToken == "" || scsRepoURL == "" {
 
