@@ -18,12 +18,12 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
         `,
 		),
 	}
-	preReceiveCmd.AddCommand(scanSceretsPreReceiveCommand(jwtWrapper))
+	preReceiveCmd.AddCommand(scanSecretsPreReceiveCommand(jwtWrapper))
 
 	return preReceiveCmd
 }
 
-func scanSceretsPreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+func scanSecretsPreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	var configFile string
 	scanPrereceiveCmd := &cobra.Command{
 		Use:   "secrets-scan",
