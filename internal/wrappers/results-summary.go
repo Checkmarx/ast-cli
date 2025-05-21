@@ -781,7 +781,7 @@ const nonAsyncSummary = `<div class="top-row">
                     </div>
 					<div class="legend"><span class="engines-legend-dot">Containers</span>
                         <div class="severity-engines-text bg-containers"></div>
-                    </div>{{end}}
+                    </div>
 					{{if .SCSEnabled}}<div class="legend"><span class="engines-legend-dot">SCS</span>
                         <div class="severity-engines-text bg-scs"></div>
                     </div>{{end}}
@@ -792,7 +792,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-sast value">{{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}}</div>
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
-							<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
+							<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>
 							{{if .SCSEnabled}}<div class="progress-bar bg-scs value">{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}}</div>{{end}}
                         </div>
                     </div>
@@ -867,9 +867,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS |{{end}} Containers |{{end}}
-|:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|{{end}} :----------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if lt .ScaIssues 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
+| SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS | Containers |{{end}}
+|:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|:----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 
