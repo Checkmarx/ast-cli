@@ -152,7 +152,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageVersion: pkg.Version,
 				LineStart:      pkg.LineStart,
 				LineEnd:        pkg.LineEnd,
-				FilePath:       pkg.Filepath,
+				FilePath:       pkg.FilePath,
 				StartIndex:     pkg.StartIndex,
 				Status:         status,
 			})
@@ -171,7 +171,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
-			FilePath:       pkg.Filepath,
+			FilePath:       pkg.FilePath,
 			LineStart:      pkg.LineStart,
 			LineEnd:        pkg.LineEnd,
 			StartIndex:     pkg.StartIndex,
