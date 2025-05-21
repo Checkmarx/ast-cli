@@ -9,8 +9,6 @@ import (
 	"strings"
 )
 
-
-
 // PreCommitCommand creates the pre-commit subcommand
 func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preCommitCmd := &cobra.Command{
@@ -37,7 +35,6 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 }
 
 // / validateLicense verifies the user has the required license for secret detection
-
 
 func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
