@@ -1054,6 +1054,53 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	}
 }
 
+func TestCreateScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
+	// Create a pipe for capturing stdout
+	r, w, _ := os.Pipe()
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+	os.Stdout = w // Redirecting stdout to the pipe
+
+	var resubmitConfig []wrappers.Config
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().String(commonParams.ScanTypeFlag, "scs", "")
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
+
+	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+
+	scsConfig := wrappers.SCSConfig{
+		Twoms: "true",
+	}
+
+	// Close the writer to signal that we are done capturing the output
+	w.Close()
+
+	// Read from the pipe (stdout)
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+	if err != nil {
+		t.Fatalf("Failed to capture output: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, ScsRepoWarningMsg) {
+		t.Errorf("Expected output to contain %q, but got %q", ScsRepoWarningMsg, output)
+	}
+
+	scsMapConfig := make(map[string]interface{})
+	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+	scsMapConfig[resultsMapValue] = &scsConfig
+
+	if !reflect.DeepEqual(result, scsMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+	}
+}
+
 func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
 	// Create a pipe for capturing stdout
 	r, w, _ := os.Pipe()
