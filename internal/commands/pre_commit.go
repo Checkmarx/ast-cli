@@ -178,9 +178,3 @@ func secretsHelpCommand() *cobra.Command {
 		},
 	}
 }
-
-
-
-
-
-
