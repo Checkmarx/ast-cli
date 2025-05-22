@@ -1048,7 +1048,7 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 		}
 		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
 		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" {
-			containerConfig.ImagesFilter = resubmitUserCustomImages.(string)
+			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}
 }
