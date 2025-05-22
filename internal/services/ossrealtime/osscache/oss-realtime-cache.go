@@ -78,7 +78,6 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
 				})
 			}
 			cache.Packages = append(cache.Packages, PackageEntry{
-				PackageID:       GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version),
 				PackageManager:  pkg.PackageManager,
 				PackageName:     pkg.PackageName,
 				PackageVersion:  pkg.Version,
@@ -97,11 +96,11 @@ func GetCacheFilePath() string {
 
 // BuildCacheMap creates a lookup map from cache entries.
 func BuildCacheMap(cache Cache) map[string]PackageEntry {
-	packagesMap := make(map[string]PackageEntry, len(cache.Packages))
+	m := make(map[string]PackageEntry, len(cache.Packages))
 	for _, pkg := range cache.Packages {
-		packagesMap[pkg.PackageID] = pkg
+		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg
 	}
-	return packagesMap
+	return m
 }
 
 // GenerateCacheKey constructs a unique key for a package.
