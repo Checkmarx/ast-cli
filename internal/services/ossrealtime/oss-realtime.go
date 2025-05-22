@@ -144,7 +144,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 	for _, pkg := range pkgs {
 		key := osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		if status, found := cacheMap[key]; found {
-			ossPackage := OssPackage{
+			resp.Packages = append(resp.Packages, OssPackage{
 				PackageManager: pkg.PackageManager,
 				PackageName:    pkg.PackageName,
 				PackageVersion: pkg.Version,
@@ -154,8 +154,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				StartIndex:     pkg.StartIndex,
 				EndIndex:       pkg.EndIndex,
 				Status:         status,
-			}
-			resp.Packages = append(resp.Packages, ossPackage)
+			})
 		} else {
 			req.Packages = append(req.Packages, pkgToRequest(&pkg))
 		}
@@ -167,7 +166,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 	packageMap := make(map[string]OssPackage)
 	for _, pkg := range pkgs {
-		ossPackage := OssPackage{
+		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = OssPackage{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
@@ -177,7 +176,6 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			StartIndex:     pkg.StartIndex,
 			EndIndex:       pkg.EndIndex,
 		}
-		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = ossPackage
 	}
 	return packageMap
 }
