@@ -1633,22 +1633,22 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Missing image name",
 			containerImage: ":latest",
-			expectedError:  errors.Errorf(errMessage),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Missing image tag",
 			containerImage: "nginx:",
-			expectedError:  errors.Errorf(errMessage),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Empty image name and tag",
 			containerImage: ":",
-			expectedError:  errors.Errorf(errMessage),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Extra colon",
 			containerImage: "nginx:latest:extra",
-			expectedError:  errors.Errorf(errMessage),
+			expectedError:  errors.New(errMessage),
 		},
 	}
 
