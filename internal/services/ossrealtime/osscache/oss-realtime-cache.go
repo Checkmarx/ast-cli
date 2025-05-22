@@ -68,12 +68,21 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
 	}
 
 	for _, pkg := range packages.Packages {
+		vulnerabilities := make([]Vulnerability, 0)
 		if pkg.Status != "Unknown" {
+			for _, v := range pkg.Vulnerabilities {
+				vulnerabilities = append(vulnerabilities, Vulnerability{
+					CVE:         v.CVE,
+					Description: v.Description,
+					Severity:    v.Severity,
+				})
+			}
 			cache.Packages = append(cache.Packages, PackageEntry{
-				PackageManager: pkg.PackageManager,
-				PackageName:    pkg.PackageName,
-				PackageVersion: pkg.Version,
-				Status:         pkg.Status,
+				PackageManager:  pkg.PackageManager,
+				PackageName:     pkg.PackageName,
+				PackageVersion:  pkg.Version,
+				Status:          pkg.Status,
+				Vulnerabilities: vulnerabilities,
 			})
 		}
 	}
@@ -86,10 +95,10 @@ func GetCacheFilePath() string {
 }
 
 // BuildCacheMap creates a lookup map from cache entries.
-func BuildCacheMap(cache Cache) map[string]string {
-	m := make(map[string]string, len(cache.Packages))
+func BuildCacheMap(cache Cache) map[string]PackageEntry {
+	m := make(map[string]PackageEntry, len(cache.Packages))
 	for _, pkg := range cache.Packages {
-		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
+		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg
 	}
 	return m
 }

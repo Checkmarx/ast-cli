@@ -5,10 +5,17 @@ type RealtimeScannerWrapper interface {
 }
 
 type RealtimeScannerResults struct {
-	PackageManager string `json:"PackageManager"`
-	PackageName    string `json:"PackageName"`
-	Version        string `json:"PackageVersion"`
-	Status         string `json:"Status,omitempty"`
+	PackageManager  string                         `json:"PackageManager"`
+	PackageName     string                         `json:"PackageName"`
+	Version         string                         `json:"PackageVersion"`
+	Status          string                         `json:"Status"`
+	Vulnerabilities []RealtimeScannerVulnerability `json:"Vulnerabilities"`
+}
+
+type RealtimeScannerVulnerability struct {
+	CVE         string `json:"CVE"`
+	Description string `json:"Description"`
+	Severity    string `json:"Severity"`
 }
 
 type RealtimeScannerPackageResponse struct {
