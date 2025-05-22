@@ -37,9 +37,9 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		return nil, errors.New("file path is required")
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		return nil, err
-	}
+	//if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
+	//	return nil, err
+	//}
 
 	if err := o.ensureLicense(); err != nil {
 		return nil, err
@@ -68,7 +68,6 @@ func enrichResponseWithRealtimeScannerResults(
 	result *wrappers.RealtimeScannerPackageResponse,
 	packageMap map[string]OssPackage,
 ) {
-	vulnerabilityMapper := NewOssVulnerabilityMapper()
 	for _, pkg := range result.Packages {
 		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
@@ -81,7 +80,7 @@ func enrichResponseWithRealtimeScannerResults(
 			StartIndex:      entry.StartIndex,
 			EndIndex:        entry.EndIndex,
 			Status:          pkg.Status,
-			Vulnerabilities: vulnerabilityMapper.FromRealtimeScanner(pkg.Vulnerabilities),
+			Vulnerabilities: NewOssVulnerabilitiesFromRealtimeScannerVulnerabilities(pkg.Vulnerabilities),
 		})
 	}
 }
@@ -133,7 +132,6 @@ func parseManifest(filePath string) ([]models.Package, error) {
 func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeScannerPackageRequest) {
 	var resp OssPackageResults
 	var req wrappers.RealtimeScannerPackageRequest
-	vulnerabilityMapper := NewOssVulnerabilityMapper()
 
 	cache := osscache.ReadCache()
 	if cache == nil {
@@ -157,7 +155,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				StartIndex:      pkg.StartIndex,
 				EndIndex:        pkg.EndIndex,
 				Status:          cachedPkg.Status,
-				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
+				Vulnerabilities: NewOssVulnerabilitiesFromOssCacheVulnerabilities(cachedPkg.Vulnerabilities),
 			})
 		} else {
 			req.Packages = append(req.Packages, pkgToRequest(&pkg))
