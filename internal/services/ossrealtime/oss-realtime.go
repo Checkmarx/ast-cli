@@ -132,8 +132,6 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 	var resp OssPackageResults
 	var req wrappers.RealtimeScannerPackageRequest
 
-	resp.Packages = make([]OssPackage, 0, len(pkgs))
-
 	cache := osscache.ReadCache()
 	if cache == nil {
 		for _, pkg := range pkgs {
@@ -154,6 +152,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				LineEnd:        pkg.LineEnd,
 				FilePath:       pkg.FilePath,
 				StartIndex:     pkg.StartIndex,
+				EndIndex:       pkg.EndIndex,
 				Status:         status,
 			})
 		} else {
