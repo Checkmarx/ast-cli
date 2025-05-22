@@ -95,6 +95,7 @@ const (
 	ConfigContainersImagesFilterKey         = "imagesFilter"
 	ConfigContainersPackagesFilterKey       = "packagesFilter"
 	ConfigContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
+	ConfigUserCustomImagesKey               = "userCustomImages"
 	resultsMapValue                         = "value"
 	resultsMapType                          = "type"
 	trueString                              = "true"
@@ -980,6 +981,10 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map
 	if imageTagFilter != "" {
 		containerConfig.ImagesFilter = imageTagFilter
 	}
+	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	if userCustomImages != "" {
+		containerConfig.UserCustomImages = userCustomImages
+	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig
@@ -1005,6 +1010,10 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 		resubmitImagesFilter := config.Value[ConfigContainersImagesFilterKey]
 		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
+		}
+		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" {
+			containerConfig.ImagesFilter = resubmitUserCustomImages.(string)
 		}
 	}
 }
@@ -1474,7 +1483,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip && containerResolveLocally
+	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -1496,7 +1505,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
-		if containerScanTriggered && (containerResolveLocally || containerImagesFlag != "") {
+		if containerScanTriggered && containerResolveLocally {
 			containerResolverError := runContainerResolver(cmd, directoryPath, containerImagesFlag, containerResolveLocally)
 			if containerResolverError != nil {
 				if unzip {
@@ -1506,7 +1515,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		}
 
-		if isSingleContainerScanTriggered() && (containerResolveLocally || containerImagesFlag != "") {
+		if isSingleContainerScanTriggered() && containerResolveLocally {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
