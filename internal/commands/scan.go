@@ -145,6 +145,7 @@ func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -178,6 +179,7 @@ func NewScanCommand(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJsonReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
@@ -502,6 +504,7 @@ func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -534,6 +537,7 @@ func scanCreateSubCommand(
 			scansWrapper,
 			exportWrapper,
 			resultsPdfReportsWrapper,
+			resultsJsonReportsWrapper,
 			uploadsWrapper,
 			resultsWrapper,
 			projectsWrapper,
@@ -647,6 +651,7 @@ func scanCreateSubCommand(
 		createScanCmd,
 		printer.FormatSummaryConsole,
 		printer.FormatJSON,
+		printer.FormatJSONReport,
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatSbom,
@@ -661,8 +666,10 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJsonToEmailFlag, "", jsonToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJsonOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1731,6 +1738,7 @@ func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -1804,6 +1812,7 @@ func runCreateScanCommand(
 				scansWrapper,
 				exportWrapper,
 				resultsPdfReportsWrapper,
+				resultsJsonReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
@@ -1820,7 +1829,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
+			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper,
 				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if reportErr != nil {
 				return reportErr
@@ -1832,7 +1841,7 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper, resultsWrapper,
 				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -1990,6 +1999,7 @@ func handleWait(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2002,6 +2012,7 @@ func handleWait(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJsonReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
@@ -2025,6 +2036,7 @@ func createReportsAfterScan(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2037,6 +2049,8 @@ func createReportsAfterScan(
 	reportFormats, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
+	formatJsonToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJsonToEmailFlag)
+	formatJsonOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJsonOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
@@ -2067,10 +2081,13 @@ func createReportsAfterScan(
 		exportWrapper,
 		policyResponseModel,
 		resultsPdfReportsWrapper,
+		resultsJsonReportsWrapper,
 		scan,
 		reportFormats,
 		formatPdfToEmail,
 		formatPdfOptions,
+		formatJsonToEmail,
+		formatJsonOptions,
 		formatSbomOptions,
 		targetFile,
 		targetPath,
@@ -2218,6 +2235,7 @@ func waitForScanCompletion(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2236,7 +2254,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
+		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper, resultsWrapper,
 			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
@@ -2265,6 +2283,7 @@ func isScanRunning(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2296,6 +2315,7 @@ func isScanRunning(
 			scansWrapper,
 			exportWrapper,
 			resultsPdfReportsWrapper,
+			resultsJsonReportsWrapper,
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
