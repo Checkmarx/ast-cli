@@ -160,16 +160,16 @@ func sendRequest(statefulWrapper gptWrapper.StatefulWrapper, azureAiEnabled bool
 			Feature:   featureName,
 		}
 		if azureAiEnabled {
-			logger.Printf("Sending message to Azure AI model for " + featureName + " guided remediation. RequestID: " + requestID)
+			logger.Printf("Sending message to Azure AI model for %s guided remediation. RequestID: %s", featureName, requestID)
 		} else {
-			logger.Printf("Sending message to Checkmarx AI model for " + featureName + " guided remediation. RequestID: " + requestID)
+			logger.Printf("Sending message to Checkmarx AI model for %s guided remediation. RequestID: %s", featureName, requestID)
 		}
 		response, err = chatKicsWrapper.SecureCall(statefulWrapper, id, newMessages, &metadata, customerToken)
 		if err != nil {
 			return nil, err
 		}
 	} else { // if chatgpt is enabled or no engine is enabled
-		logger.Printf("Sending message to ChatGPT model for " + featureName + " guided remediation. RequestID: " + requestID)
+		logger.Printf("Sending message to ChatGPT model for %s guided remediation. RequestID: %s", featureName, requestID)
 		response, err = chatKicsWrapper.Call(statefulWrapper, id, newMessages)
 		if err != nil {
 			return nil, err

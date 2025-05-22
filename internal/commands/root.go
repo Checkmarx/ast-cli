@@ -55,6 +55,7 @@ func NewAstCLI(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	realTimeWrapper wrappers.RealtimeScannerWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -157,6 +158,7 @@ func NewAstCLI(
 		accessManagementWrapper,
 		featureFlagsWrapper,
 		containerResolverWrapper,
+		realTimeWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 
@@ -225,6 +227,7 @@ const configFormatString = "%30v: %s"
 var extraFilter = map[string]map[string]string{
 	"state": {
 		"exclude_not_exploitable": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
+		"EXCLUDE_NOT_EXPLOITABLE": "TO_VERIFY;PROPOSED_NOT_EXPLOITABLE;CONFIRMED;URGENT",
 	},
 	"severity": {},
 	"status":   {},
@@ -245,7 +248,7 @@ func getFilters(cmd *cobra.Command) (map[string]string, error) {
 	for _, filter := range filters {
 		filterKeyVal := strings.Split(filter, "=")
 		if len(filterKeyVal) != params.KeyValuePairSize {
-			return nil, errors.Errorf("Invalid filters. Filters should be in a KEY=VALUE format")
+			return nil, errors.New("Invalid filters. Filters should be in a KEY=VALUE format")
 		}
 		filterKeyVal = validateExtraFilters(filterKeyVal)
 		allFilters[filterKeyVal[0]] = strings.Replace(

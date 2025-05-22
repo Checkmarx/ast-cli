@@ -1540,6 +1540,79 @@ func TestRiskManagementHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "results", "risk-management")
 }
 
+func TestRiskManagement_ShouldFFBeFalseAndReturnError(t *testing.T) {
+	clearFlags()
+	err := execCmdNotNilAssertion(t, "results", "risk-management")
+	assert.Equal(t, err.Error(), "Risk management results are currently unavailable for your tenant.", "Expected error message")
+
+}
+
 func TestRiskManagement(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.RiskManagementEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "risk-management")
+}
+
+func Test_addPackageInformation_DependencyTypes(t *testing.T) {
+	// Create dependency paths with different types
+	var dependencyPaths = [][]wrappers.DependencyPath{
+		{{
+			ID:            "dev-pkg",
+			IsDevelopment: true,
+		}},
+		{{
+			ID:            "test-pkg",
+			IsDevelopment: false,
+		}},
+	}
+
+	// Create results model with two results - one dev and one test
+	resultsModel := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: "sca",
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier: "dev-pkg",
+				},
+			},
+			{
+				Type: "sca",
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier: "test-pkg",
+				},
+			},
+		},
+	}
+
+	// Create package model with different dev/test settings
+	scaPackageModel := &[]wrappers.ScaPackageCollection{
+		{
+			ID:                      "dev-pkg",
+			DependencyPathArray:     dependencyPaths[:1],
+			IsDevelopmentDependency: true,
+			IsTestDependency:        false,
+		},
+		{
+			ID:                      "test-pkg",
+			DependencyPathArray:     dependencyPaths[1:],
+			IsDevelopmentDependency: false,
+			IsTestDependency:        true,
+		},
+	}
+
+	scaTypeModel := &[]wrappers.ScaTypeCollection{{}}
+
+	// Execute the function
+	resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
+
+	// Get the results
+	devPackage := resultsModel.Results[0].ScanResultData.ScaPackageCollection
+	testPackage := resultsModel.Results[1].ScanResultData.ScaPackageCollection
+
+	// Verify the fields were transferred correctly
+	assert.Equal(t, true, devPackage.IsDevelopmentDependency, "First package should be marked as development dependency")
+	assert.Equal(t, false, devPackage.IsTestDependency, "First package should not be marked as test dependency")
+
+	assert.Equal(t, false, testPackage.IsDevelopmentDependency, "Second package should not be marked as development dependency")
+	assert.Equal(t, true, testPackage.IsTestDependency, "Second package should be marked as test dependency")
 }

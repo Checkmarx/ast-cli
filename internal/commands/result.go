@@ -201,7 +201,7 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
-	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper)
+	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper, featureFlagsWrapper)
 	resultCmd.AddCommand(
 		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand, riskManagementSubCommand,
 	)
@@ -226,20 +226,22 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 
 	return exitCodeCmd
 }
-func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper) *cobra.Command {
+func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
 	riskManagementCmd := &cobra.Command{
 		Use:   "risk-management",
 		Short: "Show risk-management results of a project",
 		Long:  "The risk-management command displays risk management results for a specific project in Checkmarx One",
 		Example: heredoc.Doc(
 			`
-			$ cx results risk-management --project-id <project Id> --limit <limit> (1-50, default: 50)
+			$ cx results risk-management --project-id <project Id> --scan-id <scan ID> --limit <limit> (1-50, default: 50)
 		`,
 		),
-		RunE: runRiskManagementCommand(riskManagement),
+		RunE: runRiskManagementCommand(riskManagement, featureFlagsWrapper),
 	}
 
 	riskManagementCmd.PersistentFlags().String(commonParams.ProjectIDFlag, "", "Project ID")
+	riskManagementCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID")
 	riskManagementCmd.PersistentFlags().Int(commonParams.LimitFlag, -1, "Limit")
 
 	addFormatFlag(riskManagementCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
@@ -350,12 +352,20 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) func(cmd *cobra.Command, args []string) error {
+func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
+		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
+
 		limit, _ := cmd.Flags().GetInt(commonParams.LimitFlag)
 
-		results, err := getRiskManagementResults(riskManagement, projectID)
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RiskManagementEnabled)
+		ASPMEnabled := flagResponse.Status
+		if !ASPMEnabled {
+			return errors.Errorf("%s", "Risk management results are currently unavailable for your tenant.")
+		}
+		results, err := getRiskManagementResults(riskManagement, projectID, scanID)
 		if err != nil {
 			return err
 		}
@@ -365,8 +375,8 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) fun
 	}
 }
 
-func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID string) (*wrappers.ASPMResult, error) {
-	ASPMResult, errorModel, err := riskManagement.GetTopVulnerabilitiesByProjectID(projectID)
+func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, projectID, scanID string) (*wrappers.ASPMResult, error) {
+	ASPMResult, errorModel, err := riskManagement.GetTopVulnerabilitiesByProjectID(projectID, scanID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "%s", failedListingResults)
 	}
@@ -1534,11 +1544,13 @@ func parseScaExportPackage(packages []wrappers.ScaPackage) *[]wrappers.ScaPackag
 	for _, pkg := range packages {
 		pkg := pkg
 		scaPackages = append(scaPackages, wrappers.ScaPackageCollection{
-			ID:                  pkg.ID,
-			Locations:           pkg.Locations,
-			DependencyPathArray: parsePackagePathToDependencyPath(&pkg),
-			Outdated:            pkg.Outdated,
-			IsDirectDependency:  pkg.IsDirectDependency,
+			ID:                      pkg.ID,
+			Locations:               pkg.Locations,
+			DependencyPathArray:     parsePackagePathToDependencyPath(&pkg),
+			Outdated:                pkg.Outdated,
+			IsDirectDependency:      pkg.IsDirectDependency,
+			IsDevelopmentDependency: pkg.IsDevelopmentDependency,
+			IsTestDependency:        pkg.IsTestDependency,
 		})
 	}
 	return &scaPackages

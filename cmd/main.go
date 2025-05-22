@@ -27,7 +27,8 @@ func main() {
 	var err error
 	bindProxy()
 	bindKeysToEnvAndDefault()
-	configuration.LoadConfiguration()
+	err = configuration.LoadConfiguration()
+	exitIfError(err)
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
@@ -55,6 +56,7 @@ func main() {
 	sastMetadataPath := viper.GetString(params.SastMetadataPathKey)
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
+	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
 
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -85,11 +87,12 @@ func main() {
 	scaRealTimeWrapper := wrappers.NewHTTPScaRealTimeWrapper()
 	chatWrapper := wrappers.NewChatWrapper()
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)
-	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath)
+	policyWrapper := wrappers.NewHTTPPolicyWrapper(policyEvaluationPath, featureFlagsWrapper)
 	sastMetadataWrapper := wrappers.NewSastIncrementalHTTPWrapper(sastMetadataPath)
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
+	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -126,6 +129,7 @@ func main() {
 		accessManagementWrapper,
 		byorWrapper,
 		containerResolverWrapper,
+		realTimeWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

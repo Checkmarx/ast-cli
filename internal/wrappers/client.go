@@ -99,6 +99,28 @@ func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, b
 	return resp, nil
 }
 
+// "Check the response status; if it is one of 500, 501, 502, 503, or 504 the request will be resending (only 4 retries)."
+func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
+
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; attempt < retries; attempt++ {
+		resp, err = requestFunc()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode >= 500 && resp.StatusCode <= 504 {
+			logger.PrintIfVerbose(fmt.Sprintf("Encountered HTTP %s response — will retry ", resp.Status))
+		} else {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+		time.Sleep(baseDelayInMilliSec * (3 << attempt))
+	}
+	return nil, err
+}
+
 func setAgentNameAndOrigin(req *http.Request) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
@@ -123,7 +145,7 @@ func GetClient(timeout uint) *http.Client {
 
 	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) > 1 {
-			return fmt.Errorf("too many redirects")
+			return errors.New("too many redirects")
 		}
 		if len(via) != 0 && req.Response.StatusCode == http.StatusMovedPermanently {
 			for attr, val := range via[0].Header {
@@ -349,7 +371,7 @@ func addTenantAuthURI(baseAuthURI string) (string, error) {
 	tenant := viper.GetString(commonParams.TenantKey)
 
 	if tenant == "" {
-		return "", errors.Errorf(MissingTenant)
+		return "", errors.New(MissingTenant)
 	}
 
 	authPath = strings.Replace(authPath, "organization", strings.ToLower(tenant), 1)
@@ -454,9 +476,9 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key ID"))
+		return "", errors.Errorf(FailedToAuth, "access key ID")
 	} else if accessKeySecret == "" && astAPIKey == "" {
-		return "", errors.Errorf(fmt.Sprintf(FailedToAuth, "access key secret"))
+		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
 	authURI, err := GetAuthURI()
@@ -513,7 +535,26 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	client := GetClient(clientTimeout)
 
-	res, err := doPrivateRequest(client, req)
+	//Save body for retry logic
+	var body []byte
+	if req.Body != nil {
+		body, err = io.ReadAll(req.Body)
+		if err != nil {
+			fmt.Errorf("failed to read request body: %w", err)
+		}
+		if req.Body != nil {
+			req.Body.Close()
+		}
+	}
+	fn := func() (*http.Response, error) {
+		if body != nil {
+			_ = req.Body.Close()
+			req.Body = io.NopCloser(bytes.NewBuffer(body))
+		}
+		return doPrivateRequest(client, req)
+	}
+	res, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+
 	if err != nil {
 		authURL, _ := GetAuthURI()
 		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
@@ -528,7 +569,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 
-	body, _ := ioutil.ReadAll(res.Body)
+	body, _ = ioutil.ReadAll(res.Body)
 	if res.StatusCode != http.StatusOK {
 		credentialsErr := ClientCredentialsError{}
 		err = json.Unmarshal(body, &credentialsErr)
@@ -642,12 +683,12 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 func handleRedirect(resp *http.Response, req *http.Request, body []byte) (*http.Request, error) {
 	redirectURL := resp.Header.Get("Location")
 	if redirectURL == "" {
-		return nil, fmt.Errorf(applicationErrors.RedirectURLNotFound)
+		return nil, errors.New(applicationErrors.RedirectURLNotFound)
 	}
 
 	method := GetHTTPMethod(req)
 	if method == "" {
-		return nil, fmt.Errorf(applicationErrors.HTTPMethodNotFound)
+		return nil, errors.New(applicationErrors.HTTPMethodNotFound)
 	}
 
 	newReq, err := recreateRequest(req, method, redirectURL, body)
@@ -764,7 +805,7 @@ func GetURL(path, accessToken string) (string, error) {
 	}
 
 	if cleanURL == "" {
-		return "", errors.Errorf(MissingURI)
+		return "", errors.New(MissingURI)
 	}
 
 	cleanURL = strings.Trim(cleanURL, "/")

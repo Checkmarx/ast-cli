@@ -16,8 +16,6 @@ import (
 	"gotest.tools/assert"
 )
 
-var projectID string
-
 func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
@@ -101,7 +99,6 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 }
 
 func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
-
 	err, _ := executeCommand(
 		t, "triage", "update",
 		flag(params.ProjectIDFlag), "1234",
@@ -152,8 +149,6 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 	_ = unmarshall(t, responseKics, &kicsPredicate, "Reading predicate should pass")
 	assert.Assert(t, kicsPredicate.TotalCount == 0, "Predicate with invalid values should have 0 as the result.")
 }
-
-
 
 func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
 	t.Skip("Skipping this test temporarily until the API becomes available in the DEU environment.")

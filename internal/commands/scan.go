@@ -60,7 +60,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.5"
+	containerImage                          = "checkmarx/kics:v2.1.7"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -160,6 +160,7 @@ func NewScanCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -212,6 +213,8 @@ func NewScanCommand(
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
+	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -231,6 +234,7 @@ func NewScanCommand(
 		logsCmd,
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
+		ossRealtimeCmd,
 	)
 	return scanCmd
 }
@@ -440,6 +444,36 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"The file source should be the path to a single file",
 	)
 	return scanASCACmd
+}
+
+func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanOssRealtimeCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "oss-realtime",
+		Short:  "Run a OSS-Realtime scan",
+		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan oss-realtime -s <path to a manifest files separated by commas>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+			`,
+			),
+		},
+		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+	}
+
+	scanOssRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file or multiple files separated by commas",
+	)
+	return scanOssRealtimeCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
@@ -652,6 +686,7 @@ func scanCreateSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
@@ -724,7 +759,7 @@ func setupScanTypeProjectAndConfig(
 	if newProjectName != "" {
 		info["project"].(map[string]interface{})["id"] = newProjectName
 	} else {
-		return errors.Errorf("Project name is required")
+		return errors.New("Project name is required")
 	}
 
 	// We need to convert the project name into an ID
@@ -1081,7 +1116,7 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 func isScorecardRunnable(scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
 		if userScanTypes != "" {
-			return false, errors.Errorf(ScsRepoRequiredMsg)
+			return false, errors.New(ScsRepoRequiredMsg)
 		}
 		fmt.Println(ScsRepoWarningMsg)
 		return false, nil
@@ -2129,7 +2164,7 @@ func parseThresholdLimit(limit string) (engineName string, intLimit int, err err
 	parts := strings.Split(limit, "=")
 	engineName = strings.Replace(parts[0], commonParams.KicsType, commonParams.IacType, 1)
 	if len(parts) <= 1 {
-		return engineName, 0, errors.Errorf("Error parsing threshold limit: missing values\n")
+		return engineName, 0, errors.New("Error parsing threshold limit: missing values\n")
 	}
 	intLimit, err = strconv.Atoi(parts[1])
 	if err != nil {
@@ -2237,7 +2272,7 @@ func isScanRunning(
 		log.Fatal("Cannot source code temp file.", err)
 	}
 	if errorModel != nil {
-		log.Fatalf(fmt.Sprintf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message))
+		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 	} else if scanResponseModel != nil {
 		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
 			log.Println("Scan status: ", scanResponseModel.Status)
