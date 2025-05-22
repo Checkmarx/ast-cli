@@ -1670,6 +1670,77 @@ func TestValidateContainerImageFormat(t *testing.T) {
 	}
 }
 
+func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name                 string
+		resubmitConfig       []wrappers.Config
+		expectedCustomImages string
+	}{
+		{
+			name: "When UserCustomImages is valid string, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			expectedCustomImages: "image1:tag1,image2:tag2",
+		},
+		{
+			name: "When UserCustomImages is empty string, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "",
+					},
+				},
+			},
+			expectedCustomImages: "",
+		},
+		{
+			name: "When UserCustomImages is nil, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: nil,
+					},
+				},
+			},
+			expectedCustomImages: "",
+		},
+		{
+			name: "When config.Value doesn't have UserCustomImages key, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type:  commonParams.ContainersType,
+					Value: map[string]interface{}{},
+				},
+			},
+			expectedCustomImages: "",
+		},
+	}
+
+	// Run each test case
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Initialize containerConfig
+			containerConfig := &wrappers.ContainerConfig{}
+
+			// Call the function under test
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig)
+
+			// Assert the result
+			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
+				"Expected UserCustomImages to be %q but got %q", tc.expectedCustomImages, containerConfig.UserCustomImages)
+		})
+	}
+}
+
 func Test_WhenScaResolverAndResultsFileExist_ThenAddScaResultsShouldRemoveThemAfterAddingToZip(t *testing.T) {
 	// Step 1: Create a temporary file to  simulate the SCA results file and check for errors.
 	tempFile, err := os.CreateTemp("", "sca_results_test")
