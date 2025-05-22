@@ -1670,6 +1670,38 @@ func TestValidateContainerImageFormat(t *testing.T) {
 	}
 }
 
+func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flag
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+
+	// Set test values for container images (comma-separated private artifactory images)
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType // Use string instead of slice
+	defer func() {
+		actualScanTypes = originalScanTypes // Restore original value instead of nil
+	}()
+
+	// Execute
+	result := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s', but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
