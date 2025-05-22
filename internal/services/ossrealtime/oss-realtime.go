@@ -37,9 +37,9 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		return nil, errors.New("file path is required")
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		return nil, err
-	}
+	//if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
+	//	return nil, err
+	//}
 
 	if err := o.ensureLicense(); err != nil {
 		return nil, err
@@ -71,15 +71,16 @@ func enrichResponseWithRealtimeScannerResults(
 	for _, pkg := range result.Packages {
 		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
-			PackageManager: pkg.PackageManager,
-			PackageName:    pkg.PackageName,
-			PackageVersion: pkg.Version,
-			FilePath:       entry.FilePath,
-			LineStart:      entry.LineStart,
-			LineEnd:        entry.LineEnd,
-			StartIndex:     entry.StartIndex,
-			EndIndex:       entry.EndIndex,
-			Status:         pkg.Status,
+			PackageManager:  pkg.PackageManager,
+			PackageName:     pkg.PackageName,
+			PackageVersion:  pkg.Version,
+			FilePath:        entry.FilePath,
+			LineStart:       entry.LineStart,
+			LineEnd:         entry.LineEnd,
+			StartIndex:      entry.StartIndex,
+			EndIndex:        entry.EndIndex,
+			Status:          pkg.Status,
+			Vulnerabilities: NewOssVulnerabilitiesFromRealtimeScannerVulnerabilities(pkg.Vulnerabilities),
 		})
 	}
 }
@@ -143,17 +144,18 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 	cacheMap := osscache.BuildCacheMap(*cache)
 	for _, pkg := range pkgs {
 		key := osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
-		if status, found := cacheMap[key]; found {
+		if cachedPkg, found := cacheMap[key]; found {
 			resp.Packages = append(resp.Packages, OssPackage{
-				PackageManager: pkg.PackageManager,
-				PackageName:    pkg.PackageName,
-				PackageVersion: pkg.Version,
-				LineStart:      pkg.LineStart,
-				LineEnd:        pkg.LineEnd,
-				FilePath:       pkg.FilePath,
-				StartIndex:     pkg.StartIndex,
-				EndIndex:       pkg.EndIndex,
-				Status:         status,
+				PackageManager:  pkg.PackageManager,
+				PackageName:     pkg.PackageName,
+				PackageVersion:  pkg.Version,
+				LineStart:       pkg.LineStart,
+				LineEnd:         pkg.LineEnd,
+				FilePath:        pkg.FilePath,
+				StartIndex:      pkg.StartIndex,
+				EndIndex:        pkg.EndIndex,
+				Status:          cachedPkg.Status,
+				Vulnerabilities: NewOssVulnerabilitiesFromOssCacheVulnerabilities(cachedPkg.Vulnerabilities),
 			})
 		} else {
 			req.Packages = append(req.Packages, pkgToRequest(&pkg))
