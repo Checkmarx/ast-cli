@@ -39,7 +39,6 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 }
 
 func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
-
 	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
 	if err != nil {
 		return errors.Wrapf(err, "Failed checking license")
