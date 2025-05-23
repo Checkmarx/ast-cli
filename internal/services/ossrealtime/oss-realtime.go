@@ -132,8 +132,6 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 	var resp OssPackageResults
 	var req wrappers.RealtimeScannerPackageRequest
 
-	resp.Packages = make([]OssPackage, 0, len(pkgs))
-
 	cache := osscache.ReadCache()
 	if cache == nil {
 		for _, pkg := range pkgs {
@@ -152,8 +150,9 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageVersion: pkg.Version,
 				LineStart:      pkg.LineStart,
 				LineEnd:        pkg.LineEnd,
-				FilePath:       pkg.Filepath,
+				FilePath:       pkg.FilePath,
 				StartIndex:     pkg.StartIndex,
+				EndIndex:       pkg.EndIndex,
 				Status:         status,
 			})
 		} else {
@@ -171,7 +170,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
-			FilePath:       pkg.Filepath,
+			FilePath:       pkg.FilePath,
 			LineStart:      pkg.LineStart,
 			LineEnd:        pkg.LineEnd,
 			StartIndex:     pkg.StartIndex,

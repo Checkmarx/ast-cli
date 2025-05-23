@@ -75,8 +75,8 @@ github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63/go.mod h1:MI6lfLerXU+5eTV/EPTDavgnV3owz3GPT4g/msZBWPo=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2 h1:T6X40+4hYnwfDsvkjWs9VIcE6s1O+8DUu0+sDdCY3GI=
 github.com/Checkmarx/gen-ai-wrapper v1.0.2/go.mod h1:xwRLefezwNNnRGu1EjGS6wNiR9FVV/eP9D+oXwLViVM=
-github.com/Checkmarx/manifest-parser v0.0.4 h1:0UB+FTJu3A9YT/VeJDNvMrX7KBy4mYCVJVK8kNYkcaU=
-github.com/Checkmarx/manifest-parser v0.0.4/go.mod h1:s11sV8akqWX+H0MwFK3XBF8H6JohAjoQe8ClvdDFziQ=
+github.com/Checkmarx/manifest-parser v0.0.6 h1:WgtygMTWUM+/3j/tE74BqV5yx9r+vm/g+sOnV7ejY+g=
+github.com/Checkmarx/manifest-parser v0.0.6/go.mod h1:s11sV8akqWX+H0MwFK3XBF8H6JohAjoQe8ClvdDFziQ=
 github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf h1:lKiogedU3WzWBc/xI6Xj1BhX2Gp1QBJj8C+czY7CcaE=
 github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf/go.mod h1:mtAHOm1mHGh7MVu6JdYUyitANsLcHNLUTBIh9pTERNI=
 github.com/Checkmarx/secret-detection v0.0.3-0.20250515130158-afa5bc2c67e3 h1:In9Zw54S4+iKrJAX8MRHIrXwNUT/i8ut3+4YOOe+Dac=
