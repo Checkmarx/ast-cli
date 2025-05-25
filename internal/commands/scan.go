@@ -2855,7 +2855,7 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateContainerImageFormat(containerImage string) error {
-	pattern := regexp.MustCompile(`^(?:[a-zA-Z0-9.-]+(?::[0-9]+)?/)?(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*(?::[\w][\w.-]{0,127})?$`)
+	pattern := regexp.MustCompile(`^(?:[a-zA-Z0-9.-]+(?::[0-9]+)?/)?(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*:[\w][\w.-]{0,127}$`)
 
 	matched := pattern.MatchString(containerImage)
 
