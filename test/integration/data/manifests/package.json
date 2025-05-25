@@ -7,7 +7,7 @@
 		},
 		"description": "Beat vulnerabilities with more-secure code",
 		"devDependencies": {
-				"lodash": "4.17.11"
+				"lodash": "4.17.21"
 		},
 		"version": "2.0.4"
 }
