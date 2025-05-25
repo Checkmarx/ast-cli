@@ -79,17 +79,17 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMap
 
 		if requestedVersion, exists := versionMapping[key]; exists {
 			if !strings.EqualFold(requestedVersion, pkg.Version) && strings.EqualFold("latest", requestedVersion) {
-				cache.Packages = append(cache.Packages, *createPackageEntry(pkg, requestedVersion, vulnerabilities))
+				cache.Packages = append(cache.Packages, createPackageEntry(&pkg, requestedVersion, vulnerabilities))
 			}
 		}
-		cache.Packages = append(cache.Packages, *createPackageEntry(pkg, pkg.Version, vulnerabilities))
+		cache.Packages = append(cache.Packages, createPackageEntry(&pkg, pkg.Version, vulnerabilities))
 	}
 
 	return WriteCache(*cache, &cache.TTL)
 }
 
-func createPackageEntry(pkg wrappers.RealtimeScannerResults, version string, vulnerabilities []Vulnerability) *PackageEntry {
-	return &PackageEntry{
+func createPackageEntry(pkg *wrappers.RealtimeScannerResults, version string, vulnerabilities []Vulnerability) PackageEntry {
+	return PackageEntry{
 		PackageID:       GenerateCacheKey(pkg.PackageManager, pkg.PackageName, version),
 		PackageManager:  pkg.PackageManager,
 		PackageName:     pkg.PackageName,
