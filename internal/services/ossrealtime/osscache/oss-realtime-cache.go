@@ -59,7 +59,7 @@ func WriteCache(cache Cache, cacheTTL *time.Time) error {
 	return nil
 }
 
-func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMapping map[string]VersionMapping) error {
+func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMapping map[string]string) error {
 	vulnerabilityMapper := NewOssCacheVulnerabilityMapper()
 	cache := ReadCache()
 	if cache == nil {
@@ -77,9 +77,9 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMap
 		key := GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		vulnerabilities := vulnerabilityMapper.FromRealtimeScannerVulnerability(pkg.Vulnerabilities)
 
-		if versionEntry, exists := versionMapping[key]; exists {
-			if !strings.EqualFold(versionEntry.ActualVersion, versionEntry.RequestedVersion) {
-				cache.Packages = append(cache.Packages, createPackageEntry(pkg, versionEntry.RequestedVersion, vulnerabilities))
+		if requestedVersion, exists := versionMapping[key]; exists {
+			if !strings.EqualFold(requestedVersion, pkg.Version) {
+				cache.Packages = append(cache.Packages, createPackageEntry(pkg, requestedVersion, vulnerabilities))
 			}
 		}
 		cache.Packages = append(cache.Packages, createPackageEntry(pkg, pkg.Version, vulnerabilities))

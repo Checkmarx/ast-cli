@@ -206,14 +206,11 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		requestPackageMap[key] = pkg
 	}
 
-	versionMapping := make(map[string]osscache.VersionMapping)
+	versionMapping := make(map[string]string)
 	for _, resPkg := range result.Packages {
 		key := fmt.Sprintf("%s|%s", strings.ToLower(resPkg.PackageManager), strings.ToLower(resPkg.PackageName))
 		if pkg, found := requestPackageMap[key]; found {
-			versionMapping[osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, resPkg.Version)] = osscache.VersionMapping{
-				RequestedVersion: pkg.Version,
-				ActualVersion:    resPkg.Version,
-			}
+			versionMapping[osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, resPkg.Version)] = pkg.Version
 		}
 	}
 

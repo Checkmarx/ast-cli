@@ -12,11 +12,6 @@ type PackageEntry struct {
 	Status          string          `json:"status"`
 	Vulnerabilities []Vulnerability `json:"vulnerabilities"`
 }
-
-type VersionMapping struct {
-	RequestedVersion string
-	ActualVersion    string
-}
 type Vulnerability struct {
 	CVE         string `json:"cve"`
 	Description string `json:"description"`
