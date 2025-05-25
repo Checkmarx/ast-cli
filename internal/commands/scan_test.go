@@ -1594,6 +1594,11 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			name:           "Valid container image format",
+			containerImage: "service.test.whatever.image:8443/service/registries:custom-value",
+			expectedError:  nil,
+		},
+		{
 			name:           "Missing image name",
 			containerImage: ":latest",
 			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
