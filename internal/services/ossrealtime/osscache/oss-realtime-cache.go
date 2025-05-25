@@ -78,7 +78,7 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMap
 		vulnerabilities := vulnerabilityMapper.FromRealtimeScannerVulnerability(pkg.Vulnerabilities)
 
 		if requestedVersion, exists := versionMapping[key]; exists {
-			if !strings.EqualFold(requestedVersion, pkg.Version) {
+			if !strings.EqualFold(requestedVersion, pkg.Version) && strings.EqualFold("latest", requestedVersion) {
 				cache.Packages = append(cache.Packages, createPackageEntry(pkg, requestedVersion, vulnerabilities))
 			}
 		}

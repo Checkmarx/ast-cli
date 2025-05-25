@@ -200,17 +200,17 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		return nil, errors.New("empty response from oss-realtime scan")
 	}
 
-	requestPackageMap := make(map[string]wrappers.RealtimeScannerPackage)
+	requestedPackagesVersion := make(map[string]string)
 	for _, pkg := range requestPackages.Packages {
 		key := fmt.Sprintf("%s|%s", strings.ToLower(pkg.PackageManager), strings.ToLower(pkg.PackageName))
-		requestPackageMap[key] = pkg
+		requestedPackagesVersion[key] = pkg.Version
 	}
 
 	versionMapping := make(map[string]string)
 	for _, resPkg := range result.Packages {
 		key := fmt.Sprintf("%s|%s", strings.ToLower(resPkg.PackageManager), strings.ToLower(resPkg.PackageName))
-		if pkg, found := requestPackageMap[key]; found {
-			versionMapping[osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, resPkg.Version)] = pkg.Version
+		if requestedVersion, found := requestedPackagesVersion[key]; found {
+			versionMapping[osscache.GenerateCacheKey(resPkg.PackageManager, resPkg.PackageName, resPkg.Version)] = requestedVersion
 		}
 	}
 
