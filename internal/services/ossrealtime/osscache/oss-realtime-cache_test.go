@@ -67,7 +67,7 @@ func TestAppendToCache(t *testing.T) {
 			{PackageManager: "npm", PackageName: "lodash", Version: "4.17.21", Status: "OK"},
 		},
 	}
-	if err := AppendToCache(first); err != nil {
+	if err := AppendToCache(first, nil); err != nil {
 		t.Fatalf("AppendToCache(first) error = %v; want no error", err)
 	}
 
@@ -77,7 +77,7 @@ func TestAppendToCache(t *testing.T) {
 			{PackageManager: "npm", PackageName: "express", Version: "4.17.1", Status: "Malicious"},
 		},
 	}
-	if err := AppendToCache(second); err != nil {
+	if err := AppendToCache(second, nil); err != nil {
 		t.Fatalf("AppendToCache(second) error = %v; want no error", err)
 	}
 
