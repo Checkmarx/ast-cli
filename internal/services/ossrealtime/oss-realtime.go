@@ -69,6 +69,7 @@ func enrichResponseWithRealtimeScannerResults(
 	result *wrappers.RealtimeScannerPackageResponse,
 	packageMap map[string]OssPackage,
 ) {
+	vulnerabilityMapper := NewOssVulnerabilityMapper()
 	for _, pkg := range result.Packages {
 		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
@@ -81,7 +82,7 @@ func enrichResponseWithRealtimeScannerResults(
 			StartIndex:      entry.StartIndex,
 			EndIndex:        entry.EndIndex,
 			Status:          pkg.Status,
-			Vulnerabilities: NewOssVulnerabilitiesFromRealtimeScannerVulnerabilities(pkg.Vulnerabilities),
+			Vulnerabilities: vulnerabilityMapper.FromRealtimeScanner(pkg.Vulnerabilities),
 		})
 	}
 }
@@ -133,6 +134,7 @@ func parseManifest(filePath string) ([]models.Package, error) {
 func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeScannerPackageRequest) {
 	var resp OssPackageResults
 	var req wrappers.RealtimeScannerPackageRequest
+	vulnerabilityMapper := NewOssVulnerabilityMapper()
 
 	cache := osscache.ReadCache()
 	if cache == nil {
@@ -156,7 +158,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				StartIndex:      pkg.StartIndex,
 				EndIndex:        pkg.EndIndex,
 				Status:          cachedPkg.Status,
-				Vulnerabilities: NewOssVulnerabilitiesFromOssCacheVulnerabilities(cachedPkg.Vulnerabilities),
+				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
 			})
 		} else {
 			req.Packages = append(req.Packages, pkgToRequest(&pkg))
