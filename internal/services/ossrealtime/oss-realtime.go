@@ -3,6 +3,7 @@ package ossrealtime
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
@@ -53,11 +54,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 	response, toScan := prepareScan(pkgs)
 
 	if len(toScan.Packages) > 0 {
-		packageMap := createPackageMap(pkgs)
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning packages via realtime service")
 		}
+		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
 	return response, nil
@@ -199,9 +200,27 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		return nil, errors.New("empty response from oss-realtime scan")
 	}
 
-	if err = osscache.AppendToCache(result); err != nil {
+	requestPackageMap := make(map[string]wrappers.RealtimeScannerPackage)
+	for _, pkg := range requestPackages.Packages {
+		key := fmt.Sprintf("%s|%s", strings.ToLower(pkg.PackageManager), strings.ToLower(pkg.PackageName))
+		requestPackageMap[key] = pkg
+	}
+
+	versionMapping := make(map[string]osscache.VersionMapping)
+	for _, resPkg := range result.Packages {
+		key := fmt.Sprintf("%s|%s", strings.ToLower(resPkg.PackageManager), strings.ToLower(resPkg.PackageName))
+		if pkg, found := requestPackageMap[key]; found {
+			versionMapping[osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, resPkg.Version)] = osscache.VersionMapping{
+				RequestedVersion: pkg.Version,
+				ActualVersion:    resPkg.Version,
+			}
+		}
+	}
+
+	if err := osscache.AppendToCache(result, versionMapping); err != nil {
 		log.Printf("ossrealtime: failed to update cache: %v", err)
 	}
+
 	return result, nil
 }
 
