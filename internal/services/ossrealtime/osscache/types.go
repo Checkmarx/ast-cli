@@ -19,11 +19,6 @@ type Vulnerability struct {
 	Severity    string `json:"severity"`
 }
 
-type VersionMapping struct {
-	RequestedVersion string
-	ActualVersion    string
-}
-
 type Cache struct {
 	TTL      time.Time      `json:"ttl"`
 	Packages []PackageEntry `json:"packages"`
