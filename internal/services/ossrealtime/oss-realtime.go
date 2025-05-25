@@ -38,9 +38,9 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		return nil, errors.New("file path is required")
 	}
 
-	//if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-	//	return nil, err
-	//}
+	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
+		return nil, err
+	}
 
 	if err := o.ensureLicense(); err != nil {
 		return nil, err
