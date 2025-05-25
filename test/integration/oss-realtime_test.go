@@ -22,7 +22,6 @@ func TestOssRealtimeScan_RequirementsTxtFile_Success(t *testing.T) {
 }
 
 func TestOssRealtimeScan_PackageJsonFileWithVulnerablePackages_Success(t *testing.T) {
-	t.Skip() // Skip this test for now
 	args := []string{
 		"scan", "oss-realtime",
 		flag(commonParams.SourcesFlag), "data/manifests/package.json",
