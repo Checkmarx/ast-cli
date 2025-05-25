@@ -200,6 +200,16 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		return nil, errors.New("empty response from oss-realtime scan")
 	}
 
+	versionMapping := createVersionMapping(requestPackages, result)
+
+	if err := osscache.AppendToCache(result, versionMapping); err != nil {
+		log.Printf("ossrealtime: failed to update cache: %v", err)
+	}
+
+	return result, nil
+}
+
+func createVersionMapping(requestPackages *wrappers.RealtimeScannerPackageRequest, result *wrappers.RealtimeScannerPackageResponse) map[string]string {
 	requestedPackagesVersion := make(map[string]string)
 	for _, pkg := range requestPackages.Packages {
 		key := fmt.Sprintf("%s|%s", strings.ToLower(pkg.PackageManager), strings.ToLower(pkg.PackageName))
@@ -214,11 +224,7 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		}
 	}
 
-	if err := osscache.AppendToCache(result, versionMapping); err != nil {
-		log.Printf("ossrealtime: failed to update cache: %v", err)
-	}
-
-	return result, nil
+	return versionMapping
 }
 
 // pkgToRequest transforms a parsed package into a scan request.
