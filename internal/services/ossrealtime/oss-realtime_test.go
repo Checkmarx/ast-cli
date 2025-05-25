@@ -90,7 +90,7 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 	cleanCacheFile(t)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
-		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
+		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 
@@ -113,7 +113,7 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 	cleanCacheFile(t)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
-		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
+		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now())
 
@@ -147,7 +147,7 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 	cleanCacheFile(t)
 	singlePackage := setupSinglePackage()
 	storedPackages := []osscache.PackageEntry{
-		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
+		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 
@@ -217,7 +217,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	}
 
 	storedPackages := []osscache.PackageEntry{
-		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
+		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 

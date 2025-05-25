@@ -68,12 +68,22 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
 	}
 
 	for _, pkg := range packages.Packages {
+		vulnerabilities := make([]Vulnerability, 0)
 		if pkg.Status != "Unknown" {
+			for _, v := range pkg.Vulnerabilities {
+				vulnerabilities = append(vulnerabilities, Vulnerability{
+					CVE:         v.CVE,
+					Description: v.Description,
+					Severity:    v.Severity,
+				})
+			}
 			cache.Packages = append(cache.Packages, PackageEntry{
-				PackageManager: pkg.PackageManager,
-				PackageName:    pkg.PackageName,
-				PackageVersion: pkg.Version,
-				Status:         pkg.Status,
+				PackageID:       GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version),
+				PackageManager:  pkg.PackageManager,
+				PackageName:     pkg.PackageName,
+				PackageVersion:  pkg.Version,
+				Status:          pkg.Status,
+				Vulnerabilities: vulnerabilities,
 			})
 		}
 	}
@@ -86,12 +96,12 @@ func GetCacheFilePath() string {
 }
 
 // BuildCacheMap creates a lookup map from cache entries.
-func BuildCacheMap(cache Cache) map[string]string {
-	m := make(map[string]string, len(cache.Packages))
+func BuildCacheMap(cache Cache) map[string]PackageEntry {
+	packagesMap := make(map[string]PackageEntry, len(cache.Packages))
 	for _, pkg := range cache.Packages {
-		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
+		packagesMap[pkg.PackageID] = pkg
 	}
-	return m
+	return packagesMap
 }
 
 // GenerateCacheKey constructs a unique key for a package.
