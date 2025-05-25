@@ -3,6 +3,7 @@ package ossrealtime
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
@@ -53,11 +54,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 	response, toScan := prepareScan(pkgs)
 
 	if len(toScan.Packages) > 0 {
-		packageMap := createPackageMap(pkgs)
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
 			return nil, errors.Wrap(err, "scanning packages via realtime service")
 		}
+		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
 	return response, nil
@@ -199,10 +200,31 @@ func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScan
 		return nil, errors.New("empty response from oss-realtime scan")
 	}
 
-	if err = osscache.AppendToCache(result); err != nil {
+	versionMapping := createVersionMapping(requestPackages, result)
+
+	if err := osscache.AppendToCache(result, versionMapping); err != nil {
 		log.Printf("ossrealtime: failed to update cache: %v", err)
 	}
+
 	return result, nil
+}
+
+func createVersionMapping(requestPackages *wrappers.RealtimeScannerPackageRequest, result *wrappers.RealtimeScannerPackageResponse) map[string]string {
+	requestedPackagesVersion := make(map[string]string)
+	for _, pkg := range requestPackages.Packages {
+		key := fmt.Sprintf("%s|%s", strings.ToLower(pkg.PackageManager), strings.ToLower(pkg.PackageName))
+		requestedPackagesVersion[key] = pkg.Version
+	}
+
+	versionMapping := make(map[string]string)
+	for _, resPkg := range result.Packages {
+		key := fmt.Sprintf("%s|%s", strings.ToLower(resPkg.PackageManager), strings.ToLower(resPkg.PackageName))
+		if requestedVersion, found := requestedPackagesVersion[key]; found {
+			versionMapping[osscache.GenerateCacheKey(resPkg.PackageManager, resPkg.PackageName, resPkg.Version)] = requestedVersion
+		}
+	}
+
+	return versionMapping
 }
 
 // pkgToRequest transforms a parsed package into a scan request.

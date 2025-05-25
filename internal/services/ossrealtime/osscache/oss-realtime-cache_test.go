@@ -3,6 +3,7 @@ package osscache
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,7 +27,6 @@ func TestWriteAndReadCache(t *testing.T) {
 	cacheFile := GetCacheFilePath()
 	defer os.Remove(cacheFile)
 
-	// prepare a cache object
 	ttl := time.Now().Add(time.Hour).Truncate(time.Second)
 	want := Cache{
 		TTL: ttl,
@@ -40,12 +40,10 @@ func TestWriteAndReadCache(t *testing.T) {
 		},
 	}
 
-	// write it
 	if err := WriteCache(want, &want.TTL); err != nil {
 		t.Fatalf("WriteCache() error = %v; want no error", err)
 	}
 
-	// read it back
 	got := ReadCache()
 	if got == nil {
 		t.Fatal("ReadCache() returned nil; want non-nil")
@@ -61,27 +59,24 @@ func TestAppendToCache(t *testing.T) {
 	cacheFile := GetCacheFilePath()
 	defer os.Remove(cacheFile)
 
-	// first batch
 	first := &wrappers.RealtimeScannerPackageResponse{
 		Packages: []wrappers.RealtimeScannerResults{
 			{PackageManager: "npm", PackageName: "lodash", Version: "4.17.21", Status: "OK"},
 		},
 	}
-	if err := AppendToCache(first); err != nil {
+	if err := AppendToCache(first, nil); err != nil {
 		t.Fatalf("AppendToCache(first) error = %v; want no error", err)
 	}
 
-	// second batch
 	second := &wrappers.RealtimeScannerPackageResponse{
 		Packages: []wrappers.RealtimeScannerResults{
 			{PackageManager: "npm", PackageName: "express", Version: "4.17.1", Status: "Malicious"},
 		},
 	}
-	if err := AppendToCache(second); err != nil {
+	if err := AppendToCache(second, nil); err != nil {
 		t.Fatalf("AppendToCache(second) error = %v; want no error", err)
 	}
 
-	// now read & verify we have both entries
 	cache := ReadCache()
 	if cache == nil {
 		t.Fatal("ReadCache() returned nil; want non-nil")
@@ -107,44 +102,46 @@ func TestAppendToCache(t *testing.T) {
 	}
 }
 
-func Test_buildCacheMap(t *testing.T) {
-	type args struct {
-		cache Cache
-	}
-	tests := []struct {
-		name string
-		args args
-		want map[string]string
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := BuildCacheMap(tt.args.cache); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("buildCacheMap() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
+func TestAppendToCache_WithVersionMapping(t *testing.T) {
+	cacheFile := GetCacheFilePath()
+	var latestVersionInCache bool
+	var exactVersionInCache bool
+	defer os.Remove(cacheFile)
 
-func Test_cacheKey(t *testing.T) {
-	type args struct {
-		manager string
-		name    string
-		version string
+	pkgResponse := &wrappers.RealtimeScannerPackageResponse{
+		Packages: []wrappers.RealtimeScannerResults{
+			{PackageManager: "npm", PackageName: "lodash", Version: "4.17.21", Status: "OK"},
+			{PackageManager: "npm", PackageName: "express", Version: "1.1.1", Status: "Malicious"},
+		},
 	}
-	tests := []struct {
-		name string
-		args args
-		want string
-	}{
-		// TODO: Add test cases.
+	versionMapping := map[string]string{
+		"npm-express-1.1.1": "latest",
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := GenerateCacheKey(tt.args.manager, tt.args.name, tt.args.version); got != tt.want {
-				t.Errorf("cacheKey() = %v, want %v", got, tt.want)
-			}
-		})
+	if err := AppendToCache(pkgResponse, versionMapping); err != nil {
+		t.Fatalf("AppendToCache(first) error = %v; want no error", err)
 	}
+
+	cache := ReadCache()
+	if cache == nil {
+		t.Fatal("ReadCache() returned nil; want non-nil")
+	}
+
+	var got []wrappers.RealtimeScannerResults
+	for _, e := range cache.Packages {
+		pkg := wrappers.RealtimeScannerResults{
+			PackageManager: e.PackageManager,
+			PackageName:    e.PackageName,
+			Version:        e.PackageVersion,
+			Status:         e.Status,
+		}
+		got = append(got, pkg)
+		if strings.EqualFold(pkg.PackageName, "express") && strings.EqualFold(pkg.Version, "latest") {
+			latestVersionInCache = true
+		} else if strings.EqualFold(pkg.PackageName, "express") && strings.EqualFold(pkg.Version, "1.1.1") {
+			exactVersionInCache = true
+		}
+	}
+	asserts.True(t, latestVersionInCache, "Expected latest version of express to be in cache")
+	asserts.True(t, exactVersionInCache, "Expected exact versions of express to be in cache")
+	asserts.Greater(t, len(got), len(pkgResponse.Packages)) // Ensure that the cache contains the exact version and the latest version of express
 }
