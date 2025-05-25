@@ -5,6 +5,7 @@ import (
 )
 
 type PackageEntry struct {
+	PackageID       string          `json:"packageID"`
 	PackageManager  string          `json:"packageManager"`
 	PackageName     string          `json:"packageName"`
 	PackageVersion  string          `json:"packageVersion"`
@@ -13,9 +14,9 @@ type PackageEntry struct {
 }
 
 type Vulnerability struct {
-	CVE         string `json:"CVE"`
-	Description string `json:"Description"`
-	Severity    string `json:"Severity"`
+	CVE         string `json:"cve"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"`
 }
 
 type Cache struct {
