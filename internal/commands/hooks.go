@@ -9,7 +9,6 @@ import (
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
-
 func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
@@ -19,8 +18,7 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 			`
             $ cx hooks pre-commit secrets-install-git-hook
             $ cx hooks pre-commit secrets-scan
-			$ cx hooks pre-receive secrets-scan
-        `,
+			$ cx hooks pre-receive secrets-scan`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
