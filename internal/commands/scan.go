@@ -2855,8 +2855,11 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateContainerImageFormat(containerImage string) error {
-	imageParts := strings.Split(containerImage, ":")
-	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
+	pattern := regexp.MustCompile(`^(?:[a-zA-Z0-9.-]+(?::[0-9]+)?/)?(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*:[\w][\w.-]{0,127}$`)
+
+	matched := pattern.MatchString(containerImage)
+
+	if !matched {
 		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 	}
 	return nil

@@ -65,10 +65,10 @@ github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Checkmarx/containers-images-extractor v1.0.7 h1:lLgaDFFqz1jksN3/d/6sLXO0C0ODbt9xExbt44YMEOg=
 github.com/Checkmarx/containers-images-extractor v1.0.7/go.mod h1:ZtOqhzlErPr2QL9xGjMmxwGvzXUwi+G5BBeOfdY62Ug=
-github.com/Checkmarx/containers-resolver v1.0.9 h1:YuIpHS/5I8nf0HoEtD+Hw0PenrkS5rWcyiuCnlgL0GM=
-github.com/Checkmarx/containers-resolver v1.0.9/go.mod h1:7H1kGpc6EQ9mndAYdYKnDrBOWiC4Ej31NKBp+IIarEE=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.9 h1:KFqwtkdMjT2uzJIuBSGUSOOGMSm/UZl0oXec3Mf3nh4=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.9/go.mod h1:F9FFBVNmogF0wR9SVI0wRU9dZ9Ux3IZtZl3T24sQ/8E=
+github.com/Checkmarx/containers-resolver v1.0.10 h1:bIGh1piWrQgMCZcLoqqfTujnej+vbUYw/o72v47gQBY=
+github.com/Checkmarx/containers-resolver v1.0.10/go.mod h1:1D4p32HhczoJuja3F2brYfg676JxSb5+PPqKZKgzkjw=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.10 h1:35n22bjH2Tx5+B8vcqIHogHeEWOQrT2lUf4uaIjoENw=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.10/go.mod h1:F9FFBVNmogF0wR9SVI0wRU9dZ9Ux3IZtZl3T24sQ/8E=
 github.com/Checkmarx/containers-types v1.0.3 h1:srk+RQnyPXyFKmVHA6P9SQZAtjczyndZ1aa0CWF/6/0=
 github.com/Checkmarx/containers-types v1.0.3/go.mod h1:F13rfevriqYHR+0ahk3W9H8uLK0Msbts012f1pIxJb0=
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE+CFvgjbIxUNL8rsdB2sAhfuNx85HvxImKta3g=
@@ -146,8 +146,8 @@ github.com/anchore/stereoscope v0.1.0/go.mod h1:3vasimie0IJOXvMbMpjwvwIHBDA1+192
 github.com/anchore/syft v1.21.0 h1:JHmYOnEbCJsElROCCfg+3oIODw1LQLfXGkIrmXNZYsI=
 github.com/anchore/syft v1.21.0/go.mod h1:8i8Yp/MiSOdqID0+6eiwE9bOJWM7fEBYitINZyr2G6s=
 github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo29Kk6CurOXKm700vrz8f0KW0JNfpkRJY/8=
-github.com/andybalholm/brotli v1.1.1 h1:PR2pgnyFznKEugtsUo0xLdDop5SKXd5Qf5ysW+7XdTA=
-github.com/andybalholm/brotli v1.1.1/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
+github.com/andybalholm/brotli v1.1.2-0.20250424173009-453214e765f3 h1:8PmGpDEZl9yDpcdEr6Odf23feCxK3LNUNMxjXg41pZQ=
+github.com/andybalholm/brotli v1.1.2-0.20250424173009-453214e765f3/go.mod h1:05ib4cKhjx3OQYUY22hTVd34Bc8upXjOLL2rKwwZBoA=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFIImctFaOjnTIavg87rW78vTPkQqLI8=
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuWl6zY27l47sB3qLNK6tF2fkHG55UZxx8oIVo4=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
@@ -543,8 +543,8 @@ github.com/gorilla/handlers v1.5.2/go.mod h1:dX+xVpaxdSw+q0Qek8SSsl3dfMk3jNddUkM
 github.com/gorilla/mux v1.8.1 h1:TuBL49tXwgrFYWhqrNgrUNEY92u81SPhu7sTdzQEiWY=
 github.com/gorilla/mux v1.8.1/go.mod h1:AKf9I4AEqPTmMytcMc0KkNouC66V3BtZ4qD5fmWSiMQ=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/gorilla/websocket v1.5.3 h1:saDtZ6Pbx/0u+bgYQ3q96pZgCzfhKXGPqt7kZ72aNNg=
-github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
+github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 h1:JeSE6pjso5THxAzdVpqr6/geYxZytqFMBCOtn/ujyeo=
+github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674/go.mod h1:r4w70xmWCQKmi1ONH4KIaBptdivuRPyosB9RmPlGEwA=
 github.com/gosuri/uitable v0.0.4 h1:IG2xLKRvErL3uhY6e1BylFzG+aJiwQviDDTfOKeKTpY=
 github.com/gosuri/uitable v0.0.4/go.mod h1:tKR86bXuXPZazfOTG1FIzvjIdXzd0mo4Vtn16vt0PJo=
 github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 h1:+ngKgrYPPJrOjhax5N+uePQ0Fh1Z7PheYoUI/0nzkPA=
