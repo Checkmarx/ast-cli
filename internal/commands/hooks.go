@@ -16,10 +16,10 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		Long:  "The hooks command enables the ability to manage Git hooks for Checkmarx One.",
 		Example: heredoc.Doc(
 			`
-            $ cx hooks pre-commit secrets-install-git-hook
-            $ cx hooks pre-commit secrets-scan
-			$ cx hooks pre-receive secrets-scan
-           `,
+			$ cx hooks pre-commit secrets-install-git-hook
+			$ cx hooks pre-commit secrets scan
+			$ cx hooks pre-receive secrets scan
+		`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
