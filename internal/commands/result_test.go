@@ -312,7 +312,6 @@ func TestRunGetResultsByScanIdSarifFormat(t *testing.T) {
 }
 func TestRunGetResultsByScanIdSarifFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	// Remove generated sarif file
 	removeFileBySuffix(t, printer.FormatSarif)
@@ -334,7 +333,6 @@ func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdSonarFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
 	// Remove generated sonar file
 	removeFile(t, fileName+"_"+printer.FormatSonar, printer.FormatJSON)
@@ -367,7 +365,6 @@ func TestDecodeHTMLEntitiesInResults(t *testing.T) {
 
 func TestRunGetResultsByScanIdJsonFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 
 	// Remove generated json file
@@ -390,7 +387,6 @@ func TestRunGetResultsByScanIdSummaryJsonFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdSummaryJsonFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryJSON")
 
 	// Remove generated json file
@@ -406,7 +402,6 @@ func TestRunGetResultsByScanIdSummaryHtmlFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdSummaryHtmlFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryHTML")
 
 	// Remove generated html file
@@ -425,13 +420,11 @@ func TestRunGetResultsByScanIdSummaryMarkdownFormatWithContainers(t *testing.T) 
 
 func TestRunGetResultsByScanIdSummaryConsoleFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
 }
 
 func TestRunGetResultsByScanIdSummaryMarkdownFormat(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "markdown")
 	// Remove generated md file
 	removeFileBySuffix(t, "md")
@@ -480,7 +473,6 @@ func TestRunGetResultsByScanIdPDFFormat(t *testing.T) {
 
 func TestRunGetResultsByScanIdPDFFormatWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "pdf")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatPDF))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatPDF)
@@ -759,7 +751,6 @@ func TestSBOMReportXML(t *testing.T) {
 
 func TestSBOMReportJsonWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatJSON))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
@@ -769,7 +760,6 @@ func TestSBOMReportJsonWithContainers(t *testing.T) {
 
 func TestSBOMReportXMLWithContainers(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sbom", "--report-sbom-format", "CycloneDxXml")
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName+"_"+printer.FormatSbom, printer.FormatXML))
 	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatXML)
@@ -782,26 +772,17 @@ func TestRunGetResultsByScanIdGLFormat(t *testing.T) {
 	// Run test for gl-sast report type
 	os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatGLSast))
 }
+
 func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
 	clearFlags()
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
 	assertTypePresentJSON(t, params.ContainersType, 1)
 	// Remove generated json file
 	removeFileBySuffix(t, printer.FormatJSON)
 }
-func TestRunResultsShow_ContainersFFIsOff_excludeContainersResult(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
-	assertTypePresentJSON(t, params.ContainersType, 0)
-	// Remove generated json file
-	removeFileBySuffix(t, printer.FormatJSON)
-}
+
 func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
 	assertTypePresentJSON(t, params.ContainersType, 0)
 	// Remove generated json file
@@ -810,7 +791,6 @@ func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testi
 
 func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Eclipse")
 	assertTypePresentJSON(t, params.ContainersType, 0)
 	// Remove generated json file
@@ -819,7 +799,6 @@ func TestRunResultsShow_EclipseIsNotSupported_excludeContainersResult(t *testing
 
 func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "vs code")
 	assertTypePresentJSON(t, params.ContainersType, 0)
 	// Remove generated json file
@@ -828,7 +807,6 @@ func TestRunResultsShow_VsCodeIsNotSupported_excludeContainersResult(t *testing.
 
 func TestRunResultsShow_VisualStudioIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "Visual Studio")
 	assertTypePresentJSON(t, params.ContainersType, 0)
 	// Remove generated json file
@@ -952,11 +930,7 @@ func assertResultsPresentSummaryJSON(t *testing.T, isResultsEnabled bool, scanTy
 		assert.Assert(t, false, "%s result summary should be present", scanType)
 	}
 }
-func TestRunGetResultsShow_ContainersFFOffAndResultsHasContainersResultsOnly_NilAssertion(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "CONTAINERS_ONLY", "--report-format", "summaryConsole")
-}
+
 func TestRunGetResultsByScanIdGLSastAndAScaFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "gl-sast,gl-sca")
 	// Run test for gl-sast report type
@@ -1215,7 +1189,7 @@ func TestGetResultsSummaryConsoleFormatWithCriticalDisabled(t *testing.T) {
 	stdoutString := buffer.String()
 	fmt.Print(stdoutString)
 
-	totalSummary := "| TOTAL           N/A       5        1       1      0   Completed   |"
+	totalSummary := "| TOTAL           N/A       5        2       1      0   Completed   |"
 	assert.Equal(t, strings.Contains(stdoutString, totalSummary), true,
 		"Expected Total summary without critical:"+totalSummary)
 
@@ -1234,7 +1208,7 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 			name:    "scan summary with no vulnerabilities",
 			summary: createEmptyResultSummary(),
 			results: &wrappers.ScanResultsCollection{
-				Results:    nil,
+				Results:    []*wrappers.ScanResult{},
 				TotalCount: 0,
 				ScanID:     "MOCK",
 			},
@@ -1252,17 +1226,21 @@ func Test_enhanceWithScanSummary(t *testing.T) {
 }
 
 func createEmptyResultSummary() *wrappers.ResultSummary {
+	var containersIssues = new(int)
+	*containersIssues = 0
+
 	return &wrappers.ResultSummary{
-		TotalIssues:    0,
-		CriticalIssues: 0,
-		HighIssues:     0,
-		MediumIssues:   0,
-		LowIssues:      0,
-		InfoIssues:     0,
-		SastIssues:     0,
-		ScaIssues:      0,
-		KicsIssues:     0,
-		SCSOverview:    &wrappers.SCSOverview{},
+		TotalIssues:      0,
+		CriticalIssues:   0,
+		HighIssues:       0,
+		MediumIssues:     0,
+		LowIssues:        0,
+		InfoIssues:       0,
+		SastIssues:       0,
+		ScaIssues:        0,
+		KicsIssues:       0,
+		ContainersIssues: containersIssues,
+		SCSOverview:      &wrappers.SCSOverview{},
 		APISecurity: wrappers.APISecResult{
 			APICount:        0,
 			TotalRisksCount: 0,
