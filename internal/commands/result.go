@@ -47,14 +47,15 @@ const (
 	glScaTypeLabel            = ".gl-sca-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
-	lowSonar                  = "MINOR"
-	mediumSonar               = "MAJOR"
-	highSonar                 = "CRITICAL"
+	lowSonar                  = "LOW"
+	mediumSonar               = "MEDIUM"
+	highSonar                 = "HIGH"
 	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
-	vulnerabilitySonar        = "VULNERABILITY"
+	vulnerabilitySonar        = "SECURITY"
+	cleanCodeAttribute        = "FORMATTED"
 	infoCx                    = "INFO"
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
@@ -2039,7 +2040,7 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	} else {
 		location = ""
 	}
-	return (location)
+	return location
 }
 func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
@@ -2099,10 +2100,9 @@ func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
-	sonar.Results = parseResultsSonar(results)
+	sonar.Issues, sonar.Rules = parseSonar(results)
 	return sonar
 }
-
 func createSarifRun(results *wrappers.ScanResultsCollection) wrappers.SarifRun {
 	var sarifRun wrappers.SarifRun
 	sarifRun.Tool.Driver.Name = wrappers.SarifName
@@ -2129,12 +2129,20 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 	return sarifRules, sarifResults
 }
 
-func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
+func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues, []wrappers.SonarRules) {
 	var sonarIssues []wrappers.SonarIssues
+	var sonarRules []wrappers.SonarRules
+	seenRuleIDs := make(map[string]bool) // Track already added rule IDs
 
 	if results != nil {
 		for _, result := range results.Results {
 			var auxIssue = initSonarIssue(result)
+			var auxRules = initSonarRules(result)
+
+			if !seenRuleIDs[auxRules.ID] {
+				sonarRules = append(sonarRules, auxRules)
+				seenRuleIDs[auxRules.ID] = true
+			}
 
 			engineType := strings.TrimSpace(result.Type)
 
@@ -2157,7 +2165,7 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 			}
 		}
 	}
-	return sonarIssues
+	return sonarIssues, sonarRules
 }
 
 func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
@@ -2176,17 +2184,9 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
 	sonarIssue := initSonarIssue(result)
 
-	// overriding ruleID set by default in initSonarIssue
-	if result.ScanResultData.RuleID != nil {
-		sonarIssue.RuleID = *result.ScanResultData.RuleID
-	}
-
 	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
-	if result.ScanResultData.Snippet != "" {
-		sonarIssue.PrimaryLocation.Message = fmt.Sprintf("%s : %s", result.ScanResultData.Snippet, result.Description)
-	} else {
-		sonarIssue.PrimaryLocation.Message = result.Description
-	}
+
+	sonarIssue.PrimaryLocation.Message = result.ScanResultData.Remediation
 	var textRange wrappers.SonarTextRange
 	textRange.StartColumn = 1
 	textRange.EndColumn = 2
@@ -2197,13 +2197,61 @@ func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 	var sonarIssue wrappers.SonarIssues
-	sonarIssue.Severity = sonarSeverities[result.Severity]
-	sonarIssue.Type = vulnerabilitySonar
-	sonarIssue.EngineID = result.Type
-	sonarIssue.RuleID = result.ID
+	engineType := strings.TrimSpace(result.Type)
+	if engineType == commonParams.SastType {
+		sonarIssue.RuleID = result.ScanResultData.LanguageName + " - " + result.ScanResultData.QueryName
+	} else if engineType == commonParams.KicsType {
+		sonarIssue.RuleID = result.ScanResultData.QueryName
+	} else if engineType == commonParams.ScaType {
+		sonarIssue.RuleID = result.ID
+	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
+		sonarIssue.RuleID = result.ID
+	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+		sonarIssue.RuleID = result.ID
+	}
+
+	sonarIssue.PrimaryLocation.Message = result.Description
 	sonarIssue.EffortMinutes = 0
 
 	return sonarIssue
+}
+
+func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
+	var sonarRules wrappers.SonarRules
+	var sonarImpacts wrappers.SonarImpacts
+
+	sonarImpacts.Severity = sonarSeverities[result.Severity]
+	sonarImpacts.SoftwareQuality = vulnerabilitySonar
+
+	sonarRules.EngineID = result.Type
+	sonarRules.CleanCodeAttribute = cleanCodeAttribute
+
+	engineType := strings.TrimSpace(result.Type)
+	if engineType == commonParams.SastType {
+		sonarRules.Name = result.ScanResultData.QueryName
+		sonarRules.Description = result.Description
+		sonarRules.ID = result.ScanResultData.LanguageName + " - " + result.ScanResultData.QueryName
+	} else if engineType == commonParams.KicsType {
+		sonarRules.Name = result.ScanResultData.QueryName
+		sonarRules.Description = result.Description
+		sonarRules.ID = result.ScanResultData.QueryName
+	} else if engineType == commonParams.ScaType {
+		sonarRules.Name = result.ID
+		sonarRules.Description = result.Description
+		sonarRules.ID = result.ID
+	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
+		sonarRules.Name = result.ID
+		sonarRules.Description = result.Description //strings.ReplaceAll(result.ID, "_", " ")
+		sonarRules.ID = result.ID
+	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+		sonarRules.Name = result.ScanResultData.RuleName
+		sonarRules.Description = result.ScanResultData.RuleDescription
+		sonarRules.ID = result.ID
+	}
+
+	sonarRules.Impacts = []wrappers.SonarImpacts{sonarImpacts}
+
+	return sonarRules
 }
 
 func parseScaSonarLocations(result *wrappers.ScanResult) []wrappers.SonarIssues {
