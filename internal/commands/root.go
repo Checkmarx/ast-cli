@@ -112,6 +112,7 @@ func NewAstCLI(
 		PrintConfiguration()
 		err := configuration.LoadConfiguration()
 		exitIfError(err)
+		//viper.Set(params.ConfigFilePathKey, "")
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
