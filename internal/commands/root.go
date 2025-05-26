@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"log"
 	"os"
 	"strings"
@@ -17,6 +18,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+const (
+	failureExitCode = 1
 )
 
 // NewAstCLI Return a Checkmarx One CLI root command to execute
@@ -95,6 +100,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryFlag, params.RetryDefault, params.RetryUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
+	rootCmd.PersistentFlags().String(params.ConfigFilePath, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
 
@@ -104,6 +110,9 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		PrintConfiguration()
+		err := configuration.LoadConfiguration()
+		exitIfError(err)
+		//viper.Set(params.ConfigFilePathKey, "")
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
@@ -124,6 +133,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
+	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePath))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
@@ -325,4 +335,16 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+func exitIfError(err error) {
+	if err != nil {
+		switch e := err.(type) {
+		case *wrappers.AstError:
+			fmt.Println(e.Err)
+			os.Exit(e.Code)
+		default:
+			fmt.Println(e)
+			os.Exit(failureExitCode)
+		}
+	}
 }

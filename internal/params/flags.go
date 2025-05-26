@@ -156,6 +156,7 @@ const (
 	ScaPrivatePackageVersionFlag = "sca-private-package-version"
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
 	LimitFlag                    = "limit"
+	ConfigFilePath               = "config-file-path"
 
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
