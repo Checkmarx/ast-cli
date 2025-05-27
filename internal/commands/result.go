@@ -2139,8 +2139,8 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 
 	if results != nil {
 		for _, result := range results.Results {
-			var auxIssue = initSonarIssue(result)
 			var auxRules = initSonarRules(result)
+			var auxIssue = initSonarIssue(result)
 
 			if !seenRuleIDs[auxRules.ID] {
 				sonarRules = append(sonarRules, auxRules)
@@ -2163,7 +2163,7 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
-				sscsSonarIssue := parseSscsSonar(result)
+				sscsSonarIssue := parseSscsSonar(result, auxIssue)
 				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
 		}
@@ -2184,9 +2184,7 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	return auxLocation
 }
 
-func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
-	sonarIssue := initSonarIssue(result)
-
+func parseSscsSonar(result *wrappers.ScanResult, sonarIssue wrappers.SonarIssues) wrappers.SonarIssues {
 	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
 
 	sonarIssue.PrimaryLocation.Message = result.ScanResultData.Remediation

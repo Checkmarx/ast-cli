@@ -876,7 +876,11 @@ func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeC
 	actualResultTypeCount := 0
 	for _, rule := range scanResultsCollection.Rules {
 		if rule.EngineID == resultType {
-			actualResultTypeCount++
+			for _, issue := range scanResultsCollection.Issues {
+				if issue.RuleID == rule.ID {
+					actualResultTypeCount++
+				}
+			}
 		}
 	}
 	assert.Equal(t, actualResultTypeCount, expectedResultTypeCount,
