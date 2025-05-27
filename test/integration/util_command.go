@@ -14,7 +14,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gotest.tools/assert"
@@ -57,7 +56,6 @@ func bindProxy(t *testing.T) {
 func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	bindProxy(t)
 	bindKeysToEnvAndDefault(t)
-	configuration.LoadConfiguration()
 	_ = viper.BindEnv(pat)
 	viper.AutomaticEnv()
 	viper.Set("CX_TOKEN_EXPIRY_SECONDS", 2)
@@ -88,6 +86,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	sastIncrementalPath := viper.GetString(params.SastMetadataPathKey)
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
+	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
@@ -123,6 +122,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	accessManagementWrapper := wrappers.NewAccessManagementHTTPWrapper(accessManagementPath)
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
+	realtimeScannerWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -159,6 +159,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		accessManagementWrapper,
 		ByorWrapper,
 		containerResolverWrapper,
+		realtimeScannerWrapper,
 	)
 	return astCli
 }
