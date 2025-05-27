@@ -24,7 +24,7 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-                https://checkmarx.com/resource/documents/en/xxxxx-xxxxx-hooks.html
+                https://checkmarx.com/resource/documents/en/34965-365503-hooks.html
             `,
 			),
 		},
