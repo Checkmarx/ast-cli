@@ -2163,7 +2163,7 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
-				sscsSonarIssue := parseSscsSonar(result, auxIssue)
+				sscsSonarIssue := parseSscsSonar(result, &auxIssue)
 				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
 		}
@@ -2184,7 +2184,7 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	return auxLocation
 }
 
-func parseSscsSonar(result *wrappers.ScanResult, sonarIssue wrappers.SonarIssues) wrappers.SonarIssues {
+func parseSscsSonar(result *wrappers.ScanResult, sonarIssue *wrappers.SonarIssues) wrappers.SonarIssues {
 	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
 
 	sonarIssue.PrimaryLocation.Message = result.ScanResultData.Remediation
@@ -2193,7 +2193,7 @@ func parseSscsSonar(result *wrappers.ScanResult, sonarIssue wrappers.SonarIssues
 	textRange.EndColumn = 2
 	textRange.StartLine = result.ScanResultData.Line
 	sonarIssue.PrimaryLocation.TextRange = textRange
-	return sonarIssue
+	return *sonarIssue
 }
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
@@ -2242,8 +2242,7 @@ func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
 		sonarRules.ID = result.ID
 	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 		sonarRules.Name = result.ID
-		sonarRules.Description = result.Description //strings.ReplaceAll(result.ID, "_", " ")
-		sonarRules.ID = result.ID
+		sonarRules.Description = result.Description
 	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarRules.Name = result.ScanResultData.RuleName
 		sonarRules.Description = result.ScanResultData.RuleDescription
