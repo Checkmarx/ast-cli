@@ -14,8 +14,8 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		Long:  "The pre-receive command enables the ability to manage Git pre-receive hooks for secret detection.",
 		Example: heredoc.Doc(
 			`
-			$ cx hooks pre-receive secrets-scan
-		`,
+		    $ cx hooks pre-receive secrets-scan
+			`,
 		),
 	}
 	preReceiveCmd.AddCommand(scanSecretsPreReceiveCommand(jwtWrapper))
