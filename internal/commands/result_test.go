@@ -15,7 +15,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	params "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"golang.org/x/text/cases"
@@ -872,10 +872,10 @@ func assertTypePresentSonar(t *testing.T, resultType string, expectedResultTypeC
 	var scanResultsCollection *wrappers.ScanResultsSonar
 	err = json.Unmarshal(reportBytes, &scanResultsCollection)
 	assert.NilError(t, err, "Error unmarshalling JSON data")
+
 	actualResultTypeCount := 0
-	for i := range scanResultsCollection.Results {
-		scanResult := scanResultsCollection.Results[i]
-		if scanResult.EngineID == resultType {
+	for _, rule := range scanResultsCollection.Rules {
+		if rule.EngineID == resultType {
 			actualResultTypeCount++
 		}
 	}

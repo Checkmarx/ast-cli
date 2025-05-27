@@ -124,6 +124,7 @@ var (
 		printer.FormatSbom,
 		printer.FormatGLSast,
 		printer.FormatGLSca,
+		printer.FormatSonar,
 	}
 
 	filterResultsListFlagUsage = fmt.Sprintf(
@@ -284,6 +285,7 @@ func resultShowSubCommand(
 		printer.FormatSummaryMarkdown,
 		printer.FormatGLSast,
 		printer.FormatGLSca,
+		printer.FormatSonar,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
