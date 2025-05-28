@@ -28,7 +28,6 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
-	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -1454,10 +1453,7 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 		if err != nil {
 			return err
 		}
-		scaResolverParsedParams, err := shlex.Split(scaResolverParams)
-		if err != nil {
-			return err
-		}
+
 		args := []string{
 			"offline",
 			"-s",
@@ -1467,7 +1463,11 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			"-r",
 			scaResolverResultsFile,
 		}
-		args = append(args, scaResolverParsedParams...)
+
+		if scaResolverParams != "" {
+			args = append(args, scaResolverParams)
+		}
+
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
 		logger.PrintIfVerbose(string(out))
