@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"log"
 	"os"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
