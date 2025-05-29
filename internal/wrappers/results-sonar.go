@@ -1,14 +1,26 @@
 package wrappers
 
 type ScanResultsSonar struct {
-	Results []SonarIssues `json:"issues"`
+	Rules  []SonarRules  `json:"rules"`
+	Issues []SonarIssues `json:"issues"`
+}
+
+type SonarRules struct {
+	ID                 string         `json:"id,omitempty"`
+	Name               string         `json:"name,omitempty"`
+	Description        string         `json:"description,omitempty"`
+	EngineID           string         `json:"engineId,omitempty"`
+	CleanCodeAttribute string         `json:"cleanCodeAttribute,omitempty"`
+	Impacts            []SonarImpacts `json:"impacts"`
+}
+
+type SonarImpacts struct {
+	SoftwareQuality string `json:"softwareQuality,omitempty"`
+	Severity        string `json:"severity,omitempty"`
 }
 
 type SonarIssues struct {
-	EngineID           string          `json:"engineId,omitempty"`
 	RuleID             string          `json:"ruleId,omitempty"`
-	Severity           string          `json:"severity,omitempty"`
-	Type               string          `json:"type,omitempty"`
 	PrimaryLocation    SonarLocation   `json:"primaryLocation"`
 	EffortMinutes      uint            `json:"effortMinutes,omitempty"`
 	SecondaryLocations []SonarLocation `json:"secondaryLocations"`
