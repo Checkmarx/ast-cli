@@ -112,7 +112,6 @@ func TestHandlePolicyEvaluation(t *testing.T) {
 				tc.args.cmd,
 				tc.args.policyWrapper,
 				tc.args.scan,
-				tc.args.ignorePolicy,
 				tc.args.agent,
 				tc.args.waitDelay,
 				tc.args.policyTimeout,
