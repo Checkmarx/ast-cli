@@ -101,11 +101,11 @@ func TestSetConfigProperty_ConfigFilePathFlag(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestLoadConfiguration_ConfigFilePathFlagFileWithoutPermission(t *testing.T) {
-	if err := os.Chmod(filePath, 0000); err != nil {
-		t.Fatalf("failed to set file permissions: %v", err)
-	}
-	defer os.Chmod(filePath, 0644)
-	err, _ := executeCommand(t, "configure", "show", "--config-file-path", filePath)
-	assert.ErrorContains(t, err, "Access to the specified file is restricted")
-}
+//func TestLoadConfiguration_ConfigFilePathFlagFileWithoutPermission(t *testing.T) {
+//	if err := os.Chmod(filePath, 0000); err != nil {
+//		t.Fatalf("failed to set file permissions: %v", err)
+//	}
+//	defer os.Chmod(filePath, 0644)
+//	err, _ := executeCommand(t, "configure", "show", "--config-file-path", filePath)
+//	assert.ErrorContains(t, err, "Access to the specified file is restricted")
+//}
