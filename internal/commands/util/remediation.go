@@ -27,7 +27,7 @@ const (
 	filesContainerVolume      = ":/files"
 	resultsContainerLocation  = "/kics/"
 	containerRemove           = "--rm"
-	containerImage            = "checkmarx/kics:v2.1.7"
+	containerImage            = "checkmarx/kics:v2.1.9"
 	containerNameFlag         = "--name"
 	remediateCommand          = "remediate"
 	resultsFlag               = "--results"
