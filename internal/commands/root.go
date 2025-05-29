@@ -100,7 +100,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryFlag, params.RetryDefault, params.RetryUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
-	rootCmd.PersistentFlags().String(params.ConfigFilePath, "", "Path to the configuration file")
+	rootCmd.PersistentFlags().String(params.ConfigFilePathFlag, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
 
@@ -132,7 +132,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
-	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePath))
+	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePathFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
