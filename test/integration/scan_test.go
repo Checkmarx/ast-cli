@@ -1579,7 +1579,7 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 
 }
 
-func TestScanGeneratingJsonToEmailReport(t *testing.T) {
+func TestScanGeneratingJsonCxOneToEmailReport(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1590,14 +1590,14 @@ func TestScanGeneratingJsonToEmailReport(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com",
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
-func TestScanGeneratingJsonToEmailReportInvalidEmail(t *testing.T) {
+func TestScanGeneratingJsonCxOneToEmailReportInvalidEmail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1607,7 +1607,7 @@ func TestScanGeneratingJsonToEmailReportInvalidEmail(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com,invalid_email",
 	}
 
@@ -1615,7 +1615,7 @@ func TestScanGeneratingJsonToEmailReportInvalidEmail(t *testing.T) {
 	assertError(t, err, "Report not sent, invalid email address: invalid_email")
 }
 
-func TestScanGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
+func TestScanGeneratingJsonCxOneReportWithInvalidJsonOptions(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{
@@ -1625,7 +1625,7 @@ func TestScanGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "invalid_option",
 	}
 
@@ -1633,7 +1633,7 @@ func TestScanGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
 	assertError(t, err, "report option \"invalid_option\" unavailable")
 }
 
-func TestScanGeneratingJsonReportWithJsonOptions(t *testing.T) {
+func TestScanGeneratingJsonCxOneReportWithJsonOptions(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	outputBuffer := executeCmdNilAssertion(
@@ -1644,7 +1644,7 @@ func TestScanGeneratingJsonReportWithJsonOptions(t *testing.T) {
 		flag(params.ScanTypes), "iac-security",
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
@@ -1652,7 +1652,7 @@ func TestScanGeneratingJsonReportWithJsonOptions(t *testing.T) {
 		os.Remove(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 		log.Println("test file removed!")
 	}()
-	
+
 	_, err := os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
 	assert.NilError(t, err, "Report file should exist: "+fileName+printer.FormatJSON)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
@@ -1900,7 +1900,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
-				printer.FormatJSONReport,
+				printer.FormatJSONcxOne,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -1929,7 +1929,7 @@ func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
-				printer.FormatJSONReport,
+				printer.FormatJSONcxOne,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,

@@ -651,7 +651,7 @@ func scanCreateSubCommand(
 		createScanCmd,
 		printer.FormatSummaryConsole,
 		printer.FormatJSON,
-		printer.FormatJSONReport,
+		printer.FormatJSONcxOne,
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatSbom,
