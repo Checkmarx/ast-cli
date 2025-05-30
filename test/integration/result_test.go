@@ -354,13 +354,13 @@ func TestResultsGeneratingPdfReportAndSendToEmail(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
-func TestResultsGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
+func TestResultsGeneratingJsonCxOneReportWithInvalidJsonOptions(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "invalid_option",
 	}
 
@@ -368,13 +368,13 @@ func TestResultsGeneratingJsonReportWithInvalidJsonOptions(t *testing.T) {
 	assertError(t, err, "report option \"invalid_option\" unavailable")
 }
 
-func TestResultsGeneratingJsonReportWithInvalidEmail(t *testing.T) {
+func TestResultsGeneratingJsonCxOneReportWithInvalidEmail(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonToEmailFlag), "valid@mail.com,invalid_email",
 	}
 
@@ -382,14 +382,14 @@ func TestResultsGeneratingJsonReportWithInvalidEmail(t *testing.T) {
 	assertError(t, err, "report not sent, invalid email address: invalid_email")
 }
 
-func TestResultsGeneratingJsonReportWithJsonOptionsWithoutNotExploitable(t *testing.T) {
+func TestResultsGeneratingJsonCxOneReportWithJsonOptionsWithoutNotExploitable(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	outputBuffer := executeCmdNilAssertion(
-		t, "Results show generating PDF report with options should pass",
+		t, "Results show generating json cxOne report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 		flag(params.FilterFlag), "state=exclude_not_exploitable",
@@ -403,14 +403,14 @@ func TestResultsGeneratingJsonReportWithJsonOptionsWithoutNotExploitable(t *test
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
-func TestResultsGeneratingJsonReportWithJsonOptions(t *testing.T) {
+func TestResultsGeneratingJsonCxOneReportWithJsonOptions(t *testing.T) {
 	scanID, _ := getRootScan(t)
 
 	outputBuffer := executeCmdNilAssertion(
-		t, "Results show generating PDF report with options should pass",
+		t, "Results show generating json cxOne report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
@@ -423,13 +423,13 @@ func TestResultsGeneratingJsonReportWithJsonOptions(t *testing.T) {
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }
 
-func TestResultsGeneratingJsonReportAndSendToEmail(t *testing.T) {
+func TestResultsGeneratingJsonCxOneReportAndSendToEmail(t *testing.T) {
 	scanID, _ := getRootScan(t)
 	outputBuffer := executeCmdNilAssertion(
-		t, "Results show generating PDF report with options should pass",
+		t, "Results show generating json cxOne report with options should pass",
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
-		flag(params.TargetFormatFlag), "jsonReport",
+		flag(params.TargetFormatFlag), "json-cxOne",
 		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
 	)

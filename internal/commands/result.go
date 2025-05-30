@@ -283,7 +283,7 @@ func resultShowSubCommand(
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
-		printer.FormatJSONReport,
+		printer.FormatJSONcxOne,
 		printer.FormatSummary,
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
@@ -1417,7 +1417,7 @@ func createReport(format,
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatJSONReport) && isValidScanStatus(summary.Status, printer.FormatJSONReport) {
+	if printer.IsFormat(format, printer.FormatJSONcxOne) && isValidScanStatus(summary.Status, printer.FormatJSONcxOne) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONReportResults(resultsJsonReportsWrapper, summary, summaryRpt, formatJsonToEmail, formatJsonOptions, featureFlagsWrapper)
 	}
