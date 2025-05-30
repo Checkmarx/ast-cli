@@ -1813,9 +1813,8 @@ func runCreateScanCommand(
 			}
 
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
-			ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
@@ -1842,7 +1841,7 @@ func runCreateScanCommand(
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
-			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
+			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build.")
 		}
 		return nil
 	}
