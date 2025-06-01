@@ -1447,10 +1447,23 @@ func filterMatched(filters []string, fileName string) bool {
 }
 
 func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
+	log.Println("=== runScaResolver Debug ===")
+	log.Println(fmt.Sprintf("1. Input received - sourceDir: %s", sourceDir))
+	log.Println(fmt.Sprintf("2. Input received - scaResolver: %s", scaResolver))
+	log.Println(fmt.Sprintf("3. Input received - scaResolverParams: '%s'", scaResolverParams))
+	log.Println(fmt.Sprintf("4. Input received - projectName: %s", projectName))
+
 	if len(scaResolver) > 0 {
+		log.Println("5. scaResolver has content, proceeding with SCA analysis")
+
 		scaFile, err := ioutil.TempFile("", "sca")
+		log.Println(fmt.Sprintf("6. Created temp file: %s", scaFile.Name()))
+
 		scaResolverResultsFile = scaFile.Name() + ".json"
+		log.Println(fmt.Sprintf("7. Results file will be: %s", scaResolverResultsFile))
+
 		if err != nil {
+			log.Println("8. Error creating temp file")
 			return err
 		}
 
@@ -1463,18 +1476,38 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			"-r",
 			scaResolverResultsFile,
 		}
+		log.Println(fmt.Sprintf("9. Initial args array: %v", args))
 
 		if scaResolverParams != "" {
+			log.Println(fmt.Sprintf("10. scaResolverParams is not empty: '%s'", scaResolverParams))
+			log.Println("11. Adding scaResolverParams to args")
 			args = append(args, scaResolverParams)
+			log.Println(fmt.Sprintf("12. Args after adding scaResolverParams: %v", args))
+		} else {
+			log.Println("10. scaResolverParams is empty - not adding to args")
+			log.Println(fmt.Sprintf("11. Final args without scaResolverParams: %v", args))
 		}
 
-		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
+		log.Println(fmt.Sprintf("Using SCA resolver !!!!!!: %s %v", scaResolver, args))
+		log.Println("13. About to execute command...")
+
 		out, err := exec.Command(scaResolver, args...).Output()
+		log.Println("14. Command execution completed")
+		log.Println(fmt.Sprintf("15. Command output length: %d bytes", len(out)))
+
 		logger.PrintIfVerbose(string(out))
+		log.Println("16. Output printed via logger.PrintIfVerbose")
+
 		if err != nil {
+			log.Println(fmt.Sprintf("17. Command execution failed with error: %s", err))
 			return errors.Errorf("%s", err)
 		}
+		log.Println("17. Command executed successfully")
+	} else {
+		log.Println("5. scaResolver is empty - skipping SCA analysis")
 	}
+
+	log.Println("=== End runScaResolver Debug ===")
 	return nil
 }
 
