@@ -9,22 +9,22 @@ import (
 
 type ResultsJSONWrapper struct{}
 
-// GenerateJsonReport mock for tests
-func (*ResultsJSONWrapper) GenerateJsonReport(_ *wrappers.JsonReportsPayload) (*wrappers.JsonReportsResponse, *wrappers.WebError, error) {
+// GenerateJSONReport mock for tests
+func (*ResultsJSONWrapper) GenerateJSONReport(_ *wrappers.JsonReportsPayload) (*wrappers.JsonReportsResponse, *wrappers.WebError, error) {
 	return &wrappers.JsonReportsResponse{
 		ReportID: "reportId",
 	}, nil, nil
 }
 
-// CheckJsonReportStatus mock for tests
-func (*ResultsJSONWrapper) CheckJsonReportStatus(_ string) (*wrappers.JsonPollingResponse, *wrappers.WebError, error) {
+// CheckJSONReportStatus mock for tests
+func (*ResultsJSONWrapper) CheckJSONReportStatus(_ string) (*wrappers.JsonPollingResponse, *wrappers.WebError, error) {
 	return &wrappers.JsonPollingResponse{
 		Status: "completed",
 	}, nil, nil
 }
 
-// DownloadJsonReport mock for tests
-func (*ResultsJSONWrapper) DownloadJsonReport(_, targetFile string, b bool) error {
+// DownloadJSONReport mock for tests
+func (*ResultsJSONWrapper) DownloadJSONReport(_, targetFile string, b bool) error {
 	file, err := os.Create(targetFile)
 	defer func() {
 		err = file.Close()
