@@ -108,15 +108,16 @@ func NewAstCLI(
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		PrintConfiguration()
-		_ = configuration.LoadConfiguration()
+		err := configuration.LoadConfiguration()
 		//exitIfError(err)
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
+		return err
 	}
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
