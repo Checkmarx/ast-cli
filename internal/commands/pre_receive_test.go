@@ -1,11 +1,12 @@
 package commands
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPreReceiveCommand(t *testing.T) {
