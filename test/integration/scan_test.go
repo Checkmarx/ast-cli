@@ -1591,7 +1591,7 @@ func TestScanGeneratingJsonCxOneToEmailReport(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com",
+		flag(params.ReportFormatJSONToEmailFlag), "test@checkmarx.com",
 	)
 
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
@@ -1608,7 +1608,7 @@ func TestScanGeneratingJsonCxOneToEmailReportInvalidEmail(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com,invalid_email",
+		flag(params.ReportFormatJSONToEmailFlag), "test@checkmarx.com,invalid_email",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -1626,7 +1626,7 @@ func TestScanGeneratingJsonCxOneReportWithInvalidJsonOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "invalid_option",
+		flag(params.ReportFormatJSONOptionsFlag), "invalid_option",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -1645,7 +1645,7 @@ func TestScanGeneratingJsonCxOneReportWithJsonOptions(t *testing.T) {
 		flag(params.PresetName), "Checkmarx Default",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatJSONOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {
