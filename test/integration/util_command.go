@@ -80,7 +80,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationAzurePath := viper.GetString(params.PRDecorationAzurePathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsJsonPath := viper.GetString(params.ResultsJsonReportPathKey)
+	resultsJsonPath := viper.GetString(params.ResultsJSONReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)

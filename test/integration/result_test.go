@@ -361,7 +361,7 @@ func TestResultsGeneratingJsonCxOneReportWithInvalidJsonOptions(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "invalid_option",
+		flag(params.ReportFormatJSONOptionsFlag), "invalid_option",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -375,7 +375,7 @@ func TestResultsGeneratingJsonCxOneReportWithInvalidEmail(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonToEmailFlag), "valid@mail.com,invalid_email",
+		flag(params.ReportFormatJSONToEmailFlag), "valid@mail.com,invalid_email",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -390,7 +390,7 @@ func TestResultsGeneratingJsonCxOneReportWithJsonOptionsWithoutNotExploitable(t 
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatJSONOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 		flag(params.FilterFlag), "state=exclude_not_exploitable",
 	)
@@ -411,7 +411,7 @@ func TestResultsGeneratingJsonCxOneReportWithJsonOptions(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatJSONOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
 		flag(params.TargetFlag), fileName,
 	)
 	defer func() {
@@ -430,8 +430,8 @@ func TestResultsGeneratingJsonCxOneReportAndSendToEmail(t *testing.T) {
 		"results", "show",
 		flag(params.ScanIDFlag), scanID,
 		flag(params.TargetFormatFlag), "json-cxOne",
-		flag(params.ReportFormatJsonOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
-		flag(params.ReportFormatJsonToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
+		flag(params.ReportFormatJSONOptionsFlag), "Iac-Security,ScanSummary,ExecutiveSummary,ScanResults",
+		flag(params.ReportFormatJSONToEmailFlag), "test@checkmarx.com,test+2@checkmarx.com",
 	)
 	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
 }

@@ -117,6 +117,7 @@ const (
 	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
 	ScaExcludeResultTypesParam              = "exclude-result-types"
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
+	CliType                                 = "cli"
 )
 
 var (
@@ -296,10 +297,10 @@ func resultShowSubCommand(
 		printer.FormatSonar,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJsonToEmailFlag, "", jsonToEmailFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONToEmailFlag, "", jsonToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJsonOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1030,8 +1031,8 @@ func runGetResultCommand(
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
-		formatJsonToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJsonToEmailFlag)
-		formatJsonOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJsonOptionsFlag)
+		formatJsonToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
+		formatJsonOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
@@ -1814,7 +1815,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *w
 		return err
 	}
 
-	jsonReportsPayload.ReportType = "cli"
+	jsonReportsPayload.ReportType = CliType
 	jsonReportsPayload.FileFormat = printer.FormatJSON
 	jsonReportsPayload.Data.ScanID = summary.ScanID
 	jsonReportsPayload.Data.ProjectID = summary.ProjectID
@@ -1824,7 +1825,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *w
 
 	// will generate pdf report and send it to the email list
 	// instead of saving it to the file system
-	if len(formatJsonToEmail) > 0 {
+	if formatJsonToEmail != "" {
 		emailList, validateErr := validateEmails(formatJsonToEmail)
 		if validateErr != nil {
 			return validateErr
@@ -1945,7 +1946,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return err
 	}
 
-	pdfReportsPayload.ReportType = "cli"
+	pdfReportsPayload.ReportType = CliType
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
