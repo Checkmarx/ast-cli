@@ -44,13 +44,13 @@ type JsonHTTPWrapper struct {
 
 const JsonDownloadTimeout = 420
 
-func NewResultsJsonReportsHTTPWrapper(path string) ResultsJsonWrapper {
+func NewResultsJsonReportsHTTPWrapper(path string) ResultsJSONWrapper {
 	return &JsonHTTPWrapper{
 		path: path,
 	}
 }
 
-func (r *JsonHTTPWrapper) GenerateJsonReport(payload *JsonReportsPayload) (*JsonReportsResponse, *WebError, error) {
+func (r *JsonHTTPWrapper) GenerateJSONReport(payload *JsonReportsPayload) (*JsonReportsResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
@@ -82,7 +82,7 @@ func (r *JsonHTTPWrapper) GenerateJsonReport(payload *JsonReportsPayload) (*Json
 	}
 }
 
-func (r *JsonHTTPWrapper) CheckJsonReportStatus(reportID string) (*JsonPollingResponse, *WebError, error) {
+func (r *JsonHTTPWrapper) CheckJSONReportStatus(reportID string) (*JsonPollingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, reportID)
 	params := map[string]string{"returnUrl": "true"}
@@ -110,7 +110,7 @@ func (r *JsonHTTPWrapper) CheckJsonReportStatus(reportID string) (*JsonPollingRe
 	}
 }
 
-func (r *JsonHTTPWrapper) DownloadJsonReport(url, targetFile string, useAccessToken bool) error {
+func (r *JsonHTTPWrapper) DownloadJSONReport(url, targetFile string, useAccessToken bool) error {
 	clientTimeout := uint(JsonDownloadTimeout)
 	var resp *http.Response
 	var err error
