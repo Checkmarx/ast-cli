@@ -62,7 +62,7 @@ func main() {
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsJSONReportsWrapper := wrappers.NewResultsJsonReportsHTTPWrapper(resultsJSONPath)
+	resultsJSONReportsWrapper := wrappers.NewResultsJSONReportsHTTPWrapper(resultsJSONPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)

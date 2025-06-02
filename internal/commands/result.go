@@ -1800,8 +1800,8 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 
 func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJSONToEmail,
 	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	jsonReportsPayload := &wrappers.JsonReportsPayload{}
-	pollingResp := &wrappers.JsonPollingResponse{}
+	jsonReportsPayload := &wrappers.JSONReportsPayload{}
+	pollingResp := &wrappers.JSONPollingResponse{}
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
 	newScanReportEnabled := flagResponse.Status
 	if newScanReportEnabled {
