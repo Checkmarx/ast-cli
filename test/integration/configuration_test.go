@@ -73,3 +73,39 @@ func TestSetConfigProperty_EnvVarConfigFilePath(t *testing.T) {
 	err, _ = executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "example_client_id")
 	assert.NilError(t, err)
 }
+
+func TestLoadConfiguration_ConfigFilePathFlag(t *testing.T) {
+	err, _ := executeCommand(t, "configure", "show", "--config-file-path", filePath)
+	assert.NilError(t, err)
+}
+
+func TestLoadConfiguration_ConfigFilePathFlagValidDirectory(t *testing.T) {
+	err, _ := executeCommand(t, "configure", "show", "--config-file-path", "data")
+	assert.ErrorContains(t, err, "The specified path points to a directory, not a file.")
+}
+
+func TestLoadConfiguration_ConfigFilePathFlagFileNotFound(t *testing.T) {
+	err, _ := executeCommand(t, "configure", "show", "--config-file-path", "data/nonexistent_config.yaml")
+	assert.ErrorContains(t, err, "The specified file does not exist.")
+}
+
+func TestSetConfigProperty_ConfigFilePathFlag(t *testing.T) {
+	err, _ := executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "dummy-client_id", "--config-file-path", filePath)
+	assert.NilError(t, err)
+
+	content, err := os.ReadFile(filePath)
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(string(content), "dummy-client_id"))
+
+	err, _ = executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "example_client_id", "--config-file-path", filePath)
+	assert.NilError(t, err)
+}
+
+func TestLoadConfiguration_ConfigFilePathFlagFileWithoutPermission(t *testing.T) {
+	if err := os.Chmod(filePath, 0000); err != nil {
+		t.Fatalf("failed to set file permissions: %v", err)
+	}
+	defer os.Chmod(filePath, 0644)
+	err, _ := executeCommand(t, "configure", "show", "--config-file-path", filePath)
+	assert.ErrorContains(t, err, "Access to the specified file is restricted")
+}

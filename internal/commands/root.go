@@ -20,10 +20,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	failureExitCode = 1
-)
-
 // NewAstCLI Return a Checkmarx One CLI root command to execute
 func NewAstCLI(
 	applicationsWrapper wrappers.ApplicationsWrapper,
@@ -111,7 +107,6 @@ func NewAstCLI(
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		PrintConfiguration()
 		err := configuration.LoadConfiguration()
-		//exitIfError(err)
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
@@ -335,16 +330,4 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
-}
-func exitIfError(err error) {
-	if err != nil {
-		switch e := err.(type) {
-		case *wrappers.AstError:
-			fmt.Println(e.Err)
-			os.Exit(e.Code)
-		default:
-			fmt.Println(e)
-			os.Exit(failureExitCode)
-		}
-	}
 }
