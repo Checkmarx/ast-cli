@@ -126,20 +126,18 @@ func setUpPreReceiveHookDir(t *testing.T) (workdir string, cleanup func()) {
 	orgWorkDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tempDir := t.TempDir()
-	fmt.Printf("originalDir is %s", orgWorkDir)
+	fmt.Println("the current dir" + orgWorkDir)
 
 	//Init a bare repo
 
 	err = exec.Command("git", "init", "--bare", filepath.Join(tempDir, "server")).Run()
 	assert.NoError(t, err)
+	cxPath := filepath.Join(orgWorkDir, "..", "..", "bin", "cx")
+	fmt.Println("the current dir" + cxPath)
+
 	preReceivePath := filepath.Join(tempDir, "server", "hooks", "pre-receive")
-	cxPath := filepath.Join(orgWorkDir, "..", "..", "bin")
-
-	if _, err := os.Stat(cxPath); err != nil {
-		fmt.Println("cx binary does not exist at:", cxPath)
-	}
-
-	script := fmt.Sprintf(`#!/bin/bash "%s" ./cx hooks pre-receive secrets-scan`, cxPath)
+	script := fmt.Sprintf(`#!/bin/bash
+							  "%s" hooks pre-receive secrets-scan`, cxPath)
 	err = os.WriteFile(preReceivePath, []byte(script), 0755)
 	assert.NoError(t, err)
 
