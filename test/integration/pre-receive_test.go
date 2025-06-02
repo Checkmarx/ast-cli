@@ -3,6 +3,7 @@
 package integration
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -125,14 +126,15 @@ func setUpPreReceiveHookDir(t *testing.T) (workdir string, cleanup func()) {
 	orgWorkDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tempDir := t.TempDir()
+	_ = fmt.Sprintf("originalDir is %s", orgWorkDir)
 
 	//Init a bare repo
 
 	err = exec.Command("git", "init", "--bare", filepath.Join(tempDir, "server")).Run()
 	assert.NoError(t, err)
 	preReceivePath := filepath.Join(tempDir, "server", "hooks", "pre-receive")
-	script := `#!/bin/bash
-               cx hooks pre-receive secrets-scan`
+	cxPath := filepath.Join(orgWorkDir, "bin", "cx")
+	script := fmt.Sprintf(`#!/bin/bash "%s" hooks pre-receive secrets-scan`, cxPath)
 	err = os.WriteFile(preReceivePath, []byte(script), 0755)
 	assert.NoError(t, err)
 
