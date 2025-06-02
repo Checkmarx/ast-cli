@@ -1921,7 +1921,7 @@ func runCreateScanCommand(
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
-			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build.")
+			return errors.Errorf("Policy Violation - Break Build Enabled.")
 		}
 		return nil
 	}
