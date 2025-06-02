@@ -1176,13 +1176,13 @@ func CreateScanReport(
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJSONWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
-	formatJsonToEmail,
-	formatJsonOptions,
+	formatJSONToEmail,
+	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1218,9 +1218,9 @@ func CreateScanReport(
 		}
 	}
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatJsonToEmail,
-			formatJsonOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper, featureFlagsWrapper, agent)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatJSONToEmail,
+			formatJSONOptions, formatSbomOptions, targetFile,
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -1391,8 +1391,8 @@ func isValidScanStatus(status, format string) bool {
 func createReport(format,
 	formatPdfToEmail,
 	formatPdfOptions,
-	formatJsonToEmail,
-	formatJsonOptions,
+	formatJSONToEmail,
+	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1400,7 +1400,7 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJSONWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
@@ -1420,7 +1420,7 @@ func createReport(format,
 	}
 	if printer.IsFormat(format, printer.FormatJSONcxOne) && isValidScanStatus(summary.Status, printer.FormatJSONcxOne) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
-		return exportJSONReportResults(resultsJsonReportsWrapper, summary, summaryRpt, formatJsonToEmail, formatJsonOptions, featureFlagsWrapper)
+		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, formatJSONToEmail, formatJSONOptions, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
@@ -1798,7 +1798,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
-func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJsonToEmail,
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJSONToEmail,
 	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JsonReportsPayload{}
 	pollingResp := &wrappers.JsonPollingResponse{}
@@ -1825,8 +1825,8 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 
 	// will generate pdf report and send it to the email list
 	// instead of saving it to the file system
-	if formatJsonToEmail != "" {
-		emailList, validateErr := validateEmails(formatJsonToEmail)
+	if formatJSONToEmail != "" {
+		emailList, validateErr := validateEmails(formatJSONToEmail)
 		if validateErr != nil {
 			return validateErr
 		}
