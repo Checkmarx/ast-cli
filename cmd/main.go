@@ -50,7 +50,7 @@ func main() {
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
-	resultsJsonPath := viper.GetString(params.ResultsJsonReportPathKey)
+	resultsJSONPath := viper.GetString(params.ResultsJSONReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
@@ -62,7 +62,7 @@ func main() {
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsJsonReportsWrapper := wrappers.NewResultsJsonReportsHTTPWrapper(resultsJsonPath)
+	resultsJSONReportsWrapper := wrappers.NewResultsJsonReportsHTTPWrapper(resultsJSONPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
@@ -101,7 +101,7 @@ func main() {
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
-		resultsJsonReportsWrapper,
+		resultsJSONReportsWrapper,
 		resultsPredicatesWrapper,
 		customStatesWrapper,
 		codeBashingWrapper,
