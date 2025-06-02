@@ -38,7 +38,7 @@ func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &mock.ScansMockWrapper{}
 	exportWrapper := &mock.ExportMockWrapper{}
 	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
-	resultsJsonWrapper := &mock.ResultsJSONWrapper{}
+	resultsJSONWrapper := &mock.ResultsJSONWrapper{}
 	scansMockWrapper.Running = true
 	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
 	groupsMockWrapper := &mock.GroupsMockWrapper{}
@@ -75,7 +75,7 @@ func createASTTestCommand() *cobra.Command {
 		scansMockWrapper,
 		exportWrapper,
 		resultsPdfWrapper,
-		resultsJsonWrapper,
+		resultsJSONWrapper,
 		resultsPredicatesMockWrapper,
 		customStatesMockWrapper,
 		codeBashingWrapper,

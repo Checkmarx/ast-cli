@@ -26,7 +26,7 @@ func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	customStatesWrapper wrappers.CustomStatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
