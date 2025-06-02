@@ -61,7 +61,7 @@ const (
 	DescriptionsPathEnv                 = "CX_DESCRIPTIONS_PATH"
 	TenantConfigurationPathEnv          = "CX_TENANT_CONFIGURATION_PATH"
 	ResultsPdfReportPathEnv             = "CX_RESULTS_PDF_REPORT_PATH"
-	ResultsJsonReportPathEnv            = "CX_RESULTS_JSON_REPORT_PATH"
+	ResultsJSONReportPathEnv            = "CX_RESULTS_JSON_REPORT_PATH"
 	ExportPathEnv                       = "CX_EXPORT_PATH"
 	FeatureFlagsEnv                     = "CX_FEATURE_FLAGS_PATH"
 	UploadURLEnv                        = "CX_UPLOAD_URL"
