@@ -92,7 +92,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
-	resultsJSONReportsWrapper := wrappers.NewResultsJsonReportsHTTPWrapper(resultsJsonPath)
+	resultsJSONReportsWrapper := wrappers.NewResultsJSONReportsHTTPWrapper(resultsJsonPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 

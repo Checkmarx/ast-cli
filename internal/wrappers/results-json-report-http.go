@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type JsonReportsPayload struct {
+type JSONReportsPayload struct {
 	ReportName string `json:"reportName" validate:"required"`
 	ReportType string `json:"reportType" validate:"required"`
 	FileFormat string `json:"fileFormat" validate:"required"`
@@ -30,27 +30,27 @@ type JsonReportsPayload struct {
 	} `json:"data"`
 }
 
-type JsonReportsResponse struct {
+type JSONReportsResponse struct {
 	ReportID string `json:"reportId"`
 }
-type JsonPollingResponse struct {
+type JSONPollingResponse struct {
 	ReportID string `json:"reportId"`
 	Status   string `json:"status"`
 	URL      string `json:"url"`
 }
-type JsonHTTPWrapper struct {
+type JSONHTTPWrapper struct {
 	path string
 }
 
-const JsonDownloadTimeout = 420
+const JSONDownloadTimeout = 420
 
-func NewResultsJsonReportsHTTPWrapper(path string) ResultsJSONWrapper {
-	return &JsonHTTPWrapper{
+func NewResultsJSONReportsHTTPWrapper(path string) ResultsJSONWrapper {
+	return &JSONHTTPWrapper{
 		path: path,
 	}
 }
 
-func (r *JsonHTTPWrapper) GenerateJSONReport(payload *JsonReportsPayload) (*JsonReportsResponse, *WebError, error) {
+func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSONReportsResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
 	if err != nil {
@@ -71,7 +71,7 @@ func (r *JsonHTTPWrapper) GenerateJSONReport(payload *JsonReportsPayload) (*Json
 
 	switch resp.StatusCode {
 	case http.StatusAccepted:
-		model := JsonReportsResponse{}
+		model := JSONReportsResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to parse response body")
@@ -82,7 +82,7 @@ func (r *JsonHTTPWrapper) GenerateJSONReport(payload *JsonReportsPayload) (*Json
 	}
 }
 
-func (r *JsonHTTPWrapper) CheckJSONReportStatus(reportID string) (*JsonPollingResponse, *WebError, error) {
+func (r *JSONHTTPWrapper) CheckJSONReportStatus(reportID string) (*JSONPollingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, reportID)
 	params := map[string]string{"returnUrl": "true"}
@@ -99,7 +99,7 @@ func (r *JsonHTTPWrapper) CheckJSONReportStatus(reportID string) (*JsonPollingRe
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		model := JsonPollingResponse{}
+		model := JSONPollingResponse{}
 		err = decoder.Decode(&model)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to parse response body")
@@ -110,8 +110,8 @@ func (r *JsonHTTPWrapper) CheckJSONReportStatus(reportID string) (*JsonPollingRe
 	}
 }
 
-func (r *JsonHTTPWrapper) DownloadJSONReport(url, targetFile string, useAccessToken bool) error {
-	clientTimeout := uint(JsonDownloadTimeout)
+func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetFile string, useAccessToken bool) error {
+	clientTimeout := uint(JSONDownloadTimeout)
 	var resp *http.Response
 	var err error
 	if useAccessToken {
