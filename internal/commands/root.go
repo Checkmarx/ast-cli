@@ -12,7 +12,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -110,8 +109,8 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		PrintConfiguration()
-		err := configuration.LoadConfiguration()
-		exitIfError(err)
+		//err := configuration.LoadConfiguration()
+		//exitIfError(err)
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
