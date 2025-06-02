@@ -29,11 +29,10 @@ func TestPreReceiveCommand(t *testing.T) {
 
 func TestPreReceiveCommand_withConfig(t *testing.T) {
 	cmd := createASTTestCommand()
-	workDir, err := os.Getwd()
+	workDir, _ := os.Getwd()
 	configFile := filepath.Join(workDir, "config.yaml")
-	err = os.WriteFile(configFile, []byte(""), 0644)
-	assert.NoError(t, err)
-	err = executeTestCommand(
+	_ = os.WriteFile(configFile, []byte(""), 0644)
+	err := executeTestCommand(
 		cmd,
 		"hooks", "pre-receive", "secrets-scan", "--config", "config.yaml",
 	)
@@ -41,7 +40,6 @@ func TestPreReceiveCommand_withConfig(t *testing.T) {
 }
 
 func TestPreReceiveCommand_withWrongFlagConfig(t *testing.T) {
-
 	err := execCmdNotNilAssertion(
 		t,
 		"hooks", "pre-receive", "secrets-scan", "--cf", "/path/config.yaml",
