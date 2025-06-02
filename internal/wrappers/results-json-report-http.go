@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// nolint:dupl
 type JSONReportsPayload struct {
 	ReportName string `json:"reportName" validate:"required"`
 	ReportType string `json:"reportType" validate:"required"`
@@ -50,6 +51,7 @@ func NewResultsJSONReportsHTTPWrapper(path string) ResultsJSONWrapper {
 	}
 }
 
+//nolint:dupl
 func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSONReportsResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	params, err := json.Marshal(payload)
@@ -82,6 +84,7 @@ func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSON
 	}
 }
 
+// nolint:dupl
 func (r *JSONHTTPWrapper) CheckJSONReportStatus(reportID string) (*JSONPollingResponse, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := fmt.Sprintf("%s/%s", r.path, reportID)
@@ -110,6 +113,7 @@ func (r *JSONHTTPWrapper) CheckJSONReportStatus(reportID string) (*JSONPollingRe
 	}
 }
 
+// nolint:dupl
 func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetFile string, useAccessToken bool) error {
 	clientTimeout := uint(JSONDownloadTimeout)
 	var resp *http.Response
