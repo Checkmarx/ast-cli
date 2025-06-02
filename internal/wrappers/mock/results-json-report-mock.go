@@ -10,15 +10,15 @@ import (
 type ResultsJSONWrapper struct{}
 
 // GenerateJSONReport mock for tests
-func (*ResultsJSONWrapper) GenerateJSONReport(_ *wrappers.JsonReportsPayload) (*wrappers.JsonReportsResponse, *wrappers.WebError, error) {
-	return &wrappers.JsonReportsResponse{
+func (*ResultsJSONWrapper) GenerateJSONReport(_ *wrappers.JSONReportsPayload) (*wrappers.JSONReportsResponse, *wrappers.WebError, error) {
+	return &wrappers.JSONReportsResponse{
 		ReportID: "reportId",
 	}, nil, nil
 }
 
 // CheckJSONReportStatus mock for tests
-func (*ResultsJSONWrapper) CheckJSONReportStatus(_ string) (*wrappers.JsonPollingResponse, *wrappers.WebError, error) {
-	return &wrappers.JsonPollingResponse{
+func (*ResultsJSONWrapper) CheckJSONReportStatus(_ string) (*wrappers.JSONPollingResponse, *wrappers.WebError, error) {
+	return &wrappers.JSONPollingResponse{
 		Status: "completed",
 	}, nil, nil
 }
