@@ -93,13 +93,13 @@ const (
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
 	jsonOptionsFlagDescription = "Sections to generate Json report. Available options: Iac-Security,Sast,Sca," +
-		defaultJsonOptionsDataSections
+		defaultJSONOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	reportNameScanReport                    = "scan-report"
 	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
-	defaultJsonOptionsDataSections          = "ScanSummary,ExecutiveSummary,ScanResults"
+	defaultJSONOptionsDataSections          = "ScanSummary,ExecutiveSummary,ScanResults"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
@@ -185,7 +185,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -205,7 +205,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper,
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
 		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
@@ -263,7 +263,7 @@ func resultShowSubCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -278,7 +278,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJsonReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -300,7 +300,7 @@ func resultShowSubCommand(
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONToEmailFlag, "", jsonToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJsonOptionsDataSections, jsonOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJSONOptionsDataSections, jsonOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1019,7 +1019,7 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -1031,8 +1031,8 @@ func runGetResultCommand(
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
-		formatJsonToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
-		formatJsonOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
+		formatJSONToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
+		formatJSONOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
@@ -1077,7 +1077,7 @@ func runGetResultCommand(
 		}
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-			policyResponseModel, resultsPdfReportsWrapper, resultsJsonReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions, formatJsonToEmail, formatJsonOptions,
+			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions, formatJSONToEmail, formatJSONOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 		return err
 	}
