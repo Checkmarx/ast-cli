@@ -3,11 +3,12 @@
 package integration
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPreReceive_CommitPushSecrets(t *testing.T) {
