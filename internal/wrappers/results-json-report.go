@@ -1,7 +1,7 @@
 package wrappers
 
-type ResultsJsonWrapper interface {
-	GenerateJsonReport(payload *JsonReportsPayload) (*JsonReportsResponse, *WebError, error)
-	CheckJsonReportStatus(reportID string) (*JsonPollingResponse, *WebError, error)
-	DownloadJsonReport(url, targetFile string, useAccessToken bool) error
+type ResultsJSONWrapper interface {
+	GenerateJSONReport(payload *JsonReportsPayload) (*JsonReportsResponse, *WebError, error)
+	CheckJSONReportStatus(reportID string) (*JsonPollingResponse, *WebError, error)
+	DownloadJSONReport(url, targetFile string, useAccessToken bool) error
 }

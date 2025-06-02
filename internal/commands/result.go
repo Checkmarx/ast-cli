@@ -185,7 +185,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -263,7 +263,7 @@ func resultShowSubCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -1019,7 +1019,7 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJSONReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -1176,7 +1176,7 @@ func CreateScanReport(
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJSONWrapper,
 	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
@@ -1400,7 +1400,7 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
-	resultsJsonReportsWrapper wrappers.ResultsJsonWrapper,
+	resultsJsonReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
@@ -1798,7 +1798,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
-func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJsonToEmail,
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJsonToEmail,
 	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JsonReportsPayload{}
 	pollingResp := &wrappers.JsonPollingResponse{}
@@ -1833,7 +1833,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *w
 		jsonReportsPayload.ReportType = reportTypeEmail
 		jsonReportsPayload.Data.Email = emailList
 	}
-	jsonReportID, webErr, err := jsonWrapper.GenerateJsonReport(jsonReportsPayload)
+	jsonReportID, webErr, err := jsonWrapper.GenerateJSONReport(jsonReportsPayload)
 	if webErr != nil {
 		return errors.Errorf("Error generating JSON report - %s", webErr.Message)
 	}
@@ -1847,7 +1847,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *w
 	log.Println("Generating JSON report")
 	pollingResp.Status = startedStatus
 	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
-		pollingResp, webErr, err = jsonWrapper.CheckJsonReportStatus(jsonReportID.ReportID)
+		pollingResp, webErr, err = jsonWrapper.CheckJSONReportStatus(jsonReportID.ReportID)
 		if err != nil || webErr != nil {
 			return errors.Wrapf(err, "%v", webErr)
 		}
@@ -1865,7 +1865,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJsonWrapper, summary *w
 	} else {
 		infoPathType = pollingResp.URL
 	}
-	err = jsonWrapper.DownloadJsonReport(infoPathType, summaryRpt, minioEnabled.Status)
+	err = jsonWrapper.DownloadJSONReport(infoPathType, summaryRpt, minioEnabled.Status)
 	if err != nil {
 		return errors.Wrapf(err, "%s", "Failed downloading JSON report")
 	}
