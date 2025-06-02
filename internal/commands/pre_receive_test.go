@@ -1,12 +1,11 @@
 package commands
 
 import (
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestPreReceiveCommand(t *testing.T) {
@@ -30,10 +29,11 @@ func TestPreReceiveCommand(t *testing.T) {
 
 func TestPreReceiveCommand_withConfig(t *testing.T) {
 	cmd := createASTTestCommand()
-	workDir, _ := os.Getwd()
+	workDir, err := os.Getwd()
 	configFile := filepath.Join(workDir, "config.yaml")
-	_ = os.WriteFile(configFile, []byte(""), 0644)
-	err := executeTestCommand(
+	err = os.WriteFile(configFile, []byte(""), 0644)
+	assert.NoError(t, err)
+	err = executeTestCommand(
 		cmd,
 		"hooks", "pre-receive", "secrets-scan", "--config", "config.yaml",
 	)
@@ -41,6 +41,7 @@ func TestPreReceiveCommand_withConfig(t *testing.T) {
 }
 
 func TestPreReceiveCommand_withWrongFlagConfig(t *testing.T) {
+
 	err := execCmdNotNilAssertion(
 		t,
 		"hooks", "pre-receive", "secrets-scan", "--cf", "/path/config.yaml",
