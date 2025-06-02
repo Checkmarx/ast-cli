@@ -139,7 +139,7 @@ func setUpPreReceiveHookDir(t *testing.T) (workdir string, cleanup func()) {
 		fmt.Println("cx binary does not exist at:", cxPath)
 	}
 
-	script := fmt.Sprintf(`#!/bin/bash "%s" hooks pre-receive secrets-scan`, cxPath)
+	script := fmt.Sprintf(`#!/bin/bash "%s" ./cx hooks pre-receive secrets-scan`, cxPath)
 	err = os.WriteFile(preReceivePath, []byte(script), 0755)
 	assert.NoError(t, err)
 
