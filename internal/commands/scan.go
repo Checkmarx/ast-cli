@@ -719,7 +719,7 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 		info["tags"] = tagMap
 	}
 	for _, tag := range tags {
-		if tag != "" {
+		if len(tag) > 0 {
 			value := ""
 			keyValuePair := strings.Split(tag, ":")
 			if len(keyValuePair) > 1 {
@@ -1447,7 +1447,7 @@ func filterMatched(filters []string, fileName string) bool {
 }
 
 func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
-	if len(scaResolver) > 0 {
+	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
 		if err != nil {
