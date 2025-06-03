@@ -2243,6 +2243,7 @@ func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
 	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 		sonarRules.Name = result.ID
 		sonarRules.Description = result.Description
+		sonarRules.ID = result.ID
 	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarRules.Name = result.ScanResultData.RuleName
 		sonarRules.Description = result.ScanResultData.RuleDescription
