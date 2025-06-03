@@ -52,8 +52,8 @@ func TestPreReceive_PushWithoutSecrets(t *testing.T) {
 	assert.NoError(t, os.Chdir(workDir))
 	setGlobalGitAccount(t, workDir)
 
-	secretFile := filepath.Join(workDir, "without_secret.txt")
-	err := os.WriteFile(secretFile, []byte("Hello World"), 0644)
+	noSecretFile := filepath.Join(workDir, "without_secret.txt")
+	err := os.WriteFile(noSecretFile, []byte("Hello World"), 0644)
 	assert.NoError(t, err)
 	// Git add
 	outputCmd := exec.Command("git", "add", "without_secret.txt")
@@ -79,7 +79,7 @@ func TestPreReceive_PushWithoutSecrets(t *testing.T) {
 	assert.NotContains(t, outputString, "(pre-receive hook declined)")
 }
 
-func TestPreReceive_PushSecretsNonSecretsFile(t *testing.T) {
+func TestPreReceive_PushSecrets_and_NoSecretsFile(t *testing.T) {
 	workDir, cleanUp := setUpPreReceiveHookDir(t)
 	defer cleanUp()
 	assert.NoError(t, os.Chdir(workDir))
