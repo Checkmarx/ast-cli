@@ -16,18 +16,19 @@ import (
 )
 
 type JSONReportsPayload struct {
-	ReportName string `json:"reportName" validate:"required"`
-	ReportType string `json:"reportType" validate:"required"`
-	FileFormat string `json:"fileFormat" validate:"required"`
-	Data       struct {
-		ScanID     string   `json:"scanId" validate:"required"`
-		ProjectID  string   `json:"projectId" validate:"required"`
-		BranchName string   `json:"branchName" validate:"required"`
-		Host       string   `json:"host"`
-		Sections   []string `json:"sections"`
-		Scanners   []string `json:"scanners"`
-		Email      []string `json:"email"`
-	} `json:"data"`
+	ReportPayload PdfReportsPayload `json:"report_payload"`
+	//ReportName string `json:"reportName" validate:"required"`
+	//ReportType string `json:"reportType" validate:"required"`
+	//FileFormat string `json:"fileFormat" validate:"required"`
+	//Data       struct {
+	//	ScanID     string   `json:"scanId" validate:"required"`
+	//	ProjectID  string   `json:"projectId" validate:"required"`
+	//	BranchName string   `json:"branchName" validate:"required"`
+	//	Host       string   `json:"host"`
+	//	Sections   []string `json:"sections"`
+	//	Scanners   []string `json:"scanners"`
+	//	Email      []string `json:"email"`
+	//} `json:"data"`
 }
 
 type JSONReportsResponse struct {
