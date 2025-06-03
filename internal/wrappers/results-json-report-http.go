@@ -16,28 +16,27 @@ import (
 )
 
 type JSONReportsPayload struct {
-	ReportPayload PdfReportsPayload `json:"report_payload"`
-	//ReportName string `json:"reportName" validate:"required"`
-	//ReportType string `json:"reportType" validate:"required"`
-	//FileFormat string `json:"fileFormat" validate:"required"`
-	//Data       struct {
-	//	ScanID     string   `json:"scanId" validate:"required"`
-	//	ProjectID  string   `json:"projectId" validate:"required"`
-	//	BranchName string   `json:"branchName" validate:"required"`
-	//	Host       string   `json:"host"`
-	//	Sections   []string `json:"sections"`
-	//	Scanners   []string `json:"scanners"`
-	//	Email      []string `json:"email"`
-	//} `json:"data"`
+	Data struct {
+		ScanID     string   `json:"scanId" validate:"required"`
+		ProjectID  string   `json:"projectId" validate:"required"`
+		BranchName string   `json:"branchName" validate:"required"`
+		Host       string   `json:"host"`
+		Sections   []string `json:"sections"`
+		Scanners   []string `json:"scanners"`
+		Email      []string `json:"email"`
+	} `json:"data"`
+	ReportType string `json:"reportType" validate:"required"`
+	ReportName string `json:"reportName" validate:"required"`
+	FileFormat string `json:"fileFormat" validate:"required"`
 }
 
 type JSONReportsResponse struct {
 	ReportID string `json:"reportId"`
 }
 type JSONPollingResponse struct {
+	URL      string `json:"url"`
 	ReportID string `json:"reportId"`
 	Status   string `json:"status"`
-	URL      string `json:"url"`
 }
 type JSONHTTPWrapper struct {
 	path string
@@ -49,6 +48,43 @@ func NewResultsJSONReportsHTTPWrapper(path string) ResultsJSONWrapper {
 	return &JSONHTTPWrapper{
 		path: path,
 	}
+}
+
+func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetedFile string, useAccessToken bool) error {
+	clientTimeOut := uint(JSONDownloadTimeout)
+	var response *http.Response
+	var err1 error
+	if useAccessToken {
+		customURL := fmt.Sprintf("%s/%s/download", r.path, url)
+		response, err1 = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeOut)
+	} else {
+		response, err1 = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeOut, "", true)
+	}
+
+	if err1 != nil {
+		return err1
+	}
+
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("response status code %d", response.StatusCode)
+	}
+
+	file1, err1 := os.Create(targetedFile)
+	if err1 != nil {
+		return errors.Wrapf(err1, "Failed to create file %s", targetedFile)
+	}
+	fileSize, err1 := io.Copy(file1, response.Body)
+	if err1 != nil {
+		return errors.Wrapf(err1, "Failed to write file %s", targetedFile)
+	}
+	defer file1.Close()
+
+	log.Printf("Downloaded file: %s - %d bytes\n", targetedFile, fileSize)
+	return nil
 }
 
 func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSONReportsResponse, *WebError, error) {
@@ -109,41 +145,4 @@ func (r *JSONHTTPWrapper) CheckJSONReportStatus(reportID string) (*JSONPollingRe
 	default:
 		return nil, nil, errors.Errorf("response status code %d", response.StatusCode)
 	}
-}
-
-func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetedFile string, useAccessToken bool) error {
-	clientTimeOut := uint(JSONDownloadTimeout)
-	var response *http.Response
-	var err1 error
-	if useAccessToken {
-		customURL := fmt.Sprintf("%s/%s/download", r.path, url)
-		response, err1 = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeOut)
-	} else {
-		response, err1 = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeOut, "", true)
-	}
-
-	if err1 != nil {
-		return err1
-	}
-
-	defer func() {
-		_ = response.Body.Close()
-	}()
-
-	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("response status code %d", response.StatusCode)
-	}
-
-	file1, err1 := os.Create(targetedFile)
-	if err1 != nil {
-		return errors.Wrapf(err1, "Failed to create file %s", targetedFile)
-	}
-	fileSize, err1 := io.Copy(file1, response.Body)
-	if err1 != nil {
-		return errors.Wrapf(err1, "Failed to write file %s", targetedFile)
-	}
-	defer file1.Close()
-
-	log.Printf("Downloaded file: %s - %d bytes\n", targetedFile, fileSize)
-	return nil
 }
