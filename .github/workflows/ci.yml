@@ -93,8 +93,6 @@ jobs:
           PR_BITBUCKET_NAMESPACE: "AstSystemTest"
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
-          GITHUB_USER: ${{GITHUB_ACTOR}}
-          GITHUB_EMAIL: ${{GITHUB_ACTOR}}@users.noreply.github.com
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
