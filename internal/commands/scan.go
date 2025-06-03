@@ -719,7 +719,7 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 		info["tags"] = tagMap
 	}
 	for _, tag := range tags {
-		if len(tag) > 0 {
+		if tag != "" {
 			value := ""
 			keyValuePair := strings.Split(tag, ":")
 			if len(keyValuePair) > 1 {
