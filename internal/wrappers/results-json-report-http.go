@@ -15,7 +15,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// nolint:dupl
 type JSONReportsPayload struct {
 	ReportName string `json:"reportName" validate:"required"`
 	ReportType string `json:"reportType" validate:"required"`
@@ -51,102 +50,99 @@ func NewResultsJSONReportsHTTPWrapper(path string) ResultsJSONWrapper {
 	}
 }
 
-//nolint:dupl
 func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSONReportsResponse, *WebError, error) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params, err := json.Marshal(payload)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
+	clientTimeOut := viper.GetUint(commonParams.ClientTimeoutKey)
+	param, err1 := json.Marshal(payload)
+	if err1 != nil {
+		return nil, nil, errors.Wrapf(err1, "Failed to parse request body")
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
+	response, err1 := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(param), true, clientTimeOut)
 
-	if err != nil {
-		return nil, nil, err
+	if err1 != nil {
+		return nil, nil, err1
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		_ = response.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
+	decoderJSON := json.NewDecoder(response.Body)
 
-	switch resp.StatusCode {
+	switch response.StatusCode {
 	case http.StatusAccepted:
-		model := JSONReportsResponse{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to parse response body")
+		modelJSON := JSONReportsResponse{}
+		err1 = decoderJSON.Decode(&modelJSON)
+		if err1 != nil {
+			return nil, nil, errors.Wrapf(err1, "failed to parse response body")
 		}
-		return &model, nil, nil
+		return &modelJSON, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", response.StatusCode)
 	}
 }
 
-// nolint:dupl
 func (r *JSONHTTPWrapper) CheckJSONReportStatus(reportID string) (*JSONPollingResponse, *WebError, error) {
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := fmt.Sprintf("%s/%s", r.path, reportID)
-	params := map[string]string{"returnUrl": "true"}
-	resp, err := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, path, params, nil, clientTimeout)
-	if err != nil {
-		return nil, nil, err
+	clientTimeOut := viper.GetUint(commonParams.ClientTimeoutKey)
+	apiPath := fmt.Sprintf("%s/%s", r.path, reportID)
+	param := map[string]string{"returnUrl": "true"}
+	response, err1 := SendPrivateHTTPRequestWithQueryParams(http.MethodGet, apiPath, param, nil, clientTimeOut)
+	if err1 != nil {
+		return nil, nil, err1
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		_ = response.Body.Close()
 	}()
 
-	decoder := json.NewDecoder(resp.Body)
+	decoderJSON := json.NewDecoder(response.Body)
 
-	switch resp.StatusCode {
+	switch response.StatusCode {
 	case http.StatusOK:
-		model := JSONPollingResponse{}
-		err = decoder.Decode(&model)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "failed to parse response body")
+		modelJSON := JSONPollingResponse{}
+		err1 = decoderJSON.Decode(&modelJSON)
+		if err1 != nil {
+			return nil, nil, errors.Wrapf(err1, "failed to parse response body")
 		}
-		return &model, nil, nil
+		return &modelJSON, nil, nil
 	default:
-		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return nil, nil, errors.Errorf("response status code %d", response.StatusCode)
 	}
 }
 
-// nolint:dupl
-func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetFile string, useAccessToken bool) error {
-	clientTimeout := uint(JSONDownloadTimeout)
-	var resp *http.Response
-	var err error
+func (r *JSONHTTPWrapper) DownloadJSONReport(url, targetedFile string, useAccessToken bool) error {
+	clientTimeOut := uint(JSONDownloadTimeout)
+	var response *http.Response
+	var err1 error
 	if useAccessToken {
 		customURL := fmt.Sprintf("%s/%s/download", r.path, url)
-		resp, err = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeout)
+		response, err1 = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, clientTimeOut)
 	} else {
-		resp, err = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeout, "", true)
+		response, err1 = SendHTTPRequestByFullURL(http.MethodGet, url, http.NoBody, useAccessToken, clientTimeOut, "", true)
 	}
 
-	if err != nil {
-		return err
+	if err1 != nil {
+		return err1
 	}
 
 	defer func() {
-		_ = resp.Body.Close()
+		_ = response.Body.Close()
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("response status code %d", resp.StatusCode)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("response status code %d", response.StatusCode)
 	}
 
-	file, err := os.Create(targetFile)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to create file %s", targetFile)
+	file1, err1 := os.Create(targetedFile)
+	if err1 != nil {
+		return errors.Wrapf(err1, "Failed to create file %s", targetedFile)
 	}
-	size, err := io.Copy(file, resp.Body)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to write file %s", targetFile)
+	fileSize, err1 := io.Copy(file1, response.Body)
+	if err1 != nil {
+		return errors.Wrapf(err1, "Failed to write file %s", targetedFile)
 	}
-	defer file.Close()
+	defer file1.Close()
 
-	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
+	log.Printf("Downloaded file: %s - %d bytes\n", targetedFile, fileSize)
 	return nil
 }
