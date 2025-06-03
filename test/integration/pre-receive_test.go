@@ -117,9 +117,9 @@ func TestPreReceive_PushSecrets_and_NoSecretsFile(t *testing.T) {
 
 func setGlobalGitAccount(t *testing.T, repoName string) {
 	// Set global git config
-
-	err := exec.Command("git", "-C", repoName, "config", "user.email", "anjali.deore@checkmarx.com").Run()
-	err = exec.Command("git", "-C", repoName, "config", "user.name", "cx-anjali-deore").Run()
+	username := os.Getenv("GITHUB_ACTOR")
+	err := exec.Command("git", "-C", repoName, "config", "user.email", username+"@users.noreply.github.com").Run()
+	err = exec.Command("git", "-C", repoName, "config", "user.name", username).Run()
 	assert.NoError(t, err)
 }
 
