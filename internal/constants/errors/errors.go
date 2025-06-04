@@ -30,6 +30,9 @@ const (
 
 	// OSS Realtime
 	OssRealtimeErrFormat = "OSS Realtime error: %s"
+
+	// Secret Realtime
+	SecretRealtimeErrFormat = "secrets realtime error: %s"
 )
 
 type OssRealtimeError struct {
@@ -42,6 +45,20 @@ func (e *OssRealtimeError) Error() error {
 
 func NewOssRealtimeError(message string) *OssRealtimeError {
 	return &OssRealtimeError{
+		Message: message,
+	}
+}
+
+type SecretRealtimeError struct {
+	Message string
+}
+
+func (e *SecretRealtimeError) Error() error {
+	return fmt.Errorf(SecretRealtimeErrFormat, e.Message)
+}
+
+func NewSecretRealtimeError(message string) *SecretRealtimeError {
+	return &SecretRealtimeError{
 		Message: message,
 	}
 }

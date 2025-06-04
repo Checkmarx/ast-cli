@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
+	"github.com/checkmarx/ast-cli/internal/commands/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -213,6 +214,8 @@ func NewScanCommand(
 
 	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
 
+	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -233,6 +236,7 @@ func NewScanCommand(
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
 		ossRealtimeCmd,
+		secretsRealtimeCmd,
 	)
 	return scanCmd
 }
@@ -462,7 +466,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 			`,
 			),
 		},
-		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: realtimeengine.RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanOssRealtimeCmd.PersistentFlags().StringP(
@@ -472,6 +476,36 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		"The file source should be the path to a single file or multiple files separated by commas",
 	)
 	return scanOssRealtimeCmd
+}
+
+func scanSecretsRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanSecretsRealtimeCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "secrets-realtime",
+		Short:  "Run a Secrets-Realtime scan",
+		Long:   "Running a Secrets-Realtime scan is a fast and efficient way to identify exposed secrets in a file.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan secrets-realtime -s <path to file separated>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+			`,
+			),
+		},
+		RunE: realtimeengine.RunScanSecretsRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+	}
+
+	scanSecretsRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file or multiple files separated by commas",
+	)
+	return scanSecretsRealtimeCmd
 }
 
 func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
