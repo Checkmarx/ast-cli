@@ -1,5 +1,7 @@
 package errorconstants
 
+import "fmt"
+
 // HTTP Errors
 const (
 	StatusUnauthorized        = "you are not authorized to make this request"
@@ -25,4 +27,21 @@ const (
 
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
+
+	// OSS Realtime
+	OssRealtimeErrFormat = "OSS Realtime error: %s"
 )
+
+type OssRealtimeError struct {
+	Message string
+}
+
+func (e *OssRealtimeError) Error() error {
+	return fmt.Errorf(OssRealtimeErrFormat, e.Message)
+}
+
+func NewOssRealtimeError(message string) *OssRealtimeError {
+	return &OssRealtimeError{
+		Message: message,
+	}
+}

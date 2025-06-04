@@ -2,11 +2,12 @@ package ossrealtime
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -35,20 +36,22 @@ func NewOssRealtimeService(
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
 	if filePath == "" {
-		return nil, errors.New("file path is required")
+		return nil, errorconstants.NewOssRealtimeError("file path is required").Error()
 	}
 
 	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		return nil, err
+		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+		return nil, errorconstants.NewOssRealtimeError("Realtime engine is not available for this tenant").Error()
 	}
 
 	if err := o.ensureLicense(); err != nil {
-		return nil, err
+		return nil, errorconstants.NewOssRealtimeError("failed to ensure license").Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
-		return nil, err
+		logger.PrintfIfVerbose("Failed to parse manifest file %s: %v", filePath, err)
+		return nil, errorconstants.NewOssRealtimeError("failed to parse manifest file").Error()
 	}
 
 	response, toScan := prepareScan(pkgs)
@@ -56,7 +59,8 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 	if len(toScan.Packages) > 0 {
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
-			return nil, errors.Wrap(err, "scanning packages via realtime service")
+			logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
+			return nil, errorconstants.NewOssRealtimeError("Realtime scanner engine failed").Error()
 		}
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
@@ -112,7 +116,7 @@ func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
 // ensureLicense validates that a valid JWT wrapper is available.
 func (o *OssRealtimeService) ensureLicense() error {
 	if o.JwtWrapper == nil {
-		return errors.New("jwt wrapper not provided")
+		return errors.New("JWT wrapper is not initialized, cannot ensure license")
 	}
 	return nil
 }
@@ -195,16 +199,18 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
 	if err != nil {
+		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
 		return nil, errors.Wrap(err, "scanning packages via realtime service")
 	}
 	if len(result.Packages) == 0 {
+		logger.PrintfIfVerbose("Received empty response from oss-realtime scan for packages: %v", requestPackages.Packages)
 		return nil, errors.New("empty response from oss-realtime scan")
 	}
 
 	versionMapping := createVersionMapping(requestPackages, result)
 
 	if err := osscache.AppendToCache(result, versionMapping); err != nil {
-		log.Printf("ossrealtime: failed to update cache: %v", err)
+		logger.PrintfIfVerbose("oss-realtime: failed to update cache: %v", err)
 	}
 
 	return result, nil
