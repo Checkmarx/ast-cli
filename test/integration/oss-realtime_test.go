@@ -46,6 +46,24 @@ func TestOssRealtimeScan_PackageJsonFileWithVulnerablePackages_Success(t *testin
 	assert.True(t, hasVulnerabilities, "At least one package should have vulnerabilities")
 }
 
+func TestOssRealtimeScan_PackageJsonFileWithoutPackages_SuccessWithEmptyResponse(t *testing.T) {
+	t.Skip()
+	args := []string{
+		"scan", "oss-realtime",
+		flag(commonParams.SourcesFlag), "data/manifests/no_dep_packageJson/package.json",
+	}
+
+	err, bytes := executeCommand(t, args...)
+
+	assert.Nil(t, err, "Sending package.json file should not fail")
+
+	var packages ossrealtime.OssPackageResults
+	err = json.Unmarshal(bytes.Bytes(), &packages)
+	assert.Nil(t, err, "Failed to unmarshal package results")
+	assert.Equal(t, len(packages.Packages), 0, "Should return no packages")
+	assert.NotNil(t, packages.Packages)
+}
+
 func TestOssRealtimeScan_PackageJsonFile_Success(t *testing.T) {
 	t.Skip() // Skip this test for now
 	configuration.LoadConfiguration()
