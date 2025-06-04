@@ -28,7 +28,6 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
-	"github.com/google/shlex"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -720,7 +719,7 @@ func setupScanTags(input *[]byte, cmd *cobra.Command) {
 		info["tags"] = tagMap
 	}
 	for _, tag := range tags {
-		if len(tag) > 0 {
+		if tag != "" {
 			value := ""
 			keyValuePair := strings.Split(tag, ":")
 			if len(keyValuePair) > 1 {
@@ -1463,13 +1462,9 @@ func filterMatched(filters []string, fileName string) bool {
 }
 
 func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
-	if len(scaResolver) > 0 {
+	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
-		if err != nil {
-			return err
-		}
-		scaResolverParsedParams, err := shlex.Split(scaResolverParams)
 		if err != nil {
 			return err
 		}
@@ -1482,7 +1477,10 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			"-r",
 			scaResolverResultsFile,
 		}
-		args = append(args, scaResolverParsedParams...)
+		if scaResolverParams != "" {
+			args = append(args, scaResolverParams)
+		}
+
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
 		logger.PrintIfVerbose(string(out))
