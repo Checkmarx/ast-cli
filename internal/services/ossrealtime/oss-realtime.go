@@ -133,6 +133,7 @@ func parseManifest(filePath string) ([]models.Package, error) {
 // prepareScan processes the list of packages and separates cached and uncached packages.
 func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeScannerPackageRequest) {
 	var resp OssPackageResults
+	resp.Packages = make([]OssPackage, 0, len(pkgs))
 	var req wrappers.RealtimeScannerPackageRequest
 	vulnerabilityMapper := NewOssVulnerabilityMapper()
 
