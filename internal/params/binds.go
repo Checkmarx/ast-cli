@@ -64,6 +64,7 @@ var EnvVarsBinds = []struct {
 	{TokenExpirySecondsKey, TokenExpirySecondsEnv, "300"},
 	{ClientTimeoutKey, ClientTimeoutEnv, "30"},
 	{ResultsPdfReportPathKey, ResultsPdfReportPathEnv, "api/reports"},
+	{ResultsJSONReportPathKey, ResultsJSONReportPathEnv, "api/reports"},
 	{ExportPathKey, ExportPathEnv, "api/sca/export"},
 	{FeatureFlagsKey, FeatureFlagsEnv, "api/flags"},
 	{PolicyEvaluationPathKey, PolicyEvaluationPathEnv, "api/policy_management_service_uri/evaluation"},
