@@ -121,12 +121,14 @@ type ScansWrapper interface {
 }
 
 type SastConfig struct {
-	Incremental   string `json:"incremental,omitempty"`
-	Filter        string `json:"filter,omitempty"`
-	EngineVerbose string `json:"engineVerbose,omitempty"`
-	LanguageMode  string `json:"languageMode,omitempty"`
-	PresetName    string `json:"presetName,omitempty"`
-	FastScanMode  string `json:"fastScanMode,omitempty"`
+	Incremental           string `json:"incremental,omitempty"`
+	Filter                string `json:"filter,omitempty"`
+	EngineVerbose         string `json:"engineVerbose,omitempty"`
+	LanguageMode          string `json:"languageMode,omitempty"`
+	PresetName            string `json:"presetName,omitempty"`
+	FastScanMode          string `json:"fastScanMode,omitempty"`
+	LightQueries          string `json:"lightQueries,omitempty"`
+	RecommendedExclusions string `json:"recommendedExclusions,omitempty"`
 }
 
 type KicsConfig struct {

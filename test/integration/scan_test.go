@@ -533,8 +533,32 @@ func TestFastScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
+func TestLightQueries(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithLightQueries(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func TestRecommendedExclusions(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithRecommendedExclusions(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
 func createScanWithFastScan(t *testing.T, source string, name string, tags map[string]string) (string, string) {
 	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastFastScanFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithLightQueries(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastLightQueriesFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithRecommendedExclusions(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastRecommendedExclusionsFlags))
 	return executeCreateScan(t, args)
 }
 
