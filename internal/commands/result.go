@@ -306,6 +306,7 @@ func resultShowSubCommand(
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
 	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
@@ -1022,7 +1023,6 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
-		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
@@ -1050,7 +1050,7 @@ func runGetResultCommand(
 
 		var policyResponseModel *wrappers.PolicyResponseModel
 		if !isScanPending(string(scan.Status)) {
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
