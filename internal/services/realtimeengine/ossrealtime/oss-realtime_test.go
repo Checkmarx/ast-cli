@@ -44,7 +44,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
-	const filePath = "../../commands/data/manifests/package.json"
+	const filePath = "../../../commands/data/manifests/package.json"
 
 	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
@@ -61,7 +61,7 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
-	const filePath = "../../commands/data/manifests/package.json"
+	const filePath = "../../../commands/data/manifests/package.json"
 
 	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
