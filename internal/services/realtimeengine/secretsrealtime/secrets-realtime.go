@@ -31,18 +31,21 @@ type SecretsRealtimeService struct {
 func NewSecretsRealtimeService(
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper,
-	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 ) *SecretsRealtimeService {
 	return &SecretsRealtimeService{
-		JwtWrapper:             jwtWrapper,
-		FeatureFlagWrapper:     featureFlagWrapper,
-		RealtimeScannerWrapper: realtimeScannerWrapper,
+		JwtWrapper:         jwtWrapper,
+		FeatureFlagWrapper: featureFlagWrapper,
 	}
 }
 
 func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]SecretsRealtimeResult, error) {
 	if filePath == "" {
 		return nil, errorConstants.NewSecretRealtimeError("file path is required").Error()
+	}
+
+	if enabled, err := s.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled); err != nil || !enabled.Status {
+		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+		return nil, errorConstants.NewSecretRealtimeError("Realtime engine is not available for this tenant").Error()
 	}
 
 	content, err := readFile(filePath)

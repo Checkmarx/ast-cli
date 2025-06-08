@@ -213,7 +213,7 @@ func NewScanCommand(
 
 	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
 
-	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -477,7 +477,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 	return scanOssRealtimeCmd
 }
 
-func scanSecretsRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanSecretsRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanSecretsRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "secrets-realtime",
@@ -495,7 +495,7 @@ func scanSecretsRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScann
 			`,
 			),
 		},
-		RunE: RunScanSecretsRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanSecretsRealtimeCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
 	scanSecretsRealtimeCmd.PersistentFlags().StringP(

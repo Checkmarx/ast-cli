@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func RunScanSecretsRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+func RunScanSecretsRealtimeCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
@@ -17,7 +17,7 @@ func RunScanSecretsRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScann
 		if fileSourceFlag == "" {
 			return errorconstants.NewSecretRealtimeError("file path is required").Error()
 		}
-		ossRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
+		ossRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
 
 		results, err := ossRealtimeService.RunSecretsRealtimeScan(fileSourceFlag)
 		if err != nil {
