@@ -47,14 +47,15 @@ const (
 	glScaTypeLabel            = ".gl-sca-report"
 	directoryPermission       = 0700
 	infoSonar                 = "INFO"
-	lowSonar                  = "MINOR"
-	mediumSonar               = "MAJOR"
-	highSonar                 = "CRITICAL"
+	lowSonar                  = "LOW"
+	mediumSonar               = "MEDIUM"
+	highSonar                 = "HIGH"
 	criticalSonar             = "BLOCKER"
 	infoLowSarif              = "note"
 	mediumSarif               = "warning"
 	highSarif                 = "error"
-	vulnerabilitySonar        = "VULNERABILITY"
+	vulnerabilitySonar        = "SECURITY"
+	cleanCodeAttribute        = "FORMATTED"
 	infoCx                    = "INFO"
 	lowCx                     = "LOW"
 	mediumCx                  = "MEDIUM"
@@ -123,6 +124,7 @@ var (
 		printer.FormatSbom,
 		printer.FormatGLSast,
 		printer.FormatGLSca,
+		printer.FormatSonar,
 	}
 
 	filterResultsListFlagUsage = fmt.Sprintf(
@@ -283,6 +285,7 @@ func resultShowSubCommand(
 		printer.FormatSummaryMarkdown,
 		printer.FormatGLSast,
 		printer.FormatGLSca,
+		printer.FormatSonar,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
@@ -2039,7 +2042,7 @@ func parseGlDependencyLocation(result *wrappers.ScanResult) string {
 	} else {
 		location = ""
 	}
-	return (location)
+	return location
 }
 func parseGlScaFiles(result *wrappers.ScanResult, glScaResult *wrappers.GlScaResultsCollection) *wrappers.GlScaResultsCollection {
 	if result.ScanResultData.ScaPackageCollection != nil && result.ScanResultData.ScaPackageCollection.Locations != nil {
@@ -2099,7 +2102,7 @@ func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep
 
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
-	sonar.Results = parseResultsSonar(results)
+	sonar.Issues, sonar.Rules = parseSonar(results)
 	return sonar
 }
 
@@ -2129,12 +2132,20 @@ func parseResults(results *wrappers.ScanResultsCollection) ([]wrappers.SarifDriv
 	return sarifRules, sarifResults
 }
 
-func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.SonarIssues {
+func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues, []wrappers.SonarRules) {
 	var sonarIssues []wrappers.SonarIssues
+	var sonarRules []wrappers.SonarRules
+	seenRuleIDs := make(map[string]bool) // Track already added rule IDs
 
 	if results != nil {
 		for _, result := range results.Results {
+			var auxRules = initSonarRules(result)
 			var auxIssue = initSonarIssue(result)
+
+			if !seenRuleIDs[auxRules.ID] {
+				sonarRules = append(sonarRules, auxRules)
+				seenRuleIDs[auxRules.ID] = true
+			}
 
 			engineType := strings.TrimSpace(result.Type)
 
@@ -2152,18 +2163,18 @@ func parseResultsSonar(results *wrappers.ScanResultsCollection) []wrappers.Sonar
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
 			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
-				sscsSonarIssue := parseSscsSonar(result)
+				sscsSonarIssue := parseSscsSonar(result, &auxIssue)
 				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
 		}
 	}
-	return sonarIssues
+	return sonarIssues, sonarRules
 }
 
 func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	auxLocation.FilePath = result.ScanResultData.ImageFilePath
-	auxLocation.Message = result.Description
+	auxLocation.Message = html.UnescapeString(result.Description)
 	var textRange wrappers.SonarTextRange
 	textRange.StartColumn = 1
 	textRange.EndColumn = 2
@@ -2173,37 +2184,75 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	return auxLocation
 }
 
-func parseSscsSonar(result *wrappers.ScanResult) wrappers.SonarIssues {
-	sonarIssue := initSonarIssue(result)
-
-	// overriding ruleID set by default in initSonarIssue
-	if result.ScanResultData.RuleID != nil {
-		sonarIssue.RuleID = *result.ScanResultData.RuleID
-	}
-
+func parseSscsSonar(result *wrappers.ScanResult, sonarIssue *wrappers.SonarIssues) wrappers.SonarIssues {
 	sonarIssue.PrimaryLocation.FilePath = result.ScanResultData.Filename
-	if result.ScanResultData.Snippet != "" {
-		sonarIssue.PrimaryLocation.Message = fmt.Sprintf("%s : %s", result.ScanResultData.Snippet, result.Description)
-	} else {
-		sonarIssue.PrimaryLocation.Message = result.Description
-	}
+
+	sonarIssue.PrimaryLocation.Message = html.UnescapeString(result.ScanResultData.Remediation)
 	var textRange wrappers.SonarTextRange
 	textRange.StartColumn = 1
 	textRange.EndColumn = 2
 	textRange.StartLine = result.ScanResultData.Line
 	sonarIssue.PrimaryLocation.TextRange = textRange
-	return sonarIssue
+	return *sonarIssue
 }
 
 func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 	var sonarIssue wrappers.SonarIssues
-	sonarIssue.Severity = sonarSeverities[result.Severity]
-	sonarIssue.Type = vulnerabilitySonar
-	sonarIssue.EngineID = result.Type
-	sonarIssue.RuleID = result.ID
+	engineType := strings.TrimSpace(result.Type)
+	if engineType == commonParams.SastType {
+		sonarIssue.RuleID = result.ScanResultData.LanguageName + " - " + result.ScanResultData.QueryName
+	} else if engineType == commonParams.KicsType {
+		sonarIssue.RuleID = result.ScanResultData.QueryName
+	} else if engineType == commonParams.ScaType {
+		sonarIssue.RuleID = result.ID
+	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
+		sonarIssue.RuleID = result.ID
+	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+		sonarIssue.RuleID = result.ID
+	}
+
+	sonarIssue.PrimaryLocation.Message = html.UnescapeString(result.Description)
 	sonarIssue.EffortMinutes = 0
 
 	return sonarIssue
+}
+
+func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
+	var sonarRules wrappers.SonarRules
+	var sonarImpacts wrappers.SonarImpacts
+
+	sonarImpacts.Severity = sonarSeverities[result.Severity]
+	sonarImpacts.SoftwareQuality = vulnerabilitySonar
+
+	sonarRules.EngineID = result.Type
+	sonarRules.CleanCodeAttribute = cleanCodeAttribute
+
+	engineType := strings.TrimSpace(result.Type)
+	if engineType == commonParams.SastType {
+		sonarRules.Name = result.ScanResultData.QueryName
+		sonarRules.Description = html.UnescapeString(result.Description)
+		sonarRules.ID = result.ScanResultData.LanguageName + " - " + result.ScanResultData.QueryName
+	} else if engineType == commonParams.KicsType {
+		sonarRules.Name = result.ScanResultData.QueryName
+		sonarRules.Description = html.UnescapeString(result.Description)
+		sonarRules.ID = result.ScanResultData.QueryName
+	} else if engineType == commonParams.ScaType {
+		sonarRules.Name = result.ScanResultData.PackageIdentifier
+		sonarRules.Description = html.UnescapeString(result.Description)
+		sonarRules.ID = result.ID
+	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
+		sonarRules.Name = result.ScanResultData.ImageTag
+		sonarRules.Description = html.UnescapeString(result.Description)
+		sonarRules.ID = result.ID
+	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+		sonarRules.Name = result.ScanResultData.RuleName
+		sonarRules.Description = html.UnescapeString(result.ScanResultData.RuleDescription)
+		sonarRules.ID = result.ID
+	}
+
+	sonarRules.Impacts = []wrappers.SonarImpacts{sonarImpacts}
+
+	return sonarRules
 }
 
 func parseScaSonarLocations(result *wrappers.ScanResult) []wrappers.SonarIssues {
@@ -2240,7 +2289,7 @@ func parseScaSonarLocations(result *wrappers.ScanResult) []wrappers.SonarIssues 
 func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Filename, "/")
-	auxLocation.Message = results.ScanResultData.Value
+	auxLocation.Message = html.UnescapeString(results.ScanResultData.Value)
 	var auxTextRange wrappers.SonarTextRange
 	auxTextRange.StartLine = results.ScanResultData.Line
 	auxTextRange.StartColumn = 0
@@ -2254,7 +2303,7 @@ func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocat
 	// fill the details in the primary Location
 	if len(results.ScanResultData.Nodes) > 0 {
 		auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Nodes[0].FileName, "/")
-		auxLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
+		auxLocation.Message = html.UnescapeString(strings.ReplaceAll(results.ScanResultData.QueryName, "_", " "))
 		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0])
 	}
 	return auxLocation
@@ -2267,7 +2316,7 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.Sonar
 		for _, node := range results.ScanResultData.Nodes[1:] {
 			var auxSecondaryLocation wrappers.SonarLocation
 			auxSecondaryLocation.FilePath = strings.TrimLeft(node.FileName, "/")
-			auxSecondaryLocation.Message = strings.ReplaceAll(results.ScanResultData.QueryName, "_", " ")
+			auxSecondaryLocation.Message = html.UnescapeString(strings.ReplaceAll(results.ScanResultData.QueryName, "_", " "))
 			auxSecondaryLocation.TextRange = parseSonarTextRange(node)
 			auxSecondaryLocations = append(auxSecondaryLocations, auxSecondaryLocation)
 		}
@@ -2319,7 +2368,7 @@ func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage str
 	if result.ScanResultData.QueryID == nil && result.ScanResultData.RuleID == nil {
 		return fmt.Sprintf("%s (%s)", result.ID, result.Type),
 			caser.String(strings.ToLower(strings.ReplaceAll(result.ID, "-", ""))),
-			fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID)
+			html.UnescapeString(fmt.Sprintf("%s (%s)", result.ScanResultData.PackageIdentifier, result.ID))
 	}
 
 	if result.ScanResultData.RuleID != nil {
