@@ -51,7 +51,9 @@ linters-settings:
           - github.com/Checkmarx/manifest-parser/pkg/parser
           - github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation
           - github.com/spf13/viper
-          - github.com/checkmarx/2ms/v3/*
+          - github.com/checkmarx/2ms/v3/lib/reporting
+          - github.com/checkmarx/2ms/v3/lib/secrets
+          - github.com/checkmarx/2ms/v3/pkg
           - github.com/Checkmarx/gen-ai-wrapper
           - github.com/spf13/cobra
           - github.com/pkg/errors
