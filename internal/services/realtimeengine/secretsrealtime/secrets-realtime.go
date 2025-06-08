@@ -53,7 +53,8 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]Secr
 
 	report, err := runScan(filePath, content)
 	if err != nil {
-		return nil, nil // Consider returning an actual error if needed
+		logger.PrintfIfVerbose("Failed to run scan: %v", err)
+		return nil, errorConstants.NewSecretRealtimeError("failed to run scan").Error()
 	}
 
 	return convertToSecretsRealtimeResult(report), nil

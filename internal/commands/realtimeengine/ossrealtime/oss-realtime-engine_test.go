@@ -1,4 +1,4 @@
-package realtimeengine
+package ossrealtime
 
 import (
 	"testing"
