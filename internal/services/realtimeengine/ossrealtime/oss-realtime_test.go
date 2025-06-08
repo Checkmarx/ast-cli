@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	osscache2 "github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
@@ -26,12 +26,12 @@ func setupSinglePackage() []models.Package {
 	}
 }
 
-func setupCache(packages []osscache.PackageEntry, ttl time.Time) osscache.Cache {
-	return osscache.Cache{TTL: ttl, Packages: packages}
+func setupCache(packages []osscache2.PackageEntry, ttl time.Time) osscache2.Cache {
+	return osscache2.Cache{TTL: ttl, Packages: packages}
 }
 
 func cleanCacheFile(t *testing.T) {
-	cacheFile := osscache.GetCacheFilePath()
+	cacheFile := osscache2.GetCacheFilePath()
 	_ = os.Remove(cacheFile)
 	t.Cleanup(func() { _ = os.Remove(cacheFile) })
 }
@@ -89,12 +89,12 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	allPackages := setupPackages()
-	storedPackages := []osscache.PackageEntry{
+	storedPackages := []osscache2.PackageEntry{
 		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 
-	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
+	_ = osscache2.WriteCache(storedCache, &storedCache.TTL)
 
 	resp, toScan := prepareScan(allPackages)
 
@@ -112,12 +112,12 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	allPackages := setupPackages()
-	storedPackages := []osscache.PackageEntry{
+	storedPackages := []osscache2.PackageEntry{
 		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now())
 
-	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
+	_ = osscache2.WriteCache(storedCache, &storedCache.TTL)
 
 	resp, toScan := prepareScan(allPackages)
 
@@ -146,12 +146,12 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	singlePackage := setupSinglePackage()
-	storedPackages := []osscache.PackageEntry{
+	storedPackages := []osscache2.PackageEntry{
 		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 
-	_ = osscache.WriteCache(storedCache, &storedCache.TTL)
+	_ = osscache2.WriteCache(storedCache, &storedCache.TTL)
 
 	resp, toScan := prepareScan(singlePackage)
 
@@ -194,7 +194,7 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 	_, err := ossRealtimeService.scanAndCache(toScan)
 	assert.Nil(t, err)
 
-	cache := osscache.ReadCache()
+	cache := osscache2.ReadCache()
 	assert.NotNil(t, cache)
 	assert.Len(t, cache.Packages, 1)
 	assert.Equal(t, "lodash", cache.Packages[0].PackageName)
@@ -216,12 +216,12 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 		{PackageManager: "npm", PackageName: "express", Version: "4.17.1"},
 	}
 
-	storedPackages := []osscache.PackageEntry{
+	storedPackages := []osscache2.PackageEntry{
 		{PackageID: "npm-lodash-4.17.21", PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"},
 	}
 	storedCache := setupCache(storedPackages, time.Now().Add(time.Hour))
 
-	err := osscache.WriteCache(storedCache, &storedCache.TTL)
+	err := osscache2.WriteCache(storedCache, &storedCache.TTL)
 	assert.Nil(t, err)
 
 	_, toScan := prepareScan(pkgs)
@@ -248,7 +248,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	_, err = ossRealtimeService.scanAndCache(toScan)
 	assert.Nil(t, err)
 
-	cache := osscache.ReadCache()
+	cache := osscache2.ReadCache()
 	assert.NotNil(t, cache)
 	assert.Len(t, cache.Packages, 2)
 

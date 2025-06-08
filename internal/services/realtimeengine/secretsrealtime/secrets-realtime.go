@@ -1,0 +1,119 @@
+package secretsrealtime
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/checkmarx/2ms/v3/lib/reporting"
+	"github.com/checkmarx/2ms/v3/lib/secrets"
+	twoms "github.com/checkmarx/2ms/v3/pkg"
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+)
+
+const (
+	validSecret      = "Valid"
+	invalidSecret    = "Invalid"
+	unknownSecret    = "Unknown"
+	criticalSeverity = "Critical"
+	highSeverity     = "High"
+	mediumSeverity   = "Medium"
+)
+
+type SecretsRealtimeService struct {
+	JwtWrapper             wrappers.JWTWrapper
+	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
+	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
+}
+
+func NewSecretsRealtimeService(
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+) *SecretsRealtimeService {
+	return &SecretsRealtimeService{
+		JwtWrapper:             jwtWrapper,
+		FeatureFlagWrapper:     featureFlagWrapper,
+		RealtimeScannerWrapper: realtimeScannerWrapper,
+	}
+}
+
+func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]SecretsRealtimeResult, error) {
+	if filePath == "" {
+		return nil, errorConstants.NewSecretRealtimeError("file path is required").Error()
+	}
+
+	content, err := readFile(filePath)
+	if err != nil {
+		logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
+		return nil, errorConstants.NewSecretRealtimeError("failed to read file").Error()
+	}
+
+	report, err := runScan(filePath, content)
+	if err != nil {
+		return nil, nil // Consider returning an actual error if needed
+	}
+
+	return convertToSecretsRealtimeResult(report), nil
+}
+
+func readFile(filePath string) (string, error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("readFile: %w", err)
+	}
+	return string(data), nil
+}
+
+func runScan(source, content string) (*reporting.Report, error) {
+	item := twoms.ScanItem{
+		Content: &content,
+		Source:  source,
+	}
+	scanner := twoms.NewScanner()
+	return scanner.ScanWithValidation([]twoms.ScanItem{item}, twoms.ScanConfig{})
+}
+
+func convertToSecretsRealtimeResult(report *reporting.Report) []SecretsRealtimeResult {
+	var results []SecretsRealtimeResult
+	for _, resultGroup := range report.Results {
+		for _, secret := range resultGroup {
+			results = append(results, convertSecretToResult(secret))
+		}
+	}
+	return results
+}
+
+func convertSecretToResult(secret *secrets.Secret) SecretsRealtimeResult {
+	var locations []realtimeengine.Location
+	for i := 0; i <= secret.EndLine-secret.StartLine; i++ {
+		locations = append(locations, realtimeengine.Location{
+			Line:       secret.StartLine + i,
+			StartIndex: secret.StartColumn,
+			EndIndex:   secret.EndColumn,
+		})
+	}
+
+	return SecretsRealtimeResult{
+		Title:       secret.RuleID,
+		Description: secret.RuleDescription,
+		Severity:    getSeverity(secret),
+		FilePath:    secret.Source,
+		Locations:   locations,
+	}
+}
+
+func getSeverity(secret *secrets.Secret) string {
+	switch secret.ValidationStatus {
+	case validSecret:
+		return criticalSeverity
+	case unknownSecret:
+		return highSeverity
+	case invalidSecret:
+		return mediumSeverity
+	default:
+		return highSeverity
+	}
+}

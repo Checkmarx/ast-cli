@@ -8,7 +8,7 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )

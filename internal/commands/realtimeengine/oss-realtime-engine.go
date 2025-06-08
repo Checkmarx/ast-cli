@@ -4,7 +4,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
 )
