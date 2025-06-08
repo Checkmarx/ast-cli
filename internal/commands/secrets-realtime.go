@@ -17,9 +17,9 @@ func RunScanSecretsRealtimeCommand(
 		if fileSourceFlag == "" {
 			return errorconstants.NewSecretRealtimeError("file path is required").Error()
 		}
-		ossRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
+		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
 
-		results, err := ossRealtimeService.RunSecretsRealtimeScan(fileSourceFlag)
+		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag)
 		if err != nil {
 			return err
 		}

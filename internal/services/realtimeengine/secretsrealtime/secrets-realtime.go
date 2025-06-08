@@ -6,7 +6,7 @@ import (
 
 	"github.com/checkmarx/2ms/v3/lib/reporting"
 	"github.com/checkmarx/2ms/v3/lib/secrets"
-	twoms "github.com/checkmarx/2ms/v3/pkg"
+	"github.com/checkmarx/2ms/v3/pkg"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
@@ -72,12 +72,12 @@ func readFile(filePath string) (string, error) {
 }
 
 func runScan(source, content string) (*reporting.Report, error) {
-	item := twoms.ScanItem{
+	item := scanner.ScanItem{
 		Content: &content,
 		Source:  source,
 	}
-	scanner := twoms.NewScanner()
-	return scanner.ScanWithValidation([]twoms.ScanItem{item}, twoms.ScanConfig{})
+	secretScanner := scanner.NewScanner()
+	return secretScanner.ScanWithValidation([]scanner.ScanItem{item}, scanner.ScanConfig{})
 }
 
 func convertToSecretsRealtimeResult(report *reporting.Report) []SecretsRealtimeResult {
