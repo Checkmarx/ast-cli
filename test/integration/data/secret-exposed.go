@@ -1,5 +1,5 @@
 package data
 
 const (
-	myToken = "Hd4wAMcDV3A_RN2ykbkwJQgFtQhKaoMyzwSdF60jwokr510qGtSSwwtNTwLsQRKODDKk2iEOHzhBaukD-Ahm8JSpJu8NSKBsWn_7hG3Cj1jGKWegZpkJBiTd31YBy0w4me-Zsl_ZcsL8xpHAco1LkcYoAA5aZhDoL6pA-s8syoPnP2yiUa6E0qjjSNtrThYuEgpUfEq71Ru-1Y01qmT7YpDqPXRznkev70se7lAGMn2mwI6oBLy9WT77ihbDArFwz0YPRVqWDUGH9NGy_150j1_nGQ57p7f8d5dJ3yhTt7tVjK_mt_1FOMKQ8ZY-NSgRd-YC8tvXAeVATet8Q3S9Eg"
+	pat = "ghp_1234567890abcdef1234567890abcdef12345678"
 )
