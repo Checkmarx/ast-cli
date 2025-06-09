@@ -15,7 +15,7 @@ func RunScanSecretsRealtimeCommand(
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		if fileSourceFlag == "" {
-			return errorconstants.NewSecretRealtimeError("file path is required").Error()
+			return errorconstants.NewRealtimeError(errorconstants.RealtimeEngineFilePathRequired).Error()
 		}
 		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
 
@@ -25,7 +25,7 @@ func RunScanSecretsRealtimeCommand(
 		}
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
-			return errorconstants.NewOssRealtimeError("failed to return packages").Error()
+			return errorconstants.NewRealtimeError("failed to return packages").Error()
 		}
 
 		return nil

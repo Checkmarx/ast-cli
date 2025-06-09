@@ -36,22 +36,22 @@ func NewOssRealtimeService(
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
 	if filePath == "" {
-		return nil, errorconstants.NewOssRealtimeError("file path is required").Error()
+		return nil, errorconstants.NewRealtimeError("file path is required").Error()
 	}
 
 	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
 		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return nil, errorconstants.NewOssRealtimeError("Realtime engine is not available for this tenant").Error()
+		return nil, errorconstants.NewRealtimeError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
 	if err := o.ensureLicense(); err != nil {
-		return nil, errorconstants.NewOssRealtimeError("failed to ensure license").Error()
+		return nil, errorconstants.NewRealtimeError("failed to ensure license").Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to parse manifest file %s: %v", filePath, err)
-		return nil, errorconstants.NewOssRealtimeError("failed to parse manifest file").Error()
+		return nil, errorconstants.NewRealtimeError("failed to parse manifest file").Error()
 	}
 
 	response, toScan := prepareScan(pkgs)
@@ -60,7 +60,7 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
 			logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
-			return nil, errorconstants.NewOssRealtimeError("Realtime scanner engine failed").Error()
+			return nil, errorconstants.NewRealtimeError("Realtime scanner engine failed").Error()
 		}
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)

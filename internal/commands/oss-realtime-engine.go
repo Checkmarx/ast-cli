@@ -15,7 +15,7 @@ func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		if fileSourceFlag == "" {
-			return errorconstants.NewOssRealtimeError("file path is required").Error()
+			return errorconstants.NewRealtimeError("file path is required").Error()
 		}
 		ossRealtimeService := ossrealtime.NewOssRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
@@ -25,7 +25,7 @@ func RunScanOssRealtimeCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		}
 		err = printer.Print(cmd.OutOrStdout(), packages, printer.FormatJSON)
 		if err != nil {
-			return errorconstants.NewOssRealtimeError("failed to return packages").Error()
+			return errorconstants.NewRealtimeError("failed to return packages").Error()
 		}
 
 		return nil
