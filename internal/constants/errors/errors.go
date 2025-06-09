@@ -29,7 +29,7 @@ const (
 	FileExtensionIsRequired = "file must have an extension"
 
 	// Realtime
-	RealtimeEngineErrFormat        = "Realtime error: %s"
+	RealtimeEngineErrFormat        = "realtime engine error: %s"
 	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
 	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
 )
