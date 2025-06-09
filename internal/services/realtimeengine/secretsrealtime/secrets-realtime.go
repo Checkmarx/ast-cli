@@ -8,7 +8,7 @@ import (
 	"github.com/checkmarx/2ms/v3/lib/secrets"
 	"github.com/checkmarx/2ms/v3/pkg"
 
-	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -41,24 +41,24 @@ func NewSecretsRealtimeService(
 
 func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]SecretsRealtimeResult, error) {
 	if filePath == "" {
-		return nil, errorConstants.NewSecretRealtimeError("file path is required").Error()
+		return nil, errorconstants.NewSecretRealtimeError("file path is required").Error()
 	}
 
 	if enabled, err := s.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled); err != nil || !enabled.Status {
 		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return nil, errorConstants.NewSecretRealtimeError("Realtime engine is not available for this tenant").Error()
+		return nil, errorconstants.NewSecretRealtimeError("Realtime engine is not available for this tenant").Error()
 	}
 
 	content, err := readFile(filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
-		return nil, errorConstants.NewSecretRealtimeError("failed to read file").Error()
+		return nil, errorconstants.NewSecretRealtimeError("failed to read file").Error()
 	}
 
 	report, err := runScan(filePath, content)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to run scan: %v", err)
-		return nil, errorConstants.NewSecretRealtimeError("failed to run scan").Error()
+		return nil, errorconstants.NewSecretRealtimeError("failed to run scan").Error()
 	}
 
 	return convertToSecretsRealtimeResult(report), nil
