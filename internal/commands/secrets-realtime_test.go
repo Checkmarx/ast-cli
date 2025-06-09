@@ -9,6 +9,7 @@ import (
 )
 
 func TestRunScanSecretsRealtimeCommand_TxtFile_ScanSuccess(t *testing.T) {
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	execCmdNilAssertion(
 		t,
@@ -17,6 +18,7 @@ func TestRunScanSecretsRealtimeCommand_TxtFile_ScanSuccess(t *testing.T) {
 }
 
 func TestRunScanSecretsRealtimeCommand_EmptyFilePath_ScanFailed(t *testing.T) {
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	err := execCmdNotNilAssertion(
 		t,
@@ -26,6 +28,7 @@ func TestRunScanSecretsRealtimeCommand_EmptyFilePath_ScanFailed(t *testing.T) {
 }
 
 func TestRunScanSecretsRealtimeCommand_FFDisable_ScanFailed(t *testing.T) {
+	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: false}
 	err := execCmdNotNilAssertion(
 		t,
