@@ -165,7 +165,7 @@ func NewScanCommand(
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
-		Long:  "The scan command enables the ability to manage scans in Checkmarx One.",
+		Long:  "The scan command enables the ability to manage scans in Checkmarx One",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -245,7 +245,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 	realtimeScanCmd := &cobra.Command{
 		Use:   "kics-realtime",
 		Short: "Create and run kics scan",
-		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image.",
+		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image",
 		Example: heredoc.Doc(
 			`
 			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
@@ -304,7 +304,7 @@ func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Get a list of all available tags to filter by",
-		Long:  "The tags command enables the ability to provide a list of all the available tags in Checkmarx One.",
+		Long:  "The tags command enables the ability to provide a list of all the available tags in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan tags
@@ -326,7 +326,7 @@ func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	cancelScanCmd := &cobra.Command{
 		Use:   "cancel",
 		Short: "Cancel one or more scans from running",
-		Long:  "The cancel command enables the ability to cancel one or more running scans in Checkmarx One.",
+		Long:  "The cancel command enables the ability to cancel one or more running scans in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan cancel --scan-id <scan ID>
@@ -371,7 +371,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	workflowScanCmd := &cobra.Command{
 		Use:   "workflow <scan id>",
 		Short: "Show information about a scan workflow",
-		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One.",
+		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan workflow --scan-id <scan Id>
@@ -394,7 +394,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
-		Long:  "The show command enables the ability to show information about a requested scan in Checkmarx One.",
+		Long:  "The show command enables the ability to show information about a requested scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan show --scan-id <scan Id>
@@ -418,7 +418,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		Hidden: true,
 		Use:    "asca",
 		Short:  "Run a ASCA scan",
-		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file",
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
@@ -451,7 +451,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		Hidden: true,
 		Use:    "oss-realtime",
 		Short:  "Run a OSS-Realtime scan",
-		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file.",
+		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file",
 		Example: heredoc.Doc(
 			`
 			$ cx scan oss-realtime -s <path to a manifest files separated by commas>
@@ -480,7 +480,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in Checkmarx One",
-		Long:  "The list command provides a list of all the scans in Checkmarx One.",
+		Long:  "The list command provides a list of all the scans in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan list
@@ -518,7 +518,7 @@ func scanCreateSubCommand(
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
-		Long:  "The create command enables the ability to create and run a new scan in Checkmarx One.",
+		Long:  "The create command enables the ability to create and run a new scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan create --project-name <Project Name> -s <path or repository url>

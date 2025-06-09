@@ -214,7 +214,7 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 	exitCodeCmd := &cobra.Command{
 		Use:   "exit-code",
 		Short: "Get exit code and details of a scan",
-		Long:  "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One.",
+		Long:  "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx results exit-code --scan-id <scan Id> --scan-types <sast | sca | iac-security | apisec>
@@ -264,7 +264,7 @@ func resultShowSubCommand(
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show results of a scan",
-		Long:  "The show command enables the ability to show results about a requested scan in Checkmarx One.",
+		Long:  "The show command enables the ability to show results about a requested scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx results show --scan-id <scan Id>
@@ -317,7 +317,7 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	resultBflCmd := &cobra.Command{
 		Use:   "bfl",
 		Short: "Show best fix location for a query id within the scan result",
-		Long:  "The bfl command enables the ability to show best fix location for a querid within the scan result.",
+		Long:  "The bfl command enables the ability to show best fix location for a querid within the scan result",
 		Example: heredoc.Doc(
 			`
 			$ cx results bfl --scan-id <scan Id> --query-id <query Id>
@@ -544,7 +544,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	resultCmd := &cobra.Command{
 		Use:   "codebashing",
 		Short: "Get codebashing lesson link",
-		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability.",
+		Long:  "The codebashing command enables the ability to retrieve the link about a specific vulnerability",
 		Example: heredoc.Doc(
 			`
 			$ cx results codebashing --language <string> --vulnerability-type <string> --cwe-id <string> --format <string>

@@ -64,7 +64,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
-		Long:  "The project command enables the ability to manage projects in Checkmarx One.",
+		Long:  "The project command enables the ability to manage projects in Checkmarx One",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -77,7 +77,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	createProjCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates a new project",
-		Long:  "The project create command enables the ability to create a new project in Checkmarx One.",
+		Long:  "The project create command enables the ability to create a new project in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx project create --project-name <Project Name>
