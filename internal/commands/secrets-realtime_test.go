@@ -10,12 +10,6 @@ import (
 
 func TestRunScanSecretsRealtimeCommand_TxtFile_ScanSuccess(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
-	mock.Flags = wrappers.FeatureFlagsResponseModel{
-		{
-			Name:   wrappers.OssRealtimeEnabled,
-			Status: true,
-		},
-	}
 	execCmdNilAssertion(
 		t,
 		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt",
@@ -24,12 +18,6 @@ func TestRunScanSecretsRealtimeCommand_TxtFile_ScanSuccess(t *testing.T) {
 
 func TestRunScanSecretsRealtimeCommand_EmptyFilePath_ScanFailed(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
-	mock.Flags = wrappers.FeatureFlagsResponseModel{
-		{
-			Name:   wrappers.OssRealtimeEnabled,
-			Status: true,
-		},
-	}
 	err := execCmdNotNilAssertion(
 		t,
 		"scan", "secrets-realtime", "-s", "",
@@ -39,12 +27,6 @@ func TestRunScanSecretsRealtimeCommand_EmptyFilePath_ScanFailed(t *testing.T) {
 
 func TestRunScanSecretsRealtimeCommand_FFDisable_ScanFailed(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: false}
-	mock.Flags = wrappers.FeatureFlagsResponseModel{
-		{
-			Name:   wrappers.OssRealtimeEnabled,
-			Status: true,
-		},
-	}
 	err := execCmdNotNilAssertion(
 		t,
 		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt",

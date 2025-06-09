@@ -82,7 +82,7 @@ func runScan(source, content string) (*reporting.Report, error) {
 }
 
 func convertToSecretsRealtimeResult(report *reporting.Report) []SecretsRealtimeResult {
-	var results []SecretsRealtimeResult
+	results := make([]SecretsRealtimeResult, 0)
 	for _, resultGroup := range report.Results {
 		for _, secret := range resultGroup {
 			results = append(results, convertSecretToResult(secret))

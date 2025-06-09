@@ -24,7 +24,9 @@ func (f FeatureFlagsMockWrapper) GetAll() (*wrappers.FeatureFlagsResponseModel, 
 func (f FeatureFlagsMockWrapper) GetSpecificFlag(specificFlag string) (*wrappers.FeatureFlagResponseModel, error) {
 	fmt.Println("Called GetSpecificFlag in FeatureFlagsMockWrapper with flag:", specificFlag)
 	if FFErr != nil {
+		fmt.Println(FFErr)
 		return nil, FFErr
 	}
+	fmt.Println("Returning flag:", Flag.Status, "for flag name:", Flag.Name)
 	return &Flag, nil
 }
