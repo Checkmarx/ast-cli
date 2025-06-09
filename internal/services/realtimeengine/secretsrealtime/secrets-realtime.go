@@ -41,24 +41,24 @@ func NewSecretsRealtimeService(
 
 func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]SecretsRealtimeResult, error) {
 	if filePath == "" {
-		return nil, errorconstants.NewRealtimeError(errorconstants.RealtimeEngineFilePathRequired).Error()
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 	}
 
 	if enabled, err := s.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled); err != nil || !enabled.Status {
 		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return nil, errorconstants.NewRealtimeError(errorconstants.RealtimeEngineNotAvailable).Error()
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
 	content, err := readFile(filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
-		return nil, errorconstants.NewRealtimeError("failed to read file").Error()
+		return nil, errorconstants.NewRealtimeEngineError("failed to read file").Error()
 	}
 
 	report, err := runScan(filePath, content)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to run scan: %v", err)
-		return nil, errorconstants.NewRealtimeError("failed to run secrets scan").Error()
+		return nil, errorconstants.NewRealtimeEngineError("failed to run secrets scan").Error()
 	}
 
 	return convertToSecretsRealtimeResult(report), nil

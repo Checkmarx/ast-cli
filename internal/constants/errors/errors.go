@@ -29,21 +29,21 @@ const (
 	FileExtensionIsRequired = "file must have an extension"
 
 	// Realtime
-	RealtimeErrFormat              = "Realtime error: %s"
+	RealtimeEngineErrFormat        = "Realtime error: %s"
 	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
 	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
 )
 
-type RealtimeError struct {
+type RealtimeEngineError struct {
 	Message string
 }
 
-func (e *RealtimeError) Error() error {
-	return fmt.Errorf(RealtimeErrFormat, e.Message)
+func (e *RealtimeEngineError) Error() error {
+	return fmt.Errorf(RealtimeEngineErrFormat, e.Message)
 }
 
-func NewRealtimeError(message string) *RealtimeError {
-	return &RealtimeError{
+func NewRealtimeEngineError(message string) *RealtimeEngineError {
+	return &RealtimeEngineError{
 		Message: message,
 	}
 }
