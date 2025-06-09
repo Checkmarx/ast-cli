@@ -41,7 +41,7 @@ func NewImportCommand(
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
-	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported.")
+	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported")
 
 	return cmd
 }

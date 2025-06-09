@@ -272,7 +272,7 @@ func resultShowSubCommand(
 		),
 		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
-	addScanIDFlag(resultShowCmd, "ID to report on.")
+	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
@@ -316,7 +316,7 @@ func resultShowSubCommand(
 func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	resultBflCmd := &cobra.Command{
 		Use:   "bfl",
-		Short: "Show best fix location for a query id within the scan result.",
+		Short: "Show best fix location for a query id within the scan result",
 		Long:  "The bfl command enables the ability to show best fix location for a querid within the scan result.",
 		Example: heredoc.Doc(
 			`
@@ -325,8 +325,8 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 		),
 		RunE: runGetBestFixLocationCommand(bflWrapper),
 	}
-	addScanIDFlag(resultBflCmd, "ID to report on.")
-	addQueryIDFlag(resultBflCmd, "Query Id from the result.")
+	addScanIDFlag(resultBflCmd, "ID to report on")
+	addQueryIDFlag(resultBflCmd, "Query Id from the result")
 	addFormatFlag(resultBflCmd, printer.FormatList, printer.FormatJSON)
 
 	markFlagAsRequired(resultBflCmd, commonParams.ScanIDFlag)

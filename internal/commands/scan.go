@@ -293,7 +293,7 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -386,7 +386,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		},
 		RunE: runScanWorkflowByIDCommand(scansWrapper),
 	}
-	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
+	addScanIDFlag(workflowScanCmd, "Scan ID to workflow")
 	return workflowScanCmd
 }
 
@@ -409,7 +409,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		},
 		RunE: runGetScanByIDCommand(scansWrapper),
 	}
-	addScanIDFlag(showScanCmd, "Scan ID to show.")
+	addScanIDFlag(showScanCmd, "Scan ID to show")
 	return showScanCmd
 }
 
@@ -564,7 +564,7 @@ func scanCreateSubCommand(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
-		"Sources like: directory, zip file or git URL.",
+		"Sources like: directory, zip file or git URL",
 	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourceDirFilterFlag,
@@ -596,14 +596,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
-		"Resolve SCA project dependencies (path to SCA Resolver executable).",
+		"Resolve SCA project dependencies (path to SCA Resolver executable)",
 	)
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverParamsFlag,
 		"",
-		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
+		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s)", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10.")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
