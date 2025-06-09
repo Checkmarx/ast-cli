@@ -1590,12 +1590,11 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 		if isSingleContainerScanTriggered() {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
-			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
+			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
-
 		if dirPathErr != nil {
 			return "", "", dirPathErr
 		}
