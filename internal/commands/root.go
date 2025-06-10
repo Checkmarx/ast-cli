@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -105,20 +104,14 @@ func NewAstCLI(
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
-	rootCmd.PersistentFlags().String(params.LogFileConsoleFlag, "", params.LogFileConsoleUsage)
+	rootCmd.PersistentFlags().String(params.LogFileStdFlag, "", params.LogFileStdUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		err := customLogConfiguration(rootCmd)
-		if err != nil {
-			return err
-		}
+		err := LoadDebugLogConfiguration(rootCmd)
 		PrintConfiguration()
 		err = configuration.LoadConfiguration()
-		if err != nil {
-			return err
-		}
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
@@ -147,8 +140,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
-	_ = viper.BindPFlag(params.LogFileFlag, rootCmd.PersistentFlags().Lookup(params.LogFileFlag))
-	_ = viper.BindPFlag(params.LogFileConsoleFlag, rootCmd.PersistentFlags().Lookup(params.LogFileConsoleFlag))
+
 	// Set help func
 	rootCmd.SetHelpFunc(
 		func(command *cobra.Command, args []string) {
@@ -346,60 +338,57 @@ func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
-
-func customLogConfiguration(cmd *cobra.Command) error {
+func LoadDebugLogConfiguration(cmd *cobra.Command) error {
+	fmt.Println("Loading debug log configuration...")
 	if cmd.PersistentFlags().Changed(params.LogFileFlag) {
-		if err := setLogOutputFromFlag(params.LogFileFlag, viper.GetString(params.LogFileFlag)); err != nil {
+		if err := processLogFlag(cmd, params.LogFileFlag); err != nil {
 			return err
 		}
 	}
-	if cmd.PersistentFlags().Changed(params.LogFileConsoleFlag) {
-		if err := setLogOutputFromFlag(params.LogFileConsoleFlag, viper.GetString(params.LogFileConsoleFlag)); err != nil {
+
+	if cmd.PersistentFlags().Changed(params.LogFileStdFlag) {
+		if err := processLogFlag(cmd, params.LogFileStdFlag); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
-func setLogOutputFromFlag(flag string, dirPath string) error {
-	if strings.TrimSpace(dirPath) == "" {
+func processLogFlag(cmd *cobra.Command, flag string) error {
+	logFilePath, _ := cmd.PersistentFlags().GetString(flag)
+	if strings.TrimSpace(logFilePath) == "" {
 		return errors.New("flag needs an argument: --" + flag)
 	}
-
-	// Confirm it’s a directory
-	info, err := os.Stat(dirPath)
+	if err := validateLogFile(logFilePath); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("The specified directory path does not exist. Please check the path: %s", dirPath)
-		}
-		return fmt.Errorf("An error occurred while accessing the directory path. Please check the path: %s", dirPath)
+		return fmt.Errorf("Access to the specified file is restricted. Ensure you have the necessary permissions.")
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("Expected a directory path but got a file: %s", dirPath)
-	}
-
-	// Create full path for the log file
-	logFilePath := filepath.Join(dirPath, "ast-cli.log")
-
-	//open the log file with write and append permissions
-	// If file doesn't exist, it will be created. If permission is denied for directory path, return an error.
-	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		if os.IsPermission(err) {
-			return fmt.Errorf("Permission denied: cannot write to directory %s", dirPath)
-		}
-		return fmt.Errorf("Unable to open log file %s: %v", logFilePath, err)
-	}
-
-	// Configure the logger to write to the log file and optionally to stdout.
-	// If the flag indicates stdout logging is enabled, log output is duplicated to both file and console.
-	// Otherwise, logs are written only to the file.
 	var multiWriter io.Writer
-	if flag == params.LogFileConsoleFlag {
+	if flag == params.LogFileStdFlag {
 		multiWriter = io.MultiWriter(file, os.Stdout)
 	} else {
 		multiWriter = io.MultiWriter(file)
 	}
 	log.SetOutput(multiWriter)
+	viper.Set(params.DebugFlag, true)
+	return nil
+}
+
+func validateLogFile(logFilePath string) error {
+	info, err := os.Stat(logFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("The specified file does not exist. Please check the path and ensure the log file is available.")
+		}
+		return fmt.Errorf("An error occurred while accessing the file. Please verify the log file")
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("The specified path points to a directory, not a file. Please provide a valid log file path.")
+	}
 	return nil
 }
