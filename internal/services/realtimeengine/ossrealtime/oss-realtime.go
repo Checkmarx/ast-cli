@@ -14,17 +14,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-// createLocations creates a Locations array from line and index information
-func createLocations(lineStart, lineEnd, startIndex, endIndex int) []realtimeengine.Location {
-	var locations []realtimeengine.Location
-	for i := 0; i <= lineEnd-lineStart; i++ {
-		locations = append(locations, realtimeengine.Location{
-			Line:       lineStart + i,
-			StartIndex: startIndex,
-			EndIndex:   endIndex,
+// convertLocations converts models.Location to realtimeengine.Location
+func convertLocations(locations []models.Location) []realtimeengine.Location {
+	var result []realtimeengine.Location
+	for _, loc := range locations {
+		result = append(result, realtimeengine.Location{
+			Line:       loc.Line,
+			StartIndex: loc.StartIndex,
+			EndIndex:   loc.EndIndex,
 		})
 	}
-	return locations
+	return result
 }
 
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
@@ -169,7 +169,7 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageName:     pkg.PackageName,
 				PackageVersion:  pkg.Version,
 				FilePath:        pkg.FilePath,
-				Locations:       createLocations(pkg.LineStart, pkg.LineEnd, pkg.StartIndex, pkg.EndIndex),
+				Locations:       convertLocations(pkg.Locations),
 				Status:          cachedPkg.Status,
 				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
 			})
@@ -189,7 +189,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
-			Locations:      createLocations(pkg.LineStart, pkg.LineEnd, pkg.StartIndex, pkg.EndIndex),
+			Locations:      convertLocations(pkg.Locations),
 		}
 	}
 	return packageMap
