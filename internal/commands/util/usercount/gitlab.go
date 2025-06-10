@@ -16,11 +16,11 @@ import (
 
 const (
 	GitLabCommand                  = "gitlab"
-	gitLabShort                    = "The gitlab command presents the unique contributors for the provided GitLab repositories or groups."
+	gitLabShort                    = "The gitlab command presents the unique contributors for the provided GitLab repositories or groups"
 	GitLabProjectsFlag             = "projects"
-	gitLabProjectsFlagUsage        = "List of projects(repos) to scan for contributors."
+	gitLabProjectsFlagUsage        = "List of projects(repos) to scan for contributors"
 	GitLabGroupsFlag               = "groups"
-	gitLabGroupsFlagUsage          = "List of groups(organizations) to scan for contributors."
+	gitLabGroupsFlagUsage          = "List of groups(organizations) to scan for contributors"
 	gitLabAPIURL                   = "https://gitlab.com"
 	gitLabTooManyGroupsAndProjects = "Projects and Groups both cannot be provided at the same time."
 	gitLabBot                      = "bot"

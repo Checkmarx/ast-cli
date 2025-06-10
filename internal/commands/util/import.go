@@ -25,7 +25,7 @@ func NewImportCommand(
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
-		Long:  "The import command enables you to import SAST scan results from an external source into Checkmarx One. The results must be submitted in sarif format.",
+		Long:  "The import command enables you to import SAST scan results from an external source into Checkmarx One. The results must be submitted in sarif format",
 		Example: heredoc.Doc(
 			`
 			$ cx utils import --project-name <project name>  --import-file-path <file path>
@@ -41,7 +41,7 @@ func NewImportCommand(
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
-	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported.")
+	cmd.PersistentFlags().String(commonParams.ProjectName, "", "The project under which the file will be imported")
 
 	return cmd
 }

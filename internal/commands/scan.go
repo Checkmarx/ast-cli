@@ -86,6 +86,8 @@ const (
 	configFilterPlatforms                   = "platforms"
 	configIncremental                       = "incremental"
 	configFastScan                          = "fastScanMode"
+	configLightQueries                      = "lightQueries"
+	configRecommendedExclusions             = "recommendedExclusions"
 	configPresetName                        = "presetName"
 	configPresetID                          = "presetId"
 	configEngineVerbose                     = "engineVerbose"
@@ -163,7 +165,7 @@ func NewScanCommand(
 	scanCmd := &cobra.Command{
 		Use:   "scan",
 		Short: "Manage scans",
-		Long:  "The scan command enables the ability to manage scans in Checkmarx One.",
+		Long:  "The scan command enables the ability to manage scans in Checkmarx One",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -243,7 +245,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 	realtimeScanCmd := &cobra.Command{
 		Use:   "kics-realtime",
 		Short: "Create and run kics scan",
-		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image.",
+		Long:  "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image",
 		Example: heredoc.Doc(
 			`
 			$ cx scan kics-realtime --file <file> --additional-params <additional-params> --engine <engine>
@@ -291,7 +293,7 @@ func scanLogsSubCommand(logsWrapper wrappers.LogsWrapper) *cobra.Command {
 		RunE: runDownloadLogs(logsWrapper),
 	}
 	logsCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID to retrieve log for.")
-	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security.")
+	logsCmd.PersistentFlags().String(commonParams.ScanTypeFlag, "", "Scan type to pull log for, ex: sast, iac-security")
 	markFlagAsRequired(logsCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(logsCmd, commonParams.ScanTypeFlag)
 
@@ -302,7 +304,7 @@ func scanTagsSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	tagsCmd := &cobra.Command{
 		Use:   "tags",
 		Short: "Get a list of all available tags to filter by",
-		Long:  "The tags command enables the ability to provide a list of all the available tags in Checkmarx One.",
+		Long:  "The tags command enables the ability to provide a list of all the available tags in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan tags
@@ -324,7 +326,7 @@ func scanCancelSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	cancelScanCmd := &cobra.Command{
 		Use:   "cancel",
 		Short: "Cancel one or more scans from running",
-		Long:  "The cancel command enables the ability to cancel one or more running scans in Checkmarx One.",
+		Long:  "The cancel command enables the ability to cancel one or more running scans in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan cancel --scan-id <scan ID>
@@ -369,7 +371,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	workflowScanCmd := &cobra.Command{
 		Use:   "workflow <scan id>",
 		Short: "Show information about a scan workflow",
-		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One.",
+		Long:  "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan workflow --scan-id <scan Id>
@@ -384,7 +386,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		},
 		RunE: runScanWorkflowByIDCommand(scansWrapper),
 	}
-	addScanIDFlag(workflowScanCmd, "Scan ID to workflow.")
+	addScanIDFlag(workflowScanCmd, "Scan ID to workflow")
 	return workflowScanCmd
 }
 
@@ -392,7 +394,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
-		Long:  "The show command enables the ability to show information about a requested scan in Checkmarx One.",
+		Long:  "The show command enables the ability to show information about a requested scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan show --scan-id <scan Id>
@@ -407,7 +409,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 		},
 		RunE: runGetScanByIDCommand(scansWrapper),
 	}
-	addScanIDFlag(showScanCmd, "Scan ID to show.")
+	addScanIDFlag(showScanCmd, "Scan ID to show")
 	return showScanCmd
 }
 
@@ -416,7 +418,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		Hidden: true,
 		Use:    "asca",
 		Short:  "Run a ASCA scan",
-		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file.",
+		Long:   "Running a ASCA scan is a fast and efficient way to identify vulnerabilities in a specific file",
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
@@ -449,7 +451,7 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		Hidden: true,
 		Use:    "oss-realtime",
 		Short:  "Run a OSS-Realtime scan",
-		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file.",
+		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file",
 		Example: heredoc.Doc(
 			`
 			$ cx scan oss-realtime -s <path to a manifest files separated by commas>
@@ -478,7 +480,7 @@ func scanListSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper 
 	listScansCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all scans in Checkmarx One",
-		Long:  "The list command provides a list of all the scans in Checkmarx One.",
+		Long:  "The list command provides a list of all the scans in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan list
@@ -516,7 +518,7 @@ func scanCreateSubCommand(
 	createScanCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create and run a new scan",
-		Long:  "The create command enables the ability to create and run a new scan in Checkmarx One.",
+		Long:  "The create command enables the ability to create and run a new scan in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx scan create --project-name <Project Name> -s <path or repository url>
@@ -562,7 +564,7 @@ func scanCreateSubCommand(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
-		"Sources like: directory, zip file or git URL.",
+		"Sources like: directory, zip file or git URL",
 	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourceDirFilterFlag,
@@ -594,14 +596,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverFlag,
 		"",
-		"Resolve SCA project dependencies (path to SCA Resolver executable).",
+		"Resolve SCA project dependencies (path to SCA Resolver executable)",
 	)
 	createScanCmd.PersistentFlags().String(
 		commonParams.ScaResolverParamsFlag,
 		"",
-		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s).", commonParams.ScaResolverFlag),
+		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s)", commonParams.ScaResolverFlag),
 	)
-	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10.")
+	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
@@ -627,6 +629,18 @@ func scanCreateSubCommand(
 		commonParams.SastFastScanFlag,
 		false,
 		"Enable SAST Fast Scan configuration",
+	)
+
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastLightQueriesFlag,
+		false,
+		"Enable SAST scan using light query configuration",
+	)
+
+	createScanCmd.PersistentFlags().Bool(
+		commonParams.SastRecommendedExclusionsFlags,
+		false,
+		"Enable recommended exclusions configuration for SAST scan",
 	)
 
 	createScanCmd.PersistentFlags().StringSlice(
@@ -877,11 +891,24 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastMapConfig[resultsMapType] = commonParams.SastType
 
 	sastFastScanChanged := cmd.Flags().Changed(commonParams.SastFastScanFlag)
+	sastLightQueryChanged := cmd.Flags().Changed(commonParams.SastLightQueriesFlag)
+	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
+
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
 		sastConfig.FastScanMode = strconv.FormatBool(fastScan)
+	}
+
+	if sastLightQueryChanged {
+		lightQuery, _ := cmd.Flags().GetBool(commonParams.SastLightQueriesFlag)
+		sastConfig.LightQueries = strconv.FormatBool(lightQuery)
+	}
+
+	if sastRecommendedExclusionsChanged {
+		recommendedExclusions, _ := cmd.Flags().GetBool(commonParams.SastRecommendedExclusionsFlags)
+		sastConfig.RecommendedExclusions = strconv.FormatBool(recommendedExclusions)
 	}
 
 	if sastIncrementalChanged {
@@ -897,14 +924,14 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, &sastConfig, config)
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
@@ -916,6 +943,14 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged bool, s
 	}
 	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
+	}
+
+	if resubmitLightQuery := config.Value[configLightQueries]; resubmitLightQuery != nil && !sastLightQueryChanged {
+		sastConfig.LightQueries = resubmitLightQuery.(string)
+	}
+
+	if resubmitRecommendedExclusions := config.Value[configRecommendedExclusions]; resubmitRecommendedExclusions != nil && !sastRecommendedExclusionsChanged {
+		sastConfig.RecommendedExclusions = resubmitRecommendedExclusions.(string)
 	}
 
 	setIfEmpty(&sastConfig.PresetName, config.Value[configPresetName])

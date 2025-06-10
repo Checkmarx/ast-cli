@@ -31,7 +31,7 @@ func NewScaRealtimeCommand(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) *cobr
 	scaRealtimeScanCmd := &cobra.Command{
 		Use:   "sca-realtime",
 		Short: "Create and run sca scan",
-		Long:  "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver.",
+		Long:  "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver",
 		Example: heredoc.Doc(
 			`
 			$ cx scan sca-realtime --project-dir .

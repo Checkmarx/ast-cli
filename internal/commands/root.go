@@ -61,7 +61,7 @@ func NewAstCLI(
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx One CLI",
-		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server.",
+		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server",
 		Example: heredoc.Doc(
 			`
 			$ cx configure

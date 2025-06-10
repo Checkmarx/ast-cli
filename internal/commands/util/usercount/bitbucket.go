@@ -15,7 +15,7 @@ import (
 
 const (
 	BitBucketCommand             = "bitbucket"
-	BitBucketShort               = "The bitbucket command presents the unique contributors for the provided Bitbucket organizations, projects and repositories."
+	BitBucketShort               = "The bitbucket command presents the unique contributors for the provided Bitbucket organizations, projects and repositories"
 	workspaceFlag                = "workspaces"
 	workspaceFlagUsage           = "List of workspaces to scan for contributors"
 	urlBitbucket                 = "url-bitbucket"
