@@ -1,17 +1,16 @@
 package ossrealtime
 
+import "github.com/checkmarx/ast-cli/internal/services/realtimeengine"
+
 // OssPackage represents a package's details for OSS scanning.
 type OssPackage struct {
-	PackageManager  string          `json:"PackageManager"`
-	PackageName     string          `json:"PackageName"`
-	PackageVersion  string          `json:"PackageVersion"`
-	FilePath        string          `json:"FilePath"`
-	LineStart       int             `json:"LineStart"`
-	LineEnd         int             `json:"LineEnd"`
-	StartIndex      int             `json:"StartIndex"`
-	EndIndex        int             `json:"EndIndex"`
-	Status          string          `json:"Status"`
-	Vulnerabilities []Vulnerability `json:"Vulnerabilities"`
+	PackageManager  string                    `json:"PackageManager"`
+	PackageName     string                    `json:"PackageName"`
+	PackageVersion  string                    `json:"PackageVersion"`
+	FilePath        string                    `json:"FilePath"`
+	Locations       []realtimeengine.Location `json:"Locations"`
+	Status          string                    `json:"Status"`
+	Vulnerabilities []Vulnerability           `json:"Vulnerabilities"`
 }
 
 // OssPackageResults holds the results of an OSS scan.
