@@ -262,3 +262,53 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	assert.Equal(t, "4.17.1", cache.Packages[1].PackageVersion)
 	assert.Equal(t, "Malicious", cache.Packages[1].Status)
 }
+
+func TestOssRealtimeScan_CsprojFile_ReturnsLocations(t *testing.T) {
+	// Arrange
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+	ossRealtimeService := NewOssRealtimeService(
+		&mock.JWTMockWrapper{},
+		&mock.FeatureFlagsMockWrapper{},
+		&mock.RealtimeScannerMockWrapper{},
+	)
+	response, err := ossRealtimeService.RunOssRealtimeScan("../../../commands/data/manifests/test.csproj")
+
+	// Assert
+	assert.Nil(t, err)
+	assert.NotNil(t, response)
+	assert.Equal(t, 5, len(response.Packages), "Should find exactly 5 packages in test.csproj")
+
+	// Find the Microsoft.TeamFoundationServer.Client package that should have 3 locations
+	var tfsPackage *OssPackage
+	for _, pkg := range response.Packages {
+		if pkg.PackageName == "Microsoft.TeamFoundationServer.Client" && pkg.PackageVersion == "19.225.1" {
+			tfsPackage = &pkg
+			break
+		}
+	}
+
+	// Assert TFS package was found and has expected locations
+	assert.NotNil(t, tfsPackage, "Should find Microsoft.TeamFoundationServer.Client package")
+	assert.Equal(t, 3, len(tfsPackage.Locations), "TFS package should have exactly 3 locations")
+	assert.Equal(t, "../../../commands/data/manifests/test.csproj", tfsPackage.FilePath)
+
+	// Verify specific location details
+	expectedLocations := []struct {
+		line       int
+		startIndex int
+		endIndex   int
+	}{
+		{32, 4, 70}, // Location 0: Line=32, StartIndex=4, EndIndex=70
+		{33, 6, 33}, // Location 1: Line=33, StartIndex=6, EndIndex=33
+		{34, 4, 23}, // Location 2: Line=34, StartIndex=4, EndIndex=23
+	}
+
+	for i, expected := range expectedLocations {
+		assert.Equal(t, expected.line, tfsPackage.Locations[i].Line,
+			"Location %d line should be %d", i, expected.line)
+		assert.Equal(t, expected.startIndex, tfsPackage.Locations[i].StartIndex,
+			"Location %d startIndex should be %d", i, expected.startIndex)
+		assert.Equal(t, expected.endIndex, tfsPackage.Locations[i].EndIndex,
+			"Location %d endIndex should be %d", i, expected.endIndex)
+	}
+}

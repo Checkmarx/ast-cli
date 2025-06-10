@@ -8,10 +8,24 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
+
+// convertLocations converts models.Location to realtimeengine.Location
+func convertLocations(locations []models.Location) []realtimeengine.Location {
+	var result []realtimeengine.Location
+	for _, loc := range locations {
+		result = append(result, realtimeengine.Location{
+			Line:       loc.Line,
+			StartIndex: loc.StartIndex,
+			EndIndex:   loc.EndIndex,
+		})
+	}
+	return result
+}
 
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
@@ -81,10 +95,7 @@ func enrichResponseWithRealtimeScannerResults(
 			PackageName:     pkg.PackageName,
 			PackageVersion:  pkg.Version,
 			FilePath:        entry.FilePath,
-			LineStart:       entry.LineStart,
-			LineEnd:         entry.LineEnd,
-			StartIndex:      entry.StartIndex,
-			EndIndex:        entry.EndIndex,
+			Locations:       entry.Locations,
 			Status:          pkg.Status,
 			Vulnerabilities: vulnerabilityMapper.FromRealtimeScanner(pkg.Vulnerabilities),
 		})
@@ -157,11 +168,8 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageManager:  pkg.PackageManager,
 				PackageName:     pkg.PackageName,
 				PackageVersion:  pkg.Version,
-				LineStart:       pkg.LineStart,
-				LineEnd:         pkg.LineEnd,
 				FilePath:        pkg.FilePath,
-				StartIndex:      pkg.StartIndex,
-				EndIndex:        pkg.EndIndex,
+				Locations:       convertLocations(pkg.Locations),
 				Status:          cachedPkg.Status,
 				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
 			})
@@ -181,10 +189,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
-			LineStart:      pkg.LineStart,
-			LineEnd:        pkg.LineEnd,
-			StartIndex:     pkg.StartIndex,
-			EndIndex:       pkg.EndIndex,
+			Locations:      convertLocations(pkg.Locations),
 		}
 	}
 	return packageMap
