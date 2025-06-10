@@ -28,20 +28,22 @@ const (
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
 
-	// OSS Realtime
-	OssRealtimeErrFormat = "OSS Realtime error: %s"
+	// Realtime
+	RealtimeEngineErrFormat        = "realtime engine error: %s"
+	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
+	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
 )
 
-type OssRealtimeError struct {
+type RealtimeEngineError struct {
 	Message string
 }
 
-func (e *OssRealtimeError) Error() error {
-	return fmt.Errorf(OssRealtimeErrFormat, e.Message)
+func (e *RealtimeEngineError) Error() error {
+	return fmt.Errorf(RealtimeEngineErrFormat, e.Message)
 }
 
-func NewOssRealtimeError(message string) *OssRealtimeError {
-	return &OssRealtimeError{
+func NewRealtimeEngineError(message string) *RealtimeEngineError {
+	return &RealtimeEngineError{
 		Message: message,
 	}
 }

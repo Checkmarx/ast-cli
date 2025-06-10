@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
@@ -44,7 +44,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
-	const filePath = "../../commands/data/manifests/package.json"
+	const filePath = "../../../commands/data/manifests/package.json"
 
 	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 
@@ -61,7 +61,7 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
-	const filePath = "../../commands/data/manifests/package.json"
+	const filePath = "../../../commands/data/manifests/package.json"
 
 	response, err := ossRealtimeService.RunOssRealtimeScan(filePath)
 

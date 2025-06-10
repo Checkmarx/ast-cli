@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/stretchr/testify/assert"
 )
