@@ -8,10 +8,24 @@ import (
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
+
+// createLocations creates a Locations array from line and index information
+func createLocations(lineStart, lineEnd, startIndex, endIndex int) []realtimeengine.Location {
+	var locations []realtimeengine.Location
+	for i := 0; i <= lineEnd-lineStart; i++ {
+		locations = append(locations, realtimeengine.Location{
+			Line:       lineStart + i,
+			StartIndex: startIndex,
+			EndIndex:   endIndex,
+		})
+	}
+	return locations
+}
 
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
@@ -81,10 +95,7 @@ func enrichResponseWithRealtimeScannerResults(
 			PackageName:     pkg.PackageName,
 			PackageVersion:  pkg.Version,
 			FilePath:        entry.FilePath,
-			LineStart:       entry.LineStart,
-			LineEnd:         entry.LineEnd,
-			StartIndex:      entry.StartIndex,
-			EndIndex:        entry.EndIndex,
+			Locations:       entry.Locations,
 			Status:          pkg.Status,
 			Vulnerabilities: vulnerabilityMapper.FromRealtimeScanner(pkg.Vulnerabilities),
 		})
@@ -157,11 +168,8 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageManager:  pkg.PackageManager,
 				PackageName:     pkg.PackageName,
 				PackageVersion:  pkg.Version,
-				LineStart:       pkg.LineStart,
-				LineEnd:         pkg.LineEnd,
 				FilePath:        pkg.FilePath,
-				StartIndex:      pkg.StartIndex,
-				EndIndex:        pkg.EndIndex,
+				Locations:       createLocations(pkg.LineStart, pkg.LineEnd, pkg.StartIndex, pkg.EndIndex),
 				Status:          cachedPkg.Status,
 				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
 			})
@@ -181,10 +189,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
-			LineStart:      pkg.LineStart,
-			LineEnd:        pkg.LineEnd,
-			StartIndex:     pkg.StartIndex,
-			EndIndex:       pkg.EndIndex,
+			Locations:      createLocations(pkg.LineStart, pkg.LineEnd, pkg.StartIndex, pkg.EndIndex),
 		}
 	}
 	return packageMap
