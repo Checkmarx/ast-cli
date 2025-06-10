@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -102,12 +103,15 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
+	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
+	rootCmd.PersistentFlags().String(params.LogFileStdFlag, "", params.LogFileStdUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		err := LoadDebugLogConfiguration(rootCmd)
 		PrintConfiguration()
-		err := configuration.LoadConfiguration()
+		err = configuration.LoadConfiguration()
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
@@ -333,4 +337,58 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+func LoadDebugLogConfiguration(cmd *cobra.Command) error {
+	fmt.Println("Loading debug log configuration...")
+	if cmd.PersistentFlags().Changed(params.LogFileFlag) {
+		if err := processLogFlag(cmd, params.LogFileFlag); err != nil {
+			return err
+		}
+	}
+
+	if cmd.PersistentFlags().Changed(params.LogFileStdFlag) {
+		if err := processLogFlag(cmd, params.LogFileStdFlag); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func processLogFlag(cmd *cobra.Command, flag string) error {
+	logFilePath, _ := cmd.PersistentFlags().GetString(flag)
+	if strings.TrimSpace(logFilePath) == "" {
+		return errors.New("flag needs an argument: --" + flag)
+	}
+	if err := validateLogFile(logFilePath); err != nil {
+		return err
+	}
+	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return fmt.Errorf("Access to the specified file is restricted. Ensure you have the necessary permissions.")
+	}
+	var multiWriter io.Writer
+	if flag == params.LogFileStdFlag {
+		multiWriter = io.MultiWriter(file, os.Stdout)
+	} else {
+		multiWriter = io.MultiWriter(file)
+	}
+	log.SetOutput(multiWriter)
+	viper.Set(params.DebugFlag, true)
+	return nil
+}
+
+func validateLogFile(logFilePath string) error {
+	info, err := os.Stat(logFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("The specified file does not exist. Please check the path and ensure the log file is available.")
+		}
+		return fmt.Errorf("An error occurred while accessing the file. Please verify the log file")
+	}
+
+	if info.IsDir() {
+		return fmt.Errorf("The specified path points to a directory, not a file. Please provide a valid log file path.")
+	}
+	return nil
 }
