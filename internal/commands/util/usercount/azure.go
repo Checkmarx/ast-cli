@@ -15,7 +15,7 @@ import (
 
 const (
 	AzureCommand        = "azure"
-	azureShort          = "The azure command presents the unique contributors for the provided Azure repositories or organizations."
+	azureShort          = "The azure command presents the unique contributors for the provided Azure repositories or organizations"
 	projectFlag         = "projects"
 	url                 = "url-azure"
 	projectFlagUsage    = "List of projects to scan for contributors"
