@@ -88,13 +88,18 @@ const (
 	completedStatus           = "completed"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
+	jsonToEmailFlagDescription = "Send the json report to the specified email address." +
+		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
+	jsonOptionsFlagDescription = "Sections to generate Json report. Available options: Iac-Security,Sast,Sca," +
+		defaultJSONOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	reportNameScanReport                    = "scan-report"
 	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
+	defaultJSONOptionsDataSections          = "ScanSummary,ExecutiveSummary,ScanResults"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
@@ -112,6 +117,7 @@ const (
 	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
 	ScaExcludeResultTypesParam              = "exclude-result-types"
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
+	CliType                                 = "cli"
 )
 
 var (
@@ -179,6 +185,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -198,7 +205,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper,
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
 		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
@@ -256,6 +263,7 @@ func resultShowSubCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -270,12 +278,13 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
+		printer.FormatJSONcxOne,
 		printer.FormatSummary,
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
@@ -288,8 +297,10 @@ func resultShowSubCommand(
 		printer.FormatSonar,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONToEmailFlag, "", jsonToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
+	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJSONOptionsDataSections, jsonOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1008,6 +1019,7 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -1019,6 +1031,8 @@ func runGetResultCommand(
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
+		formatJSONToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
+		formatJSONOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
@@ -1063,7 +1077,7 @@ func runGetResultCommand(
 		}
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-			policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions, formatJSONToEmail, formatJSONOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 		return err
 	}
@@ -1162,10 +1176,13 @@ func CreateScanReport(
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
+	formatJSONToEmail,
+	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1201,8 +1218,9 @@ func CreateScanReport(
 		}
 	}
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatJSONToEmail,
+			formatJSONOptions, formatSbomOptions, targetFile,
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -1373,6 +1391,8 @@ func isValidScanStatus(status, format string) bool {
 func createReport(format,
 	formatPdfToEmail,
 	formatPdfOptions,
+	formatJSONToEmail,
+	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1380,6 +1400,7 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
@@ -1396,6 +1417,10 @@ func createReport(format,
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatJSONcxOne) && isValidScanStatus(summary.Status, printer.FormatJSONcxOne) {
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
+		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, formatJSONToEmail, formatJSONOptions, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
@@ -1773,6 +1798,120 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJSONToEmail,
+	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	jsonReportsPayload := &wrappers.JSONReportsPayload{}
+	pollingResp := &wrappers.JSONPollingResponse{}
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
+	newScanReportEnabled := flagResponse.Status
+	if newScanReportEnabled {
+		jsonReportsPayload.ReportName = reportNameImprovedScanReport
+	} else {
+		jsonReportsPayload.ReportName = reportNameScanReport
+	}
+
+	jsonOptionsSections, jsonOptionsEngines, err := parseJSONOptions(jsonOptions, summary.EnginesEnabled, jsonReportsPayload.ReportName)
+	if err != nil {
+		return err
+	}
+
+	jsonReportsPayload.ReportType = CliType
+	jsonReportsPayload.FileFormat = printer.FormatJSON
+	jsonReportsPayload.Data.ScanID = summary.ScanID
+	jsonReportsPayload.Data.ProjectID = summary.ProjectID
+	jsonReportsPayload.Data.BranchName = summary.BranchName
+	jsonReportsPayload.Data.Scanners = jsonOptionsEngines
+	jsonReportsPayload.Data.Sections = jsonOptionsSections
+
+	// will generate pdf report and send it to the email list
+	// instead of saving it to the file system
+	if formatJSONToEmail != "" {
+		emailList, validateErr := validateEmails(formatJSONToEmail)
+		if validateErr != nil {
+			return validateErr
+		}
+		jsonReportsPayload.ReportType = reportTypeEmail
+		jsonReportsPayload.Data.Email = emailList
+	}
+	jsonReportID, webErr, err := jsonWrapper.GenerateJSONReport(jsonReportsPayload)
+	if webErr != nil {
+		return errors.Errorf("Error generating JSON report - %s", webErr.Message)
+	}
+	if err != nil {
+		return errors.Errorf("Error generating JSON report - %s", err.Error())
+	}
+	if jsonReportsPayload.ReportType == reportTypeEmail {
+		log.Println("Sending JSON report to: ", jsonReportsPayload.Data.Email)
+		return nil
+	}
+	log.Println("Generating JSON report")
+	pollingResp.Status = startedStatus
+	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
+		pollingResp, webErr, err = jsonWrapper.CheckJSONReportStatus(jsonReportID.ReportID)
+		if err != nil || webErr != nil {
+			return errors.Wrapf(err, "%v", webErr)
+		}
+		logger.PrintfIfVerbose("JSON report status: %s", pollingResp.Status)
+		time.Sleep(delayValueForReport * time.Millisecond)
+	}
+	if pollingResp.Status != completedStatus {
+		return errors.Errorf("JSON generating failed - Current status: %s", pollingResp.Status)
+	}
+
+	minioEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.MinioEnabled)
+	infoPathType := ""
+	if minioEnabled.Status {
+		infoPathType = jsonReportID.ReportID
+	} else {
+		infoPathType = pollingResp.URL
+	}
+	err = jsonWrapper.DownloadJSONReport(infoPathType, summaryRpt, minioEnabled.Status)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading JSON report")
+	}
+	return nil
+}
+
+func parseJSONOptions(jsonOptions string, enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string, err error) {
+	var jsonOptionsSectionsMap = map[string]string{
+		"scansummary":      "ScanSummary",
+		"executivesummary": "ExecutiveSummary",
+		"scanresults":      "ScanResults",
+	}
+
+	var jsonOptionsEnginesMap = map[string]string{
+		commonParams.ScaType:  "SCA",
+		commonParams.SastType: "SAST",
+		commonParams.KicsType: "KICS",
+		commonParams.IacType:  "KICS",
+	}
+
+	jsonOptions = strings.ToLower(strings.ReplaceAll(jsonOptions, " ", ""))
+	options := strings.Split(strings.ReplaceAll(jsonOptions, "\n", ""), ",")
+	for _, s := range options {
+		if jsonOptionsEnginesMap[s] != "" {
+			jsonOptionsEngines = append(jsonOptionsEngines, jsonOptionsEnginesMap[s])
+		} else if jsonOptionsSectionsMap[s] != "" {
+			jsonOptionsSections = append(jsonOptionsSections, jsonOptionsSectionsMap[s])
+		} else {
+			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
+		}
+	}
+	if jsonOptionsEngines == nil {
+		for _, engine := range enabledEngines {
+			if jsonOptionsEnginesMap[engine] != "" {
+				jsonOptionsEngines = append(jsonOptionsEngines, jsonOptionsEnginesMap[engine])
+			}
+		}
+	}
+
+	if reportName == reportNameImprovedScanReport {
+		jsonOptionsSections = translateReportSectionsForImproved(jsonOptionsSections)
+	}
+
+	return jsonOptionsSections, jsonOptionsEngines, nil
+}
+
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
@@ -1807,7 +1946,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return err
 	}
 
-	pdfReportsPayload.ReportType = "cli"
+	pdfReportsPayload.ReportType = CliType
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID

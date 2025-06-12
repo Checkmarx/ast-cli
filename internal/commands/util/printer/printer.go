@@ -14,6 +14,7 @@ import (
 
 const (
 	FormatJSON            = "json"
+	FormatJSONcxOne       = "json-cxOne"
 	FormatIndentedJSON    = "indented-json"
 	FormatSarif           = "sarif"
 	FormatSonar           = "sonar"
