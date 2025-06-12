@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -33,6 +35,8 @@ const (
 	perPageParam        = "per_page"
 	perPageValue        = "100"
 	retryLimit          = 3
+	rateLimitHeader     = "X-RateLimit-Remaining"
+	rateLimitReset      = "X-RateLimit-Reset"
 )
 
 func NewGitHubWrapper() GitHubWrapper {
@@ -245,6 +249,9 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	token := viper.GetString(params.SCMTokenFlag)
 	logger.PrintRequest(req)
 	resp, err := GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams)
+	fn := func() (*http.Response, error) {
+		return GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -265,14 +272,61 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	case http.StatusConflict:
 		logger.PrintIfVerbose(fmt.Sprintf("Found empty repository in %s", req.URL))
 		return resp, nil
-	default:
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			logger.PrintIfVerbose(err.Error())
-			return nil, err
+	case http.StatusForbidden:
+		if resp.Header.Get(rateLimitHeader) == "0" {
+			resetHeader := resp.Header.Get(rateLimitReset)
+			resetHeaderInt, err := strconv.ParseInt(resetHeader, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			resetTime := time.Unix(resetHeaderInt, 0).UTC()
+			return nil, fmt.Errorf("please try after %s UTC", resetTime)
+		} else {
+			return readResponseBody(resp)
 		}
-		message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
-		return nil, errors.New(message)
+	case http.StatusTooManyRequests:
+		retryDelay := viper.GetInt(params.RetryDelayFlag)
+		retryDelayMilliseconds := time.Duration(retryDelay) * time.Second
+		resp, err = retryHTTPGithubRequest(fn, retryAttempts, retryDelayMilliseconds*time.Second)
+		if err != nil {
+			return nil, err
+		} else {
+			return readResponseBody(resp)
+		}
+	default:
+		return readResponseBody(resp)
 	}
 	return resp, nil
+}
+
+func retryHTTPGithubRequest(requestFun func() (*http.Response, error), retries int, baseDelay time.Duration) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+
+	for attempt := 0; attempt < retries; attempt++ {
+		resp, err = requestFun()
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusBadGateway {
+			logger.PrintIfVerbose("Bad Gateway (502), retrying")
+		} else if resp.StatusCode == http.StatusTooManyRequests {
+			logger.PrintIfVerbose("Too many requests (429), retrying")
+		} else {
+			return resp, nil
+		}
+		_ = resp.Body.Close()
+		time.Sleep(baseDelay * (1 << attempt))
+	}
+	return resp, nil
+}
+
+func readResponseBody(resp *http.Response) (*http.Response, error) {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.PrintIfVerbose(err.Error())
+		return nil, err
+	}
+	message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
+	return nil, errors.New(message)
 }
