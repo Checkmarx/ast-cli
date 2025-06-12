@@ -10,7 +10,7 @@ require (
 	github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
-	github.com/checkmarx/2ms/v3 v3.19.5-0.20250608081804-db29ad9d6929
+	github.com/checkmarx/2ms/v3 v3.20.0
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c

@@ -78,7 +78,7 @@ func runScan(source, content string) (*reporting.Report, error) {
 		Source:  source,
 	}
 	secretScanner := scanner.NewScanner()
-	return secretScanner.ScanWithValidation([]scanner.ScanItem{item}, scanner.ScanConfig{})
+	return secretScanner.Scan([]scanner.ScanItem{item}, scanner.ScanConfig{WithValidation: true})
 }
 
 func convertToSecretsRealtimeResult(report *reporting.Report) []SecretsRealtimeResult {
