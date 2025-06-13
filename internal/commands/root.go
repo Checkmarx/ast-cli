@@ -110,8 +110,14 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		err := LoadDebugLogConfiguration(rootCmd)
+		if err != nil {
+			return err
+		}
 		PrintConfiguration()
 		err = configuration.LoadConfiguration()
+		if err != nil {
+			return err
+		}
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
@@ -345,13 +351,11 @@ func LoadDebugLogConfiguration(cmd *cobra.Command) error {
 			return err
 		}
 	}
-
 	if cmd.PersistentFlags().Changed(params.LogFileStdFlag) {
 		if err := processLogFlag(cmd, params.LogFileStdFlag); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -360,12 +364,18 @@ func processLogFlag(cmd *cobra.Command, flag string) error {
 	if strings.TrimSpace(logFilePath) == "" {
 		return errors.New("flag needs an argument: --" + flag)
 	}
-	if err := validateLogFile(logFilePath); err != nil {
-		return err
+	if !strings.Contains(logFilePath, ".") {
+		logFilePath += ".txt" // Default file type if none is provided
 	}
-	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
-		return fmt.Errorf("Access to the specified file is restricted. Ensure you have the necessary permissions.")
+		if os.IsPermission(err) {
+			return fmt.Errorf("Permission denied: Ensure you have the necessary rights to access %s", logFilePath)
+		} else if os.IsNotExist(err) {
+			return fmt.Errorf("File does not exist: %s. Please check the path or create the file manually", logFilePath)
+		} else {
+			return fmt.Errorf("Unexpected error while opening the file %s: %v", logFilePath, err)
+		}
 	}
 	var multiWriter io.Writer
 	if flag == params.LogFileStdFlag {
@@ -375,20 +385,5 @@ func processLogFlag(cmd *cobra.Command, flag string) error {
 	}
 	log.SetOutput(multiWriter)
 	viper.Set(params.DebugFlag, true)
-	return nil
-}
-
-func validateLogFile(logFilePath string) error {
-	info, err := os.Stat(logFilePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("The specified file does not exist. Please check the path and ensure the log file is available.")
-		}
-		return fmt.Errorf("An error occurred while accessing the file. Please verify the log file")
-	}
-
-	if info.IsDir() {
-		return fmt.Errorf("The specified path points to a directory, not a file. Please provide a valid log file path.")
-	}
 	return nil
 }
