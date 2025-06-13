@@ -271,6 +271,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 			logger.PrintIfVerbose(err.Error())
 			return nil, err
 		}
+
 		message := fmt.Sprintf("Code %d %s", resp.StatusCode, string(body))
 		return nil, errors.New(message)
 	}
