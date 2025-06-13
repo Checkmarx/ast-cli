@@ -2236,5 +2236,4 @@ func TestCreateScanWith_ScaResolver_Source_as_Zip(t *testing.T) {
 	}
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Assert(t, strings.Contains(err.Error(), ScaResolverZipNotSupportedErr), err.Error())
-
 }
