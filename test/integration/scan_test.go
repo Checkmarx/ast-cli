@@ -533,8 +533,32 @@ func TestFastScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
+func TestLightQueries(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithLightQueries(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func TestRecommendedExclusions(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithRecommendedExclusions(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
 func createScanWithFastScan(t *testing.T, source string, name string, tags map[string]string) (string, string) {
 	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastFastScanFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithLightQueries(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastLightQueriesFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithRecommendedExclusions(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastRecommendedExclusionsFlags))
 	return executeCreateScan(t, args)
 }
 
@@ -1887,7 +1911,7 @@ func TestCreateScan_WithNoScanTypesFlagButScsFlagsPresent_SuccessAndScsScanned(t
 	}
 
 	output := executeCmdWithTimeOutNilAssertion(t, "Scan must complete successfully if no scan-types specified and scs-repo flags are present", 4*time.Minute, args...)
-	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "Scs scan should run if all required flags are provided")
+	assert.Assert(t, strings.Contains(output.String(), params.ScsType), "SCS scan should run if all required flags are provided")
 }
 
 func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
@@ -1902,8 +1926,8 @@ func TestCreateScan_WithTypeScsMissingRepoURL_Fail(t *testing.T) {
 		flag(params.SCSRepoTokenFlag), scsRepoToken,
 	}
 
-	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
 func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
@@ -1924,8 +1948,8 @@ func TestCreateScan_WithTypeScsMissingRepoToken_Fail(t *testing.T) {
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 	}
 
-	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
 func TestCreateScan_ScsRepoTokenEnvConfigured_Success(t *testing.T) {
@@ -1940,8 +1964,8 @@ func TestCreateScan_ScsRepoTokenEnvConfigured_Success(t *testing.T) {
 		flag(params.SCSRepoURLFlag), scsRepoURL,
 	}
 
-	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, commands.ScsRepoRequiredMsg)
+	executeCmdWithTimeOutNilAssertion(t,
+		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
 func TestCreateScan_WithTypeScsOnlySecretDetection_Success(t *testing.T) {
@@ -1975,7 +1999,7 @@ func TestCreateScan_WithNoScanTypesFlagScsAndOnlySecretDetection_Success(t *test
 		"SCS with only secret-detection scan must complete successfully, even if missing scs-repo flags", timeout, args...)
 }
 
-func TestCreateScan_WithScanTypesScsAndOnlyScorecardMissingRepoFlags_Fail(t *testing.T) {
+func TestCreateScan_WithScanTypesScsAndScorecardEngineAndOnlyScorecardMissingRepoFlags_Fail(t *testing.T) {
 	_, projectName := getRootProject(t)
 
 	args := []string{

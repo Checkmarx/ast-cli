@@ -28,7 +28,7 @@ type userView struct {
 
 const (
 	bitBucketServerCommandName       = "bitbucket-server"
-	bitBucketServerCommandShort      = "The BitBucket Server command presents the unique contributors for the provided Bitbucket Server projects and repositories."
+	bitBucketServerCommandShort      = "The BitBucket Server command presents the unique contributors for the provided Bitbucket Server projects and repositories"
 	bitBucketServerFlagURL           = "server-url"
 	bitBucketServerFlagURLUsage      = "BitBucket Server instance URL"
 	bitBucketServerFlagProjects      = "projects"

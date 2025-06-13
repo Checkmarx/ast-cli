@@ -1,5 +1,7 @@
 package errorconstants
 
+import "fmt"
+
 // HTTP Errors
 const (
 	StatusUnauthorized        = "you are not authorized to make this request"
@@ -25,4 +27,23 @@ const (
 
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
+
+	// Realtime
+	RealtimeEngineErrFormat        = "realtime engine error: %s"
+	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
+	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
 )
+
+type RealtimeEngineError struct {
+	Message string
+}
+
+func (e *RealtimeEngineError) Error() error {
+	return fmt.Errorf(RealtimeEngineErrFormat, e.Message)
+}
+
+func NewRealtimeEngineError(message string) *RealtimeEngineError {
+	return &RealtimeEngineError{
+		Message: message,
+	}
+}

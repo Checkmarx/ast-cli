@@ -49,7 +49,7 @@ func NewUtilsCommand(
 	utilsCmd := &cobra.Command{
 		Use:   "utils",
 		Short: "Utility functions",
-		Long:  "The utils command enables the ability to perform Checkmarx One utility functions.",
+		Long:  "The utils command enables the ability to perform Checkmarx One utility functions",
 		Example: heredoc.Doc(
 			`
 			$ cx utils env

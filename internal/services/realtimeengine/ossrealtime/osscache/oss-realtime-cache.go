@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -58,7 +59,8 @@ func WriteCache(cache Cache, cacheTTL *time.Time) error {
 	return nil
 }
 
-func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
+func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMapping map[string]string) error {
+	vulnerabilityMapper := NewOssCacheVulnerabilityMapper()
 	cache := ReadCache()
 	if cache == nil {
 		cache = &Cache{
@@ -68,16 +70,29 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse) error {
 	}
 
 	for _, pkg := range packages.Packages {
-		if pkg.Status != "Unknown" {
-			cache.Packages = append(cache.Packages, PackageEntry{
-				PackageManager: pkg.PackageManager,
-				PackageName:    pkg.PackageName,
-				PackageVersion: pkg.Version,
-				Status:         pkg.Status,
-			})
+		key := GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
+		vulnerabilities := vulnerabilityMapper.FromRealtimeScannerVulnerability(pkg.Vulnerabilities)
+
+		if requestedVersion, exists := versionMapping[key]; exists {
+			if !strings.EqualFold(requestedVersion, pkg.Version) && strings.EqualFold("latest", requestedVersion) {
+				cache.Packages = append(cache.Packages, createPackageEntry(&pkg, requestedVersion, vulnerabilities))
+			}
 		}
+		cache.Packages = append(cache.Packages, createPackageEntry(&pkg, pkg.Version, vulnerabilities))
 	}
+
 	return WriteCache(*cache, &cache.TTL)
+}
+
+func createPackageEntry(pkg *wrappers.RealtimeScannerResults, version string, vulnerabilities []Vulnerability) PackageEntry {
+	return PackageEntry{
+		PackageID:       GenerateCacheKey(pkg.PackageManager, pkg.PackageName, version),
+		PackageManager:  pkg.PackageManager,
+		PackageName:     pkg.PackageName,
+		PackageVersion:  version,
+		Status:          pkg.Status,
+		Vulnerabilities: vulnerabilities,
+	}
 }
 
 func GetCacheFilePath() string {
@@ -86,12 +101,12 @@ func GetCacheFilePath() string {
 }
 
 // BuildCacheMap creates a lookup map from cache entries.
-func BuildCacheMap(cache Cache) map[string]string {
-	m := make(map[string]string, len(cache.Packages))
+func BuildCacheMap(cache Cache) map[string]PackageEntry {
+	packagesMap := make(map[string]PackageEntry, len(cache.Packages))
 	for _, pkg := range cache.Packages {
-		m[GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)] = pkg.Status
+		packagesMap[pkg.PackageID] = pkg
 	}
-	return m
+	return packagesMap
 }
 
 // GenerateCacheKey constructs a unique key for a package.

@@ -23,7 +23,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	triageCmd := &cobra.Command{
 		Use:   "triage",
 		Short: "Manage results",
-		Long:  "The 'triage' command enables the ability to manage results in Checkmarx One.",
+		Long:  "The 'triage' command enables the ability to manage results in Checkmarx One",
 	}
 	triageShowCmd := triageShowSubCommand(resultsPredicatesWrapper)
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
@@ -77,8 +77,8 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featur
 func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) *cobra.Command {
 	triageShowCmd := &cobra.Command{
 		Use:   "show",
-		Short: "Get the predicates history for the given issue.",
-		Long:  "The show command provides a list of all the predicates in the issue.",
+		Short: "Get the predicates history for the given issue",
+		Long:  "The show command provides a list of all the predicates in the issue",
 		Example: heredoc.Doc(
 			`
 			$ cx triage show --similarity-id <SimilarityID> --project-id <ProjectID> --scan-type <SAST||IAC-SECURITY||SCS>
@@ -89,7 +89,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	}
 
 	triageShowCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
-	triageShowCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
+	triageShowCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID")
 	triageShowCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
 	markFlagAsRequired(triageShowCmd, params.SimilarityIDFlag)
@@ -103,7 +103,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	triageUpdateCmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update the state, severity or comment for the given issue",
-		Long:  "The update command enables the ability to triage the results in Checkmarx One.",
+		Long:  "The update command enables the ability to triage the results in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 				$ cx triage update 
@@ -121,10 +121,10 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 
 	triageUpdateCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageUpdateCmd.PersistentFlags().String(params.SeverityFlag, "", "Severity")
-	triageUpdateCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID.")
-	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account.")
-	triageUpdateCmd.PersistentFlags().Int(params.CustomStateIDFlag, -1, "Specify the ID of the states that you would like to apply to this result.")
-	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment.")
+	triageUpdateCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID")
+	triageUpdateCmd.PersistentFlags().String(params.StateFlag, "", "Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account")
+	triageUpdateCmd.PersistentFlags().Int(params.CustomStateIDFlag, -1, "Specify the ID of the states that you would like to apply to this result")
+	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 
 	markFlagAsRequired(triageUpdateCmd, params.SimilarityIDFlag)
