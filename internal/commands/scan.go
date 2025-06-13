@@ -1594,11 +1594,15 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
-
+	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
 	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && containerEngineCLIEnabled.Status
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
+
+	if zipFilePath != "" && scaResolverPath != "" {
+		return "", "", errors.New("Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
+	}
 	if err != nil {
 		return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
