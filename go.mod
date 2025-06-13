@@ -7,7 +7,7 @@ require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/Checkmarx/manifest-parser v0.0.9
-	github.com/Checkmarx/secret-detection v1.1.0
+	github.com/Checkmarx/secret-detection v1.2.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms v1.4.1-0.20250603085607-be5ad6fd4405
