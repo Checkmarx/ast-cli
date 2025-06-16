@@ -17,8 +17,8 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		Example: heredoc.Doc(
 			`
 			$ cx hooks pre-commit secrets-install-git-hook
-			$ cx hooks pre-commit secrets scan
-			$ cx hooks pre-receive secrets scan
+			$ cx hooks pre-commit secrets-scan
+			$ cx hooks pre-receive secrets-scan
 		`,
 		),
 		Annotations: map[string]string{

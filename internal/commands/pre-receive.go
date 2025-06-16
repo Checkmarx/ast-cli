@@ -11,7 +11,7 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preReceiveCmd := &cobra.Command{
 		Use:   "pre-receive",
 		Short: "Manage pre-receive hooks and run secret detection scans",
-		Long:  "The pre-receive command enables the ability to manage Git pre-receive hooks for secret detection.",
+		Long:  "The pre-receive command is used for managing Git pre-receive hooks for secret detection",
 		Example: heredoc.Doc(
 			`
 		    $ cx hooks pre-receive secrets-scan
@@ -27,8 +27,8 @@ func scanSecretsPreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command
 	var configFile string
 	scanPrereceiveCmd := &cobra.Command{
 		Use:   "secrets-scan",
-		Short: "Scan commits for secret detection.",
-		Long:  "Scan all commits about to enter the remote git repository for secret detection.",
+		Short: "Run a pre-receive secret detection scan on the pushed branch",
+		Long:  "Runs pre-receive secret detection scans on each pushed branch that is about to enter the remote git repository",
 		Example: heredoc.Doc(
 			`
 		    $ cx hooks pre-receive secrets-scan
