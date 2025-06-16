@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
@@ -1546,8 +1547,20 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			scaResolverResultsFile,
 		}
 		if scaResolverParams != "" {
-			args = append(args, scaResolverParams)
+			// scaResolverParamsArray := strings.Split(scaResolverParams, " ")
+			// // logger.PrintfIfVerbose(fmt.Sprintf("HM:: scaResolverParamsArray %t", scaResolverParamsArray))
+
+			// for index, val := range scaResolverParamsArray {
+			// 	logger.PrintfIfVerbose("HM:: index %v and params %v", index, val)
+			// }
+			// logger.PrintfIfVerbose("HM:: scaResolverParamsArray  %v", scaResolverParamsArray)
+
+			parsedscaResolverParams := parseArgs(scaResolverParams)
+			// parsedscaResolverParams := strings.Fields(scaResolverParams)
+			args = append(args, parsedscaResolverParams...)
 		}
+		// logger.PrintfIfVerbose("HM:: scaResolverParams string %s", scaResolverParams)
+		// logger.PrintfIfVerbose("HM:: scaResolverParams string %s", scaResolverParams)
 
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
@@ -1717,6 +1730,7 @@ func getScaResolverFlags(cmd *cobra.Command) (scaResolverParams, scaResolver str
 		scaResolver = ""
 		scaResolverParams = ""
 	}
+	logger.PrintfIfVerbose("HM:: in getScaResolverFlags scaResolverParams:: %v", scaResolverParams)
 	return scaResolverParams, scaResolver
 }
 
@@ -2953,4 +2967,35 @@ func validateBooleanString(value string) error {
 		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
+}
+
+func parseArgs(input string) []string {
+	var args []string
+	var current strings.Builder
+	var quote rune
+	inQuotes := false
+
+	for i, r := range input {
+		switch {
+		case (r == '\'' || r == '"') && !inQuotes:
+			inQuotes = true
+			quote = r
+		case r == quote && inQuotes:
+			inQuotes = false
+		case unicode.IsSpace(r) && !inQuotes:
+			if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+		default:
+			current.WriteRune(r)
+		}
+
+		// Append last token if input ends
+		if i == len(input)-1 && current.Len() > 0 {
+			args = append(args, current.String())
+		}
+	}
+
+	return args
 }
