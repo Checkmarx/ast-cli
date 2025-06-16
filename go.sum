@@ -217,6 +217,8 @@ github.com/charmbracelet/x/cellbuf v0.0.13 h1:/KBBKHuVRbq1lYx5BzEHBAFBP8VcQzJejZ
 github.com/charmbracelet/x/cellbuf v0.0.13/go.mod h1:xe0nKWGd3eJgtqZRaN9RjMtK7xUYchjzPr7q6kcvCCs=
 github.com/charmbracelet/x/term v0.2.1 h1:AQeHeLZ1OqSXhrAWpYUtZyX1T3zVxfpZuEQMIQaGIAQ=
 github.com/charmbracelet/x/term v0.2.1/go.mod h1:oQ4enTYFV7QN4m0i9mzHrViD7TQKvNEEkHUMCmsxdUg=
+github.com/checkmarx/2ms v1.4.1-0.20250603085607-be5ad6fd4405 h1:56yAZSGhDJQwnp4NcynJeTAAigtssJQYB81fZMeySkI=
+github.com/checkmarx/2ms v1.4.1-0.20250603085607-be5ad6fd4405/go.mod h1:SjNkAtcLKQskZb2awPjFvLHseqcXg1KavF+LuUJGkfw=
 github.com/checkmarx/2ms/v3 v3.20.0 h1:dr3vSVUoYXwS40DUGR5ueXaPROKTkMs+9xAij2/vzUA=
 github.com/checkmarx/2ms/v3 v3.20.0/go.mod h1:f5ZwVFEDBr8WRa/9aXluPnufi2wuq6tGWCROcW3CdbA=
 github.com/chromedp/cdproto v0.0.0-20230802225258-3cf4e6d46a89/go.mod h1:GKljq0VrfU4D5yc+2qA6OVr8pmO/MBbPEWqWQ/oqGEs=
