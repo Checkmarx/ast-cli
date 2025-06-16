@@ -7,7 +7,7 @@ require (
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/Checkmarx/manifest-parser v0.0.9
-	github.com/Checkmarx/secret-detection v0.0.3-0.20250327150305-31c2c3be9edf
+	github.com/Checkmarx/secret-detection v1.2.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms/v3 v3.20.0
@@ -85,7 +85,6 @@ require (
 	github.com/charmbracelet/x/ansi v0.8.0 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.13 // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
-	github.com/checkmarx/2ms v1.4.1-0.20250603085607-be5ad6fd4405 // indirect
 	github.com/cloudflare/circl v1.6.0 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
 	github.com/containerd/containerd v1.7.27 // indirect
