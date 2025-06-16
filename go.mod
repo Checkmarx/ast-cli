@@ -1,17 +1,17 @@
 module github.com/checkmarx/ast-cli
 
-go 1.24.2
+go 1.24.4
 
 require (
 	github.com/Checkmarx/containers-resolver v1.0.11
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
 	github.com/Checkmarx/manifest-parser v0.0.9
-	github.com/Checkmarx/secret-detection v1.2.0
+	github.com/Checkmarx/secret-detection v1.2.1-0.20250616111741-8765cfc3f484
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms v1.4.1-0.20250603085607-be5ad6fd4405
-	github.com/checkmarx/2ms/v3 v3.20.0
+	github.com/checkmarx/2ms/v3 v3.20.1-0.20250616110637-402b802b5489
 	github.com/gitleaks/go-gitdiff v0.9.1
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
