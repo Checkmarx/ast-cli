@@ -2351,3 +2351,18 @@ func deletePreset(engine, presetID string) error {
 
 	return nil
 }
+
+func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), params.ScaType,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScaResolverFlag), "ScaResolver.exe",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
+}
