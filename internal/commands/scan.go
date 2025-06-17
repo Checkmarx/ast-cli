@@ -146,6 +146,7 @@ func NewScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -179,6 +180,7 @@ func NewScanCommand(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
@@ -536,6 +538,7 @@ func scanCreateSubCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -568,6 +571,7 @@ func scanCreateSubCommand(
 			scansWrapper,
 			exportWrapper,
 			resultsPdfReportsWrapper,
+			resultsJSONReportsWrapper,
 			uploadsWrapper,
 			resultsWrapper,
 			projectsWrapper,
@@ -693,6 +697,7 @@ func scanCreateSubCommand(
 		createScanCmd,
 		printer.FormatSummaryConsole,
 		printer.FormatJSON,
+		printer.FormatJSONv2,
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatSbom,
@@ -1816,6 +1821,7 @@ func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	uploadsWrapper wrappers.UploadsWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	projectsWrapper wrappers.ProjectsWrapper,
@@ -1889,6 +1895,7 @@ func runCreateScanCommand(
 				scansWrapper,
 				exportWrapper,
 				resultsPdfReportsWrapper,
+				resultsJSONReportsWrapper,
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
@@ -1904,7 +1911,7 @@ func runCreateScanCommand(
 				return err
 			}
 
-			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper,
+			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
 				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
 			if reportErr != nil {
 				return reportErr
@@ -1916,7 +1923,7 @@ func runCreateScanCommand(
 				return err
 			}
 		} else {
-			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
+			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
 				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
 			if err != nil {
 				return err
@@ -2074,6 +2081,7 @@ func handleWait(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2086,6 +2094,7 @@ func handleWait(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
@@ -2109,6 +2118,7 @@ func createReportsAfterScan(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2151,6 +2161,7 @@ func createReportsAfterScan(
 		exportWrapper,
 		policyResponseModel,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		scan,
 		reportFormats,
 		formatPdfToEmail,
@@ -2302,6 +2313,7 @@ func waitForScanCompletion(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2320,7 +2332,7 @@ func waitForScanCompletion(
 		waitDuration := fixedWait + variableWait
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
-		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsWrapper,
+		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
 			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
 		if err != nil {
 			return err
@@ -2349,6 +2361,7 @@ func isScanRunning(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
@@ -2380,6 +2393,7 @@ func isScanRunning(
 			scansWrapper,
 			exportWrapper,
 			resultsPdfReportsWrapper,
+			resultsJSONReportsWrapper,
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,

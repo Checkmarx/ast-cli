@@ -112,6 +112,7 @@ const (
 	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
 	ScaExcludeResultTypesParam              = "exclude-result-types"
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
+	CliType                                 = "cli"
 )
 
 var (
@@ -179,6 +180,7 @@ func NewResultsCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 	bflWrapper wrappers.BflWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
@@ -198,7 +200,7 @@ func NewResultsCommand(
 			),
 		},
 	}
-	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper,
+	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
 		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
@@ -256,6 +258,7 @@ func resultShowSubCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -270,12 +273,13 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
+		printer.FormatJSONv2,
 		printer.FormatSummary,
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
@@ -1008,6 +1012,7 @@ func runGetResultCommand(
 	scanWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -1063,7 +1068,7 @@ func runGetResultCommand(
 		}
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-			policyResponseModel, resultsPdfReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
+			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 		return err
 	}
@@ -1162,6 +1167,7 @@ func CreateScanReport(
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	scan *wrappers.ScanResponseModel,
 	reportTypes,
 	formatPdfToEmail,
@@ -1202,7 +1208,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, featureFlagsWrapper, agent)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -1380,6 +1386,7 @@ func createReport(format,
 	summary *wrappers.ResultSummary,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	agent string) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
@@ -1396,6 +1403,10 @@ func createReport(format,
 	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatJSONv2) && isValidScanStatus(summary.Status, printer.FormatJSONv2) {
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
+		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
@@ -1773,6 +1784,92 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	jsonReportsPayload := &wrappers.JSONReportsPayload{}
+	pollingResp := &wrappers.JSONPollingResponse{}
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
+	newScanReportEnabled := flagResponse.Status
+	if newScanReportEnabled {
+		jsonReportsPayload.ReportName = reportNameImprovedScanReport
+	} else {
+		jsonReportsPayload.ReportName = reportNameScanReport
+	}
+
+	jsonOptionsSections, jsonOptionsEngines := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
+
+	jsonReportsPayload.ReportType = CliType
+	jsonReportsPayload.FileFormat = printer.FormatJSON
+	jsonReportsPayload.Data.ScanID = summary.ScanID
+	jsonReportsPayload.Data.ProjectID = summary.ProjectID
+	jsonReportsPayload.Data.BranchName = summary.BranchName
+	jsonReportsPayload.Data.Scanners = jsonOptionsEngines
+	jsonReportsPayload.Data.Sections = jsonOptionsSections
+
+	jsonReportID, webErr, err := jsonWrapper.GenerateJSONReport(jsonReportsPayload)
+	if webErr != nil {
+		return errors.Errorf("Error generating JSON report - %s", webErr.Message)
+	}
+	if err != nil {
+		return errors.Errorf("Error generating JSON report - %s", err.Error())
+	}
+	log.Println("Generating JSON report")
+	pollingResp.Status = startedStatus
+	for pollingResp.Status == startedStatus || pollingResp.Status == requestedStatus {
+		pollingResp, webErr, err = jsonWrapper.CheckJSONReportStatus(jsonReportID.ReportID)
+		if err != nil || webErr != nil {
+			return errors.Wrapf(err, "%v", webErr)
+		}
+		logger.PrintfIfVerbose("JSON report status: %s", pollingResp.Status)
+		time.Sleep(delayValueForReport * time.Millisecond)
+	}
+	if pollingResp.Status != completedStatus {
+		return errors.Errorf("JSON generating failed - Current status: %s", pollingResp.Status)
+	}
+
+	minioEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.MinioEnabled)
+	infoPathType := ""
+	if minioEnabled.Status {
+		infoPathType = jsonReportID.ReportID
+	} else {
+		infoPathType = pollingResp.URL
+	}
+	err = jsonWrapper.DownloadJSONReport(infoPathType, summaryRpt, minioEnabled.Status)
+	if err != nil {
+		return errors.Wrapf(err, "%s", "Failed downloading JSON report")
+	}
+	return nil
+}
+
+func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string) {
+	jsonOptionsSections = []string{
+		"ScanSummary",
+		"ExecutiveSummary",
+		"ScanResults",
+	}
+
+	var jsonOptionsEnginesMap = map[string]string{
+		commonParams.ScaType:        "SCA",
+		commonParams.SastType:       "SAST",
+		commonParams.KicsType:       "KICS",
+		commonParams.IacType:        "KICS",
+		commonParams.ContainersType: "Containers",
+		commonParams.ScsType:        "Microengines",
+	}
+	if jsonOptionsEngines == nil {
+		for _, engine := range enabledEngines {
+			if jsonOptionsEnginesMap[engine] != "" {
+				jsonOptionsEngines = append(jsonOptionsEngines, jsonOptionsEnginesMap[engine])
+			}
+		}
+	}
+
+	if reportName == reportNameImprovedScanReport {
+		jsonOptionsSections = translateReportSectionsForImproved(jsonOptionsSections)
+	}
+
+	return jsonOptionsSections, jsonOptionsEngines
+}
+
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
 	var err error
 	var resultsJSON []byte
@@ -1807,7 +1904,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 		return err
 	}
 
-	pdfReportsPayload.ReportType = "cli"
+	pdfReportsPayload.ReportType = CliType
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
 	pdfReportsPayload.Data.ProjectID = summary.ProjectID
