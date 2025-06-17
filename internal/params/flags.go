@@ -160,7 +160,7 @@ const (
 	ConfigFilePathFlag           = "config-file-path"
 	LogFileFlag                  = "log-file"
 	LogFileUsage                 = "Path to the debug log file"
-	LogFileStdFlag               = "log-file-std"
+	LogFileStdoutFlag            = "log-file-stdout"
 	LogFileStdUsage              = "Print log to both console and a file"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"

@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -104,7 +105,7 @@ func NewAstCLI(
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
-	rootCmd.PersistentFlags().String(params.LogFileStdFlag, "", params.LogFileStdUsage)
+	rootCmd.PersistentFlags().String(params.LogFileStdoutFlag, "", params.LogFileStdUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
@@ -345,14 +346,13 @@ func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
 func LoadDebugLogConfiguration(cmd *cobra.Command) error {
-	fmt.Println("Loading debug log configuration...")
 	if cmd.PersistentFlags().Changed(params.LogFileFlag) {
 		if err := processLogFlag(cmd, params.LogFileFlag); err != nil {
 			return err
 		}
 	}
-	if cmd.PersistentFlags().Changed(params.LogFileStdFlag) {
-		if err := processLogFlag(cmd, params.LogFileStdFlag); err != nil {
+	if cmd.PersistentFlags().Changed(params.LogFileStdoutFlag) {
+		if err := processLogFlag(cmd, params.LogFileStdoutFlag); err != nil {
 			return err
 		}
 	}
@@ -361,24 +361,55 @@ func LoadDebugLogConfiguration(cmd *cobra.Command) error {
 
 func processLogFlag(cmd *cobra.Command, flag string) error {
 	logFilePath, _ := cmd.PersistentFlags().GetString(flag)
+
 	if strings.TrimSpace(logFilePath) == "" {
 		return errors.New("flag needs an argument: --" + flag)
 	}
-	if !strings.Contains(logFilePath, ".") {
-		logFilePath += ".txt" // Default file type if none is provided
+
+	// Check if the path exists
+	fileInfo, err := os.Stat(logFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+
+			// Validate file type (should be .log)
+			if filepath.Ext(logFilePath) != ".log" {
+				return fmt.Errorf("Invalid file type: %s. Expected a .log file", logFilePath)
+			}
+
+			// Creating a file if file is not exist
+			fmt.Printf("File does not exist: %s. \nCreating file...\n", logFilePath)
+			file, err := os.OpenFile(logFilePath, os.O_CREATE, 0666)
+			if err != nil {
+				return fmt.Errorf("Error creating file %s: %v", logFilePath, err)
+			}
+			defer file.Close()
+			fileInfo, _ = os.Stat(logFilePath) // Refresh file info after creation
+		} else {
+			return fmt.Errorf("Unexpected error checking file path: %v", err)
+		}
 	}
-	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+
+	// Validate that the path is a file, not a directory
+	if fileInfo.IsDir() {
+		return fmt.Errorf("Invalid path: %s is a directory, expected a file", logFilePath)
+	}
+
+	// Validate file type (should be .log)
+	if filepath.Ext(logFilePath) != ".log" {
+		return fmt.Errorf("Invalid file type: %s. Expected a .log file", logFilePath)
+	}
+
+	// Validate file permissions (check for write permission)
+	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		if os.IsPermission(err) {
 			return fmt.Errorf("Permission denied: Ensure you have the necessary rights to access %s", logFilePath)
-		} else if os.IsNotExist(err) {
-			return fmt.Errorf("File does not exist: %s. Please check the path or create the file manually", logFilePath)
 		} else {
 			return fmt.Errorf("Unexpected error while opening the file %s: %v", logFilePath, err)
 		}
 	}
 	var multiWriter io.Writer
-	if flag == params.LogFileStdFlag {
+	if flag == params.LogFileStdoutFlag {
 		multiWriter = io.MultiWriter(file, os.Stdout)
 	} else {
 		multiWriter = io.MultiWriter(file)
