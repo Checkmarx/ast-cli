@@ -697,7 +697,7 @@ func scanCreateSubCommand(
 		createScanCmd,
 		printer.FormatSummaryConsole,
 		printer.FormatJSON,
-		printer.FormatJSONcxOne,
+		printer.FormatJSONv2,
 		printer.FormatSummary,
 		printer.FormatSarif,
 		printer.FormatSbom,
@@ -712,10 +712,8 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ProjecPrivatePackageFlag, "", projectPrivatePackageFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ScaPrivatePackageVersionFlag, "", scaPrivatePackageVersionFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJSONToEmailFlag, "", jsonToEmailFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
-	createScanCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJSONOptionsDataSections, jsonOptionsFlagDescription)
 	createScanCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	createScanCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	createScanCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -2133,8 +2131,6 @@ func createReportsAfterScan(
 	reportFormats, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 	formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 	formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
-	formatJSONToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
-	formatJSONOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
 	formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 	agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 	scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
@@ -2170,8 +2166,6 @@ func createReportsAfterScan(
 		reportFormats,
 		formatPdfToEmail,
 		formatPdfOptions,
-		formatJSONToEmail,
-		formatJSONOptions,
 		formatSbomOptions,
 		targetFile,
 		targetPath,

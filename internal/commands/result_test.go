@@ -732,88 +732,15 @@ func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
 }
 
-func TestRunGetResultsGeneratingJsonCxOneReportWithInvalidEmail(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
-	err := execCmdNotNilAssertion(t,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--report-json-email", "ab@cd.pt,invalid")
-	assert.Equal(t, err.Error(), "report not sent, invalid email address: invalid", "Wrong expected error message")
-}
-
-func TestRunGetResultsGeneratingJsonCxOneReportWithInvalidOptions(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
-	err := execCmdNotNilAssertion(t,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--report-json-options", "invalid")
-	assert.Equal(t, err.Error(), "report option \"invalid\" unavailable", "Wrong expected error message")
-}
-
-func TestRunGetResultsGeneratingJsonCxOneReportWithInvalidImprovedOptions(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
-	err := execCmdNotNilAssertion(t,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--report-json-options", "scan-information")
-	assert.Equal(t, err.Error(), "report option \"scan-information\" unavailable", "Wrong expected error message")
-}
-
-func TestRunGetResultsGeneratingJsonCxOneReportWithEmailAndOptions(t *testing.T) {
+func TestRunGetResultsGeneratingJsonV2Report(t *testing.T) {
 	clearFlags()
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
-		"--report-format", "json-cxOne",
+		"--report-format", "json-v2",
 		"--scan-id", "MOCK",
-		"--report-pdf-email", "ab@cd.pt,test@test.pt",
-		"--report-pdf-options", "Iac-Security,Sast,Sca,ScanSummary")
-	assert.NilError(t, err)
-}
-
-func TestRunGetResultsGeneratingJsonCxOneReportWithOptionsImprovedMappingHappens(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--report-pdf-email", "ab@cd.pt,test@test.pt",
-		"--report-pdf-options", "Iac-Security,Sast,Sca,scansummary,scanresults")
-	assert.NilError(t, err)
-}
-
-func TestRunGetResultsGeneratingJsoncxOneReportWithInvalidOptionsImproved(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--report-json-email", "ab@cd.pt,test@test.pt",
-		"--report-json-options", "Iac-Security,Sast,Sca,scan-information")
-	assert.Error(t, err, "report option \"scan-information\" unavailable")
-}
-
-func TestRunGetResultsGeneratingJsonCxOneReportWithOptions(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd,
-		"results", "show",
-		"--report-format", "json-cxOne",
-		"--scan-id", "MOCK",
-		"--output-name", fileName,
-		"--report-json-options", "Iac-Security,Sast,Sca,ScanSummary")
+		"--output-name", fileName)
 	defer func() {
 		removeFileBySuffix(t, printer.FormatJSON)
 		fmt.Println("test file removed!")

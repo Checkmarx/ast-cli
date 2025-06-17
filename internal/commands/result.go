@@ -284,7 +284,7 @@ func resultShowSubCommand(
 	addResultFormatFlag(
 		resultShowCmd,
 		printer.FormatJSON,
-		printer.FormatJSONcxOne,
+		printer.FormatJSONv2,
 		printer.FormatSummary,
 		printer.FormatSummaryConsole,
 		printer.FormatSarif,
@@ -297,10 +297,8 @@ func resultShowSubCommand(
 		printer.FormatSonar,
 	)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfToEmailFlag, "", pdfToEmailFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONToEmailFlag, "", jsonToEmailFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportSbomFormatFlag, services.DefaultSbomOption, sbomReportFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatPdfOptionsFlag, defaultPdfOptionsDataSections, pdfOptionsFlagDescription)
-	resultShowCmd.PersistentFlags().String(commonParams.ReportFormatJSONOptionsFlag, defaultJSONOptionsDataSections, jsonOptionsFlagDescription)
 	resultShowCmd.PersistentFlags().String(commonParams.TargetFlag, "cx_result", "Output file")
 	resultShowCmd.PersistentFlags().String(commonParams.TargetPathFlag, ".", "Output Path")
 	resultShowCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterResultsListFlagUsage)
@@ -1031,8 +1029,6 @@ func runGetResultCommand(
 		format, _ := cmd.Flags().GetString(commonParams.TargetFormatFlag)
 		formatPdfToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfToEmailFlag)
 		formatPdfOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatPdfOptionsFlag)
-		formatJSONToEmail, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONToEmailFlag)
-		formatJSONOptions, _ := cmd.Flags().GetString(commonParams.ReportFormatJSONOptionsFlag)
 		formatSbomOptions, _ := cmd.Flags().GetString(commonParams.ReportSbomFormatFlag)
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
@@ -1077,7 +1073,7 @@ func runGetResultCommand(
 		}
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
-			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions, formatJSONToEmail, formatJSONOptions,
+			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
 		return err
 	}
@@ -1181,8 +1177,6 @@ func CreateScanReport(
 	reportTypes,
 	formatPdfToEmail,
 	formatPdfOptions,
-	formatJSONToEmail,
-	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1218,8 +1212,7 @@ func CreateScanReport(
 		}
 	}
 	for _, reportType := range reportList {
-		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatJSONToEmail,
-			formatJSONOptions, formatSbomOptions, targetFile,
+		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
 			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
 		if err != nil {
 			return nil, err
@@ -1391,8 +1384,6 @@ func isValidScanStatus(status, format string) bool {
 func createReport(format,
 	formatPdfToEmail,
 	formatPdfOptions,
-	formatJSONToEmail,
-	formatJSONOptions,
 	formatSbomOptions,
 	targetFile,
 	targetPath string,
@@ -1418,9 +1409,9 @@ func createReport(format,
 		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
 		return exportJSONResults(jsonRpt, results)
 	}
-	if printer.IsFormat(format, printer.FormatJSONcxOne) && isValidScanStatus(summary.Status, printer.FormatJSONcxOne) {
+	if printer.IsFormat(format, printer.FormatJSONv2) && isValidScanStatus(summary.Status, printer.FormatJSONv2) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
-		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, formatJSONToEmail, formatJSONOptions, featureFlagsWrapper)
+		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, featureFlagsWrapper)
 	}
 	if printer.IsFormat(format, printer.FormatGLSast) {
 		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
@@ -1798,8 +1789,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 	return nil
 }
 
-func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt, formatJSONToEmail,
-	jsonOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JSONReportsPayload{}
 	pollingResp := &wrappers.JSONPollingResponse{}
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
@@ -1810,7 +1800,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 		jsonReportsPayload.ReportName = reportNameScanReport
 	}
 
-	jsonOptionsSections, jsonOptionsEngines, err := parseJSONOptions(jsonOptions, summary.EnginesEnabled, jsonReportsPayload.ReportName)
+	jsonOptionsSections, jsonOptionsEngines, err := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
 	if err != nil {
 		return err
 	}
@@ -1823,26 +1813,12 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 	jsonReportsPayload.Data.Scanners = jsonOptionsEngines
 	jsonReportsPayload.Data.Sections = jsonOptionsSections
 
-	// will generate pdf report and send it to the email list
-	// instead of saving it to the file system
-	if formatJSONToEmail != "" {
-		emailList, validateErr := validateEmails(formatJSONToEmail)
-		if validateErr != nil {
-			return validateErr
-		}
-		jsonReportsPayload.ReportType = reportTypeEmail
-		jsonReportsPayload.Data.Email = emailList
-	}
 	jsonReportID, webErr, err := jsonWrapper.GenerateJSONReport(jsonReportsPayload)
 	if webErr != nil {
 		return errors.Errorf("Error generating JSON report - %s", webErr.Message)
 	}
 	if err != nil {
 		return errors.Errorf("Error generating JSON report - %s", err.Error())
-	}
-	if jsonReportsPayload.ReportType == reportTypeEmail {
-		log.Println("Sending JSON report to: ", jsonReportsPayload.Data.Email)
-		return nil
 	}
 	log.Println("Generating JSON report")
 	pollingResp.Status = startedStatus
@@ -1872,30 +1848,20 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 	return nil
 }
 
-func parseJSONOptions(jsonOptions string, enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string, err error) {
-	var jsonOptionsSectionsMap = map[string]string{
-		"scansummary":      "ScanSummary",
-		"executivesummary": "ExecutiveSummary",
-		"scanresults":      "ScanResults",
+func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string, err error) {
+	jsonOptionsSections = []string{
+		"ScanSummary",
+		"ExecutiveSummary",
+		"ScanResults",
 	}
 
 	var jsonOptionsEnginesMap = map[string]string{
-		commonParams.ScaType:  "SCA",
-		commonParams.SastType: "SAST",
-		commonParams.KicsType: "KICS",
-		commonParams.IacType:  "KICS",
-	}
-
-	jsonOptions = strings.ToLower(strings.ReplaceAll(jsonOptions, " ", ""))
-	options := strings.Split(strings.ReplaceAll(jsonOptions, "\n", ""), ",")
-	for _, s := range options {
-		if jsonOptionsEnginesMap[s] != "" {
-			jsonOptionsEngines = append(jsonOptionsEngines, jsonOptionsEnginesMap[s])
-		} else if jsonOptionsSectionsMap[s] != "" {
-			jsonOptionsSections = append(jsonOptionsSections, jsonOptionsSectionsMap[s])
-		} else {
-			return nil, nil, errors.Errorf("report option \"%s\" unavailable", s)
-		}
+		commonParams.ScaType:        "SCA",
+		commonParams.SastType:       "SAST",
+		commonParams.KicsType:       "KICS",
+		commonParams.IacType:        "KICS",
+		commonParams.ContainersType: "Containers",
+		commonParams.ScsType:        "Microengines",
 	}
 	if jsonOptionsEngines == nil {
 		for _, engine := range enabledEngines {
