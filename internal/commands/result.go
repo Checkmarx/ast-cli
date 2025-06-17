@@ -88,18 +88,13 @@ const (
 	completedStatus           = "completed"
 	pdfToEmailFlagDescription = "Send the PDF report to the specified email address." +
 		" Use \",\" as the delimiter for multiple emails"
-	jsonToEmailFlagDescription = "Send the json report to the specified email address." +
-		" Use \",\" as the delimiter for multiple emails"
 	pdfOptionsFlagDescription = "Sections to generate PDF report. Available options: Iac-Security,Sast,Sca," +
 		defaultPdfOptionsDataSections
-	jsonOptionsFlagDescription = "Sections to generate Json report. Available options: Iac-Security,Sast,Sca," +
-		defaultJSONOptionsDataSections
 	sbomReportFlagDescription               = "Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson"
 	reportNameScanReport                    = "scan-report"
 	reportNameImprovedScanReport            = "improved-scan-report"
 	reportTypeEmail                         = "email"
 	defaultPdfOptionsDataSections           = "ScanSummary,ExecutiveSummary,ScanResults"
-	defaultJSONOptionsDataSections          = "ScanSummary,ExecutiveSummary,ScanResults"
 	exploitablePathFlagDescription          = "Enable or disable exploitable path in scan. Available options: true,false"
 	scaLastScanTimeFlagDescription          = "SCA last scan time. Available options: integer above 1"
 	projectPrivatePackageFlagDescription    = "Enable or disable project private package. Available options: true,false"
@@ -1800,10 +1795,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 		jsonReportsPayload.ReportName = reportNameScanReport
 	}
 
-	jsonOptionsSections, jsonOptionsEngines, err := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
-	if err != nil {
-		return err
-	}
+	jsonOptionsSections, jsonOptionsEngines := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
 
 	jsonReportsPayload.ReportType = CliType
 	jsonReportsPayload.FileFormat = printer.FormatJSON
@@ -1848,7 +1840,7 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 	return nil
 }
 
-func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string, err error) {
+func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string) {
 	jsonOptionsSections = []string{
 		"ScanSummary",
 		"ExecutiveSummary",
@@ -1875,7 +1867,7 @@ func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSe
 		jsonOptionsSections = translateReportSectionsForImproved(jsonOptionsSections)
 	}
 
-	return jsonOptionsSections, jsonOptionsEngines, nil
+	return jsonOptionsSections, jsonOptionsEngines
 }
 
 func exportJSONSummaryResults(targetFile string, results *wrappers.ResultSummary) error {
