@@ -2237,3 +2237,24 @@ func TestCreateScanWith_ScaResolver_Source_as_Zip(t *testing.T) {
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Assert(t, strings.Contains(err.Error(), ScaResolverZipNotSupportedErr), err.Error())
 }
+
+func Test_parseArgs(t *testing.T) {
+	tests := []struct {
+		inputString string
+		lenOfArgs   int
+	}{
+		{"hitesh", 1},
+		{`test test1`, 2},
+		{"--gradle-parameters='-Prepository.proxy.url=123 -Prepository.proxy.username=123 -Prepository.proxy.password=123' --log-level Debug", 3},
+	}
+
+	for _, test := range tests {
+		fmt.Println("test ::", test)
+		result := parseArgs(test.inputString)
+		if len(result) != test.lenOfArgs {
+			fmt.Println("len:: ", len(result))
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+
+}
