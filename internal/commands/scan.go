@@ -1552,21 +1552,9 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			scaResolverResultsFile,
 		}
 		if scaResolverParams != "" {
-			// scaResolverParamsArray := strings.Split(scaResolverParams, " ")
-			// // logger.PrintfIfVerbose(fmt.Sprintf("HM:: scaResolverParamsArray %t", scaResolverParamsArray))
-
-			// for index, val := range scaResolverParamsArray {
-			// 	logger.PrintfIfVerbose("HM:: index %v and params %v", index, val)
-			// }
-			// logger.PrintfIfVerbose("HM:: scaResolverParamsArray  %v", scaResolverParamsArray)
-
 			parsedscaResolverParams := parseArgs(scaResolverParams)
-			// parsedscaResolverParams := strings.Fields(scaResolverParams)
 			args = append(args, parsedscaResolverParams...)
 		}
-		// logger.PrintfIfVerbose("HM:: scaResolverParams string %s", scaResolverParams)
-		// logger.PrintfIfVerbose("HM:: scaResolverParams string %s", scaResolverParams)
-
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
 		out, err := exec.Command(scaResolver, args...).Output()
 		logger.PrintIfVerbose(string(out))
