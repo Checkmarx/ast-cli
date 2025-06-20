@@ -2252,7 +2252,6 @@ func Test_parseArgs(t *testing.T) {
 		fmt.Println("test ::", test)
 		result := parseArgs(test.inputString)
 		if len(result) != test.lenOfArgs {
-			fmt.Println("len:: ", len(result))
 			t.Errorf(" test case failed for params %v", test)
 		}
 	}
