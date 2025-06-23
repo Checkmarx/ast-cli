@@ -610,9 +610,8 @@ func TestCreateRealtimeKicsInvalidFile(t *testing.T) {
 
 func TestCreateRealtimeKicsWithEngine(t *testing.T) {
 	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue, engineFlag, engineValue}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
-	assert.NilError(t, err)
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, "Please verify if engine is running", err.Error())
 }
 
 func TestCreateRealtimeKicsInvalidEngine(t *testing.T) {
