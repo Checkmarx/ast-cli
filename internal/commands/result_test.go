@@ -724,6 +724,24 @@ func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatPDF)
 }
 
+func TestRunGetResultsGeneratingJsonV2Report(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd,
+		"results", "show",
+		"--report-format", "json-v2",
+		"--scan-id", "MOCK",
+		"--output-name", fileName)
+	defer func() {
+		removeFileBySuffix(t, printer.FormatJSON)
+		fmt.Println("test file removed!")
+	}()
+	assert.NilError(t, err)
+	_, err = os.Stat(fmt.Sprintf("%s.%s", fileName, printer.FormatJSON))
+	assert.NilError(t, err, "report file should exist: "+fileName+printer.FormatJSON)
+}
+
 func TestSBOMReportInvalidSBOMOption(t *testing.T) {
 	err := execCmdNotNilAssertion(t,
 		"results", "show",

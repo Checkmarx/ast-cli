@@ -1591,6 +1591,23 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 
 }
 
+func TestScanGeneratingJsonV2Report(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key generating json to email report should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "json-v2",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
 //func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
 //	_, projectName := getRootProject(t)
 //
@@ -1832,6 +1849,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
+				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -1860,6 +1878,7 @@ func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
+				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -2338,4 +2357,19 @@ func deletePreset(engine, presetID string) error {
 	}
 
 	return nil
+}
+
+func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), params.ScaType,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScaResolverFlag), "ScaResolver.exe",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
 }

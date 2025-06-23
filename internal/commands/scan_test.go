@@ -62,8 +62,9 @@ const (
 	InvalidEngineMessage                   = "Please verify if engine is installed"
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
-	outputFileName              = "test_output.log"
-	noUpdatesForExistingProject = "No tags to update. Skipping project update."
+	outputFileName                = "test_output.log"
+	noUpdatesForExistingProject   = "No tags to update. Skipping project update."
+	ScaResolverZipNotSupportedErr = "Scanning Zip files is not supported by ScaResolver.Please use non-zip source"
 )
 
 func TestScanHelp(t *testing.T) {
