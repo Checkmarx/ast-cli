@@ -155,46 +155,32 @@ func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuc
 
 func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
 }
 
 func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
 }
 
 func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
 	// When no container scan type is provided, we will ignore the container images flag and its value
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
 	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
 }
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
-}
-
-func TestCreateContainersScan_ContainerFFIsOff_FailCreatingScan(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "container-security"}
-	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	fmt.Println(err)
-	assert.ErrorContains(t, err, "you would need to purchase a license")
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -283,6 +269,51 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 	}
 	err := execCmdNotNilAssertion(t, baseArgs...)
 	assert.Assert(t, strings.Contains(err.Error(), scaPathError), err.Error())
+}
+
+func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
+	tests := []struct {
+		name              string
+		sourceDir         string
+		scaResolver       string
+		scaResolverParams string
+		projectName       string
+		expectedError     string
+	}{
+		{
+			name:              "ScaResolver wrong scaResolver path",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "params",
+			projectName:       "ProjectName",
+			expectedError:     "/ScaResolver: no such file or directory",
+		},
+		{
+			name:              "Invalid scaResolverParams format",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "\"unclosed quote",
+			projectName:       "ProjectName",
+			expectedError:     "EOF found when expecting closing quote", // Expected shlex error
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
+		})
+	}
+}
+
+func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
+	var sourceDir = "/sourceDir"
+	var scaResolver = ""
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	assert.Assert(t, err == nil)
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
@@ -1700,6 +1731,8 @@ func Test_validateThresholds(t *testing.T) {
 }
 
 func TestValidateContainerImageFormat(t *testing.T) {
+	var errMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar"
+
 	testCases := []struct {
 		name           string
 		containerImage string
@@ -1711,34 +1744,29 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			name:           "Valid container image format",
-			containerImage: "service.test.whatever.image:8443/service/registries:custom-value",
-			expectedError:  nil,
-		},
-		{
-			name:           "Valid container image format",
-			containerImage: "nginx",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			name:           "Valid compressed container image format",
+			containerImage: "nginx.tar",
+			expectedError:  errors.Errorf("--container-images flag error: nginx.tar does not exist"),
 		},
 		{
 			name:           "Missing image name",
 			containerImage: ":latest",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Missing image tag",
 			containerImage: "nginx:",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Empty image name and tag",
 			containerImage: ":",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Extra colon",
 			containerImage: "nginx:latest:extra",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 	}
 
@@ -1756,6 +1784,109 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			if err == nil && tc.expectedError != nil {
 				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
+		})
+	}
+}
+
+func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flag
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+
+	// Set test values for container images (comma-separated private artifactory images)
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType // Use string instead of slice
+	defer func() {
+		actualScanTypes = originalScanTypes // Restore original value instead of nil
+	}()
+
+	// Execute
+	result := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s', but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
+func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name                 string
+		resubmitConfig       []wrappers.Config
+		expectedCustomImages string
+	}{
+		{
+			name: "When UserCustomImages is valid string, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			expectedCustomImages: "image1:tag1,image2:tag2",
+		},
+		{
+			name: "When UserCustomImages is empty string, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "",
+					},
+				},
+			},
+			expectedCustomImages: "",
+		},
+		{
+			name: "When UserCustomImages is nil, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: nil,
+					},
+				},
+			},
+			expectedCustomImages: "",
+		},
+		{
+			name: "When config.Value doesn't have UserCustomImages key, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type:  commonParams.ContainersType,
+					Value: map[string]interface{}{},
+				},
+			},
+			expectedCustomImages: "",
+		},
+	}
+
+	// Run each test case
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Initialize containerConfig
+			containerConfig := &wrappers.ContainerConfig{}
+
+			// Call the function under test
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig)
+
+			// Assert the result
+			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
+				"Expected UserCustomImages to be %q but got %q", tc.expectedCustomImages, containerConfig.UserCustomImages)
 		})
 	}
 }
@@ -2145,36 +2276,32 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 
 func TestValidateScanTypes(t *testing.T) {
 	tests := []struct {
-		name                      string
-		userScanTypes             string
-		userSCSScanTypes          string
-		allowedEngines            map[string]bool
-		containerEngineCLIEnabled bool
-		expectedError             string
+		name             string
+		userScanTypes    string
+		userSCSScanTypes string
+		allowedEngines   map[string]bool
+		expectedError    string
 	}{
 		{
-			name:                      "No licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "scs,secret-detection",
-			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"scs\" scan type does",
+			name:             "No licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "sast,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"scs\" scan type does",
 		},
 		{
-			name:                      "SCS license available, secret-detection not available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"secret-detection\" scan type does not exist",
+			name:             "SCS license available, secret-detection not available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
 		},
 		{
-			name:                      "All licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": true},
-			containerEngineCLIEnabled: true,
-			expectedError:             "",
+			name:             "All licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			expectedError:    "",
 		},
 	}
 
@@ -2198,23 +2325,4 @@ func TestValidateScanTypes(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
-	mock.FFErr = nil
-
-	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
-	assert.Assert(t, result, "expected result to be true")
-}
-
-func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	mock.FFErr = errors.New("something went wrong while fetching ff")
-
-	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
-
-	assert.Assert(t, !result, "expected result to be false")
 }
