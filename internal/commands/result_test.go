@@ -782,7 +782,6 @@ func TestRunResultsShow_ContainersFFIsOn_includeContainersResult(t *testing.T) {
 
 func TestRunResultsShow_jetbrainsIsNotSupported_excludeContainersResult(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json", "--agent", "jetbrains")
 	assertTypePresentJSON(t, params.ContainersType, 0)
 	// Remove generated json file

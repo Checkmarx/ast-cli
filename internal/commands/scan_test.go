@@ -148,7 +148,6 @@ func TestCreateScan(t *testing.T) {
 
 func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
