@@ -653,7 +653,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -664,7 +663,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptions(t *testing.T) {
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -675,7 +673,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidImprovedOptions(t *testing.T
 
 func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
