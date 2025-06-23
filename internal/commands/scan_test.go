@@ -591,10 +591,9 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 }
 
 func TestCreateRealtimeKics(t *testing.T) {
-	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValue}
-	cmd := createASTTestCommand()
-	err := executeTestCommand(cmd, baseArgs...)
-	assert.NilError(t, err)
+	baseArgs := []string{scanCommand, kicsRealtimeCommand, fileSourceFlag, fileSourceValueEmpty, engineFlag, engineValue}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Error(t, err, "Please verify if engine is running", err.Error())
 }
 
 func TestCreateRealtimeKicsMissingFile(t *testing.T) {
