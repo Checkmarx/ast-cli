@@ -643,7 +643,6 @@ func TestRunGetBFLByScanIdAndQueryIdWithFormatList(t *testing.T) {
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidEmail(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	err := execCmdNotNilAssertion(t,
 		"results", "show",
 		"--report-format", "pdf",
@@ -689,7 +688,6 @@ func TestRunGetResultsGeneratingPdfReportWithEmailAndOptions(t *testing.T) {
 
 func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -702,7 +700,6 @@ func TestRunGetResultsGeneratingPdfReportWithOptionsImprovedMappingHappens(t *te
 
 func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: true}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -715,7 +712,6 @@ func TestRunGetResultsGeneratingPdfReportWithInvalidOptionsImproved(t *testing.T
 
 func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",
@@ -734,7 +730,6 @@ func TestRunGetResultsGeneratingPdfReportWithOptions(t *testing.T) {
 
 func TestRunGetResultsGeneratingJsonV2Report(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.NewScanReportEnabled, Status: false}
 	cmd := createASTTestCommand()
 	err := executeTestCommand(cmd,
 		"results", "show",

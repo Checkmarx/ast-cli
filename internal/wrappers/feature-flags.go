@@ -57,15 +57,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 		},
 	},
 	{
-		CommandName: "cx results show",
-		FeatureFlags: []FlagBase{
-			{
-				Name:    NewScanReportEnabled,
-				Default: false,
-			},
-		},
-	},
-	{
 		CommandName: "cx triage update",
 		FeatureFlags: []FlagBase{
 			{

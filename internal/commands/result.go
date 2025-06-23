@@ -1787,13 +1787,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JSONReportsPayload{}
 	pollingResp := &wrappers.JSONPollingResponse{}
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
-	newScanReportEnabled := flagResponse.Status
-	if newScanReportEnabled {
-		jsonReportsPayload.ReportName = reportNameImprovedScanReport
-	} else {
-		jsonReportsPayload.ReportName = reportNameScanReport
-	}
+	jsonReportsPayload.ReportName = reportNameScanReport
 
 	jsonOptionsSections, jsonOptionsEngines := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
 
@@ -1891,19 +1885,11 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.NewScanReportEnabled)
-	newScanReportEnabled := flagResponse.Status
-	if newScanReportEnabled {
-		pdfReportsPayload.ReportName = reportNameImprovedScanReport
-	} else {
-		pdfReportsPayload.ReportName = reportNameScanReport
-	}
-
+	pdfReportsPayload.ReportName = reportNameScanReport
 	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled, pdfReportsPayload.ReportName)
 	if err != nil {
 		return err
 	}
-
 	pdfReportsPayload.ReportType = CliType
 	pdfReportsPayload.FileFormat = printer.FormatPDF
 	pdfReportsPayload.Data.ScanID = summary.ScanID
