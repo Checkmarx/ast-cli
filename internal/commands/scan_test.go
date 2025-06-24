@@ -286,7 +286,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "params",
 			projectName:       "ProjectName",
-			expectedError:     "no such file or directory",
+			expectedError:     "/ScaResolver: no such file or directory",
 		},
 		{
 			name:              "Invalid scaResolverParams format",
@@ -294,7 +294,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "\"unclosed quote",
 			projectName:       "ProjectName",
-			expectedError:     "no such file or directory",
+			expectedError:     "EOF found when expecting closing quote", // Expected shlex error
 		},
 	}
 
