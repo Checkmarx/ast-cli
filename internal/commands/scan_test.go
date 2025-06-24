@@ -393,30 +393,11 @@ func TestCreateScanExcludeGitFolderChildren(t *testing.T) {
 }
 
 func TestCreateScanBranches(t *testing.T) {
-	// Save original viper settings and environment variable
-	originalSettings := viper.AllSettings()
-	originalEnvValue := os.Getenv("CX_BRANCH")
-
-	defer func() {
-		// Restore environment variable
-		if originalEnvValue != "" {
-			os.Setenv("CX_BRANCH", originalEnvValue)
-		} else {
-			os.Unsetenv("CX_BRANCH")
-		}
-		// Restore viper settings
-		viper.Reset()
-		for key, value := range originalSettings {
-			viper.Set(key, value)
-		}
-	}()
-
 	// Test Missing branch either in flag and in the environment variable
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
 	assert.Assert(t, err.Error() == errorMissingBranch)
 
-	// Set environment variable and bind it
-	os.Setenv("CX_BRANCH", "branch_from_environment_variable")
+	// Bind cx_branch environment variable
 	_ = viper.BindEnv("cx_branch", "CX_BRANCH")
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
 
