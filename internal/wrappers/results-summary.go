@@ -873,7 +873,7 @@ const SummaryMarkdownCompletedTemplate = `
 
 | SAST | IaC Security | SCA |{{if .SCSEnabled}} SCS |{{end}}{{if .ContainersEnabled}} Containers |{{end}}
 |:----------:|:----------:|:---------:|{{if .SCSEnabled}} :----------:|{{end}}{{if .ContainersEnabled}} :----------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{if .ContainersEnabled}}{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if .SCSEnabled}}{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if .ContainersEnabled}}{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 
