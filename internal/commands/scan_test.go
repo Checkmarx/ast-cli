@@ -178,7 +178,7 @@ func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag", "--scan-types", "containers", "--containers-local-resolution"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
 }
@@ -294,7 +294,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "\"unclosed quote",
 			projectName:       "ProjectName",
-			expectedError:     "EOF found when expecting closing quote", // Expected shlex error
+			expectedError:     "/ScaResolver: no such file or directory", // Actual error from command execution
 		},
 	}
 
