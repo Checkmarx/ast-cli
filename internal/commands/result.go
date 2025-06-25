@@ -2764,7 +2764,6 @@ func addPackageInformation(
 	scaPackageModel *[]wrappers.ScaPackageCollection,
 	scaTypeModel *[]wrappers.ScaTypeCollection,
 ) *wrappers.ScanResultsCollection {
-
 	locationsByID, typesByCVE := buildAuxiliaryScaMaps(resultsModel, scaPackageModel, scaTypeModel)
 	scaPackageMap := buildScaPackageMap(*scaPackageModel)
 

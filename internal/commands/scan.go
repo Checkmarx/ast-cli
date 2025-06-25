@@ -1190,7 +1190,6 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 
 func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
-
 		// with --scs-engine "scorecard" set, if flags not defined, scorecard will launch an error
 		if userScanTypes != "" && isScsEnginesFlagSet && scsScorecardSelected {
 			return false, errors.New(ScsRepoRequiredMsg)
