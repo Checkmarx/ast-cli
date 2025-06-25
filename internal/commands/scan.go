@@ -1667,7 +1667,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-func runContainerResolver(cmd *cobra.Command, directoryPath string, containerImageFlag string, containerResolveLocally bool) error {
+func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
 
@@ -1681,9 +1681,9 @@ func runContainerResolver(cmd *cobra.Command, directoryPath string, containerIma
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
-		containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
-		if containerResolverERR != nil {
-			return containerResolverERR
+		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
+		if containerResolverErr != nil {
+			return containerResolverErr
 		}
 	}
 	return nil
