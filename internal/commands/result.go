@@ -1787,7 +1787,7 @@ func exportJSONResults(targetFile string, results *wrappers.ScanResultsCollectio
 func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *wrappers.ResultSummary, summaryRpt string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	jsonReportsPayload := &wrappers.JSONReportsPayload{}
 	pollingResp := &wrappers.JSONPollingResponse{}
-	jsonReportsPayload.ReportName = reportNameScanReport
+	jsonReportsPayload.ReportName = reportNameImprovedScanReport
 
 	jsonOptionsSections, jsonOptionsEngines := parseJSONOptions(summary.EnginesEnabled, jsonReportsPayload.ReportName)
 
@@ -1885,7 +1885,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 	pdfOptions string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	pdfReportsPayload := &wrappers.PdfReportsPayload{}
 	pollingResp := &wrappers.PdfPollingResponse{}
-	pdfReportsPayload.ReportName = reportNameScanReport
+	pdfReportsPayload.ReportName = reportNameImprovedScanReport
 	pdfOptionsSections, pdfOptionsEngines, err := parsePDFOptions(pdfOptions, summary.EnginesEnabled, pdfReportsPayload.ReportName)
 	if err != nil {
 		return err
