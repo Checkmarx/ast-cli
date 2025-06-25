@@ -28,6 +28,7 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -2945,11 +2946,11 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 
 func validateContainerImageFormat(containerImage string) error {
 	if strings.HasSuffix(containerImage, ".tar") {
-
-		var err = util.FileExists(containerImage)
+		_, err := osinstaller.FileExists(containerImage)
 		if err != nil {
 			return errors.Errorf("--container-images flag error: %v", err)
 		}
+
 		return nil
 	}
 
