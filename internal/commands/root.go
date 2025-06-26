@@ -105,7 +105,7 @@ func NewAstCLI(
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
-	rootCmd.PersistentFlags().String(params.LogFileStdoutFlag, "", params.LogFileStdUsage)
+	rootCmd.PersistentFlags().String(params.LogFileStdoutFlag, "", params.LogFileStdOutUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
@@ -147,7 +147,8 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
-
+	_ = viper.BindPFlag(params.LogFileFlag, rootCmd.PersistentFlags().Lookup(params.LogFileFlag))
+	_ = viper.BindPFlag(params.LogFileStdoutFlag, rootCmd.PersistentFlags().Lookup(params.LogFileStdoutFlag))
 	// Set help func
 	rootCmd.SetHelpFunc(
 		func(command *cobra.Command, args []string) {
@@ -415,6 +416,5 @@ func processLogFlag(cmd *cobra.Command, flag string) error {
 		multiWriter = io.MultiWriter(file)
 	}
 	log.SetOutput(multiWriter)
-	viper.Set(params.DebugFlag, true)
 	return nil
 }
