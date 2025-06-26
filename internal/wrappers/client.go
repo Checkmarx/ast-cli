@@ -268,7 +268,7 @@ func SendHTTPRequestByFullURLContentLength(
 
 func addReqMonitor(req *http.Request) *http.Request {
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)
-	if viper.GetBool(commonParams.DebugFlag) {
+	if viper.GetBool(commonParams.DebugFlag) || viper.GetString(commonParams.LogFileFlag) != "" || viper.GetString(commonParams.LogFileStdoutFlag) != "" {
 		trace := &httptrace.ClientTrace{
 			GetConn: func(hostPort string) {
 				startTime = time.Now().UnixNano() / int64(time.Millisecond)
