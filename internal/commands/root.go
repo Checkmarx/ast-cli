@@ -386,7 +386,7 @@ func processLogFlag(cmd *cobra.Command, flag string) error {
 			defer file.Close()
 			fileInfo, _ = os.Stat(logFilePath) // Refresh file info after creation
 		} else {
-			return fmt.Errorf("Unexpected error checking file path: %v", err)
+			return fmt.Errorf("Invalid file path: %v", err)
 		}
 	}
 
