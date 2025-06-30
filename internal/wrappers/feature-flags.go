@@ -14,7 +14,6 @@ const MinioEnabled = "MINIO_ENABLED"
 const SastCustomStateEnabled = "SAST_CUSTOM_STATES_ENABLED"
 const ContainerEngineCLIEnabled = "CONTAINER_ENGINE_CLI_ENABLED"
 const SCSEngineCLIEnabled = "NEW_2MS_SCORECARD_RESULTS_CLI_ENABLED"
-const NewScanReportEnabled = "NEW_SAST_SCAN_REPORT_ENABLED"
 const RiskManagementEnabled = "RISK_MANAGEMENT_IDES_PROJECT_RESULTS_SCORES_API_ENABLED"
 const OssRealtimeEnabled = "OSS_REALTIME_ENABLED"
 const maxRetries = 3
@@ -53,15 +52,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			{
 				Name:    MinioEnabled,
 				Default: true,
-			},
-		},
-	},
-	{
-		CommandName: "cx results show",
-		FeatureFlags: []FlagBase{
-			{
-				Name:    NewScanReportEnabled,
-				Default: false,
 			},
 		},
 	},
