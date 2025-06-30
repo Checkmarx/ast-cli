@@ -2243,7 +2243,7 @@ func Test_parseArgs(t *testing.T) {
 		inputString string
 		lenOfArgs   int
 	}{
-		{"hitesh", 1},
+		{"--log-level Debug --break-on-manifest-failure", 3},
 		{`test test1`, 2},
 		{"--gradle-parameters='-Prepository.proxy.url=123 -Prepository.proxy.username=123 -Prepository.proxy.password=123' --log-level Debug", 3},
 	}

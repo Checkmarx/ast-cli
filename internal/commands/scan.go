@@ -1728,7 +1728,7 @@ func getScaResolverFlags(cmd *cobra.Command) (scaResolverParams, scaResolver str
 		scaResolver = ""
 		scaResolverParams = ""
 	}
-	logger.PrintfIfVerbose("HM:: in getScaResolverFlags scaResolverParams:: %v", scaResolverParams)
+	logger.PrintfIfVerbose("Sca-Resolver params:: %v", scaResolverParams)
 	return scaResolverParams, scaResolver
 }
 
