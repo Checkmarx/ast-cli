@@ -24,6 +24,7 @@ const (
 )
 
 func main() {
+	fmt.Println("git test")
 	var err error
 	bindProxy()
 	bindKeysToEnvAndDefault()
