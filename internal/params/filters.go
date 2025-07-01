@@ -138,6 +138,8 @@ var BaseIncludeFilters = []string{
 	"Directory.Build.props",
 	"*.rs",
 	"*.jsx",
+	"NuGet.Config",
+	".npmrc",
 }
 
 var BaseExcludeFilters = []string{
