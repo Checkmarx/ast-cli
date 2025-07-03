@@ -662,6 +662,12 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
+func TestBranchPrimaryFlag(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	scanID, projectID := createScanWithPrimaryBranchFlag(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
 func TestCancelScan(t *testing.T) {
 	scanID, _ := createScanSastNoWait(t, SlowRepo, map[string]string{})
@@ -979,6 +985,10 @@ func createScanScaWithResolver(
 			"-q",
 		),
 	)
+}
+
+func createScanWithPrimaryBranchFlag(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--branch-primary"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
