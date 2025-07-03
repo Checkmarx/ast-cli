@@ -637,6 +637,24 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
 }
 
+func TestCreateScanWithPrimaryBranchFlag_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary")
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=true")
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=false")
+}
+
+func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=string")
+	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
+
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
