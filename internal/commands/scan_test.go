@@ -652,8 +652,8 @@ func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Passed(t *testing.T) {
 func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=string")
 	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
-
 }
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
@@ -672,7 +672,6 @@ func Test_parseThresholdsSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdParseError(t *testing.T) {
 	want := make(map[string]int)
 	threshold := " KICS - LoW=error"
@@ -680,7 +679,6 @@ func Test_parseThresholdParseError(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func TestCreateScanProjectTags(t *testing.T) {
 	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--project-tags", "test", "--debug")
