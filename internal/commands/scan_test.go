@@ -624,7 +624,6 @@ func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
 
 }
-
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
