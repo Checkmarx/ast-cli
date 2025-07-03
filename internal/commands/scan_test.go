@@ -2326,3 +2326,40 @@ func TestValidateScanTypes(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateScanWith_ScaResolver_Source_as_Zip(t *testing.T) {
+	clearFlags()
+	baseArgs := []string{
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		"data/sources.zip",
+		"-b",
+		"dummy_branch",
+		"--sca-resolver",
+		"ScaResolver.exe",
+	}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Assert(t, strings.Contains(err.Error(), ScaResolverZipNotSupportedErr), err.Error())
+}
+
+func Test_parseArgs(t *testing.T) {
+	tests := []struct {
+		inputString string
+		lenOfArgs   int
+	}{
+		{"--log-level Debug --break-on-manifest-failure", 3},
+		{`test test1`, 2},
+		{"--gradle-parameters='-Prepository.proxy.url=123 -Prepository.proxy.username=123 -Prepository.proxy.password=123' --log-level Debug", 3},
+	}
+
+	for _, test := range tests {
+		fmt.Println("test ::", test)
+		result := parseArgs(test.inputString)
+		if len(result) != test.lenOfArgs {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}

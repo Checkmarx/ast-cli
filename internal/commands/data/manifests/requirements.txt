@@ -59,11 +59,11 @@ Django>=3.0,<4.0
 
 # Less than or equal
 
-requests<=2.25.1
+requests<=2.32.4
 
 # Compatible release (PEP 440)
 
-urllib3\~=1.26.0
+urllib3\~=2.5.0
 
 # Not equal
 
