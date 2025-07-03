@@ -723,6 +723,11 @@ func scanCreateSubCommand(
 	)
 
 	createScanCmd.PersistentFlags().Bool(
+		commonParams.BranchPrimaryFlag,
+		false,
+		"Sets the given branch as primary for the project. Available options: true,false")
+
+	createScanCmd.PersistentFlags().Bool(
 		commonParams.SastRecommendedExclusionsFlags,
 		false,
 		"Enable recommended exclusions configuration for SAST scan",
@@ -845,6 +850,7 @@ func setupScanTypeProjectAndConfig(
 	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
+
 	_ = json.Unmarshal(*input, &info)
 	info[resultsMapType] = getUploadType(cmd)
 	// Handle the project settings
