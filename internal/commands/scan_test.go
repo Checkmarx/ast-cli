@@ -632,7 +632,6 @@ func Test_parseThresholdSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdsSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["sast-high"] = 1
