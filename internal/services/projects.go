@@ -199,7 +199,7 @@ func updateProject(project *wrappers.ProjectResponseModel,
 	projectID = project.ID
 	if isBranchPrimary {
 		projModel.MainBranch = branchName
-		logger.PrintfIfVerbose(fmt.Sprintf("Updating the branch as primary: %s", branchName))
+		logger.PrintfIfVerbose("Updating the branch as primary: %s", branchName)
 	} else {
 		projModel.MainBranch = project.MainBranch
 	}
