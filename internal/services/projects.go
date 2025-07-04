@@ -40,10 +40,7 @@ func FindProject(
 		return "", err
 	}
 	branchName := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
-	branchPrimaryChanged := cmd.Flags().Changed(commonParams.BranchPrimaryFlag)
-	if branchPrimaryChanged {
-		isBranchPrimary, _ = cmd.Flags().GetBool(commonParams.BranchPrimaryFlag)
-	}
+	isBranchPrimary, _ = cmd.Flags().GetBool(commonParams.BranchPrimaryFlag)
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
