@@ -166,7 +166,7 @@ func Test_createProject(t *testing.T) {
 				ttt.args.applicationID,
 				ttt.args.projectGroups,
 				ttt.args.projectPrivatePackage,
-				ttt.args.featureFlagsWrapper)
+				ttt.args.featureFlagsWrapper, false, "")
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -240,7 +240,7 @@ func Test_updateProject(t *testing.T) {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := updateProject(ttt.args.project, ttt.args.projectsWrapper,
-				ttt.args.projectTags, ttt.args.projectPrivatePackage)
+				ttt.args.projectTags, ttt.args.projectPrivatePackage, false, "")
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("updateProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return

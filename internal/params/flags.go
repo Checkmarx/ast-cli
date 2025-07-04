@@ -64,6 +64,7 @@ const (
 	NtlmProxyDomainFlag            = "proxy-ntlm-domain"
 	SastFastScanFlag               = "sast-fast-scan"
 	SastLightQueriesFlag           = "sast-light-queries"
+	BranchPrimaryFlag              = "branch-primary"
 	SastRecommendedExclusionsFlags = "sast-recommended-exclusions"
 	NtlmProxyDomainFlagUsage       = "Window domain when using NTLM proxy"
 	BaseURIFlagUsage               = "The base system URI"

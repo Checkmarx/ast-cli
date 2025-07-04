@@ -1,8 +1,10 @@
 package services
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
@@ -11,6 +13,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -31,17 +34,19 @@ func FindProject(
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (string, error) {
+	var isBranchPrimary bool
 	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
 	if err != nil {
 		return "", err
 	}
-
+	branchName := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
+	isBranchPrimary, _ = cmd.Flags().GetBool(commonParams.BranchPrimaryFlag)
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage)
+			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage, isBranchPrimary, branchName)
 		}
 	}
 
@@ -55,7 +60,7 @@ func FindProject(
 	}
 
 	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper,
-		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper)
+		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper, isBranchPrimary, branchName)
 	if err != nil {
 		logger.PrintIfVerbose("error in creating project!")
 		return "", err
@@ -97,12 +102,18 @@ func createProject(
 	projectGroups string,
 	projectPrivatePackage string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	isBranchPrimary bool,
+	branchName string,
 ) (string, error) {
 	projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.ApplicationIds = applicationID
+	if isBranchPrimary {
+		logger.PrintIfVerbose(fmt.Sprintf("Setting the branch in project : %s", branchName))
+		projModel.MainBranch = branchName
+	}
 	var groupsMap []*wrappers.Group
 	if projectGroups != "" {
 		var groups []string
@@ -179,14 +190,20 @@ func verifyApplicationAssociationDone(applicationName, projectID string, applica
 //nolint:gocyclo
 func updateProject(project *wrappers.ProjectResponseModel,
 	projectsWrapper wrappers.ProjectsWrapper,
-	projectTags string, projectPrivatePackage string) (string, error) {
+	projectTags string, projectPrivatePackage string, isBranchPrimary bool, branchName string) (string, error) {
 	var projectID string
 	var projModel = wrappers.Project{}
 	projectID = project.ID
-	projModel.MainBranch = project.MainBranch
+	if isBranchPrimary {
+		projModel.MainBranch = branchName
+		logger.PrintfIfVerbose("Updating the branch as primary: %s", branchName)
+	} else {
+		projModel.MainBranch = project.MainBranch
+	}
 	projModel.RepoURL = project.RepoURL
-	if projectTags == "" && projectPrivatePackage == "" {
-		logger.PrintIfVerbose("No tags to update. Skipping project update.")
+
+	if projectTags == "" && projectPrivatePackage == "" && isBranchPrimary == false {
+		logger.PrintIfVerbose("No tags or branch to update. Skipping project update.")
 		return projectID, nil
 	}
 	if projectPrivatePackage != "" {
