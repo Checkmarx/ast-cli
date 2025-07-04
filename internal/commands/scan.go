@@ -116,6 +116,7 @@ const (
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
+	BranchPrimaryPrefix                   = "--branch-primary="
 )
 
 var (
@@ -2954,6 +2955,15 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	if kicsPresetID, _ := cmd.Flags().GetString(commonParams.IacsPresetIDFlag); kicsPresetID != "" {
 		if _, err := uuid.Parse(kicsPresetID); err != nil {
 			return fmt.Errorf("Invalid value for --%s flag. Must be a valid UUID.", commonParams.IacsPresetIDFlag)
+		}
+	}
+	// check if flag was passed as arg
+	isBranchChanged := cmd.Flags().Changed(commonParams.BranchPrimaryFlag)
+	if isBranchChanged {
+		for _, a := range os.Args[1:] {
+			if strings.HasPrefix(a, BranchPrimaryPrefix) {
+				return fmt.Errorf("invalid value for --branch-primary flag. This flag must be sent with no value")
+			}
 		}
 	}
 
