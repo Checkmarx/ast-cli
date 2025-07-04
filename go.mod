@@ -43,7 +43,7 @@ require (
 	github.com/Checkmarx/containers-images-extractor v1.0.8 // indirect
 	github.com/Checkmarx/containers-syft-packages-extractor v1.0.11 // indirect
 	github.com/Checkmarx/containers-types v1.0.3 // indirect
-	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
+	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirectas
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
