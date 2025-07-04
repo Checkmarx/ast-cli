@@ -641,7 +641,7 @@ func TestCreateScanWithPrimaryBranchFlag_Passed(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary")
 }
 
-func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Passed(t *testing.T) {
+func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Failed(t *testing.T) {
 	original := os.Args
 	defer func() { os.Args = original }()
 	os.Args = []string{
@@ -651,7 +651,7 @@ func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Passed(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid value for --branch-primary flag", err.Error())
 }
 
-func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Passed(t *testing.T) {
+func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Failed(t *testing.T) {
 	original := os.Args
 	defer func() { os.Args = original }()
 	os.Args = []string{

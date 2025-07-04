@@ -726,7 +726,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.BranchPrimaryFlag,
 		false,
-		"Sets the given branch as primary for the project. Available options: true,false")
+		"Sets the given branch as primary for the project")
 
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.SastRecommendedExclusionsFlags,
