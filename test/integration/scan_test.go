@@ -421,11 +421,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
@@ -439,11 +437,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
@@ -458,11 +454,11 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
@@ -476,11 +472,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
@@ -493,10 +487,8 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		err, _ := executeCommand(t, testArgs...)
-		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
-	}
+	err, _ := executeCommand(t, testArgs...)
+	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
@@ -942,11 +934,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security,   container-security, scs"))
-	} else {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
-	}
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security, scs"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string, projectName string) (string, string) {
