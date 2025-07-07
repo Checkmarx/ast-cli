@@ -1808,7 +1808,11 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 	}()
 
 	// Execute
-	result := addContainersScan(cmdCommand, resubmitConfig)
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
 
 	// Verify
 	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
