@@ -63,7 +63,7 @@ const (
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName                = "test_output.log"
-	noUpdatesForExistingProject   = "No tags to update. Skipping project update."
+	noUpdatesForExistingProject   = "No tags or branch to update. Skipping project update."
 	ScaResolverZipNotSupportedErr = "Scanning Zip files is not supported by ScaResolver.Please use non-zip source"
 )
 
@@ -400,6 +400,7 @@ func TestCreateScanBranches(t *testing.T) {
 	// Bind cx_branch environment variable
 	_ = viper.BindEnv("cx_branch", "CX_BRANCH")
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
+	assert.Equal(t, viper.GetString("cx_branch"), "branch_from_environment_variable")
 
 	// Test branch from environment variable. Since the cx_branch is bind the scan must run successfully without a branch flag defined
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
