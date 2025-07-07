@@ -867,8 +867,10 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan(cmd, resubmitConfig)
-	if containersConfig != nil {
+	var containersConfig, containersErr = addContainersScan(cmd, resubmitConfig)
+	if containersErr != nil {
+		return containersErr
+	} else if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
 
@@ -1064,9 +1066,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
+func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
 	if !scanTypeEnabled(commonParams.ContainersType) {
-		return nil
+		return nil, nil
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
@@ -1092,11 +1094,18 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
 	if userCustomImages != "" {
+		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
+		for _, containerImageName := range containerImagesList {
+			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
+				return nil, containerImagesErr
+			}
+		}
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 		containerConfig.UserCustomImages = userCustomImages
 	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
-	return containerMapConfig
+	return containerMapConfig, nil
 }
 
 func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
