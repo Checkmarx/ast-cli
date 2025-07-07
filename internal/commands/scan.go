@@ -726,7 +726,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.BranchPrimaryFlag,
 		false,
-		"Sets the given branch as primary for the project")
+		"This flag sets the branch specified in --branch as the PRIMARY branch for the project")
 
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.SastRecommendedExclusionsFlags,
@@ -3018,7 +3018,7 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	if isBranchChanged {
 		for _, a := range os.Args[1:] {
 			if strings.HasPrefix(a, BranchPrimaryPrefix) {
-				return fmt.Errorf("invalid value for --branch-primary flag. This flag must be sent with no value")
+				return fmt.Errorf("invalid value for --branch-primary flag. This flag is sent without any values")
 			}
 		}
 	}
