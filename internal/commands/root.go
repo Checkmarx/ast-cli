@@ -110,7 +110,7 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		err := LoadDebugLogConfiguration(rootCmd)
+		err := customLogConfiguration(rootCmd)
 		if err != nil {
 			return err
 		}
@@ -346,69 +346,51 @@ func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
-func LoadDebugLogConfiguration(cmd *cobra.Command) error {
+
+func customLogConfiguration(cmd *cobra.Command) error {
 	if cmd.PersistentFlags().Changed(params.LogFileFlag) {
-		if err := processLogFlag(cmd, params.LogFileFlag); err != nil {
+		if err := setLogOutputFromFlag(params.LogFileFlag, viper.GetString(params.LogFileFlag)); err != nil {
 			return err
 		}
 	}
 	if cmd.PersistentFlags().Changed(params.LogFileStdoutFlag) {
-		if err := processLogFlag(cmd, params.LogFileStdoutFlag); err != nil {
+		if err := setLogOutputFromFlag(params.LogFileStdoutFlag, viper.GetString(params.LogFileStdoutFlag)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func processLogFlag(cmd *cobra.Command, flag string) error {
-	logFilePath, _ := cmd.PersistentFlags().GetString(flag)
-
-	if strings.TrimSpace(logFilePath) == "" {
+func setLogOutputFromFlag(flag string, dirPath string) error {
+	if strings.TrimSpace(dirPath) == "" {
 		return errors.New("flag needs an argument: --" + flag)
 	}
 
-	// Check if the path exists
-	fileInfo, err := os.Stat(logFilePath)
+	// Confirm it’s a directory
+	info, err := os.Stat(dirPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-
-			// Validate file type (should be .log)
-			if filepath.Ext(logFilePath) != ".log" {
-				return fmt.Errorf("Invalid file type: %s. Expected a .log file", logFilePath)
-			}
-
-			// Creating a file if file is not exist
-			fmt.Printf("File does not exist: %s. \nCreating file...\n", logFilePath)
-			file, err := os.OpenFile(logFilePath, os.O_CREATE, 0666)
-			if err != nil {
-				return fmt.Errorf("Error creating file %s: %v", logFilePath, err)
-			}
-			defer file.Close()
-			fileInfo, _ = os.Stat(logFilePath) // Refresh file info after creation
-		} else {
-			return fmt.Errorf("Invalid file path: %v", err)
-		}
+		return fmt.Errorf("unable to stat path %s: %v", dirPath, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("expected a directory path but got a file: %s", dirPath)
 	}
 
-	// Validate that the path is a file, not a directory
-	if fileInfo.IsDir() {
-		return fmt.Errorf("Invalid path: %s is a directory, expected a file", logFilePath)
-	}
+	// Create full path for the log file
+	logFilePath := filepath.Join(dirPath, "ast-cli.log")
 
-	// Validate file type (should be .log)
-	if filepath.Ext(logFilePath) != ".log" {
-		return fmt.Errorf("Invalid file type: %s. Expected a .log file", logFilePath)
-	}
-
-	// Validate file permissions (check for write permission)
-	file, err := os.OpenFile(logFilePath, os.O_WRONLY|os.O_APPEND, 0666)
+	//open the log file with write and append permissions
+	// If file doesn't exist, it will be created. If permission is denied for directory path, return an error.
+	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		if os.IsPermission(err) {
-			return fmt.Errorf("Permission denied: Ensure you have the necessary rights to access %s", logFilePath)
-		} else {
-			return fmt.Errorf("Unexpected error while opening the file %s: %v", logFilePath, err)
+			return fmt.Errorf("permission denied: cannot write to directory %s", dirPath)
 		}
+		return fmt.Errorf("unable to open log file %s: %v", logFilePath, err)
 	}
+
+	// Configure the logger to write to the log file and optionally to stdout.
+	// If the flag indicates stdout logging is enabled, log output is duplicated to both file and console.
+	// Otherwise, logs are written only to the file.
 	var multiWriter io.Writer
 	if flag == params.LogFileStdoutFlag {
 		multiWriter = io.MultiWriter(file, os.Stdout)
