@@ -95,7 +95,7 @@ func createRunGitLabUserCountFunc(gitLabWrapper wrappers.GitLabWrapper) func(cmd
 		err = printer.Print(cmd.OutOrStdout(), views, format)
 
 		// Only print user count information if in debug mode
-		if viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileStdoutFlag) != "" {
+		if viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileConsoleFlag) != "" {
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 

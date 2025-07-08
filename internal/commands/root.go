@@ -105,7 +105,7 @@ func NewAstCLI(
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
-	rootCmd.PersistentFlags().String(params.LogFileStdoutFlag, "", params.LogFileStdOutUsage)
+	rootCmd.PersistentFlags().String(params.LogFileConsoleFlag, "", params.LogFileConsoleUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
@@ -148,7 +148,7 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
 	_ = viper.BindPFlag(params.LogFileFlag, rootCmd.PersistentFlags().Lookup(params.LogFileFlag))
-	_ = viper.BindPFlag(params.LogFileStdoutFlag, rootCmd.PersistentFlags().Lookup(params.LogFileStdoutFlag))
+	_ = viper.BindPFlag(params.LogFileConsoleFlag, rootCmd.PersistentFlags().Lookup(params.LogFileConsoleFlag))
 	// Set help func
 	rootCmd.SetHelpFunc(
 		func(command *cobra.Command, args []string) {
@@ -353,8 +353,8 @@ func customLogConfiguration(cmd *cobra.Command) error {
 			return err
 		}
 	}
-	if cmd.PersistentFlags().Changed(params.LogFileStdoutFlag) {
-		if err := setLogOutputFromFlag(params.LogFileStdoutFlag, viper.GetString(params.LogFileStdoutFlag)); err != nil {
+	if cmd.PersistentFlags().Changed(params.LogFileConsoleFlag) {
+		if err := setLogOutputFromFlag(params.LogFileConsoleFlag, viper.GetString(params.LogFileConsoleFlag)); err != nil {
 			return err
 		}
 	}
@@ -392,7 +392,7 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	// If the flag indicates stdout logging is enabled, log output is duplicated to both file and console.
 	// Otherwise, logs are written only to the file.
 	var multiWriter io.Writer
-	if flag == params.LogFileStdoutFlag {
+	if flag == params.LogFileConsoleFlag {
 		multiWriter = io.MultiWriter(file, os.Stdout)
 	} else {
 		multiWriter = io.MultiWriter(file)
