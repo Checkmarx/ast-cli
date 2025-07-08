@@ -361,7 +361,7 @@ func customLogConfiguration(cmd *cobra.Command) error {
 	return nil
 }
 
-func setLogOutputFromFlag(flag string, dirPath string) error {
+func setLogOutputFromFlag(flag, dirPath string) error {
 	if strings.TrimSpace(dirPath) == "" {
 		return errors.New("flag needs an argument: --" + flag)
 	}
@@ -370,25 +370,26 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	info, err := os.Stat(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("The specified directory path does not exist. Please check the path: %s", dirPath)
+			return fmt.Errorf("the specified directory path does not exist. Please check the path: %s", dirPath)
 		}
-		return fmt.Errorf("An error occurred while accessing the directory path. Please check the path: %s", dirPath)
+		return fmt.Errorf("an error occurred while accessing the directory path. Please check the path: %s", dirPath)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("Expected a directory path but got a file: %s", dirPath)
+		return fmt.Errorf("expected a directory path but got a file: %s", dirPath)
 	}
 
 	// Create full path for the log file
 	logFilePath := filepath.Join(dirPath, "ast-cli.log")
 
-	//open the log file with write and append permissions
+	const defaultFilePermissions = 0666
+	// open the log file with write and append permissions
 	// If file doesn't exist, it will be created. If permission is denied for directory path, return an error.
-	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaultFilePermissions)
 	if err != nil {
 		if os.IsPermission(err) {
-			return fmt.Errorf("Permission denied: cannot write to directory %s", dirPath)
+			return fmt.Errorf("permission denied: cannot write to directory %s", dirPath)
 		}
-		return fmt.Errorf("Unable to open log file %s: %v", logFilePath, err)
+		return fmt.Errorf("unable to open log file %s: %v", logFilePath, err)
 	}
 
 	// Configure the logger to write to the log file and optionally to stdout.

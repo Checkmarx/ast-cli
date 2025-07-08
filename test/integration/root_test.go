@@ -127,7 +127,7 @@ func isFFEnabled(t *testing.T, featureFlag string) bool {
 
 func TestSetLogOutputFromFlag_InvalidDir(t *testing.T) {
 	err, _ := executeCommand(t, "auth", "validate", "--log-file", "/custom/path")
-	assert.ErrorContains(t, err, "The specified directory path does not exist.")
+	assert.ErrorContains(t, err, "the specified directory path does not exist.")
 }
 
 func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
@@ -136,38 +136,38 @@ func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
 }
 
 func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
-	tempFile, err := os.CreateTemp("", "ast-cli.txt")
+	tempFile, _ := os.CreateTemp("", "ast-cli.txt")
 	defer func(path string) {
 		_ = os.Remove(path)
 	}(tempFile.Name())
-	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempFile.Name())
-	assert.ErrorContains(t, err, "Expected a directory path but got a file")
+	err, _ := executeCommand(t, "auth", "validate", "--log-file", tempFile.Name())
+	assert.ErrorContains(t, err, "expected a directory path but got a file")
 }
 
 func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "tempdir")
+	tempDir, _ := os.MkdirTemp("", "tempdir")
 	_ = os.Chmod(tempDir, 0000)
 	defer func(path string) {
 		_ = os.RemoveAll(path)
 	}(tempDir)
-	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempDir)
-	assert.ErrorContains(t, err, "Permission denied: cannot write to directory")
+	err, _ := executeCommand(t, "auth", "validate", "--log-file", tempDir)
+	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
 }
 
 func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "tempdir")
+	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func(path string) {
 		_ = os.RemoveAll(path)
 	}(tempDir)
-	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempDir)
+	err, _ := executeCommand(t, "auth", "validate", "--log-file", tempDir)
 	assert.NilError(t, err)
 }
 
 func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "tempdir")
+	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func(path string) {
 		_ = os.RemoveAll(path)
 	}(tempDir)
-	err, _ = executeCommand(t, "auth", "validate", "--log-file-console", tempDir)
+	err, _ := executeCommand(t, "auth", "validate", "--log-file-console", tempDir)
 	assert.NilError(t, err)
 }
