@@ -256,7 +256,7 @@ func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t
 }
 func TestSetLogOutputFromFlag_InvalidDir1(t *testing.T) {
 	err := setLogOutputFromFlag(params.LogFileFlag, "/custom/path")
-	assert.ErrorContains(t, err, "The specified directory path does not exist.")
+	assert.ErrorContains(t, err, "The system cannot find the path specified.")
 }
 
 func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
@@ -272,7 +272,7 @@ func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
 		}
 	}()
 	err = setLogOutputFromFlag(params.LogFileFlag, tempFile.Name())
-	assert.ErrorContains(t, err, "Expected a directory path but got a file")
+	assert.ErrorContains(t, err, "expected a directory path but got a file")
 }
 
 func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
@@ -282,7 +282,7 @@ func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
 		_ = os.RemoveAll(path)
 	}(tempDir)
 	err = setLogOutputFromFlag(params.LogFileFlag, tempDir)
-	assert.ErrorContains(t, err, "Permission denied: cannot write to directory")
+	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
 }
 
 func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
