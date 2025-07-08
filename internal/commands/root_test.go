@@ -3,6 +3,8 @@ package commands
 import (
 	"bytes"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/stretchr/testify/require"
 	"io"
 	"log"
 	"os"
@@ -251,4 +253,57 @@ func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t
 			}
 		})
 	}
+}
+func TestSetLogOutputFromFlag_InvalidDir1(t *testing.T) {
+	err := setLogOutputFromFlag(params.LogFileFlag, "/custom/path")
+	assert.ErrorContains(t, err, "The system cannot find the path specified.")
+}
+
+func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
+	err := setLogOutputFromFlag(params.LogFileFlag, "")
+	assert.ErrorContains(t, err, "flag needs an argument")
+}
+
+func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "ast-cli.txt")
+	defer func() {
+		if err := os.RemoveAll(tempFile.Name()); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempFile.Name(), err)
+		}
+	}()
+	err = setLogOutputFromFlag(params.LogFileFlag, tempFile.Name())
+	assert.ErrorContains(t, err, "expected a directory path but got a file")
+}
+
+func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	_ = os.Chmod(tempDir, 0000)
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tempDir)
+	err = setLogOutputFromFlag(params.LogFileFlag, tempDir)
+	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
+}
+
+func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+		}
+	}()
+	err = setLogOutputFromFlag(params.LogFileFlag, tempDir)
+	assert.NilError(t, err)
+}
+
+func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	require.NoError(t, err)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+		}
+	}()
+	err = setLogOutputFromFlag(params.LogFileConsoleFlag, tempDir)
+	assert.NilError(t, err)
 }
