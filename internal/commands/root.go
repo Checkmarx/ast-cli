@@ -175,12 +175,11 @@ func NewAstCLI(
 		scaRealTimeWrapper,
 		policyWrapper,
 		sastMetadataWrapper,
-		accessManagementWrapper,
 		featureFlagsWrapper,
 		containerResolverWrapper,
 		realTimeWrapper,
 	)
-	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
+	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -214,7 +213,6 @@ func NewAstCLI(
 		projectsWrapper,
 		uploadsWrapper,
 		groupsWrapper,
-		accessManagementWrapper,
 		applicationsWrapper,
 		byorWrapper,
 		featureFlagsWrapper,
