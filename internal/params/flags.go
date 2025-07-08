@@ -147,6 +147,7 @@ const (
 	LastSastScanTime             = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag     = "project-private-package"
 	SastRedundancyFlag           = "sast-redundancy"
+	ContainerResolveLocallyFlag  = "containers-local-resolution"
 	ContainerImagesFlag          = "container-images"
 	ContainersTypeFlag           = "container-security"
 	VSCodeAgent                  = "VS Code"
