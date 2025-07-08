@@ -28,7 +28,6 @@ func TestNewUtilsCommand(t *testing.T) {
 		&mock.ProjectsMockWrapper{},
 		&mock.UploadsMockWrapper{},
 		&mock.GroupsMockWrapper{},
-		mock.AccessManagementMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.ByorMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{})
