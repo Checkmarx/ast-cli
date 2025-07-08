@@ -29,6 +29,7 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -97,6 +98,7 @@ const (
 	ConfigContainersImagesFilterKey         = "imagesFilter"
 	ConfigContainersPackagesFilterKey       = "packagesFilter"
 	ConfigContainersNonFinalStagesFilterKey = "nonFinalStagesFilter"
+	ConfigUserCustomImagesKey               = "userCustomImages"
 	resultsMapValue                         = "value"
 	resultsMapType                          = "type"
 	trueString                              = "true"
@@ -641,6 +643,7 @@ func scanCreateSubCommand(
 		"",
 		fmt.Sprintf("Parameters to use in SCA resolver (requires --%s)", commonParams.ScaResolverFlag),
 	)
+	createScanCmd.PersistentFlags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Execute container resolver locally.")
 	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
 	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
 
@@ -847,7 +850,6 @@ func setupScanTypeProjectAndConfig(
 			return err
 		}
 	}
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
 	sastConfig := addSastScan(cmd, resubmitConfig)
 	if sastConfig != nil {
@@ -865,8 +867,10 @@ func setupScanTypeProjectAndConfig(
 	if apiSecConfig != nil {
 		configArr = append(configArr, apiSecConfig)
 	}
-	var containersConfig = addContainersScan(cmd, resubmitConfig, containerEngineCLIEnabled.Status)
-	if containersConfig != nil {
+	var containersConfig, containersErr = addContainersScan(cmd, resubmitConfig)
+	if containersErr != nil {
+		return containersErr
+	} else if containersConfig != nil {
 		configArr = append(configArr, containersConfig)
 	}
 
@@ -1062,9 +1066,9 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
-func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, containerEngineCLIEnabled bool) map[string]interface{} {
-	if !scanTypeEnabled(commonParams.ContainersType) || !containerEngineCLIEnabled {
-		return nil
+func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
+	if !scanTypeEnabled(commonParams.ContainersType) {
+		return nil, nil
 	}
 	containerMapConfig := make(map[string]interface{})
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
@@ -1088,9 +1092,20 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, con
 	if imageTagFilter != "" {
 		containerConfig.ImagesFilter = imageTagFilter
 	}
+	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	if userCustomImages != "" {
+		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
+		for _, containerImageName := range containerImagesList {
+			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
+				return nil, containerImagesErr
+			}
+		}
+		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+		containerConfig.UserCustomImages = userCustomImages
+	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
-	return containerMapConfig
+	return containerMapConfig, nil
 }
 
 func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
@@ -1113,6 +1128,10 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 		resubmitImagesFilter := config.Value[ConfigContainersImagesFilterKey]
 		if resubmitImagesFilter != nil && resubmitImagesFilter != "" {
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
+		}
+		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" {
+			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}
 }
@@ -1182,7 +1201,6 @@ func isURLSupportedByScorecard(scsRepoURL string) bool {
 
 func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepoToken, scsRepoURL, userScanTypes string) (bool, error) {
 	if scsRepoToken == "" || scsRepoURL == "" {
-
 		// with --scs-engine "scorecard" set, if flags not defined, scorecard will launch an error
 		if userScanTypes != "" && isScsEnginesFlagSet && scsScorecardSelected {
 			return false, errors.New(ScsRepoRequiredMsg)
@@ -1256,7 +1274,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
-	runContainerEngineCLI := isContainersEngineEnabled(featureFlagsWrapper)
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -1273,7 +1290,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
-			if !allowedEngines[scanType] || (scanType == commonParams.ContainersType && !(runContainerEngineCLI)) {
+			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
@@ -1288,9 +1305,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 	} else {
 		for k := range allowedEngines {
-			if k == commonParams.ContainersType && !(runContainerEngineCLI) {
-				continue
-			}
 			scanTypes = append(scanTypes, k)
 		}
 	}
@@ -1299,16 +1313,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
 	return nil
-}
-
-func isContainersEngineEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) bool {
-	containerEngineCLIEnabled, err := featureFlagsWrapper.GetSpecificFlag(wrappers.ContainerEngineCLIEnabled)
-	if err != nil {
-		logger.PrintfIfVerbose("Failed to fetch CONTAINER_ENGINE_CLI_ENABLED FF, defaulting to `false`. Error: %s", err)
-		return false
-	}
-
-	return containerEngineCLIEnabled.Status
 }
 
 func scanTypeEnabled(scanType string) bool {
@@ -1591,18 +1595,17 @@ func addScaResults(zipWriter *zip.Writer) error {
 }
 
 func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
-	url, zipFilePath string,
-	err error,
-) {
+	url, zipFilePath string, err error) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
 	userIncludeFilter, _ := cmd.Flags().GetString(commonParams.IncludeFilterFlag)
 	projectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
+	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType)
+	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-	containerEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ContainerEngineCLIEnabled)
 
-	containerScanTriggered := strings.Contains(actualScanTypes, commonParams.ContainersType) && containerEngineCLIEnabled.Status
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 
 	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
@@ -1627,17 +1630,43 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	if directoryPath != "" {
 		var dirPathErr error
-		resolversErr := runScannerResolvers(cmd, directoryPath, projectName, containerScanTriggered, scaResolver, scaResolverParams)
-		if resolversErr != nil {
-			if unzip {
-				_ = cleanTempUnzipDirectory(directoryPath)
+
+		// execute scaResolver only in sca type of scans
+		if strings.Contains(actualScanTypes, commonParams.ScaType) {
+			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+			if scaErr != nil {
+				if unzip {
+					_ = cleanTempUnzipDirectory(directoryPath)
+				}
+				return "", "", errors.Wrapf(scaErr, "ScaResolver error")
 			}
-			return "", "", resolversErr
 		}
-		if isSingleContainerScanTriggered() {
+
+		if containerScanTriggered && containerResolveLocally {
+			containerResolverError := runContainerResolver(cmd, directoryPath, containerImagesFlag, containerResolveLocally)
+			if containerResolverError != nil {
+				if unzip {
+					_ = cleanTempUnzipDirectory(directoryPath)
+				}
+				return "", "", containerResolverError
+			}
+		}
+
+		if isSingleContainerScanTriggered() && containerResolveLocally {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
-			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
+			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
+		} else if isSingleContainerScanTriggered() && containerImagesFlag != "" {
+			logger.PrintIfVerbose("Single container scan with external images: creating minimal zip file")
+			// For container scans with external images, we need to create a minimal zip file
+			// since the API requires an upload URL even for container-only scans
+			zipFilePath, dirPathErr = createMinimalZipFile()
+			if unzip {
+				dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
+				if dirRemovalErr != nil {
+					return "", "", dirRemovalErr
+				}
+			}
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
@@ -1659,13 +1688,12 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
-	containerImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
 
-	if containerImages != "" {
-		containerImagesList = strings.Split(strings.TrimSpace(containerImages), ",")
+	if containerImageFlag != "" {
+		containerImagesList = strings.Split(strings.TrimSpace(containerImageFlag), ",")
 		for _, containerImageName := range containerImagesList {
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
 				return containerImagesErr
@@ -1673,26 +1701,10 @@ func runContainerResolver(cmd *cobra.Command, directoryPath string) error {
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 	}
-	containerResolverERR := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
-	if containerResolverERR != nil {
-		return containerResolverERR
-	}
-	return nil
-}
-
-func runScannerResolvers(cmd *cobra.Command, directoryPath, projectName string, containerScanTriggered bool, scaResolver, scaResolverParams string) error {
-	// Make sure scaResolver only runs in sca type of scans
-	if strings.Contains(actualScanTypes, commonParams.ScaType) {
-		dirPathErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
-		if dirPathErr != nil {
-			return errors.Wrapf(dirPathErr, "ScaResolver error")
-		}
-	}
-
-	if containerScanTriggered {
-		containerResolverError := runContainerResolver(cmd, directoryPath)
-		if containerResolverError != nil {
-			return containerResolverError
+	if containerResolveLocally || len(containerImagesList) > 0 {
+		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
+		if containerResolverErr != nil {
+			return containerResolverErr
 		}
 	}
 	return nil
@@ -2955,12 +2967,18 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateContainerImageFormat(containerImage string) error {
-	pattern := regexp.MustCompile(`^(?:[a-zA-Z0-9.-]+(?::[0-9]+)?/)?(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*:[\w][\w.-]{0,127}$`)
+	if strings.HasSuffix(containerImage, ".tar") {
+		_, err := osinstaller.FileExists(containerImage)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
 
-	matched := pattern.MatchString(containerImage)
+		return nil
+	}
 
-	if !matched {
-		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	imageParts := strings.Split(containerImage, ":")
+	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
+		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
 	}
 	return nil
 }
@@ -3005,4 +3023,31 @@ func parseArgs(input string) []string {
 	}
 
 	return args
+}
+
+// createMinimalZipFile creates a minimal zip file for container scans with external images
+// The API requires an upload URL even for container-only scans, so we create a minimal placeholder
+func createMinimalZipFile() (string, error) {
+	outputFile, err := os.CreateTemp(os.TempDir(), "cx-container-*.zip")
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot create temp file for container-only scan")
+	}
+	defer outputFile.Close()
+
+	zipWriter := zip.NewWriter(outputFile)
+	defer zipWriter.Close()
+
+	// Create a minimal placeholder file
+	f, err := zipWriter.Create(".container-scan")
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
+	}
+
+	// Write minimal content (just a single byte)
+	_, err = f.Write([]byte("1"))
+	if err != nil {
+		return "", errors.Wrapf(err, "Cannot write to placeholder file")
+	}
+
+	return outputFile.Name(), nil
 }

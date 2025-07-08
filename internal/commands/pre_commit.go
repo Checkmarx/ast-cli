@@ -2,13 +2,14 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	precommit "github.com/Checkmarx/secret-detection/pkg/hooks"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
@@ -65,7 +66,6 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 
 // / validateLicense verifies the user has the required license for secret detection
 func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
-
 	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
 	if err != nil {
 		return errors.Wrapf(err, "Failed checking license")
