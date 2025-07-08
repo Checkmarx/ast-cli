@@ -370,9 +370,9 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	info, err := os.Stat(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("The specified directory path does not exist. Please check the path.")
+			return fmt.Errorf("The specified directory path does not exist. Please check the path: %s", dirPath)
 		}
-		return fmt.Errorf("An error occurred while accessing the directory path. Please check the path.")
+		return fmt.Errorf("An error occurred while accessing the directory path. Please check the path: %s", dirPath)
 	}
 	if !info.IsDir() {
 		return fmt.Errorf("Expected a directory path but got a file: %s", dirPath)
