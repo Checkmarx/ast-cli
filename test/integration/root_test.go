@@ -127,7 +127,7 @@ func isFFEnabled(t *testing.T, featureFlag string) bool {
 
 func TestSetLogOutputFromFlag_InvalidDir(t *testing.T) {
 	err, _ := executeCommand(t, "auth", "validate", "--log-file", "/custom/path")
-	assert.ErrorContains(t, err, "The system cannot find the path specified.")
+	assert.ErrorContains(t, err, "The specified directory path does not exist.")
 }
 
 func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
@@ -141,7 +141,7 @@ func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
 		_ = os.Remove(path)
 	}(tempFile.Name())
 	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempFile.Name())
-	assert.ErrorContains(t, err, "expected a directory path but got a file")
+	assert.ErrorContains(t, err, "Expected a directory path but got a file")
 }
 
 func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
@@ -151,7 +151,7 @@ func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
 		_ = os.RemoveAll(path)
 	}(tempDir)
 	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempDir)
-	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
+	assert.ErrorContains(t, err, "Permission denied: cannot write to directory")
 }
 
 func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
