@@ -12,6 +12,7 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
+	"gotest.tools/assert"
 )
 
 const (
@@ -122,4 +123,51 @@ func isFFEnabled(t *testing.T, featureFlag string) bool {
 
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlag)
 	return flagResponse.Status
+}
+
+func TestSetLogOutputFromFlag_InvalidDir(t *testing.T) {
+	err, _ := executeCommand(t, "auth", "validate", "--log-file", "/custom/path")
+	assert.ErrorContains(t, err, "The system cannot find the path specified.")
+}
+
+func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
+	err, _ := executeCommand(t, "auth", "validate", "--log-file", "")
+	assert.ErrorContains(t, err, "flag needs an argument")
+}
+
+func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "ast-cli.txt")
+	defer func(path string) {
+		_ = os.Remove(path)
+	}(tempFile.Name())
+	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempFile.Name())
+	assert.ErrorContains(t, err, "expected a directory path but got a file")
+}
+
+func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	_ = os.Chmod(tempDir, 0000)
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tempDir)
+	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempDir)
+	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
+}
+
+func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tempDir)
+	err, _ = executeCommand(t, "auth", "validate", "--log-file", tempDir)
+	assert.NilError(t, err)
+}
+
+func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "tempdir")
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tempDir)
+	err, _ = executeCommand(t, "auth", "validate", "--log-file-console", tempDir)
+	assert.NilError(t, err)
 }
