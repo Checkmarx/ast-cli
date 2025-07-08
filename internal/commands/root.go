@@ -369,7 +369,7 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	// Confirm it’s a directory
 	info, err := os.Stat(dirPath)
 	if err != nil {
-		return fmt.Errorf("unable to stat path %s: %v", dirPath, err)
+		return fmt.Errorf("cannot access or retrieve status for path %q: %v", dirPath, err)
 	}
 	if !info.IsDir() {
 		return fmt.Errorf("expected a directory path but got a file: %s", dirPath)
