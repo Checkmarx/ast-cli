@@ -369,10 +369,13 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	// Confirm it’s a directory
 	info, err := os.Stat(dirPath)
 	if err != nil {
-		return fmt.Errorf("cannot access or retrieve status for path %q: %v", dirPath, err)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("The specified directory path does not exist. Please check the path.")
+		}
+		return fmt.Errorf("An error occurred while accessing the directory path. Please check the path.")
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("expected a directory path but got a file: %s", dirPath)
+		return fmt.Errorf("Expected a directory path but got a file: %s", dirPath)
 	}
 
 	// Create full path for the log file
@@ -383,9 +386,9 @@ func setLogOutputFromFlag(flag string, dirPath string) error {
 	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		if os.IsPermission(err) {
-			return fmt.Errorf("permission denied: cannot write to directory %s", dirPath)
+			return fmt.Errorf("Permission denied: cannot write to directory %s", dirPath)
 		}
-		return fmt.Errorf("unable to open log file %s: %v", logFilePath, err)
+		return fmt.Errorf("Unable to open log file %s: %v", logFilePath, err)
 	}
 
 	// Configure the logger to write to the log file and optionally to stdout.
