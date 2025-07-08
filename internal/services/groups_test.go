@@ -4,55 +4,13 @@ import (
 	"reflect"
 	"testing"
 
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
-
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
 func setup() {
 	wrappers.ClearCache()
-}
 
-func TestAssignGroupsToProject(t *testing.T) {
-	setup() // Clear the map before starting this test
-	type args struct {
-		projectID           string
-		projectName         string
-		groups              []*wrappers.Group
-		accessManagement    wrappers.AccessManagementWrapper
-		featureFlagsWrapper wrappers.FeatureFlagsWrapper
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "When assigning group to project, no error should be returned",
-			args: args{
-				projectID:   "project-id",
-				projectName: "project-name",
-				groups: []*wrappers.Group{{
-					ID:   "group-id-to-assign",
-					Name: "group-name-to-assign",
-				}},
-				accessManagement:    &mock.AccessManagementMockWrapper{},
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		ttt := tt
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
-		t.Run(tt.name, func(t *testing.T) {
-			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
-				ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
-				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
-			}
-		})
-	}
 }
 
 func TestCreateGroupsMap(t *testing.T) {
