@@ -3,13 +3,14 @@ package commands
 import (
 	"bytes"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/params"
 	"io"
 	"log"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/params"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
