@@ -251,7 +251,7 @@ func listProjectByTagsAndLimit(t *testing.T, tagsKeys string, tagsValues string,
 }
 
 func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
-	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID", "project", "show")
+	assertRequiredParameter(t, "Failed getting a project: Please provide a project ID........", "project", "show")
 
 	outputBuffer := executeCmdNilAssertion(
 		t, "Getting the project should pass", "project", "show",
