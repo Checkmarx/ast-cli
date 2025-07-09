@@ -352,7 +352,7 @@ func TestOssRealtimeScan_CsprojFile_ReturnsLocations(t *testing.T) {
 	// Assert
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
-	assert.Equal(t, 5, len(response.Packages), "Should find exactly 5 packages in test.csproj")
+	assert.Equal(t, 6, len(response.Packages), "Should find exactly 5 packages in test.csproj")
 
 	// Find the Microsoft.TeamFoundationServer.Client package that should have 3 locations
 	var tfsPackage *OssPackage
