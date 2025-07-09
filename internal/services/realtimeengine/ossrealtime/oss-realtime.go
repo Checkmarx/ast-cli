@@ -50,7 +50,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string, ignoredFilePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (*OssPackageResults, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -104,7 +104,7 @@ func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
 	return m
 }
 
-func isIgnored(pkg OssPackage, ignoreMap map[string]bool) bool {
+func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
 	key := fmt.Sprintf("%s_%s_%s", pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)
 	return ignoreMap[key]
 }
@@ -124,9 +124,10 @@ func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
 
 func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
 	filtered := make([]OssPackage, 0, len(packages))
-	for _, pkg := range packages {
+	for i := range packages {
+		pkg := &packages[i]
 		if !isIgnored(pkg, ignoreMap) {
-			filtered = append(filtered, pkg)
+			filtered = append(filtered, *pkg)
 		}
 	}
 	return filtered
