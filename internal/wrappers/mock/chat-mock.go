@@ -5,6 +5,7 @@ import (
 	gptWrapperMessage "github.com/Checkmarx/gen-ai-wrapper/pkg/message"
 	gptWrapperRole "github.com/Checkmarx/gen-ai-wrapper/pkg/role"
 	gptWrapper "github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 )
 
@@ -37,4 +38,9 @@ func (c ChatMockWrapper) SecureCall(w gptWrapper.StatefulWrapper, id uuid.UUID, 
 		Role:    gptWrapperRole.Assistant,
 		Content: "Mock message from SecureCall",
 	}}, nil
+}
+
+func (c ChatMockWrapper) GetModelList(string, []string) wrappers.ViewOpenAiModels {
+	var viewOpenAiModels wrappers.ViewOpenAiModels
+	return viewOpenAiModels
 }

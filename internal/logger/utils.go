@@ -61,7 +61,7 @@ func PrintResponse(r *http.Response, body bool) {
 	PrintIfVerbose("Receiving API response:")
 	requestDump, err := httputil.DumpResponse(r, body)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("error::", err)
 		return
 	}
 	PrintIfVerbose(string(requestDump))

@@ -14,7 +14,7 @@ import (
 const (
 	failedToParseGetResults = "Failed to parse list results"
 	respStatusCode          = "response status code %d"
-	sort                    = "sort"
+	sortParam               = "sort"
 	sortResultsDefault      = "-severity"
 	offset                  = "offset"
 	astAPIPageLen           = 10_000
@@ -41,7 +41,7 @@ func (r *ResultsHTTPWrapper) GetAllResultsByScanID(params map[string]string) (
 	var scanModelslice []ScanResultsCollection
 	var scanModel ScanResultsCollection
 	DefaultMapValue(params, limit, astAPIPagingValue)
-	DefaultMapValue(params, sort, sortResultsDefault)
+	DefaultMapValue(params, sortParam, sortResultsDefault)
 
 	webErr, err := getResultsWithPagination(r.resultsPath, params, &scanModelslice)
 	if err != nil {

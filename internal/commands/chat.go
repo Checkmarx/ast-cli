@@ -22,7 +22,7 @@ func NewChatCommand(chatWrapper wrappers.ChatWrapper, tenantWrapper wrappers.Ten
 	}
 	chatKicsCmd := ChatKicsSubCommand(chatWrapper, tenantWrapper)
 	chatSastCmd := ChatSastSubCommand(chatWrapper, tenantWrapper)
-
-	chatCmd.AddCommand(chatKicsCmd, chatSastCmd)
+	chatModelListCmd := ChatModelListSubCommand(chatWrapper)
+	chatCmd.AddCommand(chatKicsCmd, chatSastCmd, chatModelListCmd)
 	return chatCmd
 }
