@@ -1,7 +1,9 @@
 package ossrealtime
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -48,7 +50,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath string, ignoredFilePath string) (*OssPackageResults, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -79,7 +81,47 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
+
+	if ignoredFilePath != "" {
+		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+		}
+
+		filteredPkgs := []OssPackage{}
+		for _, pkg := range response.Packages {
+			if !isIgnored(pkg, ignoredPkgs) {
+				filteredPkgs = append(filteredPkgs, pkg)
+			}
+		}
+		response.Packages = filteredPkgs
+	}
+
 	return response, nil
+}
+
+func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []IgnoredPackage
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+
+func isIgnored(pkg OssPackage, ignored []IgnoredPackage) bool {
+	for _, ign := range ignored {
+		if pkg.PackageManager == ign.PackageManager &&
+			pkg.PackageName == ign.PackageName &&
+			pkg.PackageVersion == ign.PackageVersion {
+			return true
+		}
+	}
+	return false
 }
 
 func enrichResponseWithRealtimeScannerResults(

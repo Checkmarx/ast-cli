@@ -18,6 +18,12 @@ type OssPackageResults struct {
 	Packages []OssPackage `json:"Packages"`
 }
 
+type IgnoredPackage struct {
+	PackageManager string `json:"PackageManager"`
+	PackageName    string `json:"PackageName"`
+	PackageVersion string `json:"PackageVersion"`
+}
+
 type Vulnerability struct {
 	CVE         string `json:"CVE"`
 	Description string `json:"Description"`
