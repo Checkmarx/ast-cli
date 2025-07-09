@@ -98,15 +98,13 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
 	m := make(map[string]bool)
 	for _, ign := range ignored {
-		key := fmt.Sprintf("%s_%s_%s", ign.PackageManager, ign.PackageName, ign.PackageVersion)
-		m[key] = true
+		m[ign.GetID()] = true
 	}
 	return m
 }
 
 func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
-	key := fmt.Sprintf("%s_%s_%s", pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)
-	return ignoreMap[key]
+	return ignoreMap[pkg.GetID()]
 }
 
 func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
