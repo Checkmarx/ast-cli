@@ -1,7 +1,9 @@
 package ossrealtime
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -48,7 +50,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (*OssPackageResults, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -79,7 +81,54 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
+
+	if ignoredFilePath != "" {
+		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+		}
+
+		ignoreMap := buildIgnoreMap(ignoredPkgs)
+		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
+	}
+
 	return response, nil
+}
+
+func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
+	m := make(map[string]bool)
+	for _, ign := range ignored {
+		m[ign.GetID()] = true
+	}
+	return m
+}
+
+func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
+	return ignoreMap[pkg.GetID()]
+}
+
+func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []IgnoredPackage
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+
+func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
+	filtered := make([]OssPackage, 0, len(packages))
+	for i := range packages {
+		pkg := &packages[i]
+		if !isIgnored(pkg, ignoreMap) {
+			filtered = append(filtered, *pkg)
+		}
+	}
+	return filtered
 }
 
 func enrichResponseWithRealtimeScannerResults(
