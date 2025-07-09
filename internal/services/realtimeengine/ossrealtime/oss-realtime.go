@@ -88,16 +88,25 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string, ignoredFilePath
 			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
 		}
 
-		filteredPkgs := []OssPackage{}
-		for _, pkg := range response.Packages {
-			if !isIgnored(pkg, ignoredPkgs) {
-				filteredPkgs = append(filteredPkgs, pkg)
-			}
-		}
-		response.Packages = filteredPkgs
+		ignoreMap := buildIgnoreMap(ignoredPkgs)
+		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 	}
 
 	return response, nil
+}
+
+func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
+	m := make(map[string]bool)
+	for _, ign := range ignored {
+		key := fmt.Sprintf("%s_%s_%s", ign.PackageManager, ign.PackageName, ign.PackageVersion)
+		m[key] = true
+	}
+	return m
+}
+
+func isIgnored(pkg OssPackage, ignoreMap map[string]bool) bool {
+	key := fmt.Sprintf("%s_%s_%s", pkg.PackageManager, pkg.PackageName, pkg.PackageVersion)
+	return ignoreMap[key]
 }
 
 func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
@@ -113,15 +122,14 @@ func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
 	return ignored, nil
 }
 
-func isIgnored(pkg OssPackage, ignored []IgnoredPackage) bool {
-	for _, ign := range ignored {
-		if pkg.PackageManager == ign.PackageManager &&
-			pkg.PackageName == ign.PackageName &&
-			pkg.PackageVersion == ign.PackageVersion {
-			return true
+func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
+	filtered := make([]OssPackage, 0, len(packages))
+	for _, pkg := range packages {
+		if !isIgnored(pkg, ignoreMap) {
+			filtered = append(filtered, pkg)
 		}
 	}
-	return false
+	return filtered
 }
 
 func enrichResponseWithRealtimeScannerResults(
