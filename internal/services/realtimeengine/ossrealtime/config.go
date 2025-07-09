@@ -2,6 +2,7 @@ package ossrealtime
 
 import (
 	"fmt"
+
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 )
 
