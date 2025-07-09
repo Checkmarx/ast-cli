@@ -76,8 +76,8 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-	fmt.Println("The actual project.Groups-->", len(project.Groups))
-	fmt.Println("The groups-->", len(groups))
+	fmt.Println("The actual project.Groups-->", project.Groups, len(project.Groups))
+	fmt.Println("The groups-->", groups, len(groups))
 
 	// todo: Check the functaionality of below logic
 	//assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
