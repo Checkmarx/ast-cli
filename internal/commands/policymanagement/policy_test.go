@@ -1,5 +1,7 @@
 package policymanagement
 
+//Checking the tests
+
 import (
 	"errors"
 	"testing"
