@@ -80,7 +80,7 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 	fmt.Println("The groups-->", groups, len(groups))
 
 	// todo: Check the functaionality of below logic
-	//assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
+	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
 // Create a project with empty project name should fail
@@ -227,7 +227,7 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-	fmt.Println("Listing project for id output buffer", outputBuffer)
+	fmt.Println("Listing project for id output buffer-->", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 	fmt.Println("Listing project for id projects length: ", len(projects))
