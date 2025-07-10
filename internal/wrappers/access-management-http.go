@@ -1,15 +1,7 @@
 package wrappers
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"strings"
-
-	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -38,6 +30,8 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 		clientTimeout: viper.GetUint(commonParams.ClientTimeoutKey),
 	}
 }
+
+/*
 func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectName string, groups []*Group) error {
 	var resp *http.Response
 	for _, group := range groups {
@@ -118,3 +112,6 @@ func (a *AccessManagementHTTPWrapper) HasEntityAccessToGroups(groupIDs []string)
 
 	return result.HasAccess, nil
 }
+
+
+*/
