@@ -54,11 +54,11 @@ jobs:
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
           CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
-          CX_CLIENT_SECRET: ${{ secrets.SYPHER_CX_CLIENT_SECRET }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
           CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
-          CX_AST_USERNAME: ${{ secrets.CX_SYPHER_USER_NAME }}
-          CX_AST_PASSWORD: ${{ secrets.SYPHER_CX_PASSWORD}}
-          CX_APIKEY: ${{ secrets.SYPHER_CX_API_KEY}}
+          CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
+          CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
           CX_TENANT: ${{ secrets.CX_TENANT }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           CX_ORIGIN: "cli-tests"
