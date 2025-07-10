@@ -220,6 +220,8 @@ func NewScanCommand(
 
 	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
 
+	containersRealtimeCmd := scanContainersRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+
 	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
 	addFormatFlagToMultipleCommands(
@@ -242,6 +244,7 @@ func NewScanCommand(
 		kicsRealtimeCmd,
 		scaRealtimeCmd,
 		ossRealtimeCmd,
+		containersRealtimeCmd,
 		secretsRealtimeCmd,
 	)
 	return scanCmd
@@ -493,6 +496,36 @@ func scanOssRealtimeSubCommand(
 	)
 
 	return scanOssRealtimeCmd
+}
+
+func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	scanContainersRealtimeCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "containers-realtime",
+		Short:  "Run a Containers-Realtime scan",
+		Long:   "Running a Containers-Realtime scan is a fast and efficient way to identify vulnerabilities in container images",
+		Example: heredoc.Doc(
+			`
+			$ cx scan containers-realtime -s <path to containers file>
+		`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+			`,
+			),
+		},
+		RunE: RunScanContainersRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+	}
+
+	scanContainersRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
+	)
+	return scanContainersRealtimeCmd
 }
 
 func scanSecretsRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
