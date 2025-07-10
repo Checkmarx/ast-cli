@@ -40,10 +40,10 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	//if enabled, err := c.isFeatureFlagEnabled(); err != nil || !enabled {
-	//	logger.PrintfIfVerbose("Failed to print Containers Realtime scan results: %v", err)
-	//	return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
-	//}
+	if enabled, err := c.isFeatureFlagEnabled(); err != nil || !enabled {
+		logger.PrintfIfVerbose("Failed to print Containers Realtime scan results: %v", err)
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
+	}
 
 	if err := c.ensureLicense(); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
@@ -74,7 +74,7 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 
 // isFeatureFlagEnabled checks if the Containers Realtime feature flag is enabled.
 func (c *ContainersRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := c.FeatureFlagWrapper.GetSpecificFlag(wrappers.ContainersRealtimeEnabled)
+	enabled, err := c.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get feature flag")
 	}
