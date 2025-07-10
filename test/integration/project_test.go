@@ -75,9 +75,11 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		val, ok := project.Tags[key]
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
+		fmt.Println("The project.Groups-->", project.Groups)
+		fmt.Println("The Groups assigned are --->", groups)
 	}
 	// todo: current used grps are created by another users, as ACCESSMGMT FF is on, grps will not be assigned
-	//assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
+	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
 // Create a project with empty project name should fail
