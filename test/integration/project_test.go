@@ -33,7 +33,11 @@ const SSHKeyFilePath = "ssh-key-file.txt"
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
-	projectID, _ := createProject(t, Tags, Groups)
+	var newGroups = []string{
+		"cli-it_test_group_1",
+		"cli-it_test_group_2",
+	}
+	projectID, _ := createProject(t, Tags, newGroups)
 
 	response := listProjectByID(t, projectID)
 
@@ -43,7 +47,7 @@ func TestProjectsE2E(t *testing.T) {
 	project := showProject(t, projectID)
 	assert.Equal(t, project.ID, projectID, "Project ID should match the created project")
 
-	assertTagsAndGroups(t, project, Groups)
+	assertTagsAndGroups(t, project, newGroups)
 
 	deleteProject(t, projectID)
 
@@ -76,10 +80,6 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-	fmt.Println("The actual project.Groups-->", project.Groups, len(project.Groups))
-	fmt.Println("The groups-->", groups, len(groups))
-
-	// todo: Check the functaionality of below logic
 	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
