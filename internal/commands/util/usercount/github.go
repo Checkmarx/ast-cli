@@ -107,7 +107,7 @@ func createRunGitHubUserCountFunc(gitHubWrapper wrappers.GitHubWrapper) func(cmd
 		err = printer.Print(cmd.OutOrStdout(), views, format)
 
 		// Only print user count information if in debug mode
-		if viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileConsoleFlag) != "" {
+		if viper.GetBool(params.DebugFlag) {
 			err = printer.Print(cmd.OutOrStdout(), viewsUsers, format)
 		}
 
