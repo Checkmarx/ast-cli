@@ -28,7 +28,7 @@ func telemetryAISubCommand(TelemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 		Long:  "Collects telemetry data for user interactions related to AI features.",
 		Example: heredoc.Doc(
 			`
-			$ cx telemetry ai --ai-provider <AI Provider> --timestamp <2025-07-10T08:30:00Z> --problem-severity <Problem Severity> --click-type<Click Type> --agent <agent> --engine <engine>
+			$ cx telemetry ai --ai-provider <AI Provider> --timestamp <2025-07-10T08:30:00Z> --problem-severity <Problem Severity> --type<Event Type> --sub-type<Event Name> --agent <Agent> --engine <Engine>
 		`,
 		),
 
@@ -38,7 +38,8 @@ func telemetryAISubCommand(TelemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.AiProviderFlag, "", "AI Provider")
 	telemetryAICmd.PersistentFlags().String(params.TimestampFlag, "", "Timestamp")
 	telemetryAICmd.PersistentFlags().String(params.ProblemSeverityFlag, "", "Problem Severity")
-	telemetryAICmd.PersistentFlags().String(params.ClickTypeFlag, "", "Click Type")
+	telemetryAICmd.PersistentFlags().String(params.TypeFlag, "", "Type")
+	telemetryAICmd.PersistentFlags().String(params.SubTypeFlag, "", "Sub Type")
 	telemetryAICmd.PersistentFlags().String(params.EngineFlag, "", "Engine")
 	telemetryAICmd.PersistentFlags().String(params.AgentFlag, "", "Agent")
 
@@ -51,7 +52,8 @@ func runTelemetryAI(TelemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		aiProvider, _ := cmd.Flags().GetString("ai-provider")
 		timestampStr, _ := cmd.Flags().GetString("timestamp")
 		problemSeverity, _ := cmd.Flags().GetString("problem-severity")
-		clickType, _ := cmd.Flags().GetString("click-type")
+		eventType, _ := cmd.Flags().GetString("type")
+		subType, _ := cmd.Flags().GetString("sub-type")
 		agent, _ := cmd.Flags().GetString("agent")
 		engine, _ := cmd.Flags().GetString("engine")
 
@@ -66,10 +68,11 @@ func runTelemetryAI(TelemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			}
 		}
 
-		err = TelemetryWrapper.SendDataToLog(wrappers.DataForAITelemetry{
+		err = TelemetryWrapper.SendAIDataToLog(wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
 			ProblemSeverity: problemSeverity,
-			ClickType:       clickType,
+			Type:            eventType,
+			SubType:         subType,
 			Agent:           agent,
 			Engine:          engine,
 			Timestamp:       timestamp,

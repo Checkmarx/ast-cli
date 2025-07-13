@@ -15,7 +15,8 @@ func TestTelemetryAI(t *testing.T) {
 		flag(params.AiProviderFlag), "Cursor",
 		flag(params.TimestampFlag), "2025-07-10T12:34:56+03:00",
 		flag(params.ProblemSeverityFlag), "Critical",
-		flag(params.ClickTypeFlag), "ast-results.viewPackageDetails",
+		flag(params.TypeFlag), "click",
+		flag(params.SubTypeFlag), "ast-results.viewPackageDetails",
 		flag(params.AgentFlag), "Cursor",
 		flag(params.EngineFlag), "secrets",
 	}

@@ -21,7 +21,7 @@ func NewHTTPTelemetryAIWrapper(path string) *TelemetryHTTPWrapper {
 	}
 }
 
-func (r *TelemetryHTTPWrapper) SendDataToLog(data DataForAITelemetry) error {
+func (r *TelemetryHTTPWrapper) SendAIDataToLog(data DataForAITelemetry) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {
@@ -42,7 +42,7 @@ func (r *TelemetryHTTPWrapper) SendDataToLog(data DataForAITelemetry) error {
 	}()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		return errors.Errorf("Failed to scan packages, status code: %s", resp.Status)
+		return errors.Errorf("Failed to log the data, status code: %s", resp.Status)
 	case http.StatusNotFound:
 		return errors.Errorf("Telemetry AI endpoint not found")
 	}
