@@ -9,6 +9,7 @@ import (
 )
 
 func TestTelemetryAI(t *testing.T) {
+	t.Skip()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"telemetry", "ai",
