@@ -27,7 +27,6 @@ func (r *TelemetryHTTPWrapper) SendDataToLog(data DataForAITelemetry) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("try to send data to Telemetry AI log")
 
 	fn := func() (*http.Response, error) {
 		return SendHTTPRequest(http.MethodPost, fmt.Sprint(r.path, "/log"), bytes.NewBuffer(jsonBytes), true, clientTimeout)

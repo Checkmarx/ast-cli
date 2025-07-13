@@ -55,9 +55,15 @@ func runTelemetryAI(TelemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		agent, _ := cmd.Flags().GetString("agent")
 		engine, _ := cmd.Flags().GetString("engine")
 
-		timestamp, err := time.Parse("2006-01-02T15:04:05Z07:00", timestampStr)
-		if err != nil {
-			return errors.Wrap(err, "Invalid timestamp format")
+		var timestamp time.Time
+		var err error
+		if timestampStr == "" {
+			timestamp = time.Now().UTC()
+		} else {
+			timestamp, err = time.Parse("2006-01-02T15:04:05Z07:00", timestampStr)
+			if err != nil {
+				return errors.Wrap(err, "Invalid timestamp format")
+			}
 		}
 
 		err = TelemetryWrapper.SendDataToLog(wrappers.DataForAITelemetry{
