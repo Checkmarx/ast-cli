@@ -15,5 +15,5 @@ type DataForAITelemetry struct {
 }
 
 type TelemetryWrapper interface {
-	SendAIDataToLog(data DataForAITelemetry) error
+	SendAIDataToLog(data *DataForAITelemetry) error
 }

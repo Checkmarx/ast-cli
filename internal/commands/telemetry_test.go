@@ -1,10 +1,11 @@
 package commands
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
-	"testing"
 )
 
 func TestRunTelemetryAI_SendToLogSuccess(t *testing.T) {

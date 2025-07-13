@@ -21,7 +21,7 @@ func NewHTTPTelemetryAIWrapper(path string) *TelemetryHTTPWrapper {
 	}
 }
 
-func (r *TelemetryHTTPWrapper) SendAIDataToLog(data DataForAITelemetry) error {
+func (r *TelemetryHTTPWrapper) SendAIDataToLog(data *DataForAITelemetry) error {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {

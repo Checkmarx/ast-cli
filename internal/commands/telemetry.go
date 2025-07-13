@@ -1,12 +1,13 @@
 package commands
 
 import (
+	"time"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"time"
 )
 
 func NewTelemetryCommand(telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
@@ -46,9 +47,8 @@ func telemetryAISubCommand(TelemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	return telemetryAICmd
 }
 
-func runTelemetryAI(TelemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Command, []string) error {
+func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-
 		aiProvider, _ := cmd.Flags().GetString("ai-provider")
 		timestampStr, _ := cmd.Flags().GetString("timestamp")
 		problemSeverity, _ := cmd.Flags().GetString("problem-severity")
@@ -68,7 +68,7 @@ func runTelemetryAI(TelemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			}
 		}
 
-		err = TelemetryWrapper.SendAIDataToLog(wrappers.DataForAITelemetry{
+		err = telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
 			ProblemSeverity: problemSeverity,
 			Type:            eventType,
