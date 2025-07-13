@@ -22,7 +22,7 @@ func NewTelemetryCommand(telemetryWrapper wrappers.TelemetryWrapper) *cobra.Comm
 	return telemetryCmd
 }
 
-func telemetryAISubCommand(TelemetryAIWrapper wrappers.TelemetryWrapper) *cobra.Command {
+func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	telemetryAICmd := &cobra.Command{
 		Use:   "ai",
 		Short: "telemetry for user events related to AI functionality.",
@@ -33,7 +33,7 @@ func telemetryAISubCommand(TelemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 		`,
 		),
 
-		RunE: runTelemetryAI(TelemetryAIWrapper),
+		RunE: runTelemetryAI(telemetryAIWrapper),
 	}
 
 	telemetryAICmd.PersistentFlags().String(params.AiProviderFlag, "", "AI Provider")
