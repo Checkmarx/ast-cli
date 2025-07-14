@@ -2,6 +2,8 @@
   {
     "PackageManager": "nuget",
     "PackageName": "Microsoft.Extensions.Caching.Memory",
-    "PackageVersion": "6.0.3"
+    "PackageVersion": "6.0.3",
+    "FilePath": "../../../commands/data/manifests/test.csproj"
+
   }
 ]

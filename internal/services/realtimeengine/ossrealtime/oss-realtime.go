@@ -91,7 +91,9 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 		ignoreMap := buildIgnoreMap(ignoredPkgs)
 		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 	}
-
+	for i := range response.Packages {
+		response.Packages[i].FilePath = filePath
+	}
 	return response, nil
 }
 
