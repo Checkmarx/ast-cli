@@ -454,7 +454,11 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	return scanASCACmd
 }
 
-func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanOssRealtimeSubCommand(
+	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
 	scanOssRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "oss-realtime",
@@ -462,14 +466,14 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		Long:   "Running a OSS-Realtime scan is a fast and efficient way to identify malicious packages in a manifest file",
 		Example: heredoc.Doc(
 			`
-			$ cx scan oss-realtime -s <path to a manifest files separated by commas>
-		`,
+			$ cx scan oss-realtime -s <path to a manifest file> --ignored-file-path <path to ignored packages JSON>
+			`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
 				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
-			`,
+				`,
 			),
 		},
 		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
@@ -481,6 +485,13 @@ func scanOssRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWr
 		"",
 		"The file source should be the path to a single file or multiple files separated by commas",
 	)
+
+	scanOssRealtimeCmd.Flags().String(
+		commonParams.IgnoredFilePathFlag,
+		"",
+		"Path to a JSON file listing ignored packages",
+	)
+
 	return scanOssRealtimeCmd
 }
 

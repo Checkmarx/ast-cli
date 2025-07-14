@@ -34,6 +34,9 @@
       <Version>19.225.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory">
+          <Version>6.0.1</Version>
+      </PackageReference>
     <PackageReference Include="System.Json" Version="4.7.1" />
   </ItemGroup>
   <ItemGroup>

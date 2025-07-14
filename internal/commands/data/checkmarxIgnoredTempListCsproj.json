@@ -1,0 +1,7 @@
+[
+  {
+    "PackageManager": "nuget",
+    "PackageName": "Microsoft.Extensions.Caching.Memory",
+    "PackageVersion": "6.0.3"
+  }
+]

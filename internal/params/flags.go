@@ -18,6 +18,7 @@ const (
 	RetryDelayPollingDefault       = 60
 	RetryDelayUsage                = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                    = "file-source"
+	IgnoredFilePathFlag            = "ignored-file-path"
 	SourcesFlagSh                  = "s"
 	TenantFlag                     = "tenant"
 	TenantFlagUsage                = "Checkmarx tenant"
