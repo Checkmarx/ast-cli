@@ -8,8 +8,8 @@ import (
 )
 
 type RealtimeScannerMockWrapper struct {
-	CustomScan       func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error)
-	CustomScanImages func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error)
+	CustomScanPackages func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error)
+	CustomScanImages   func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error)
 }
 
 func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
@@ -17,8 +17,8 @@ func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
 }
 
 func (r RealtimeScannerMockWrapper) ScanPackages(packages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
-	if r.CustomScan != nil {
-		return r.CustomScan(packages)
+	if r.CustomScanPackages != nil {
+		return r.CustomScanPackages(packages)
 	}
 	return generateMockResponse(packages), nil
 }

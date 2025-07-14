@@ -248,7 +248,7 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 		&mock.JWTMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
-			CustomScan: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+			CustomScanPackages: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 				var response wrappers.RealtimeScannerPackageResponse
 				for _, pkg := range packages.Packages {
 					response.Packages = append(response.Packages, wrappers.RealtimeScannerResults{
@@ -303,7 +303,7 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 	_, toScan := prepareScan(pkgs)
 
 	ossRealtimeService.RealtimeScannerWrapper = &mock.RealtimeScannerMockWrapper{
-		CustomScan: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+		CustomScanPackages: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 			var response wrappers.RealtimeScannerPackageResponse
 			for _, pkg := range packages.Packages {
 				status := "OK"

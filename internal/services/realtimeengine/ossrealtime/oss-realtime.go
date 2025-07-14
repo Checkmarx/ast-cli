@@ -107,17 +107,17 @@ func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
 	return ignoreMap[pkg.GetID()]
 }
 
-func loadIgnoredPackages(path string) (ignored []IgnoredPackage, err error) {
+func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var ignoredPkgs []IgnoredPackage
-	err = json.Unmarshal(data, &ignoredPkgs)
+	var ignored []IgnoredPackage
+	err = json.Unmarshal(data, &ignored)
 	if err != nil {
 		return nil, err
 	}
-	return ignoredPkgs, nil
+	return ignored, nil
 }
 
 func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
@@ -182,12 +182,12 @@ func (o *OssRealtimeService) ensureLicense() error {
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
-func parseManifest(filePath string) (pkgs []models.Package, err error) {
+func parseManifest(filePath string) ([]models.Package, error) {
 	manifestParser := parser.ParsersFactory(filePath)
 	if manifestParser == nil {
 		return nil, errors.Errorf("no parser available for file: %s", filePath)
 	}
-	pkgs, err = manifestParser.Parse(filePath)
+	pkgs, err := manifestParser.Parse(filePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing manifest file error")
 	}
