@@ -50,7 +50,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -107,17 +107,17 @@ func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
 	return ignoreMap[pkg.GetID()]
 }
 
-func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
+func loadIgnoredPackages(path string) (ignored []IgnoredPackage, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var ignored []IgnoredPackage
-	err = json.Unmarshal(data, &ignored)
+	var ignoredPkgs []IgnoredPackage
+	err = json.Unmarshal(data, &ignoredPkgs)
 	if err != nil {
 		return nil, err
 	}
-	return ignored, nil
+	return ignoredPkgs, nil
 }
 
 func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
@@ -182,12 +182,12 @@ func (o *OssRealtimeService) ensureLicense() error {
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
-func parseManifest(filePath string) ([]models.Package, error) {
+func parseManifest(filePath string) (pkgs []models.Package, err error) {
 	manifestParser := parser.ParsersFactory(filePath)
 	if manifestParser == nil {
 		return nil, errors.Errorf("no parser available for file: %s", filePath)
 	}
-	pkgs, err := manifestParser.Parse(filePath)
+	pkgs, err = manifestParser.Parse(filePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing manifest file error")
 	}
@@ -250,7 +250,7 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
 	result, err := o.RealtimeScannerWrapper.ScanPackages(requestPackages)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)

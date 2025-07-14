@@ -36,7 +36,7 @@ func NewContainersRealtimeService(
 }
 
 // RunContainersRealtimeScan performs a containers real-time scan on the given file.
-func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (*ContainerImageResults, error) {
+func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (results *ContainerImageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -142,7 +142,7 @@ func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 }
 
 // scanImages scans the extracted images using the realtime scanner.
-func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePath string) (*ContainerImageResults, error) {
+func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePath string) (results *ContainerImageResults, err error) {
 	logger.PrintfIfVerbose("Scanning %d images for vulnerabilities", len(images))
 
 	var requestImages []wrappers.ContainerImageRequestItem

@@ -26,7 +26,7 @@ func NewRealtimeScannerHTTPWrapper(path string, jwtWrapper JWTWrapper, featureFl
 	}
 }
 
-func (r RealtimeScannerHTTPWrapper) ScanPackages(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error) {
+func (r RealtimeScannerHTTPWrapper) ScanPackages(packages *RealtimeScannerPackageRequest) (results *RealtimeScannerPackageResponse, err error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(packages)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r RealtimeScannerHTTPWrapper) ScanPackages(packages *RealtimeScannerPackag
 }
 
 // ScanImages implements the RealtimeScannerWrapper interface for containers realtime.
-func (r RealtimeScannerHTTPWrapper) ScanImages(images *ContainerImageRequest) (*ContainerImageResponse, error) {
+func (r RealtimeScannerHTTPWrapper) ScanImages(images *ContainerImageRequest) (results *ContainerImageResponse, err error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(images)
 	if err != nil {
