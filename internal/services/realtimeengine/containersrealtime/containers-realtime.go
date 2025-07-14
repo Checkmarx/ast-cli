@@ -195,7 +195,7 @@ func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []
 }
 
 // splitToImageAndTag splits the image string into name and tag components.
-func splitToImageAndTag(image string) (imageName string, imageTag string) {
+func splitToImageAndTag(image string) (imageName, imageTag string) {
 	// Split the image string by the last colon to separate name and tag
 	lastColonIndex := strings.LastIndex(image, ":")
 
