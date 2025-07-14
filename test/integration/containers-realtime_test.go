@@ -26,6 +26,9 @@ func TestContainersRealtimeScan_PositiveDockerfile_Success(t *testing.T) {
 
 	assert.Equal(t, 1, len(images.Images), "Should return exactly one image")
 
+	if len(images.Images) == 0 {
+		t.Fatal("No images found in the scan results")
+	}
 	img := images.Images[0]
 	assert.Equal(t, "confluentinc/cp-kafkacat", img.ImageName, "Image name should match")
 	assert.Equal(t, "6.1.10", img.ImageTag, "Image tag should match")
