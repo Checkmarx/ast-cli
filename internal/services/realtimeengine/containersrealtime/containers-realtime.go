@@ -111,7 +111,7 @@ func validateFilePath(filePath string) error {
 }
 
 // parseContainersFile parses the containers file and returns a list of images.
-func parseContainersFile(filePath string) (images []types.ImageModel, err error) {
+func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 	extractor := imagesExtractor.NewImagesExtractor()
 
 	// Extract files from the scan path (directory containing the file)
@@ -121,26 +121,24 @@ func parseContainersFile(filePath string) (images []types.ImageModel, err error)
 
 	// Ensure the directory exists
 	if _, statErr := os.Stat(scanPath); os.IsNotExist(statErr) {
-		err = errors.Errorf("directory does not exist: %s", scanPath)
-		return
+		return nil, errors.Errorf("directory does not exist: %s", scanPath)
 	}
 
 	var files types.FileImages
 	var envVars map[string]map[string]string
+	var err error
 	files, envVars, _, err = extractor.ExtractFiles(scanPath)
 	if err != nil {
-		err = errors.Wrap(err, "error extracting files")
-		return
+		return nil, errors.Wrap(err, "error extracting files")
 	}
 
-	images, err = extractor.ExtractAndMergeImagesFromFilesWithLineInfo(files, []types.ImageModel{}, envVars)
+	images, err := extractor.ExtractAndMergeImagesFromFilesWithLineInfo(files, []types.ImageModel{}, envVars)
 	if err != nil {
-		err = errors.Wrap(err, "error merging images")
-		return
+		return nil, errors.Wrap(err, "error merging images")
 	}
 
 	logger.PrintfIfVerbose("Extracted %d container images", len(images))
-	return
+	return images, nil
 }
 
 // scanImages scans the extracted images using the realtime scanner.
