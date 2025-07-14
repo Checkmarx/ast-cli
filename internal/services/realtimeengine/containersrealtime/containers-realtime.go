@@ -3,6 +3,7 @@ package containersrealtime
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor"
 	"github.com/Checkmarx/containers-types/types"
@@ -41,7 +42,7 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 	}
 
 	if enabled, err := c.isFeatureFlagEnabled(); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print Containers Realtime scan results: %v", err)
+		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
@@ -128,9 +129,6 @@ func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 		return nil, errors.Wrap(err, "error extracting files")
 	}
 
-	//logger.PrintfIfVerbose("Found %d files to analyze", len(files))
-
-	// Extract and merge images from the files
 	images, err := extractor.ExtractAndMergeImagesFromFilesWithLineInfo(files, []types.ImageModel{}, envVars)
 	if err != nil {
 		return nil, errors.Wrap(err, "error merging images")
@@ -144,12 +142,9 @@ func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePath string) (*ContainerImageResults, error) {
 	logger.PrintfIfVerbose("Scanning %d images for vulnerabilities", len(images))
 
-	// Convert extractor images to request format
 	var requestImages []wrappers.ContainerImageRequestItem
 	for _, img := range images {
-		// Use reflection to safely access fields that might have different names
-		curImage := img.Name
-		imageName, imageTag := splitToImageAndTag(curImage)
+		imageName, imageTag := splitToImageAndTag(img.Name)
 
 		logger.PrintfIfVerbose("Processing image: %s:%s", imageName, imageTag)
 
@@ -170,10 +165,14 @@ func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePa
 
 	logger.PrintfIfVerbose("Received scan results for %d images", len(response.Images))
 
-	// Convert response to ContainerImageResults
+	result := c.buildContainerImageResults(response.Images, images, filePath)
+	return &result, nil
+}
+
+// buildContainerImageResults builds ContainerImageResults from response and images
+func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []wrappers.ContainerImageResponseItem, images []types.ImageModel, filePath string) ContainerImageResults {
 	var result ContainerImageResults
-	for i, respImg := range response.Images {
-		// Find corresponding extractor image for location info
+	for i, respImg := range responseImages {
 		var locations []realtimeengine.Location
 		if i < len(images) {
 			locations = convertLocations(images[i].ImageLocations)
@@ -189,20 +188,13 @@ func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePa
 		}
 		result.Images = append(result.Images, containerImage)
 	}
-
-	return &result, nil
+	return result
 }
 
 // splitToImageAndTag splits the image string into name and tag components.
 func splitToImageAndTag(image string) (string, string) {
 	// Split the image string by the last colon to separate name and tag
-	lastColonIndex := len(image) - 1 - len(image)
-	for i := len(image) - 1; i >= 0; i-- {
-		if image[i] == ':' {
-			lastColonIndex = i
-			break
-		}
-	}
+	lastColonIndex := strings.LastIndex(image, ":")
 
 	if lastColonIndex == len(image)-1 {
 		return image, "latest" // No tag specified, default to "latest"
@@ -213,15 +205,6 @@ func splitToImageAndTag(image string) (string, string) {
 
 	return imageName, imageTag
 }
-
-//// getImageName safely extracts the image name from types.ImageModel
-//func getImageName(img types.ImageModel) string {
-//	// Try different possible field names
-//	if img.Name != "" {
-//		return img.Name
-//	}
-//	return "unknown"
-//}
 
 // convertLocations converts types locations to realtimeengine locations.
 func convertLocations(locations []types.ImageLocation) []realtimeengine.Location {
@@ -258,7 +241,6 @@ func getLocationStartIndex(loc types.ImageLocation) int {
 
 // getLocationEndIndex safely extracts the end index from types.Location
 func getLocationEndIndex(loc types.ImageLocation) int {
-	// Try different possible field names
 	if loc.EndIndex > 0 {
 		return loc.EndIndex
 	}
@@ -270,9 +252,8 @@ func convertVulnerabilities(vulns []wrappers.ContainerImageVulnerability) []Vuln
 	var result []Vulnerability
 	for _, vuln := range vulns {
 		result = append(result, Vulnerability{
-			CVE:         vuln.CVE,
-			Description: vuln.Description,
-			Severity:    vuln.Severity,
+			CVE:      vuln.CVE,
+			Severity: vuln.Severity,
 		})
 	}
 	return result

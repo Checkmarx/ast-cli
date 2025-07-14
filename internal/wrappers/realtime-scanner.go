@@ -1,7 +1,7 @@
 package wrappers
 
 type RealtimeScannerWrapper interface {
-	Scan(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error)
+	ScanPackages(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error)
 	ScanImages(images *ContainerImageRequest) (*ContainerImageResponse, error)
 }
 

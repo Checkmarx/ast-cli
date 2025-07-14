@@ -18,7 +18,6 @@ type ContainerImageResults struct {
 }
 
 type Vulnerability struct {
-	CVE         string `json:"CVE"`
-	Description string `json:"Description"`
-	Severity    string `json:"Severity"`
+	CVE      string `json:"CVE"`
+	Severity string `json:"Severity"`
 }

@@ -16,7 +16,7 @@ func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
 	return &RealtimeScannerMockWrapper{}
 }
 
-func (r RealtimeScannerMockWrapper) Scan(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
+func (r RealtimeScannerMockWrapper) ScanPackages(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 	if r.CustomScan != nil {
 		return r.CustomScan(packages)
 	}

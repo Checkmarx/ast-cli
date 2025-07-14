@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Remove dummyFeatureFlagWrapper and use mock.Flag for feature flag control
-
 func TestRunContainersRealtimeScan_ValidLicenseAndFile_Success(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
@@ -148,7 +146,6 @@ func TestRunContainersRealtimeScan_ImageVulnerabilityMapping(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, "nginx", result.Images[0].ImageName)
 	assert.Equal(t, "CVE-9999-0000", result.Images[0].Vulnerabilities[0].CVE)
-	assert.Equal(t, "Test vuln", result.Images[0].Vulnerabilities[0].Description)
 	assert.Equal(t, "Medium", result.Images[0].Vulnerabilities[0].Severity)
 	assert.Equal(t, 0, result.Images[0].Locations[0].Line)
 	assert.Equal(t, 5, result.Images[0].Locations[0].StartIndex)

@@ -26,7 +26,7 @@ func NewRealtimeScannerHTTPWrapper(path string, jwtWrapper JWTWrapper, featureFl
 	}
 }
 
-func (r RealtimeScannerHTTPWrapper) Scan(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error) {
+func (r RealtimeScannerHTTPWrapper) ScanPackages(packages *RealtimeScannerPackageRequest) (*RealtimeScannerPackageResponse, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(packages)
 	if err != nil {

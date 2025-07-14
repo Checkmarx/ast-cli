@@ -56,7 +56,7 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	}
 
 	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
@@ -251,7 +251,7 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 
 // scanAndCache performs a scan on the provided packages and caches the results.
 func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
-	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
+	result, err := o.RealtimeScannerWrapper.ScanPackages(requestPackages)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
 		return nil, errors.Wrap(err, "scanning packages via realtime service")
