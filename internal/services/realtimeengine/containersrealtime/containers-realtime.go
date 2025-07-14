@@ -210,9 +210,9 @@ func splitToImageAndTag(image string) (string, string) {
 func convertLocations(locations []types.ImageLocation) []realtimeengine.Location {
 	var result []realtimeengine.Location
 	for _, loc := range locations {
-		line := getLocationLine(loc)
-		startIndex := getLocationStartIndex(loc)
-		endIndex := getLocationEndIndex(loc)
+		line := loc.Line
+		startIndex := loc.StartIndex
+		endIndex := loc.EndIndex
 
 		result = append(result, realtimeengine.Location{
 			Line:       line,
@@ -221,30 +221,6 @@ func convertLocations(locations []types.ImageLocation) []realtimeengine.Location
 		})
 	}
 	return result
-}
-
-// getLocationLine safely extracts the line number from types.Location
-func getLocationLine(loc types.ImageLocation) int {
-	if loc.Line >= 0 {
-		return loc.Line
-	}
-	return -1 // Default to -1 if no line number is specified
-}
-
-// getLocationStartIndex safely extracts the start index from types.Location
-func getLocationStartIndex(loc types.ImageLocation) int {
-	if loc.StartIndex >= 0 {
-		return loc.StartIndex
-	}
-	return -1
-}
-
-// getLocationEndIndex safely extracts the end index from types.Location
-func getLocationEndIndex(loc types.ImageLocation) int {
-	if loc.EndIndex > 0 {
-		return loc.EndIndex
-	}
-	return -1
 }
 
 // convertVulnerabilities converts wrapper vulnerabilities to service vulnerabilities.
