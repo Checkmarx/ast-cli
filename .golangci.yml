@@ -119,6 +119,9 @@ issues:
     - path: _test\.go
       linters:
         - mnd
+    - path: _test\.go
+      linters:
+        - gocritic
 
 service:
   golangci-lint-version: 1.64.2
