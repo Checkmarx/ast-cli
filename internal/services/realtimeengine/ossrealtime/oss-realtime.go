@@ -64,9 +64,9 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
 	}
 
-	// if err := realtimeengine.ValidateFilePath(filePath); err != nil {
-	// 	return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
-	// }
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	}
 
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
