@@ -164,7 +164,10 @@ const (
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
 	LimitFlag                    = "limit"
 	ConfigFilePathFlag           = "config-file-path"
-
+	LogFileFlag                  = "log-file"
+	LogFileUsage                 = "Saves logs to the specified file path only"
+	LogFileConsoleFlag           = "log-file-console"
+	LogFileConsoleUsage          = "Saves logs to the specified file path as well as to the console"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
