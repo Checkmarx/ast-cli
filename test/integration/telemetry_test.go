@@ -14,7 +14,6 @@ func TestTelemetryAI(t *testing.T) {
 	args := []string{
 		"telemetry", "ai",
 		flag(params.AiProviderFlag), "Cursor",
-		flag(params.TimestampFlag), "2025-07-10T12:34:56+03:00",
 		flag(params.ProblemSeverityFlag), "Critical",
 		flag(params.TypeFlag), "click",
 		flag(params.SubTypeFlag), "ast-results.viewPackageDetails",

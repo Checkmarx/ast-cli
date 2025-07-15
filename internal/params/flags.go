@@ -5,7 +5,6 @@ const (
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"
 	AiProviderFlag                 = "ai-provider"
-	TimestampFlag                  = "timestamp"
 	ProblemSeverityFlag            = "problem-severity"
 	TypeFlag                       = "type"
 	SubTypeFlag                    = "sub-type"
