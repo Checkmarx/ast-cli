@@ -1105,7 +1105,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 		containerConfig.ImagesFilter = imageTagFilter
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if userCustomImages != "" {
+	if userCustomImages != "" && !containerResolveLocally {
 		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
 		for _, containerImageName := range containerImagesList {
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
