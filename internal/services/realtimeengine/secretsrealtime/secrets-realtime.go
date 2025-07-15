@@ -44,10 +44,15 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]Secr
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 	}
 
-	if enabled, err := s.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled); err != nil || !enabled.Status {
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(s.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
 		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
+
+	//if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+	//	logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
+	//	return nil, errorconstants.NewRealtimeEngineError("failed to read file").Error()
+	//}
 
 	content, err := readFile(filePath)
 	if err != nil {

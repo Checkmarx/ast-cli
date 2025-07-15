@@ -41,16 +41,16 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	if enabled, err := c.isFeatureFlagEnabled(); err != nil || !enabled {
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(c.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
 		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
-	if err := c.ensureLicense(); err != nil {
+	if err := realtimeengine.EnsureLicense(c.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
 	}
 
-	if err := validateFilePath(filePath); err != nil {
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 
@@ -71,43 +71,6 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 	}
 
 	return result, nil
-}
-
-// isFeatureFlagEnabled checks if the Containers Realtime feature flag is enabled.
-func (c *ContainersRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := c.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
-// ensureLicense validates that a valid JWT wrapper is available.
-func (c *ContainersRealtimeService) ensureLicense() error {
-	if c.JwtWrapper == nil {
-		return errors.New("JWT wrapper is not initialized, cannot ensure license")
-	}
-	return nil
-}
-
-// validateFilePath validates that the file path exists and is accessible.
-func validateFilePath(filePath string) error {
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return errors.Errorf("file does not exist: %s", filePath)
-	}
-
-	// Check if it's a regular file
-	fileInfo, err := os.Stat(filePath)
-	if err != nil {
-		return errors.Errorf("cannot access file: %s", filePath)
-	}
-
-	if fileInfo.IsDir() {
-		return errors.Errorf("path is a directory, expected a file: %s", filePath)
-	}
-
-	return nil
 }
 
 // parseContainersFile parses the containers file and returns a list of images.

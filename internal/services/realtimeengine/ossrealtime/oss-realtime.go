@@ -55,14 +55,18 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(o.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
 		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
-	if err := o.ensureLicense(); err != nil {
+	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
 	}
+
+	// if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+	// 	return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	// }
 
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
@@ -162,23 +166,6 @@ func getPackageEntryFromPackageMap(
 		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
 	}
 	return &entry
-}
-
-// isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
-func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
-// ensureLicense validates that a valid JWT wrapper is available.
-func (o *OssRealtimeService) ensureLicense() error {
-	if o.JwtWrapper == nil {
-		return errors.New("JWT wrapper is not initialized, cannot ensure license")
-	}
-	return nil
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
