@@ -87,10 +87,7 @@ func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 		return nil, errors.Errorf("directory does not exist: %s", scanPath)
 	}
 
-	var files types.FileImages
-	var envVars map[string]map[string]string
-	var err error
-	files, envVars, _, err = extractor.ExtractFiles(scanPath)
+	files, envVars, _, err := extractor.ExtractFiles(scanPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting files")
 	}
