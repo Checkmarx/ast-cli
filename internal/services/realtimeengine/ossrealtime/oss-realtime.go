@@ -50,18 +50,22 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(o.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
+		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
-	if err := o.ensureLicense(); err != nil {
+	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+	}
+
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
@@ -164,23 +168,6 @@ func getPackageEntryFromPackageMap(
 	return &entry
 }
 
-// isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
-func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
-// ensureLicense validates that a valid JWT wrapper is available.
-func (o *OssRealtimeService) ensureLicense() error {
-	if o.JwtWrapper == nil {
-		return errors.New("JWT wrapper is not initialized, cannot ensure license")
-	}
-	return nil
-}
-
 // parseManifest parses the manifest file and returns a list of packages.
 func parseManifest(filePath string) ([]models.Package, error) {
 	manifestParser := parser.ParsersFactory(filePath)
@@ -250,8 +237,8 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
-	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
+	result, err := o.RealtimeScannerWrapper.ScanPackages(requestPackages)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
 		return nil, errors.Wrap(err, "scanning packages via realtime service")

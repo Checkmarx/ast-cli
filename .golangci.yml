@@ -63,6 +63,8 @@ linters-settings:
           - github.com/stretchr/testify/assert
           - github.com/gofrs/flock
           - github.com/golang-jwt/jwt/v5
+          - github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor
+          - github.com/Checkmarx/containers-types/types
   dupl:
     threshold: 500
   funlen:
