@@ -4,6 +4,11 @@ package params
 const (
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"
+	AiProviderFlag                 = "ai-provider"
+	ProblemSeverityFlag            = "problem-severity"
+	TypeFlag                       = "type"
+	SubTypeFlag                    = "sub-type"
+	EngineFlag                     = "engine"
 	OriginFlag                     = "origin"
 	AgentFlagUsage                 = "Scan origin name"
 	ApplicationName                = "application-name"
