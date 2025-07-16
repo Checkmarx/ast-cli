@@ -60,6 +60,7 @@ func NewAstCLI(
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -224,7 +225,7 @@ func NewAstCLI(
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper)
-
+	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -236,6 +237,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		telemetryCmd,
 	)
 
 	rootCmd.SilenceUsage = true
