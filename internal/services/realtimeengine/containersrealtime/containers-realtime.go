@@ -188,7 +188,7 @@ func splitToImageAndSha(image string) (imageName, imageTag string) {
 }
 
 // buildContainerImageResults builds ContainerImageResults from response and images
-func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []wrappers.ContainerImageResponseItem, imagesWithSha []wrappers.ContainerImageResponseItem, images []types.ImageModel, filePath string) ContainerImageResults {
+func (c *ContainersRealtimeService) buildContainerImageResults(responseImages, imagesWithSha []wrappers.ContainerImageResponseItem, images []types.ImageModel, filePath string) ContainerImageResults {
 	var result ContainerImageResults
 
 	result = mergeImagesToResults(responseImages, result, &images, filePath)
