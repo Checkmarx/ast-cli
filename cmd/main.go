@@ -95,6 +95,7 @@ func main() {
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
+	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -133,6 +134,7 @@ func main() {
 		byorWrapper,
 		containerResolverWrapper,
 		realTimeWrapper,
+		telemetryWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
