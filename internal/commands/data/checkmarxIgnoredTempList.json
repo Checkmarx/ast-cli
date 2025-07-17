@@ -2,6 +2,7 @@
   {
     "PackageManager": "npm",
     "PackageName": "coa",
-    "PackageVersion": "3.1.3"
+    "PackageVersion": "3.1.3",
+    "FilePath": "../../../commands/data/manifests/package.json"
   }
 ]
