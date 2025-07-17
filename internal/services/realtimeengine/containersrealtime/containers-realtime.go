@@ -64,6 +64,8 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 		return &ContainerImageResults{Images: []ContainerImage{}}, nil
 	}
 
+	images = splitLocationsToSeparateResults(images)
+
 	result, err := c.scanImages(images, filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan images via realtime service: %v", err)
@@ -71,6 +73,21 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 	}
 
 	return result, nil
+}
+
+func splitLocationsToSeparateResults(images []types.ImageModel) []types.ImageModel {
+	for image := range images {
+		if len(images[image].ImageLocations) > 1 {
+			for _, loc := range images[image].ImageLocations {
+				newImage := images[image]
+				newImage.ImageLocations = []types.ImageLocation{loc}
+				images = append(images, newImage)
+			}
+			images = append(images[:image], images[image+1:]...)
+			image--
+		}
+	}
+	return images
 }
 
 // parseContainersFile parses the containers file and returns a list of images.
@@ -106,7 +123,13 @@ func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePa
 	logger.PrintfIfVerbose("Scanning %d images for vulnerabilities", len(images))
 
 	var requestImages []wrappers.ContainerImageRequestItem
+	var imagesWithSha []wrappers.ContainerImageResponseItem
 	for _, img := range images {
+		if img.IsSha {
+			logger.PrintfIfVerbose("Skipping image with SHA: %s", img.Name)
+			addShaImage(&imagesWithSha, img)
+			continue
+		}
 		imageName, imageTag := splitToImageAndTag(img.Name)
 
 		logger.PrintfIfVerbose("Processing image: %s:%s", imageName, imageTag)
@@ -128,19 +151,54 @@ func (c *ContainersRealtimeService) scanImages(images []types.ImageModel, filePa
 
 	logger.PrintfIfVerbose("Received scan results for %d images", len(response.Images))
 
-	result := c.buildContainerImageResults(response.Images, images, filePath)
+	result := c.buildContainerImageResults(response.Images, imagesWithSha, images, filePath)
 	return &result, nil
 }
 
-// buildContainerImageResults builds ContainerImageResults from response and images
-func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []wrappers.ContainerImageResponseItem, images []types.ImageModel, filePath string) ContainerImageResults {
-	var result ContainerImageResults
-	for i, respImg := range responseImages {
-		var locations []realtimeengine.Location
-		if i < len(images) {
-			locations = convertLocations(images[i].ImageLocations)
-		}
+func addShaImage(images *[]wrappers.ContainerImageResponseItem, img types.ImageModel) {
+	imageName, imageTag := splitToImageAndSha(img.Name)
 
+	*images = append(*images, wrappers.ContainerImageResponseItem{
+		ImageName:       imageName,
+		ImageTag:        imageTag,
+		Status:          "Unknown",
+		Vulnerabilities: []wrappers.ContainerImageVulnerability{},
+	})
+}
+
+func splitToImageAndSha(image string) (imageName, imageTag string) {
+	atIndex := strings.Index(image, "@")
+	if atIndex == -1 {
+		return splitToImageAndTag(image)
+	}
+
+	nameAndTag := image[:atIndex]
+	shaPart := image[atIndex+1:]
+
+	colonIndex := strings.LastIndex(nameAndTag, ":")
+	if colonIndex != -1 {
+		imageName = nameAndTag[:colonIndex]
+		tag := nameAndTag[colonIndex+1:]
+		imageTag = tag + "@" + shaPart
+	} else {
+		imageName = nameAndTag
+		imageTag = shaPart
+	}
+	return
+}
+
+// buildContainerImageResults builds ContainerImageResults from response and images
+func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []wrappers.ContainerImageResponseItem, imagesWithSha []wrappers.ContainerImageResponseItem, images []types.ImageModel, filePath string) ContainerImageResults {
+	var result ContainerImageResults
+
+	result = mergeImagesToResults(responseImages, result, &images, filePath)
+	result = mergeImagesToResults(imagesWithSha, result, &images, filePath)
+	return result
+}
+
+func mergeImagesToResults(listOfImages []wrappers.ContainerImageResponseItem, result ContainerImageResults, images *[]types.ImageModel, filePath string) ContainerImageResults {
+	for _, respImg := range listOfImages {
+		locations := getImageLocations(images, respImg.ImageName, respImg.ImageTag)
 		containerImage := ContainerImage{
 			ImageName:       respImg.ImageName,
 			ImageTag:        respImg.ImageTag,
@@ -152,6 +210,17 @@ func (c *ContainersRealtimeService) buildContainerImageResults(responseImages []
 		result.Images = append(result.Images, containerImage)
 	}
 	return result
+}
+
+func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) []realtimeengine.Location {
+	for i, img := range *images {
+		if img.Name == imageName+":"+imageTag || img.Name == imageName+"@"+imageTag {
+			location := convertLocations(&img.ImageLocations)
+			*images = append((*images)[:i], (*images)[i+1:]...)
+			return location
+		}
+	}
+	return []realtimeengine.Location{}
 }
 
 // splitToImageAndTag splits the image string into name and tag components.
@@ -170,9 +239,9 @@ func splitToImageAndTag(image string) (imageName, imageTag string) {
 }
 
 // convertLocations converts types locations to realtimeengine locations.
-func convertLocations(locations []types.ImageLocation) []realtimeengine.Location {
+func convertLocations(locations *[]types.ImageLocation) []realtimeengine.Location {
 	var result []realtimeengine.Location
-	for _, loc := range locations {
+	for _, loc := range *locations {
 		line := loc.Line
 		startIndex := loc.StartIndex
 		endIndex := loc.EndIndex
