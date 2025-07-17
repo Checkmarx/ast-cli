@@ -76,15 +76,16 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 }
 
 func splitLocationsToSeparateResults(images []types.ImageModel) []types.ImageModel {
-	for image := range images {
-		if len(images[image].ImageLocations) > 1 {
-			for _, loc := range images[image].ImageLocations {
-				newImage := images[image]
+	for i := 0; i < len(images); {
+		if len(images[i].ImageLocations) > 1 {
+			for _, loc := range images[i].ImageLocations {
+				newImage := images[i]
 				newImage.ImageLocations = []types.ImageLocation{loc}
 				images = append(images, newImage)
 			}
-			images = append(images[:image], images[image+1:]...)
-			image--
+			images = append(images[:i], images[i+1:]...)
+		} else {
+			i++
 		}
 	}
 	return images
@@ -182,7 +183,7 @@ func splitToImageAndSha(image string) (imageName, imageTag string) {
 		imageTag = tag + "@" + shaPart
 	} else {
 		imageName = nameAndTag
-		imageTag = "@" + shaPart
+		imageTag = shaPart
 	}
 	return
 }

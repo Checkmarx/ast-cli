@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Checkmarx/containers-types/types"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
@@ -166,10 +167,49 @@ func TestSplitToImageAndSha_whenHasShaAndTag_shouldReturnImageAndShaAndTag(t *te
 func TestSplitToImageAndSha_whenHasShaNoTag_shouldReturnImageAndShaNoTag(t *testing.T) {
 	image := "nginx@sha256:1234567890abcdef"
 	expectedImage := "nginx"
-	expectedSha := "@sha256:1234567890abcdef"
+	expectedSha := "sha256:1234567890abcdef"
 
 	imageName, sha := splitToImageAndSha(image)
 
 	assert.Equal(t, expectedImage, imageName)
 	assert.Equal(t, expectedSha, sha)
+}
+
+func TestSplitLocationsToSeparateResults_MultipleLocations(t *testing.T) {
+	img := types.ImageModel{
+		Name: "nginx",
+		ImageLocations: []types.ImageLocation{
+			{Line: 1, StartIndex: 0, EndIndex: 5},
+			{Line: 2, StartIndex: 6, EndIndex: 11},
+		},
+	}
+	result := splitLocationsToSeparateResults([]types.ImageModel{img})
+	assert.Equal(t, 2, len(result))
+	assert.Equal(t, 1, len(result[0].ImageLocations))
+	assert.Equal(t, 1, result[0].ImageLocations[0].Line)
+	assert.Equal(t, 1, len(result[1].ImageLocations))
+	assert.Equal(t, 2, result[1].ImageLocations[0].Line)
+}
+
+func TestSplitLocationsToSeparateResults_SingleLocation(t *testing.T) {
+	img := types.ImageModel{
+		Name: "nginx",
+		ImageLocations: []types.ImageLocation{
+			{Line: 3, StartIndex: 0, EndIndex: 5},
+		},
+	}
+	result := splitLocationsToSeparateResults([]types.ImageModel{img})
+	assert.Equal(t, 1, len(result))
+	assert.Equal(t, 1, len(result[0].ImageLocations))
+	assert.Equal(t, 3, result[0].ImageLocations[0].Line)
+}
+
+func TestSplitLocationsToSeparateResults_NoLocations(t *testing.T) {
+	img := types.ImageModel{
+		Name:           "nginx",
+		ImageLocations: []types.ImageLocation{},
+	}
+	result := splitLocationsToSeparateResults([]types.ImageModel{img})
+	assert.Equal(t, 1, len(result))
+	assert.Equal(t, 0, len(result[0].ImageLocations))
 }
