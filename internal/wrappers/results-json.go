@@ -100,6 +100,7 @@ type ScanResultData struct {
 	PackageData          []*ScanResultPackageData `json:"packageData,omitempty"`
 	PackageID            []*ScanResultPackageData `json:"packageId,omitempty"`
 	PackageIdentifier    string                   `json:"packageIdentifier,omitempty"`
+	PublishedAt          string                   `json:"publishedAt,omitempty"`
 	ScaPackageCollection *ScaPackageCollection    `json:"scaPackageData,omitempty"`
 	RecommendedVersion   interface{}              `json:"recommendedVersion,omitempty"`
 	// Added to support kics results
