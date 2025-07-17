@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const testImageName = "nginx"
+
 func TestRunContainersRealtimeScan_ValidLicenseAndFile_Success(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
@@ -154,8 +156,8 @@ func TestRunContainersRealtimeScan_ImageVulnerabilityMapping(t *testing.T) {
 }
 
 func TestSplitToImageAndSha_whenHasShaAndTag_shouldReturnImageAndShaAndTag(t *testing.T) {
-	image := "nginx:latest@sha256:1234567890abcdef"
-	expectedImage := "nginx"
+	image := testImageName + ":latest@sha256:1234567890abcdef"
+	expectedImage := testImageName
 	expectedSha := "latest@sha256:1234567890abcdef"
 
 	imageName, sha := splitToImageAndSha(image)
@@ -165,8 +167,8 @@ func TestSplitToImageAndSha_whenHasShaAndTag_shouldReturnImageAndShaAndTag(t *te
 }
 
 func TestSplitToImageAndSha_whenHasShaNoTag_shouldReturnImageAndShaNoTag(t *testing.T) {
-	image := "nginx@sha256:1234567890abcdef"
-	expectedImage := "nginx"
+	image := testImageName + "@sha256:1234567890abcdef"
+	expectedImage := testImageName
 	expectedSha := "sha256:1234567890abcdef"
 
 	imageName, sha := splitToImageAndSha(image)
@@ -177,7 +179,7 @@ func TestSplitToImageAndSha_whenHasShaNoTag_shouldReturnImageAndShaNoTag(t *test
 
 func TestSplitLocationsToSeparateResults_MultipleLocations(t *testing.T) {
 	img := types.ImageModel{
-		Name: "nginx",
+		Name: testImageName,
 		ImageLocations: []types.ImageLocation{
 			{Line: 1, StartIndex: 0, EndIndex: 5},
 			{Line: 2, StartIndex: 6, EndIndex: 11},
@@ -193,7 +195,7 @@ func TestSplitLocationsToSeparateResults_MultipleLocations(t *testing.T) {
 
 func TestSplitLocationsToSeparateResults_SingleLocation(t *testing.T) {
 	img := types.ImageModel{
-		Name: "nginx",
+		Name: testImageName,
 		ImageLocations: []types.ImageLocation{
 			{Line: 3, StartIndex: 0, EndIndex: 5},
 		},
@@ -206,7 +208,7 @@ func TestSplitLocationsToSeparateResults_SingleLocation(t *testing.T) {
 
 func TestSplitLocationsToSeparateResults_NoLocations(t *testing.T) {
 	img := types.ImageModel{
-		Name:           "nginx",
+		Name:           testImageName,
 		ImageLocations: []types.ImageLocation{},
 	}
 	result := splitLocationsToSeparateResults([]types.ImageModel{img})
