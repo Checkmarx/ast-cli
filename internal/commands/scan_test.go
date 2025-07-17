@@ -63,7 +63,7 @@ const (
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	outputFileName                = "test_output.log"
-	noUpdatesForExistingProject   = "No tags to update. Skipping project update."
+	noUpdatesForExistingProject   = "No tags or branch to update. Skipping project update."
 	ScaResolverZipNotSupportedErr = "Scanning Zip files is not supported by ScaResolver.Please use non-zip source"
 )
 
@@ -400,6 +400,7 @@ func TestCreateScanBranches(t *testing.T) {
 	// Bind cx_branch environment variable
 	_ = viper.BindEnv("cx_branch", "CX_BRANCH")
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
+	assert.Equal(t, viper.GetString("cx_branch"), "branch_from_environment_variable")
 
 	// Test branch from environment variable. Since the cx_branch is bind the scan must run successfully without a branch flag defined
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
@@ -637,6 +638,35 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
 }
 
+func TestCreateScanWithPrimaryBranchFlag_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary")
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Failed(t *testing.T) {
+	original := os.Args
+	defer func() { os.Args = original }()
+	os.Args = []string{
+		"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=true",
+	}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=true")
+	assert.ErrorContains(t, err, "invalid value for --branch-primary flag", err.Error())
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Failed(t *testing.T) {
+	original := os.Args
+	defer func() { os.Args = original }()
+	os.Args = []string{
+		"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=false",
+	}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=false")
+	assert.ErrorContains(t, err, "invalid value for --branch-primary flag", err.Error())
+}
+
+func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=string")
+	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
@@ -645,7 +675,6 @@ func Test_parseThresholdSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdsSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["sast-high"] = 1
@@ -656,7 +685,6 @@ func Test_parseThresholdsSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdParseError(t *testing.T) {
 	want := make(map[string]int)
 	threshold := " KICS - LoW=error"
@@ -664,7 +692,6 @@ func Test_parseThresholdParseError(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func TestCreateScanProjectTags(t *testing.T) {
 	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--project-tags", "test", "--debug")
