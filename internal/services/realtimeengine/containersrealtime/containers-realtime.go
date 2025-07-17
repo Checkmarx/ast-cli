@@ -182,7 +182,7 @@ func splitToImageAndSha(image string) (imageName, imageTag string) {
 		imageTag = tag + "@" + shaPart
 	} else {
 		imageName = nameAndTag
-		imageTag = shaPart
+		imageTag = "@" + shaPart
 	}
 	return
 }

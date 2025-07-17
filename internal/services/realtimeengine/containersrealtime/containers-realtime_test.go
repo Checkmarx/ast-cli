@@ -151,3 +151,25 @@ func TestRunContainersRealtimeScan_ImageVulnerabilityMapping(t *testing.T) {
 	assert.Equal(t, 5, result.Images[0].Locations[0].StartIndex)
 	assert.Equal(t, 17, result.Images[0].Locations[0].EndIndex)
 }
+
+func TestSplitToImageAndSha_whenHasShaAndTag_shouldReturnImageAndShaAndTag(t *testing.T) {
+	image := "nginx:latest@sha256:1234567890abcdef"
+	expectedImage := "nginx"
+	expectedSha := "latest@sha256:1234567890abcdef"
+
+	imageName, sha := splitToImageAndSha(image)
+
+	assert.Equal(t, expectedImage, imageName)
+	assert.Equal(t, expectedSha, sha)
+}
+
+func TestSplitToImageAndSha_whenHasShaNoTag_shouldReturnImageAndShaNoTag(t *testing.T) {
+	image := "nginx@sha256:1234567890abcdef"
+	expectedImage := "nginx"
+	expectedSha := "@sha256:1234567890abcdef"
+
+	imageName, sha := splitToImageAndSha(image)
+
+	assert.Equal(t, expectedImage, imageName)
+	assert.Equal(t, expectedSha, sha)
+}
