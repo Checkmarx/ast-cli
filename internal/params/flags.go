@@ -230,6 +230,9 @@ const (
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
+
+	//SBOM - flag
+	SbomFlag = "sbom-only"
 )
 
 // Parameter values

@@ -805,6 +805,9 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Scan only the final deployable image")
 	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
 
+	//reading sbom-only flag
+	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Execute SBOM scan exclusively on the provided XML/JSON file.")
+
 	return createScanCmd
 }
 
@@ -958,6 +961,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 		scanModelResponse := allScansModel.Scans[0]
 		config = scanModelResponse.Metadata.Configs
 		engines := scanModelResponse.Engines
+		fmt.Println("engines::", engines)
 		// Check if there are no scan types sent using the flags, and use the latest scan engine types
 		if userScanTypes == "" {
 			actualScanTypes = strings.Join(engines, ",")
@@ -1086,6 +1090,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 		scaMapConfig := make(map[string]interface{})
 		scaConfig := wrappers.ScaConfig{}
 		scaMapConfig[resultsMapType] = commonParams.ScaType
+		isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 		scaConfig.Filter, _ = cmd.Flags().GetString(commonParams.ScaFilterFlag)
 		scaConfig.LastSastScanTime, _ = cmd.Flags().GetString(commonParams.LastSastScanTime)
 		scaConfig.PrivatePackageVersion, _ = cmd.Flags().GetString(commonParams.ScaPrivatePackageVersionFlag)
@@ -1104,6 +1109,7 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 				}
 			}
 		}
+		scaConfig.SBom = strconv.FormatBool(isSbom)
 		scaMapConfig[resultsMapValue] = &scaConfig
 		return scaMapConfig
 	}
@@ -1318,6 +1324,8 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
+	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
+
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
@@ -1333,6 +1341,21 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
 
 		scanTypes = strings.Split(userScanTypes, ",")
+
+		//sbom check
+		if isSbomScan {
+			if len(scanTypes) > 1 {
+				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
+				return err
+			}
+
+			if scanTypes[0] != "sca" {
+				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
+				return err
+			}
+
+		}
+
 		for _, scanType := range scanTypes {
 			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
@@ -1348,9 +1371,21 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 			return err
 		}
 	} else {
-		for k := range allowedEngines {
-			scanTypes = append(scanTypes, k)
+		if isSbomScan {
+			if allowedEngines["sca"] {
+				//set
+				fmt.Println("setting sca as scan-type")
+				scanTypes = append(scanTypes, "sca")
+
+			} else {
+				return errors.Errorf("sbom needs sca engine to be allowed")
+			}
+		} else {
+			for k := range allowedEngines {
+				scanTypes = append(scanTypes, k)
+			}
 		}
+
 	}
 
 	actualScanTypes = strings.Join(scanTypes, ",")
@@ -1651,8 +1686,14 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
-
-	zipFilePath, directoryPath, err := definePathForZipFileOrDirectory(cmd)
+	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
+	var directoryPath string
+	if isSbom {
+		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+		zipFilePath, err = util.CompressFile(sbomFile, "sbomFileCompress", directoryCreationPrefix)
+	} else {
+		zipFilePath, directoryPath, err = definePathForZipFileOrDirectory(cmd)
+	}
 
 	if zipFilePath != "" && scaResolverPath != "" {
 		return "", "", errors.New("Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
@@ -1712,7 +1753,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				}
 			}
 		} else {
-			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+			if !isSbom {
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+			}
 		}
 		if dirPathErr != nil {
 			return "", "", dirPathErr
