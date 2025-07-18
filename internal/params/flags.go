@@ -231,7 +231,7 @@ const (
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
 
-	//SBOM - flag
+	// SBOM - flag
 	SbomFlag = "sbom-only"
 )
 

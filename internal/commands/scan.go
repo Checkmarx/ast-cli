@@ -805,7 +805,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.ContainersExcludeNonFinalStagesFlag, false, "Scan only the final deployable image")
 	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
 
-	//reading sbom-only flag
+	// reading sbom-only flag
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Execute SBOM scan exclusively on the provided XML/JSON file.")
 
 	return createScanCmd
@@ -1342,7 +1342,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 
-		//sbom check
+		// sbom check
 		if isSbomScan {
 			if len(scanTypes) > 1 {
 				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
@@ -1353,7 +1353,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
 				return err
 			}
-
 		}
 
 		for _, scanType := range scanTypes {
@@ -1373,10 +1372,9 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	} else {
 		if isSbomScan {
 			if allowedEngines["sca"] {
-				//set
+				// for sbom-flag, setting scan-type as only "sca"
 				fmt.Println("setting sca as scan-type")
 				scanTypes = append(scanTypes, "sca")
-
 			} else {
 				return errors.Errorf("sbom needs sca engine to be allowed")
 			}
@@ -1387,7 +1385,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 
 	}
-
 	actualScanTypes = strings.Join(scanTypes, ",")
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
