@@ -4,6 +4,11 @@ package params
 const (
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"
+	AiProviderFlag                 = "ai-provider"
+	ProblemSeverityFlag            = "problem-severity"
+	TypeFlag                       = "type"
+	SubTypeFlag                    = "sub-type"
+	EngineFlag                     = "engine"
 	OriginFlag                     = "origin"
 	AgentFlagUsage                 = "Scan origin name"
 	ApplicationName                = "application-name"
@@ -18,6 +23,7 @@ const (
 	RetryDelayPollingDefault       = 60
 	RetryDelayUsage                = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                    = "file-source"
+	IgnoredFilePathFlag            = "ignored-file-path"
 	SourcesFlagSh                  = "s"
 	TenantFlag                     = "tenant"
 	TenantFlagUsage                = "Checkmarx tenant"
@@ -147,6 +153,7 @@ const (
 	LastSastScanTime             = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag     = "project-private-package"
 	SastRedundancyFlag           = "sast-redundancy"
+	ContainerResolveLocallyFlag  = "containers-local-resolution"
 	ContainerImagesFlag          = "container-images"
 	ContainersTypeFlag           = "container-security"
 	VSCodeAgent                  = "VS Code"
@@ -157,7 +164,10 @@ const (
 	ScaHideDevAndTestDepFlag     = "sca-hide-dev-test-dependencies"
 	LimitFlag                    = "limit"
 	ConfigFilePathFlag           = "config-file-path"
-
+	LogFileFlag                  = "log-file"
+	LogFileUsage                 = "Saves logs to the specified file path only"
+	LogFileConsoleFlag           = "log-file-console"
+	LogFileConsoleUsage          = "Saves logs to the specified file path as well as to the console"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"

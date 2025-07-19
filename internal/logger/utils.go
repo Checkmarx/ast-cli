@@ -38,7 +38,7 @@ func Printf(msg string, args ...interface{}) {
 }
 
 func PrintIfVerbose(msg string) {
-	if viper.GetBool(params.DebugFlag) {
+	if viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileConsoleFlag) != "" {
 		Print(msg)
 	}
 }

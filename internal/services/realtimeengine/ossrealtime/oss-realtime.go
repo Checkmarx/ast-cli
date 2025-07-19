@@ -1,7 +1,9 @@
 package ossrealtime
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -48,18 +50,22 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(o.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
+		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
-	if err := o.ensureLicense(); err != nil {
+	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+	}
+
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
@@ -79,7 +85,56 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
+
+	if ignoredFilePath != "" {
+		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+		}
+
+		ignoreMap := buildIgnoreMap(ignoredPkgs)
+		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
+	}
+	for i := range response.Packages {
+		response.Packages[i].FilePath = filePath
+	}
 	return response, nil
+}
+
+func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
+	m := make(map[string]bool)
+	for _, ign := range ignored {
+		m[ign.GetID()] = true
+	}
+	return m
+}
+
+func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
+	return ignoreMap[pkg.GetID()]
+}
+
+func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []IgnoredPackage
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+
+func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
+	filtered := make([]OssPackage, 0, len(packages))
+	for i := range packages {
+		pkg := &packages[i]
+		if !isIgnored(pkg, ignoreMap) {
+			filtered = append(filtered, *pkg)
+		}
+	}
+	return filtered
 }
 
 func enrichResponseWithRealtimeScannerResults(
@@ -113,23 +168,6 @@ func getPackageEntryFromPackageMap(
 		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
 	}
 	return &entry
-}
-
-// isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
-func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
-// ensureLicense validates that a valid JWT wrapper is available.
-func (o *OssRealtimeService) ensureLicense() error {
-	if o.JwtWrapper == nil {
-		return errors.New("JWT wrapper is not initialized, cannot ensure license")
-	}
-	return nil
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
@@ -201,8 +239,8 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
-	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
+	result, err := o.RealtimeScannerWrapper.ScanPackages(requestPackages)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
 		return nil, errors.Wrap(err, "scanning packages via realtime service")

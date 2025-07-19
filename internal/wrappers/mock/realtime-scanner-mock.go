@@ -8,16 +8,17 @@ import (
 )
 
 type RealtimeScannerMockWrapper struct {
-	CustomScan func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error)
+	CustomScanPackages func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error)
+	CustomScanImages   func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error)
 }
 
 func NewRealtimeScannerMockWrapper() *RealtimeScannerMockWrapper {
 	return &RealtimeScannerMockWrapper{}
 }
 
-func (r RealtimeScannerMockWrapper) Scan(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
-	if r.CustomScan != nil {
-		return r.CustomScan(packages)
+func (r RealtimeScannerMockWrapper) ScanPackages(packages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
+	if r.CustomScanPackages != nil {
+		return r.CustomScanPackages(packages)
 	}
 	return generateMockResponse(packages), nil
 }
@@ -30,6 +31,28 @@ func generateMockResponse(packages *wrappers.RealtimeScannerPackageRequest) *wra
 			PackageName:    pkg.PackageName,
 			Version:        pkg.Version,
 			Status:         getRandomStatus(),
+		})
+	}
+	return &response
+}
+
+func (r RealtimeScannerMockWrapper) ScanImages(images *wrappers.ContainerImageRequest) (results *wrappers.ContainerImageResponse, err error) {
+	if r.CustomScanImages != nil {
+		return r.CustomScanImages(images)
+	}
+	return generateMockImageResponse(images), nil
+}
+
+func generateMockImageResponse(images *wrappers.ContainerImageRequest) *wrappers.ContainerImageResponse {
+	var response wrappers.ContainerImageResponse
+	for _, img := range images.Images {
+		response.Images = append(response.Images, wrappers.ContainerImageResponseItem{
+			ImageName: img.ImageName,
+			ImageTag:  img.ImageTag,
+			Status:    getRandomStatus(),
+			Vulnerabilities: []wrappers.ContainerImageVulnerability{
+				{CVE: "CVE-1234-5678", Description: "Mock vulnerability", Severity: "High"},
+			},
 		})
 	}
 	return &response
