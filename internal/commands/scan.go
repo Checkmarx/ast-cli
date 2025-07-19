@@ -3,6 +3,7 @@ package commands
 import (
 	"archive/zip"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"io/fs"
@@ -1685,6 +1686,13 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var directoryPath string
 	if isSbom {
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+		isValid, err := isValidJSONOrXML(sbomFile)
+		if err != nil {
+			return "", "", errors.New(err.Error())
+		}
+		if !isValid {
+			return "", "", errors.New("Provide a correct JSON/XML file")
+		}
 		zipFilePath, err = util.CompressFile(sbomFile, "sbomFileCompress", directoryCreationPrefix)
 	} else {
 		zipFilePath, directoryPath, err = definePathForZipFileOrDirectory(cmd)
@@ -3132,4 +3140,33 @@ func createMinimalZipFile() (string, error) {
 	}
 
 	return outputFile.Name(), nil
+}
+
+func isValidJSONOrXML(path string) (bool, error) {
+	ext := strings.ToLower(filepath.Ext(path))
+	if ext != ".json" && ext != ".xml" {
+		return false, nil
+	}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	switch ext {
+	case ".json":
+		var js interface{}
+		if err := json.Unmarshal(data, &js); err != nil {
+			return false, nil // Invalid JSON
+		}
+	case ".xml":
+		var x interface{}
+		if err := xml.Unmarshal(data, &x); err != nil {
+			return false, nil // Invalid XML
+		}
+	default:
+		return false, nil
+	}
+
+	return true, nil
 }
