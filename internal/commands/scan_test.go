@@ -760,6 +760,7 @@ func TestAddScaScan(t *testing.T) {
 		ExploitablePath:       "true",
 		LastSastScanTime:      "1",
 		PrivatePackageVersion: "1.1.1",
+		SBom:                  "false",
 	}
 	scaMapConfig := make(map[string]interface{})
 	scaMapConfig[resultsMapType] = commonParams.ScaType
