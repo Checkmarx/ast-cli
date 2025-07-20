@@ -1,15 +1,16 @@
 package secretsrealtime
 
 import (
+	"encoding/json"
 	"fmt"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"os"
 
 	"github.com/checkmarx/2ms/v3/lib/reporting"
 	"github.com/checkmarx/2ms/v3/lib/secrets"
 	scanner "github.com/checkmarx/2ms/v3/pkg"
 
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -39,7 +40,44 @@ func NewSecretsRealtimeService(
 	}
 }
 
-func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]SecretsRealtimeResult, error) {
+func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]bool) []SecretsRealtimeResult {
+	filtered := make([]SecretsRealtimeResult, 0, len(results))
+	for _, r := range results {
+		if len(r.Locations) == 0 {
+			filtered = append(filtered, r)
+			continue
+		}
+		key := fmt.Sprintf("%s_%s_%d", r.Title, r.FilePath, r.Locations[0].Line)
+		if !ignoreMap[key] {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
+}
+
+func buildIgnoreMap(ignored []IgnoredSecret) map[string]bool {
+	m := make(map[string]bool)
+	for _, s := range ignored {
+		key := fmt.Sprintf("%s_%s_%d", s.Title, s.FilePath, s.Line)
+		m[key] = true
+	}
+	return m
+}
+
+func loadIgnoredSecrets(path string) ([]IgnoredSecret, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []IgnoredSecret
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+
+func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePath string) ([]SecretsRealtimeResult, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 	}
@@ -66,7 +104,18 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath string) ([]Secr
 		return nil, errorconstants.NewRealtimeEngineError("failed to run secrets scan").Error()
 	}
 
-	return convertToSecretsRealtimeResult(report), nil
+	results := convertToSecretsRealtimeResult(report)
+
+	if ignoredFilePath != "" {
+		ignoredSecrets, err := loadIgnoredSecrets(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored secrets").Error()
+		}
+		ignoreMap := buildIgnoreMap(ignoredSecrets)
+		results = filterIgnoredSecrets(results, ignoreMap)
+	}
+
+	return results, nil
 }
 
 func readFile(filePath string) (string, error) {

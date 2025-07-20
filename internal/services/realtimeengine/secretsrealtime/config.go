@@ -9,3 +9,9 @@ type SecretsRealtimeResult struct {
 	Severity    string                    `json:"Severity"`
 	Locations   []realtimeengine.Location `json:"Locations"`
 }
+
+type IgnoredSecret struct {
+	Title    string `json:"Title"`
+	FilePath string `json:"FilePath"`
+	Line     int    `json:"Line"`
+}
