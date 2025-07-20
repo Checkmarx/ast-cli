@@ -24,37 +24,6 @@ func TestNewSecretsRealtimeService(t *testing.T) {
 	assert.Equal(t, featureFlagWrapper, service.FeatureFlagWrapper)
 }
 
-func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
-
-	tempDir := t.TempDir()
-	testFile := filepath.Join(tempDir, "test.txt")
-	testContent := "aws_access_key_id = AKIAIOSFODNN7EXAMPLE\ngithub_token = ghp_XXXXXXXXXXXXXXXXXXXX"
-	err := os.WriteFile(testFile, []byte(testContent), 0644)
-	assert.NoError(t, err)
-
-	ignored := []IgnoredSecret{
-		{Title: "github-token", FilePath: "test.txt", Line: 2},
-	}
-	ignoreFile := filepath.Join(tempDir, "ignored.json")
-	data, _ := json.Marshal(ignored)
-	err = os.WriteFile(ignoreFile, data, 0644)
-	assert.NoError(t, err)
-
-	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
-	}
-	results, err := service.RunSecretsRealtimeScan(testFile, ignoreFile)
-
-	assert.NoError(t, err)
-	assert.NotNil(t, results)
-
-	for _, r := range results {
-		assert.NotEqual(t, "github-token", r.Title)
-	}
-}
-
 func TestRunSecretsRealtimeScan_EmptyFilePath_ReturnsError(t *testing.T) {
 	service := &SecretsRealtimeService{
 		JwtWrapper:         &mock.JWTMockWrapper{},
@@ -119,6 +88,37 @@ func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
 	assert.NotNil(t, results)
 	// Note: The actual results depend on the 2ms scanner behavior
 	// This test mainly verifies that the function completes without error
+}
+
+func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "test.txt")
+	testContent := "aws_access_key_id = AKIAIOSFODNN7EXAMPLE\ngithub_token = ghp_XXXXXXXXXXXXXXXXXXXX"
+	err := os.WriteFile(testFile, []byte(testContent), 0644)
+	assert.NoError(t, err)
+
+	ignored := []IgnoredSecret{
+		{Title: "github-token", FilePath: "test.txt", Line: 2},
+	}
+	ignoreFile := filepath.Join(tempDir, "ignored.json")
+	data, _ := json.Marshal(ignored)
+	err = os.WriteFile(ignoreFile, data, 0644)
+	assert.NoError(t, err)
+
+	service := &SecretsRealtimeService{
+		JwtWrapper:         &mock.JWTMockWrapper{},
+		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+	}
+	results, err := service.RunSecretsRealtimeScan(testFile, ignoreFile)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, results)
+
+	for _, r := range results {
+		assert.NotEqual(t, "github-token", r.Title)
+	}
 }
 
 func TestReadFile_ValidFile_Success(t *testing.T) {

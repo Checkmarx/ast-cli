@@ -127,6 +127,7 @@ func readFile(filePath string) (string, error) {
 }
 
 func runScan(source, content string) (*reporting.Report, error) {
+
 	item := scanner.ScanItem{
 		Content: &content,
 		Source:  source,
