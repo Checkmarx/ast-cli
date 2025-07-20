@@ -539,6 +539,7 @@ func scanSecretsRealtimeSubCommand(
 		Long:   "Running a Secrets-Realtime scan is a fast and efficient way to identify exposed secrets in a file.",
 		Example: heredoc.Doc(`
 			$ cx scan secrets-realtime -s <path to file>
+			$ cx scan secrets-realtime -s <path to file> --ignored-file-path <path to ignored secrets file>
 		`),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(`
