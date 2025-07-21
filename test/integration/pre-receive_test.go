@@ -270,6 +270,17 @@ func TestPreReceive_IgnoreFolderExclusion_ConfigFile(t *testing.T) {
 	assert.Contains(t, outputString, "No secrets detected by Cx Secret Scanner")
 }
 
+func TestPre_Receive_Validate_Command_success(t *testing.T) {
+	args := []string{
+		"hooks",
+		"pre-receive",
+		"validate",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NoError(t, err, "Error should be nil")
+}
+
 func setGlobalGitAccount(t *testing.T, repoName string) {
 	// Set global git config
 	username := os.Getenv("GITHUB_ACTOR")
