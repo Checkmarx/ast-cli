@@ -47,3 +47,11 @@ func TestPreReceiveCommand_withWrongFlagConfig(t *testing.T) {
 	)
 	assert.NotNil(t, err)
 }
+
+func TestPreReceiveCommand_Licence_success(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(
+		cmd,
+		"hooks", "pre-receive", "validate")
+	assert.Nil(t, err)
+}
