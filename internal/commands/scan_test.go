@@ -2368,3 +2368,21 @@ func Test_parseArgs(t *testing.T) {
 		}
 	}
 }
+
+func Test_isValidJSONOrXML(t *testing.T) {
+	tests := []struct {
+		description string
+		inputPath   string
+		output      bool
+	}{
+		{"wrong file", "wrongfilepath", false},
+		{"correct file", "data/package.json", true},
+	}
+
+	for _, test := range tests {
+		isValid, _ := isValidJSONOrXML(test.inputPath)
+		if isValid != test.output {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}
