@@ -1698,6 +1698,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
 		zipFilePath, err = util.CompressFile(sbomFile, "sbomFileCompress", directoryCreationPrefix)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
+		}
 	} else {
 		zipFilePath, directoryPath, err = definePathForZipFileOrDirectory(cmd)
 	}
