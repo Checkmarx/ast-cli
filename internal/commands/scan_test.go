@@ -2388,3 +2388,12 @@ func Test_isValidJSONOrXML(t *testing.T) {
 		}
 	}
 }
+
+func Test_CreateScanWithSbomFlag(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "newProject", "-s", "data/sbom.json", "--branch", "dummy_branch", "--sbom-only",
+	)
+
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+}
