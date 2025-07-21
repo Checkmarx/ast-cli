@@ -119,6 +119,10 @@ const (
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
+
+	jsonExt            = ".json"
+	xmlExt             = ".xml"
+	sbomScanTypeErrMsg = "--sbom-only flag is only supported with scan type: sca"
 )
 
 var (
@@ -1342,15 +1346,15 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		scanTypes = strings.Split(userScanTypes, ",")
 
-		// sbom check
+		// check scan-types, when sbom-only flag is used
 		if isSbomScan {
 			if len(scanTypes) > 1 {
-				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
+				err = errors.Errorf(sbomScanTypeErrMsg)
 				return err
 			}
 
 			if scanTypes[0] != "sca" {
-				err = errors.Errorf("while using sbom-only flag only the sca scan type is allowed.")
+				err = errors.Errorf(sbomScanTypeErrMsg)
 				return err
 			}
 		}
@@ -1688,10 +1692,10 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		isValid, err := isValidJSONOrXML(sbomFile)
 		if err != nil {
-			return "", "", errors.New(err.Error())
+			return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
 		if !isValid {
-			return "", "", errors.New("Provide a correct JSON/XML file")
+			return "", "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 		}
 		zipFilePath, err = util.CompressFile(sbomFile, "sbomFileCompress", directoryCreationPrefix)
 	} else {
@@ -3144,7 +3148,7 @@ func createMinimalZipFile() (string, error) {
 
 func isValidJSONOrXML(path string) (bool, error) {
 	ext := strings.ToLower(filepath.Ext(path))
-	if ext != ".json" && ext != ".xml" {
+	if ext != jsonExt && ext != xmlExt {
 		return false, nil
 	}
 
@@ -3154,15 +3158,15 @@ func isValidJSONOrXML(path string) (bool, error) {
 	}
 
 	switch ext {
-	case ".json":
+	case jsonExt:
 		var js interface{}
 		if err := json.Unmarshal(data, &js); err != nil {
-			return false, nil // Invalid JSON
+			return false, fmt.Errorf("invalid JSON format. %w", err) // Invalid JSON
 		}
-	case ".xml":
+	case xmlExt:
 		var x interface{}
 		if err := xml.Unmarshal(data, &x); err != nil {
-			return false, nil // Invalid XML
+			return false, fmt.Errorf("invalid XML format.%w", err) // Invalid XML
 		}
 	default:
 		return false, nil
