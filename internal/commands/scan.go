@@ -122,7 +122,7 @@ const (
 
 	jsonExt            = ".json"
 	xmlExt             = ".xml"
-	sbomScanTypeErrMsg = "--sbom-only flag is only supported with scan type: sca"
+	sbomScanTypeErrMsg = "The --sbom-only flag can only be used with scan type: sca"
 )
 
 var (
@@ -811,7 +811,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
 
 	// reading sbom-only flag
-	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Execute SBOM scan exclusively on the provided XML/JSON file.")
+	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Run an SBOM scan only on the specified XML or JSON file.")
 
 	return createScanCmd
 }
@@ -3152,7 +3152,7 @@ func createMinimalZipFile() (string, error) {
 func isValidJSONOrXML(path string) (bool, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext != jsonExt && ext != xmlExt {
-		return false, nil
+		return false, fmt.Errorf("not a JSON/XML file, provide valid JSON/XMl file")
 	}
 
 	data, err := ioutil.ReadFile(path)
