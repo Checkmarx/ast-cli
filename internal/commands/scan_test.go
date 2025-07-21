@@ -2375,7 +2375,9 @@ func Test_isValidJSONOrXML(t *testing.T) {
 		inputPath   string
 		output      bool
 	}{
-		{"wrong file", "wrongfilepath", false},
+		{"wrong extension", "somefile.txt", false},
+		{"wrong json file", "wrongfilepath.json", false},
+		{"wrong xml file", "wrongfilepath.xml", false},
 		{"correct file", "data/package.json", true},
 	}
 
