@@ -842,7 +842,7 @@ func setupScanTypeProjectAndConfig(
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 ) error {
-	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	userAllowedEngines, sscsNewLicensing, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 	_ = json.Unmarshal(*input, &info)
@@ -918,7 +918,8 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType])
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, sscsNewLicensing, userAllowedEngines[commonParams.RepositoryHealthType],
+		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -1195,17 +1196,18 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, hasEnterpriseSecretsLicense bool) wrappers.SCSConfig {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, isScsSecretDetectionAllowed,
+	isScsScorecardAllowed bool) wrappers.SCSConfig {
 	scsConfig := wrappers.SCSConfig{}
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
-		if resubmitTwoms != nil && hasEnterpriseSecretsLicense {
+		if resubmitTwoms != nil && isScsSecretDetectionAllowed {
 			scsConfig.Twoms = resubmitTwoms.(string)
 		}
 		scsConfig.RepoURL = scsRepoURL
 		scsConfig.RepoToken = scsRepoToken
 		resubmitScoreCard := config.Value[ScsScoreCardType]
-		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" {
+		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" && isScsScorecardAllowed {
 			scsConfig.Scorecard = trueString
 		} else {
 			scsConfig.Scorecard = falseString
@@ -1258,8 +1260,9 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	if !scanTypeEnabled(commonParams.ScsType) && !scanTypeEnabled(commonParams.MicroEnginesType) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, sscsNewLicensing, hasRepositoryHealthLicense,
+	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
+	if !scanTypeEnabled(commonParams.ScsType) && !scanTypeEnabled(commonParams.SecretDetectionType) && !scanTypeEnabled(commonParams.RepositoryHealthType) {
 		return nil, nil
 	}
 	scsConfig := wrappers.SCSConfig{}
@@ -1279,21 +1282,24 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 	viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL)
 	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 
+	isScsSecretDetectionAllowed := (sscsNewLicensing && hasSecretDetectionLicense) || (!sscsNewLicensing && hasEnterpriseSecretsLicense)
+	isScsScorecardAllowed := !sscsNewLicensing || hasRepositoryHealthLicense
+
 	if resubmitConfig != nil {
-		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
+		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, isScsSecretDetectionAllowed, isScsScorecardAllowed)
 		scsMapConfig[resultsMapValue] = &scsConfig
 		return scsMapConfig, nil
 	}
 
 	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines) // secret-detection or scorecard
 
-	if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+	if scsSecretDetectionSelected && isScsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
 	}
 
 	isScsEnginesFlagSet := scsEngines != ""
 
-	if scsScoreCardSelected {
+	if scsScoreCardSelected && isScsScorecardAllowed {
 		canRunScorecard, err := isScorecardRunnable(isScsEnginesFlagSet, scsScoreCardSelected, scsRepoToken, scsRepoURL, userScanTypes)
 		if err != nil {
 			return nil, err
@@ -1318,7 +1324,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 	var SCSScanTypes []string
 
-	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	allowedEngines, sscsNewLicensingEnabled, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
 		return err
@@ -1332,20 +1338,26 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
 		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
 
+		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
+		err = validateSSCSEngines(allowedEngines, SCSScanTypes, sscsNewLicensingEnabled)
+		if err != nil {
+			return err
+		}
+
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
+			if scanType == commonParams.ScsType && sscsNewLicensingEnabled {
+				// SCS is a special case because it contains two engines.
+				// Before the new licensing model, the main license was named "SCS".
+				// Licenses are now separated for each engine, so this validation no longer makes sense.
+				// See validateSSCSEngines.
+				continue
+			}
 			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
 				return err
 			}
-		}
-
-		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
-		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
-			return err
 		}
 	} else {
 		for k := range allowedEngines {
@@ -1356,6 +1368,25 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	actualScanTypes = strings.Join(scanTypes, ",")
 	actualScanTypes = strings.Replace(strings.ToLower(actualScanTypes), commonParams.IacType, commonParams.KicsType, 1)
 
+	return nil
+}
+
+func validateSSCSEngines(allowedEngines map[string]bool, SCSScanTypes []string, sscsNewLicensing bool) error {
+	if sscsNewLicensing {
+		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.SecretDetectionType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, keys)
+		}
+		if slices.Contains(SCSScanTypes, ScsScoreCardType) && !allowedEngines[commonParams.RepositoryHealthType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, keys)
+		}
+	} else {
+		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+			keys := reflect.ValueOf(allowedEngines).MapKeys()
+			return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
+		}
+	}
 	return nil
 }
 
