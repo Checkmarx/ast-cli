@@ -1704,17 +1704,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
-		} else if isSingleContainerScanTriggered() && containerImagesFlag != "" {
-			logger.PrintIfVerbose("Single container scan with external images: creating minimal zip file")
-			// For container scans with external images, we need to create a minimal zip file
-			// since the API requires an upload URL even for container-only scans
-			zipFilePath, dirPathErr = createMinimalZipFile()
-			if unzip {
-				dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
-				if dirRemovalErr != nil {
-					return "", "", dirRemovalErr
-				}
-			}
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
@@ -3080,31 +3069,4 @@ func parseArgs(input string) []string {
 	}
 
 	return args
-}
-
-// createMinimalZipFile creates a minimal zip file for container scans with external images
-// The API requires an upload URL even for container-only scans, so we create a minimal placeholder
-func createMinimalZipFile() (string, error) {
-	outputFile, err := os.CreateTemp(os.TempDir(), "cx-container-*.zip")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create temp file for container-only scan")
-	}
-	defer outputFile.Close()
-
-	zipWriter := zip.NewWriter(outputFile)
-	defer zipWriter.Close()
-
-	// Create a minimal placeholder file
-	f, err := zipWriter.Create(".container-scan")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
-	}
-
-	// Write minimal content (just a single byte)
-	_, err = f.Write([]byte("1"))
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot write to placeholder file")
-	}
-
-	return outputFile.Name(), nil
 }
