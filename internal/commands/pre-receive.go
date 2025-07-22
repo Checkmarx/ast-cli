@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	SuccessFullSecretsLicenceValidation = "Successfully Validated the Enterprise Secrets licence!"
+	SuccessFullSecretsLicenceValidation = "License for pre-receive secret detection has been validated successfully"
 )
 
 func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
@@ -76,7 +76,7 @@ func checkLicence(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args 
 			log.Fatalf("%s: %s", "Failed the licence check", err)
 		}
 		if !isAllowed {
-			log.Fatalf("Error: License validation failed. Please ensure your CxOne license includes Enterprise Secrets")
+			log.Fatalf("Error: License validation failed. Please ensure that your Checkmarx One license includes Enterprise Secrets")
 		}
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessFullSecretsLicenceValidation)
 		return nil
