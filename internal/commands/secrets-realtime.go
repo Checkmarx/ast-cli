@@ -11,21 +11,26 @@ import (
 
 func RunScanSecretsRealtimeCommand(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		if fileSourceFlag == "" {
 			return errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 		}
+
+		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
+
 		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
 
-		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag)
+		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
+
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
-			return errorconstants.NewRealtimeEngineError("failed to return packages").Error()
+			return errorconstants.NewRealtimeEngineError("failed to return secrets").Error()
 		}
 
 		return nil
