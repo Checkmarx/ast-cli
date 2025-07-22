@@ -38,7 +38,6 @@ func TestContainersRealtimeScan_PositiveDockerfile_Success(t *testing.T) {
 }
 
 func TestContainersRealtimeScan_EmptyDockerfile_SuccessWithEmptyResponse(t *testing.T) {
-	t.Skip("Skipping this test till the RT api for containers will deploy to DEU ENV")
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "containers-realtime",
