@@ -216,7 +216,7 @@ func mergeImagesToResults(listOfImages []wrappers.ContainerImageResponseItem, re
 	return result
 }
 
-func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) ([]realtimeengine.Location, string) {
+func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) (location []realtimeengine.Location, filePath string) {
 	for i, img := range *images {
 		if img.Name == imageName+":"+imageTag || img.Name == imageName+"@"+imageTag {
 			location := convertLocations(&img.ImageLocations)
