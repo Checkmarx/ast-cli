@@ -1783,8 +1783,10 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 	}
 
-	if zipFilePath != "" {
+	if zipFilePath != "" && !isSbom {
 		return uploadZip(uploadsWrapper, zipFilePath, unzip, userProvidedZip, featureFlagsWrapper)
+	} else if zipFilePath != "" && isSbom {
+		return uploadZip(uploadsWrapper, zipFilePath, unzip, false, featureFlagsWrapper)
 	}
 	return preSignedURL, zipFilePath, nil
 }
