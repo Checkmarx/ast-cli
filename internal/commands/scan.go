@@ -534,33 +534,30 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 	return scanContainersRealtimeCmd
 }
 
-func scanSecretsRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanSecretsRealtimeSubCommand(
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
 	scanSecretsRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "secrets-realtime",
 		Short:  "Run a Secrets-Realtime scan",
 		Long:   "Running a Secrets-Realtime scan is a fast and efficient way to identify exposed secrets in a file.",
-		Example: heredoc.Doc(
-			`
-			$ cx scan secrets-realtime -s <path to file separated>
-		`,
-		),
+		Example: heredoc.Doc(`
+			$ cx scan secrets-realtime -s <path to file>
+			$ cx scan secrets-realtime -s <path to file> --ignored-file-path <path to ignored secrets file>
+		`),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(
-				`
+			"command:doc": heredoc.Doc(`
 				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
-			`,
-			),
+			`),
 		},
 		RunE: RunScanSecretsRealtimeCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
-	scanSecretsRealtimeCmd.PersistentFlags().StringP(
-		commonParams.SourcesFlag,
-		commonParams.SourcesFlagSh,
-		"",
-		"The file source should be the path to a single file or multiple files separated by commas",
-	)
+	scanSecretsRealtimeCmd.Flags().StringP(commonParams.SourcesFlag, "s", "", "Path to the file to scan")
+	scanSecretsRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+
 	return scanSecretsRealtimeCmd
 }
 
