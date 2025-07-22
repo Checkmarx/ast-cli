@@ -2,11 +2,12 @@ package commands
 
 import (
 	"fmt"
+	"strings"
+
 	precommit "github.com/Checkmarx/secret-detection/pkg/hooks/pre-commit"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 // PreCommitCommand creates the pre-commit subcommand

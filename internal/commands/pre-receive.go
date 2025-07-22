@@ -2,12 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"log"
+
 	prereceive "github.com/Checkmarx/secret-detection/pkg/hooks/pre-receive"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 const (
