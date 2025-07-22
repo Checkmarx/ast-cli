@@ -1,6 +1,7 @@
 package secretsrealtime
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,7 +30,7 @@ func TestRunSecretsRealtimeScan_EmptyFilePath_ReturnsError(t *testing.T) {
 		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
 	}
 
-	results, err := service.RunSecretsRealtimeScan("")
+	results, err := service.RunSecretsRealtimeScan("", "")
 
 	assert.Nil(t, results)
 	assert.NotNil(t, err)
@@ -44,7 +45,7 @@ func TestRunSecretsRealtimeScan_FeatureFlagDisabled_ReturnsError(t *testing.T) {
 		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
 	}
 
-	results, err := service.RunSecretsRealtimeScan("test.txt")
+	results, err := service.RunSecretsRealtimeScan("test.txt", "")
 
 	assert.Nil(t, results)
 	assert.NotNil(t, err)
@@ -59,11 +60,41 @@ func TestRunSecretsRealtimeScan_FileNotFound_ReturnsError(t *testing.T) {
 		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
 	}
 
-	results, err := service.RunSecretsRealtimeScan("nonexistent-file.txt")
+	results, err := service.RunSecretsRealtimeScan("nonexistent-file.txt", "")
 
 	assert.Nil(t, results)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "failed to read file")
+}
+
+func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+
+	tempDir := t.TempDir()
+
+	testFile := filepath.Join(tempDir, "test.txt")
+	testContent := "aws_access_key_id = AKIAIOSFODNN7EXAMPLE\ngithub_token = ghp_XXXXXXXXXXXXXXXXXXXX"
+	assert.NoError(t, os.WriteFile(testFile, []byte(testContent), 0644))
+
+	ignoreFile := filepath.Join(tempDir, "ignored.json")
+	ignored := []IgnoredSecret{
+		{Title: "github-token", FilePath: "test.txt", Line: 2},
+	}
+	data, _ := json.Marshal(ignored)
+	assert.NoError(t, os.WriteFile(ignoreFile, data, 0644))
+
+	service := &SecretsRealtimeService{
+		JwtWrapper:         &mock.JWTMockWrapper{},
+		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+	}
+
+	results, err := service.RunSecretsRealtimeScan(testFile, ignoreFile)
+	assert.NoError(t, err)
+	assert.NotNil(t, results)
+
+	for _, r := range results {
+		assert.NotEqual(t, "github-token", r.Title)
+	}
 }
 
 func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
@@ -81,7 +112,7 @@ func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
 		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
 	}
 
-	results, err := service.RunSecretsRealtimeScan(tempFile)
+	results, err := service.RunSecretsRealtimeScan(tempFile, "")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, results)

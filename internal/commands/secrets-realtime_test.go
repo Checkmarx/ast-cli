@@ -13,7 +13,7 @@ func TestRunScanSecretsRealtimeCommand_TxtFile_ScanSuccess(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	execCmdNilAssertion(
 		t,
-		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt",
+		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt", "--ignored-file-path", "",
 	)
 }
 
@@ -22,7 +22,7 @@ func TestRunScanSecretsRealtimeCommand_EmptyFilePath_ScanFailed(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "secrets-realtime", "-s", "",
+		"scan", "secrets-realtime", "-s", "", "--ignored-file-path", "",
 	)
 	assert.NotNil(t, err)
 }
@@ -32,7 +32,7 @@ func TestRunScanSecretsRealtimeCommand_FFDisable_ScanFailed(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: false}
 	err := execCmdNotNilAssertion(
 		t,
-		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt",
+		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt", "--ignored-file-path", "",
 	)
 	assert.NotNil(t, err)
 }
