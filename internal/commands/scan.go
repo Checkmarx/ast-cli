@@ -1707,7 +1707,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		} else {
 			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
-		
 		if dirPathErr != nil {
 			return "", "", dirPathErr
 		}
