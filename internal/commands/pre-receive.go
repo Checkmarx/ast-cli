@@ -72,7 +72,7 @@ func checkLicence(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args 
 	return func(cmd *cobra.Command, args []string) error {
 		isAllowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
 		if err != nil {
-			log.Fatalf("%s: %s", "Failed licence check", err)
+			log.Fatalf("%s: %s", "Failed the licence check", err)
 		}
 		if !isAllowed {
 			log.Fatalf("Error: License validation failed. Please ensure your CxOne license includes Enterprise Secrets")
