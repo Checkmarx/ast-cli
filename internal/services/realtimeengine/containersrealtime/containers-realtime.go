@@ -236,7 +236,7 @@ func splitToImageAndTag(image string) (imageName, imageTag string) {
 	// Split the image string by the last colon to separate name and tag
 	lastColonIndex := strings.LastIndex(image, ":")
 
-	if lastColonIndex == len(image)-1 {
+	if lastColonIndex == len(image)-1 || lastColonIndex == -1 {
 		return image, "latest" // No tag specified, default to "latest"
 	}
 
