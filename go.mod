@@ -41,7 +41,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
-	github.com/Checkmarx/containers-images-extractor v1.0.16
+	github.com/Checkmarx/containers-images-extractor v1.0.17
 	github.com/Checkmarx/containers-syft-packages-extractor v1.0.15 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
