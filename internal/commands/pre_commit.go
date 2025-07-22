@@ -10,6 +10,7 @@ import (
 )
 
 // PreCommitCommand creates the pre-commit subcommand
+
 func PreCommitCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preCommitCmd := &cobra.Command{
 		Use:   "pre-commit",
