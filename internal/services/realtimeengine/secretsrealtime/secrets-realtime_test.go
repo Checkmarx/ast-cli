@@ -73,12 +73,12 @@ func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 	tempDir := t.TempDir()
 
 	testFile := filepath.Join(tempDir, "test.txt")
-	testContent := "aws_access_key_id = AKIAIOSFODNN7EXAMPLE\ngithub_token = ghp_XXXXXXXXXXXXXXXXXXXX"
+	testContent := "pat = \"ghp_1234567890abcdef1234567890abcdef12345678\""
 	assert.NoError(t, os.WriteFile(testFile, []byte(testContent), 0644))
 
 	ignoreFile := filepath.Join(tempDir, "ignored.json")
 	ignored := []IgnoredSecret{
-		{Title: "github-token", FilePath: "test.txt", Line: 2},
+		{Title: "github-pat", FilePath: testFile, Line: 0},
 	}
 	data, _ := json.Marshal(ignored)
 	assert.NoError(t, os.WriteFile(ignoreFile, data, 0644))
@@ -93,7 +93,30 @@ func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 	assert.NotNil(t, results)
 
 	for _, r := range results {
-		assert.NotEqual(t, "github-token", r.Title)
+		assert.NotEqual(t, "github-pat", r.Title)
+	}
+}
+
+func TestRunSecretsRealtimeScan_PatVulAndGenericVul_ReturnedOnlyPathVul(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+
+	tempDir := t.TempDir()
+
+	testFile := filepath.Join(tempDir, "test.txt")
+	testContent := "token = \"ghp_1234567890abcdef1234567890abcdef12345678\""
+	assert.NoError(t, os.WriteFile(testFile, []byte(testContent), 0644))
+
+	service := &SecretsRealtimeService{
+		JwtWrapper:         &mock.JWTMockWrapper{},
+		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+	}
+
+	results, err := service.RunSecretsRealtimeScan(testFile, "")
+	assert.NoError(t, err)
+	assert.NotNil(t, results)
+
+	for _, r := range results {
+		assert.Equal(t, "github-pat", r.Title)
 	}
 }
 
