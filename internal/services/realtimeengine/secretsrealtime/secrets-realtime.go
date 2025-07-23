@@ -3,9 +3,10 @@ package secretsrealtime
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"os"
 
 	"github.com/checkmarx/2ms/v3/lib/reporting"
 	"github.com/checkmarx/2ms/v3/lib/secrets"
@@ -22,6 +23,7 @@ const (
 	criticalSeverity = "Critical"
 	highSeverity     = "High"
 	mediumSeverity   = "Medium"
+	genericApiKey    = "generic-api-key"
 )
 
 type SecretsRealtimeService struct {
@@ -105,6 +107,8 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 
 	results := convertToSecretsRealtimeResult(report)
+	resultsPerLineMap := createResultsPerLineMap(results)
+	results = filterGenericApiKeyVulIfNeeded(results, resultsPerLineMap)
 
 	if ignoredFilePath == "" {
 		return results, nil
@@ -176,4 +180,39 @@ func getSeverity(secret *secrets.Secret) string {
 	default:
 		return highSeverity
 	}
+}
+
+func createResultsPerLineMap(results []SecretsRealtimeResult) map[string][]SecretsRealtimeResult {
+	resultsPerLine := make(map[string][]SecretsRealtimeResult)
+	for _, result := range results {
+		for _, location := range result.Locations {
+			lineKey := fmt.Sprintf("%s:%d", result.FilePath, location.Line)
+			resultsPerLine[lineKey] = append(resultsPerLine[lineKey], result)
+		}
+	}
+	return resultsPerLine
+}
+
+func filterGenericApiKeyVulIfNeeded(
+	results []SecretsRealtimeResult,
+	resultsPerLine map[string][]SecretsRealtimeResult,
+) []SecretsRealtimeResult {
+	if len(results) == 0 || len(resultsPerLine) == 0 {
+		return results
+	}
+
+	var filtered []SecretsRealtimeResult
+	for _, entries := range resultsPerLine {
+		if len(entries) <= 1 {
+			filtered = append(filtered, entries...)
+			continue
+		}
+
+		for i := len(entries) - 1; i >= 0; i-- {
+			if entries[i].Title != genericApiKey {
+				filtered = append(filtered, entries[i])
+			}
+		}
+	}
+	return filtered
 }
