@@ -518,7 +518,7 @@ func getNtlmHash(password string) []byte {
 	if err != nil {
 		log.Println(err)
 	}
-	return hash.Sum(nil)
+	return hash.Sum([]byte(nil))
 }
 
 func computeNtlmV2Response(ntlmV2Hash, serverChallenge, clientChallenge, timestamp, targetInfo []byte) []byte {
