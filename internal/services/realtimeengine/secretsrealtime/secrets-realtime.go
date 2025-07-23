@@ -23,7 +23,7 @@ const (
 	criticalSeverity = "Critical"
 	highSeverity     = "High"
 	mediumSeverity   = "Medium"
-	genericApiKey    = "generic-api-key"
+	genericAPIKey    = "generic-api-key"
 )
 
 type SecretsRealtimeService struct {
