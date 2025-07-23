@@ -208,7 +208,7 @@ func filterGenericApiKeyVulIfNeeded(
 			continue
 		}
 
-		for i := len(entries) - 1; i >= 0; i-- {
+		for i := 0; i < len(entries); i++ {
 			if entries[i].Title != genericAPIKey {
 				filtered = append(filtered, entries[i])
 			}
