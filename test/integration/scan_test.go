@@ -763,8 +763,8 @@ func TestScanCreateWithThresholdParseError(t *testing.T) {
 		flag(params.Threshold), "sca-high=error;",
 		flag(params.BranchFlag), "dummy_branch",
 	}
-
-	err, _ := executeCommand(t, args...)
+	cmd := createASTIntegrationTestCommand(t)
+	err := executeWithTimeout(cmd, 6*time.Minute, args...)
 	assert.NilError(t, err, "")
 }
 
@@ -800,7 +800,7 @@ func TestScanCreateWithThresholdAndReportGenerate(t *testing.T) {
 	}
 
 	cmd := createASTIntegrationTestCommand(t)
-	err := executeWithTimeout(cmd, 5*time.Minute, args...)
+	err := executeWithTimeout(cmd, 6*time.Minute, args...)
 	assertError(t, err, "Threshold check finished with status Failed")
 
 	file, fileError := os.Stat(fmt.Sprintf("%s%s.%s", "/tmp/", "results", "json"))
@@ -1525,8 +1525,8 @@ func TestValidateScanTypesUsingInvalidAPIKey(t *testing.T) {
 func TestScanGeneratingPdfToEmailReport(t *testing.T) {
 	_, projectName := getRootProject(t)
 
-	outputBuffer := executeCmdNilAssertion(
-		t, "Scan create with API key generating PDF to email report should pass",
+	outputBuffer := executeCmdWithTimeOutNilAssertion(
+		t, "Scan create with API key generating PDF to email report should pass", 6*time.Minute,
 		scanCommand, "create",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), Zip,

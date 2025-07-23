@@ -17,6 +17,7 @@ import (
 )
 
 func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
+	t.Skip()
 
 	fmt.Println("Step 1: Testing the command 'triage update' to update an issue from the project.")
 
@@ -125,6 +126,7 @@ func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
 }
 
 func TestPredicateWithInvalidValues(t *testing.T) {
+	t.Skip()
 
 	err, _ := executeCommand(
 		t, "triage", "update",

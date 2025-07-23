@@ -18,11 +18,11 @@ func TestHooksPreCommitInstallAndUninstallPreCommitHook(t *testing.T) {
 	// Initialize Git repository
 	execCmd(t, tmpDir, "git", "init")
 
-	// Install pre-commit hook locally
-	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook")
+	// Install pre-commit hook
+	_ = executeCmdNilAssertion(t, "Installing pre-commit hook", "hooks", "pre-commit", "secrets-install-git-hook", "--global")
 
 	// Uninstall pre-commit hook
-	_ = executeCmdNilAssertion(t, "Uninstalling cx-secret-detection hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
+	_ = executeCmdNilAssertion(t, "Uninstalling cx-secret-detection hook", "hooks", "pre-commit", "secrets-uninstall-git-hook", "--global")
 
 }
 
