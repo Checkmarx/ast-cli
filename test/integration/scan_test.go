@@ -2395,7 +2395,7 @@ func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assert.Error(t, err, "The --sbom-only flag can only be used with scan type: sca")
+	assert.Error(t, err, "The --sbom-only flag can only be used when the scan type is sca")
 
 }
 

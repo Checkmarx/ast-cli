@@ -122,7 +122,7 @@ const (
 
 	jsonExt             = ".json"
 	xmlExt              = ".xml"
-	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used with scan type: sca"
+	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used when the scan type is sca"
 	BranchPrimaryPrefix = "--branch-primary="
 )
 
@@ -814,7 +814,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ContainersImageTagFilterFlag, "", "Exclude images by image name and/or tag, ex: \"*dev\"")
 
 	// reading sbom-only flag
-	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Run an SBOM scan only on the specified XML or JSON file.")
+	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
 
 	return createScanCmd
 }
