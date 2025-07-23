@@ -529,30 +529,33 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 	return scanContainersRealtimeCmd
 }
 
-func scanSecretsRealtimeSubCommand(
-	jwtWrapper wrappers.JWTWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) *cobra.Command {
+func scanSecretsRealtimeSubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	scanSecretsRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "secrets-realtime",
 		Short:  "Run a Secrets-Realtime scan",
 		Long:   "Running a Secrets-Realtime scan is a fast and efficient way to identify exposed secrets in a file.",
-		Example: heredoc.Doc(`
-			$ cx scan secrets-realtime -s <path to file>
-			$ cx scan secrets-realtime -s <path to file> --ignored-file-path <path to ignored secrets file>
-		`),
+		Example: heredoc.Doc(
+			`
+			$ cx scan secrets-realtime -s <path to file separated>
+		`,
+		),
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(`
+			"command:doc": heredoc.Doc(
+				`
 				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
-			`),
+			`,
+			),
 		},
 		RunE: RunScanSecretsRealtimeCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
-	scanSecretsRealtimeCmd.Flags().StringP(commonParams.SourcesFlag, "s", "", "Path to the file to scan")
-	scanSecretsRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
-
+	scanSecretsRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file or multiple files separated by commas",
+	)
 	return scanSecretsRealtimeCmd
 }
 
@@ -1381,16 +1384,39 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+	
+	// First check if the directory is empty or all files are filtered out
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
+	
+	// If directory is effectively empty, add a placeholder file
+	if isEmpty {
+		logger.PrintIfVerbose("Directory is empty or all files are filtered out, adding placeholder file")
+		f, err := zipWriter.Create(".container-scan")
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
+		}
+		_, err = f.Write([]byte("1"))
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot write to placeholder file")
+		}
+	} else {
+		// Add directory files normally
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+		if err != nil {
+			return "", err
+		}
+	}
+	
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
 			return "", err
 		}
 	}
+	
 	// Close the file
 	err = zipWriter.Close()
 	if err != nil {
@@ -1407,6 +1433,44 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 func isSingleContainerScanTriggered() bool {
 	scanTypeList := strings.Split(actualScanTypes, ",")
 	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
+}
+
+// isDirEmpty checks if a directory is empty or if all files are filtered out
+func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
+	empty := true
+	
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		// Skip the root directory itself
+		if path == dir {
+			return nil
+		}
+		
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+		
+		// Get relative path
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		
+		// Check if file passes filters
+		filename := filepath.Base(relPath)
+		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
+			empty = false
+			return filepath.SkipAll // We found at least one file that will be included
+		}
+		
+		return nil
+	})
+	
+	return empty, err
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
@@ -1705,6 +1769,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 		} else {
+			// Always compress the full directory - even for container scans with external images
+			// This allows the backend to extract additional images from Dockerfiles
 			zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 		}
 		if dirPathErr != nil {
