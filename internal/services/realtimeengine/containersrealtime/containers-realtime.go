@@ -218,7 +218,7 @@ func mergeImagesToResults(listOfImages []wrappers.ContainerImageResponseItem, re
 
 func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) (location []realtimeengine.Location, filePath string) {
 	for i, img := range *images {
-		if img.Name == imageName+":"+imageTag || img.Name == imageName+"@"+imageTag {
+		if isSameImage(img.Name, imageName, imageTag) {
 			location := convertLocations(&img.ImageLocations)
 			filePath := ""
 			if len(img.ImageLocations) > 0 {
@@ -229,6 +229,10 @@ func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) (
 		}
 	}
 	return []realtimeengine.Location{}, ""
+}
+
+func isSameImage(curImage, imageName, imageTag string) bool {
+	return curImage == imageName+":"+imageTag || curImage == imageName+"@"+imageTag || curImage == imageName && imageTag == "latest"
 }
 
 // splitToImageAndTag splits the image string into name and tag components.
