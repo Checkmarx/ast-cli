@@ -138,6 +138,8 @@ var BaseIncludeFilters = []string{
 	"Directory.Build.props",
 	"*.rs",
 	"*.jsx",
+	"*.bicepparam",
+	"*.bicep",
 }
 
 var BaseExcludeFilters = []string{
