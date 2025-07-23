@@ -1384,13 +1384,13 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
-	
+
 	// First check if the directory is empty or all files are filtered out
 	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
-	
+
 	// If directory is effectively empty, add a placeholder file
 	if isEmpty {
 		logger.PrintIfVerbose("Directory is empty or all files are filtered out, adding placeholder file")
@@ -1409,14 +1409,14 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 			return "", err
 		}
 	}
-	
+
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
 			return "", err
 		}
 	}
-	
+
 	// Close the file
 	err = zipWriter.Close()
 	if err != nil {
@@ -1438,38 +1438,38 @@ func isSingleContainerScanTriggered() bool {
 // isDirEmpty checks if a directory is empty or if all files are filtered out
 func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
 	empty := true
-	
+
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		// Skip the root directory itself
 		if path == dir {
 			return nil
 		}
-		
+
 		// Skip directories
 		if info.IsDir() {
 			return nil
 		}
-		
+
 		// Get relative path
 		relPath, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
 		}
-		
+
 		// Check if file passes filters
 		filename := filepath.Base(relPath)
 		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
 			empty = false
 			return filepath.SkipAll // We found at least one file that will be included
 		}
-		
+
 		return nil
 	})
-	
+
 	return empty, err
 }
 
