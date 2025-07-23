@@ -108,7 +108,7 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 
 	results := convertToSecretsRealtimeResult(report)
 	resultsPerLineMap := createResultsPerLineMap(results)
-	results = filterGenericApiKeyVulIfNeeded(results, resultsPerLineMap)
+	results = filterGenericAPIKeyVulIfNeeded(results, resultsPerLineMap)
 
 	if ignoredFilePath == "" {
 		return results, nil
@@ -193,7 +193,7 @@ func createResultsPerLineMap(results []SecretsRealtimeResult) map[string][]Secre
 	return resultsPerLine
 }
 
-func filterGenericApiKeyVulIfNeeded(
+func filterGenericAPIKeyVulIfNeeded(
 	results []SecretsRealtimeResult,
 	resultsPerLine map[string][]SecretsRealtimeResult,
 ) []SecretsRealtimeResult {
