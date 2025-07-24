@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
 <br />
-<div  align="center" >
+<div align="center" >
 
 [![Documentation][documentation-shield]][documentation-url]
 [![Contributors][contributors-shield]][contributors-url]
