@@ -1382,7 +1382,6 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		if isSbomScan {
 			if allowedEngines["sca"] {
 				// for sbom-flag, setting scan-type as only "sca"
-				fmt.Println("setting sca as scan-type")
 				scanTypes = append(scanTypes, "sca")
 			} else {
 				return errors.Errorf("sbom needs sca engine to be allowed")
