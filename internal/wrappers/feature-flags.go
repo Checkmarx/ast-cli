@@ -15,7 +15,7 @@ const SastCustomStateEnabled = "SAST_CUSTOM_STATES_ENABLED"
 const SCSEngineCLIEnabled = "NEW_2MS_SCORECARD_RESULTS_CLI_ENABLED"
 const RiskManagementEnabled = "RISK_MANAGEMENT_IDES_PROJECT_RESULTS_SCORES_API_ENABLED"
 const OssRealtimeEnabled = "OSS_REALTIME_ENABLED"
-const SscsNewLicensingEnabled = "SSCS_NEW_LICENSING_ENABLED"
+const SscsLicensingV2Enabled = "SSCS_NEW_LICENSING_ENABLED"
 const maxRetries = 3
 
 var DefaultFFLoad bool = false

@@ -9,23 +9,23 @@ import (
 type JWTMockWrapper struct {
 	AIEnabled               int
 	CustomGetAllowedEngines func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
-	SscsNewLicensing        bool
+	SscsLicensingV2         bool
 }
 
 const AIProtectionDisabled = 1
 
 // GetAllowedEngines mock for tests
-func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, sscsNewLicensing bool, err error) {
+func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, sscsLicensingV2 bool, err error) {
 	if j.CustomGetAllowedEngines != nil {
 		allowedEngines, err = j.CustomGetAllowedEngines(featureFlagsWrapper)
-		return allowedEngines, j.SscsNewLicensing, err
+		return allowedEngines, j.SscsLicensingV2, err
 	}
 	allowedEngines = make(map[string]bool)
 	engines := []string{"sast", "iac-security", "sca", "api-security", "containers", "scs"}
 	for _, value := range engines {
 		allowedEngines[strings.ToLower(value)] = true
 	}
-	return allowedEngines, j.SscsNewLicensing, nil
+	return allowedEngines, j.SscsLicensingV2, nil
 }
 
 func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
