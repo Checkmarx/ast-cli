@@ -7,6 +7,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
+//todo : need to modify these test cases
+
 func TestCreateScanAndProjectWithGroupFFTrue(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: true}}
 	execCmdNilAssertion(
