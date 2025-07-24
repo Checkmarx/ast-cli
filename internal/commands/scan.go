@@ -109,6 +109,11 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
+	// TODO VERIFY MESSAGE BELOW WITH CLI TEAM
+	engineScsNotAllowed = "You are trying to run a scan with the \"scs\" scan type and it requires either the \"repository‑health\" or the \"secret‑detection\" package license." +
+		"\nTo use this feature, you would need to purchase the appropriate license." +
+		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
+		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
 	directoryCreationPrefix     = "cx-"
 	ScsScoreCardType            = "scorecard"
@@ -1322,7 +1327,6 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, sscsLicens
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
-	var SCSScanTypes []string
 
 	allowedEngines, sscsLicensingV2Enabled, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
@@ -1331,18 +1335,10 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	}
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-	userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
-		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
-
-		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
-		err = validateSSCSEngines(allowedEngines, SCSScanTypes, sscsLicensingV2Enabled)
-		if err != nil {
-			return err
-		}
 
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
@@ -1350,12 +1346,20 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 				// SCS is a special case because it contains two engines.
 				// Before the new licensing model, the main license was named "SCS".
 				// Licenses are now separated for each engine, so this validation no longer makes sense.
-				// See validateSSCSEngines.
+				// See validateSCSEngines.
 				continue
 			}
 			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
+				return err
+			}
+		}
+
+		userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if slices.Contains(scanTypes, commonParams.ScsType) {
+			err = validateSCSEngines(allowedEngines, userSCSScanTypes, sscsLicensingV2Enabled)
+			if err != nil {
 				return err
 			}
 		}
@@ -1371,20 +1375,22 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	return nil
 }
 
-func validateSSCSEngines(allowedEngines map[string]bool, SCSScanTypes []string, sscsLicensingV2 bool) error {
+func validateSCSEngines(allowedEngines map[string]bool, userSCSScanTypes string, sscsLicensingV2 bool) error {
+	licensesAvailable := reflect.ValueOf(allowedEngines).MapKeys()
+	scsScanTypes := strings.Split(userSCSScanTypes, ",")
 	if sscsLicensingV2 {
-		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.SecretDetectionType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, keys)
-		}
-		if slices.Contains(SCSScanTypes, ScsScoreCardType) && !allowedEngines[commonParams.RepositoryHealthType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, keys)
+		secretDetectionAllowed := allowedEngines[commonParams.SecretDetectionType]
+		repositoryHeatlhAllowed := allowedEngines[commonParams.RepositoryHealthType]
+		if userSCSScanTypes == "" && !secretDetectionAllowed && !repositoryHeatlhAllowed {
+			return errors.Errorf(engineScsNotAllowed, licensesAvailable)
+		} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !secretDetectionAllowed {
+			return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, licensesAvailable)
+		} else if slices.Contains(scsScanTypes, ScsScoreCardType) && !repositoryHeatlhAllowed {
+			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, licensesAvailable)
 		}
 	} else {
-		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
+		if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+			return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, licensesAvailable)
 		}
 	}
 	return nil

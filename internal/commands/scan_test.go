@@ -2648,27 +2648,127 @@ func TestValidateScanTypes(t *testing.T) {
 		userScanTypes    string
 		userSCSScanTypes string
 		allowedEngines   map[string]bool
+		sscsLicensingV2  bool
 		expectedError    string
 	}{
 		{
-			name:             "No licenses available",
+			name:             "no specific micro engines selected with no licenses available using new sscs licensing",
 			userScanTypes:    "scs",
-			userSCSScanTypes: "sast,secret-detection",
-			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"scs\" scan type does",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			sscsLicensingV2:  true,
+			expectedError:    "it requires either the \"repository‑health\" or the \"secret‑detection\" package license",
 		},
 		{
-			name:             "SCS license available, secret-detection not available",
+			name:             "no specific micro engines selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			sscsLicensingV2:  true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			sscsLicensingV2:  true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": true},
+			sscsLicensingV2:  true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			sscsLicensingV2:  false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "no specific micro engines selected with scs license available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			sscsLicensingV2:  false,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			sscsLicensingV2:  false,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			sscsLicensingV2:  false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			sscsLicensingV2:  true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with SCS license available, secret-detection not available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
+			sscsLicensingV2:  false,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
 		},
 		{
-			name:             "All licenses available",
+			name:             "secret-detection selected with repository-health license available, secret-detection not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			sscsLicensingV2:  true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard selected with secret-detection license available and repository-health not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			sscsLicensingV2:  true,
+			expectedError:    "It looks like the \"repository-health\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with all licenses available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			sscsLicensingV2:  false,
+			expectedError:    "",
+		},
+		{
+			name:             "secret-detection selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			sscsLicensingV2:  true,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			sscsLicensingV2:  true,
 			expectedError:    "",
 		},
 	}
@@ -2683,6 +2783,7 @@ func TestValidateScanTypes(t *testing.T) {
 				CustomGetAllowedEngines: func(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]bool, error) {
 					return tt.allowedEngines, nil
 				},
+				SscsLicensingV2: tt.sscsLicensingV2,
 			}
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
