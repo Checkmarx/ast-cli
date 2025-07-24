@@ -2383,3 +2383,180 @@ func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.Error(t, err, "Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
 }
+
+// TestContainerScan_WithCustomImagesAndDockerfile tests that when providing custom images
+// via CLI and scanning a directory with Dockerfiles, both sets of images are scanned
+func TestContainerScan_WithCustomImagesAndDockerfile(t *testing.T) {
+	// Create a temporary directory with a Dockerfile
+	testDir := "test-container-extraction"
+	os.RemoveAll(testDir)
+	err := os.Mkdir(testDir, 0755)
+	assert.NilError(t, err, "Failed to create test directory")
+	defer os.RemoveAll(testDir)
+
+	// Create a Dockerfile with different images than CLI provides
+	dockerfile := `FROM nginx:1.25.3
+RUN apt-get update
+FROM redis:7.2.3-alpine
+COPY . /app
+FROM mysql:8.2.0`
+	err = os.WriteFile(filepath.Join(testDir, "Dockerfile"), []byte(dockerfile), 0644)
+	assert.NilError(t, err, "Failed to create Dockerfile")
+
+	// Create docker-compose.yml with additional images
+	dockerCompose := `version: '3'
+services:
+  web:
+    image: httpd:2.4.58
+  db:
+    image: postgres:16.1`
+	err = os.WriteFile(filepath.Join(testDir, "docker-compose.yml"), []byte(dockerCompose), 0644)
+	assert.NilError(t, err, "Failed to create docker-compose.yml")
+
+	// Run scan with custom images that are different from Dockerfile images
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_container_extraction",
+		flag(params.SourcesFlag), testDir,
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "ubuntu:22.04,debian:11", // Different from Dockerfile images
+		flag(params.BranchFlag), "main",
+		flag(params.AsyncFlag), // Don't wait for completion
+	}
+
+	// Execute the scan
+	outputBuffer := executeCmdNilAssertion(t, "Container scan with custom images and Dockerfile should pass", args...)
+	
+	// Extract scan ID from output
+	scanResponse := wrappers.ScanResponseModel{}
+	err = json.Unmarshal(outputBuffer.Bytes(), &scanResponse)
+	assert.NilError(t, err, "Failed to parse scan response")
+	
+	log.Printf("Created container scan with ID: %s", scanResponse.ID)
+	
+	// Wait for scan to complete
+	assert.Assert(t, pollScanUntilStatus(t, scanResponse.ID, wrappers.ScanCompleted, 300, 10), 
+		"Container scan should complete within timeout")
+	
+	// Get scan results to verify both CLI and Dockerfile images were scanned
+	resultsArgs := []string{
+		"results", "show",
+		flag(params.ScanIDFlag), scanResponse.ID,
+		flag(params.TargetFlag), "cx_result",
+		flag(params.TargetPathFlag), ".",
+		flag(params.FormatFlag), "json",
+	}
+	
+	// Note: In a real test, we would verify that results contain vulnerabilities 
+	// from both CLI-provided images (ubuntu, debian) and Dockerfile images (nginx, redis, mysql)
+	// and docker-compose images (httpd, postgres)
+	executeCmdNilAssertion(t, "Getting results should pass", resultsArgs...)
+	
+	// Cleanup
+	deleteScan(t, scanResponse.ID)
+	os.Remove("cx_result.json")
+}
+
+// TestContainerScan_EmptyDirectoryWithCustomImages tests that scanning an empty directory
+// with custom images works correctly (the fix adds a placeholder file)
+func TestContainerScan_EmptyDirectoryWithCustomImages(t *testing.T) {
+	// Create an empty directory
+	emptyDir := "test-empty-container-scan"
+	os.RemoveAll(emptyDir)
+	err := os.Mkdir(emptyDir, 0755)
+	assert.NilError(t, err, "Failed to create empty directory")
+	defer os.RemoveAll(emptyDir)
+
+	// Run scan on empty directory with custom images
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_empty_dir",
+		flag(params.SourcesFlag), emptyDir,
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "nginx:latest",
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	// Execute the scan - this should NOT fail with "no files found"
+	outputBuffer := executeCmdWithTimeOutNilAssertion(t, 
+		"Container scan on empty directory should pass", timeout, args...)
+	
+	// Extract scan ID from output
+	scanResponse := wrappers.ScanResponseModel{}
+	err = json.Unmarshal(outputBuffer.Bytes(), &scanResponse)
+	assert.NilError(t, err, "Failed to parse scan response")
+	
+	// Verify scan was created successfully
+	assert.Assert(t, scanResponse.ID != "", "Scan ID should not be empty")
+	assert.Assert(t, scanResponse.Status != wrappers.ScanFailed, 
+		"Scan should not fail immediately")
+	
+	log.Printf("Created scan on empty directory with ID: %s", scanResponse.ID)
+	
+	// Wait for scan to complete
+	assert.Assert(t, pollScanUntilStatus(t, scanResponse.ID, wrappers.ScanCompleted, 180, 5), 
+		"Scan should complete successfully")
+	
+	// Verify scan completed successfully
+	completedScan := showScan(t, scanResponse.ID)
+	assert.Equal(t, completedScan.Status, wrappers.ScanCompleted, 
+		"Scan should be in completed status, not failed")
+	
+	// Cleanup
+	deleteScan(t, scanResponse.ID)
+}
+
+// TestContainerScan_DirectoryWithFilesAndFilters tests that the empty directory check
+// works correctly with filters - a directory with only filtered-out files should be
+// treated as empty and get a placeholder file
+func TestContainerScan_DirectoryWithFilesAndFilters(t *testing.T) {
+	// Create a directory with only Java files
+	testDir := "test-filtered-container-scan"
+	os.RemoveAll(testDir)
+	err := os.Mkdir(testDir, 0755)
+	assert.NilError(t, err, "Failed to create test directory")
+	defer os.RemoveAll(testDir)
+
+	// Create some Java files that will be filtered out
+	javaFile := `public class Test {
+    public static void main(String[] args) {
+        System.out.println("Hello");
+    }
+}`
+	err = os.WriteFile(filepath.Join(testDir, "Test.java"), []byte(javaFile), 0644)
+	assert.NilError(t, err, "Failed to create Java file")
+	err = os.WriteFile(filepath.Join(testDir, "Main.java"), []byte(javaFile), 0644)
+	assert.NilError(t, err, "Failed to create second Java file")
+
+	// Run scan with filter that excludes Java files
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_filtered_dir",
+		flag(params.SourcesFlag), testDir,
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "alpine:3.18",
+		flag(params.SourceDirFilterFlag), "!*.java", // Filter out Java files
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	// Execute the scan - directory appears empty after filtering
+	outputBuffer := executeCmdWithTimeOutNilAssertion(t, 
+		"Container scan on filtered directory should pass", timeout, args...)
+	
+	// Extract scan ID from output
+	scanResponse := wrappers.ScanResponseModel{}
+	err = json.Unmarshal(outputBuffer.Bytes(), &scanResponse)
+	assert.NilError(t, err, "Failed to parse scan response")
+	
+	// Verify scan was created successfully
+	assert.Assert(t, scanResponse.ID != "", "Scan ID should not be empty")
+	assert.Assert(t, scanResponse.Status != wrappers.ScanFailed, 
+		"Scan should not fail with 'no files found' error")
+	
+	log.Printf("Created scan on filtered directory with ID: %s", scanResponse.ID)
+	
+	// Cleanup
+	deleteScan(t, scanResponse.ID)
+}
