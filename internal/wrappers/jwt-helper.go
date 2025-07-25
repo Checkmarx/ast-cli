@@ -21,7 +21,7 @@ type JWTStruct struct {
 }
 
 type JWTWrapper interface {
-	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, sscsLicensingV2 bool, err error)
+	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 }
@@ -30,9 +30,9 @@ func NewJwtWrapper() JWTWrapper {
 	return &JWTStruct{}
 }
 
-func getEnabledEngines(sscsLicensingV2 bool) (enabledEngines []string) {
+func getEnabledEngines(scsLicensingV2 bool) (enabledEngines []string) {
 	enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "containers"}
-	if sscsLicensingV2 {
+	if scsLicensingV2 {
 		enabledEngines = append(enabledEngines, commonParams.RepositoryHealthType, commonParams.SecretDetectionType)
 	} else {
 		enabledEngines = append(enabledEngines, commonParams.ScsType, commonParams.EnterpriseSecretsType)
@@ -40,7 +40,7 @@ func getEnabledEngines(sscsLicensingV2 bool) (enabledEngines []string) {
 	return enabledEngines
 }
 
-func getDefaultEngines(sscsLicensingV2 bool) (defaultEngines map[string]bool) {
+func getDefaultEngines(scsLicensingV2 bool) (defaultEngines map[string]bool) {
 	defaultEngines = map[string]bool{
 		"sast":         true,
 		"sca":          true,
@@ -48,7 +48,7 @@ func getDefaultEngines(sscsLicensingV2 bool) (defaultEngines map[string]bool) {
 		"iac-security": true,
 		"containers":   true,
 	}
-	if sscsLicensingV2 {
+	if scsLicensingV2 {
 		defaultEngines[commonParams.RepositoryHealthType] = true
 		defaultEngines[commonParams.SecretDetectionType] = true
 	} else {
@@ -59,20 +59,20 @@ func getDefaultEngines(sscsLicensingV2 bool) (defaultEngines map[string]bool) {
 }
 
 // GetAllowedEngines will return a map with user allowed engines
-func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, sscsLicensingV2 bool, err error) {
-	sscsLicensingV2Flag, _ := GetSpecificFeatureFlag(featureFlagsWrapper, SscsLicensingV2Enabled)
-	sscsLicensingV2 = sscsLicensingV2Flag.Status
+func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error) {
+	scsLicensingV2Flag, _ := GetSpecificFeatureFlag(featureFlagsWrapper, scsLicensingV2Enabled)
+	scsLicensingV2 = scsLicensingV2Flag.Status
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
 	if flagResponse.Status {
 		jwtStruct, err := getJwtStruct()
 		if err != nil {
-			return nil, sscsLicensingV2, err
+			return nil, scsLicensingV2, err
 		}
-		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, sscsLicensingV2)
-		return allowedEngines, sscsLicensingV2, nil
+		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, scsLicensingV2)
+		return allowedEngines, scsLicensingV2, nil
 	}
 
-	return getDefaultEngines(sscsLicensingV2), sscsLicensingV2, nil
+	return getDefaultEngines(scsLicensingV2), scsLicensingV2, nil
 }
 
 func getJwtStruct() (*JWTStruct, error) {
@@ -98,12 +98,12 @@ func (*JWTStruct) IsAllowedEngine(engine string) (bool, error) {
 	return false, nil
 }
 
-func prepareEngines(engines []string, sscsLicensingV2 bool) map[string]bool {
+func prepareEngines(engines []string, scsLicensingV2 bool) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
-		if sscsLicensingV2 {
+		if scsLicensingV2 {
 			engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.RepositoryHealthLabel), commonParams.RepositoryHealthType, 1)
 			engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.SecretDetectionLabel), commonParams.SecretDetectionType, 1)
 		} else {
@@ -111,7 +111,7 @@ func prepareEngines(engines []string, sscsLicensingV2 bool) map[string]bool {
 		}
 
 		// Current limitation, CxOne is including non-engines in the JWT
-		enabledEngines := getEnabledEngines(sscsLicensingV2)
+		enabledEngines := getEnabledEngines(scsLicensingV2)
 		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
 			m[strings.ToLower(engine)] = true
 		}
