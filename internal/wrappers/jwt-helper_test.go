@@ -1,8 +1,9 @@
 package wrappers
 
 import (
-	"gotest.tools/assert"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
 func TestGetDefaultEngines(t *testing.T) {

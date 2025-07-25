@@ -2841,6 +2841,107 @@ func TestValidateScanTypes(t *testing.T) {
 	}
 }
 
+func TestIsScsEngineAllowed(t *testing.T) {
+	tests := []struct {
+		name            string
+		sscsLicensingV2 bool
+		hasNewLicense   bool
+		hasOldLicense   bool
+		expectedAllowed bool
+	}{
+		{
+			name:            "sscsLicensingV2 disabled and has old license",
+			sscsLicensingV2: false,
+			hasOldLicense:   true,
+			expectedAllowed: true,
+		},
+		{
+			name:            "sscsLicensingV2 disabled and does not have old license",
+			sscsLicensingV2: false,
+			hasOldLicense:   false,
+			expectedAllowed: false,
+		},
+		{
+			name:            "sscsLicensingV2 enabled and has new license",
+			sscsLicensingV2: true,
+			hasNewLicense:   true,
+			expectedAllowed: true,
+		},
+		{
+			name:            "sscsLicensingV2 enabled and does not have new license",
+			sscsLicensingV2: true,
+			hasNewLicense:   false,
+			expectedAllowed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsEngineAllowed(tt.sscsLicensingV2, tt.hasNewLicense, tt.hasOldLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
+		})
+	}
+}
+
+func TestIsScsScanTypeEnabled(t *testing.T) {
+	tests := []struct {
+		name                    string
+		sscsLicensingV2         bool
+		scsEnabled              bool
+		secretDetectionEnabled  bool
+		repositoryHealthEnabled bool
+		expectedEnabled         bool
+	}{
+		{
+			name:            "sscsLicensingV2 and scs disabled",
+			sscsLicensingV2: false,
+			scsEnabled:      false,
+			expectedEnabled: false,
+		},
+		{
+			name:            "sscsLicensingV2 disabled and scs enabled",
+			sscsLicensingV2: false,
+			scsEnabled:      true,
+			expectedEnabled: true,
+		},
+		{
+			name:                    "sscsLicensingV2, secret-detection enabled and repository-health disabled",
+			sscsLicensingV2:         true,
+			secretDetectionEnabled:  true,
+			repositoryHealthEnabled: false,
+			expectedEnabled:         true,
+		},
+		{
+			name:                    "sscsLicensingV2, repository-health enabled and secret-detection disabled",
+			sscsLicensingV2:         true,
+			secretDetectionEnabled:  false,
+			repositoryHealthEnabled: true,
+			expectedEnabled:         true,
+		},
+		{
+			name:                    "sscsLicensingV2, repository-health, secret-detection enabled",
+			sscsLicensingV2:         true,
+			secretDetectionEnabled:  true,
+			repositoryHealthEnabled: true,
+			expectedEnabled:         true,
+		},
+		{
+			name:                    "sscsLicensingV2 enabled and repository-health, secret-detection disabled",
+			sscsLicensingV2:         true,
+			secretDetectionEnabled:  false,
+			repositoryHealthEnabled: false,
+			expectedEnabled:         false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualEnabled := isScsScanTypeEnabled(tt.sscsLicensingV2, tt.scsEnabled, tt.secretDetectionEnabled, tt.repositoryHealthEnabled)
+			assert.Equal(t, tt.expectedEnabled, actualEnabled)
+		})
+	}
+}
+
 func TestCreateScanWith_ScaResolver_Source_as_Zip(t *testing.T) {
 	clearFlags()
 	baseArgs := []string{
