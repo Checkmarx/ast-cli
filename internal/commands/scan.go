@@ -1343,8 +1343,8 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		scanTypes = strings.Split(userScanTypes, ",")
 		for _, scanType := range scanTypes {
 			if scanType == commonParams.ScsType && sscsLicensingV2Enabled {
-				// SCS is a special case because it contains two engines.
-				// Before the new licensing model, the main license was named "SCS".
+				// the SCS scan type is a special case because it contains two engines.
+				// Before the new licensing model, the main license was named "scs".
 				// Licenses are now separated for each engine, so this validation no longer makes sense.
 				// See validateSCSEngines.
 				continue
@@ -1388,10 +1388,8 @@ func validateSCSEngines(allowedEngines map[string]bool, userSCSScanTypes string,
 		} else if slices.Contains(scsScanTypes, ScsScoreCardType) && !repositoryHeatlhAllowed {
 			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, licensesAvailable)
 		}
-	} else {
-		if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-			return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, licensesAvailable)
-		}
+	} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+		return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, licensesAvailable)
 	}
 	return nil
 }
