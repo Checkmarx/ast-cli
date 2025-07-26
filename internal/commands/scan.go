@@ -3032,8 +3032,9 @@ func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey str
 }
 
 func validateCreateScanFlags(cmd *cobra.Command) error {
+	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	branch := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
-	if branch == "" {
+	if branch == "" && !isSbomScan {
 		return errors.Errorf("%s: Please provide a branch", failedCreating)
 	}
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
