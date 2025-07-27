@@ -189,7 +189,7 @@ func createResultsPerLocationMap(results []SecretsRealtimeResult) map[string][]S
 		for _, location := range result.Locations {
 			locationKey = fmt.Sprintf("%s:%d", locationKey, location.Line)
 		}
-		resultKey := fmt.Sprintf("%s:%s", result.FilePath, locationKey)
+		resultKey := fmt.Sprintf("%s%s", result.FilePath, locationKey)
 		resultsPerLocation[resultKey] = append(resultsPerLocation[resultKey], result)
 	}
 	return resultsPerLocation
