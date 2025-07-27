@@ -506,7 +506,7 @@ func scanIacRealtimeSubCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
-	scanOssRealtimeCmd := &cobra.Command{
+	scanIacRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "iac-realtime",
 		Short:  "Run a IaC-Realtime scan",
@@ -526,20 +526,20 @@ func scanIacRealtimeSubCommand(
 		RunE: RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper),
 	}
 
-	scanOssRealtimeCmd.PersistentFlags().StringP(
+	scanIacRealtimeCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
 		"",
-		"The file source should be the path to a single file or multiple files separated by commas",
+		"The file source should be the path to a single file",
 	)
 
-	scanOssRealtimeCmd.Flags().String(
+	scanIacRealtimeCmd.Flags().String(
 		commonParams.IgnoredFilePathFlag,
 		"",
 		"Path to a JSON file listing ignored packages",
 	)
 
-	return scanOssRealtimeCmd
+	return scanIacRealtimeCmd
 }
 
 func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
