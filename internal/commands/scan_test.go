@@ -1854,12 +1854,13 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
-		name                 string
-		resubmitConfig       []wrappers.Config
-		expectedCustomImages string
+		name                    string
+		resubmitConfig          []wrappers.Config
+		containerResolveLocally bool
+		expectedCustomImages    string
 	}{
 		{
-			name: "When UserCustomImages is valid string, it should be set in containerConfig",
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is false, it should be set in containerConfig",
 			resubmitConfig: []wrappers.Config{
 				{
 					Type: commonParams.ContainersType,
@@ -1868,7 +1869,21 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "image1:tag1,image2:tag2",
+			containerResolveLocally: false,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When UserCustomImages is empty string, containerConfig should not be updated",
@@ -1880,7 +1895,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When UserCustomImages is nil, containerConfig should not be updated",
@@ -1892,7 +1908,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When config.Value doesn't have UserCustomImages key, containerConfig should not be updated",
@@ -1902,7 +1919,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					Value: map[string]interface{}{},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 	}
 
@@ -1913,7 +1931,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 			containerConfig := &wrappers.ContainerConfig{}
 
 			// Call the function under test
-			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig)
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
 
 			// Assert the result
 			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,

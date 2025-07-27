@@ -1165,7 +1165,8 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	containerMapConfig[resultsMapType] = commonParams.ContainersType
 	containerConfig := wrappers.ContainerConfig{}
 
-	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig)
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally)
 
 	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
 	if fileFolderFilter != "" {
@@ -1184,7 +1185,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 		containerConfig.ImagesFilter = imageTagFilter
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if userCustomImages != "" {
+	if userCustomImages != "" && !containerResolveLocally {
 		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
 		for _, containerImageName := range containerImagesList {
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
@@ -1199,7 +1200,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	return containerMapConfig, nil
 }
 
-func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig) {
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
 			continue
@@ -1221,7 +1222,7 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
 		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
-		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" {
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && !containerResolveLocally {
 			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}
@@ -1745,7 +1746,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		if isSingleContainerScanTriggered() && containerResolveLocally {
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
-			containerResolutionFilePath := filepath.Join(directoryPath, containerResolutionFileName)
+			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 		} else if isSingleContainerScanTriggered() && containerImagesFlag != "" {
 			logger.PrintIfVerbose("Single container scan with external images: creating minimal zip file")
