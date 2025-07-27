@@ -163,6 +163,7 @@ func convertSecretToResult(secret *secrets.Secret) SecretsRealtimeResult {
 	return SecretsRealtimeResult{
 		Title:       secret.RuleID,
 		Description: secret.RuleDescription,
+		SecretValue: secret.Value,
 		Severity:    getSeverity(secret),
 		FilePath:    secret.Source,
 		Locations:   locations,
