@@ -84,7 +84,7 @@ func prepareScanEnvironment(filePath string) (volumeMap string, tempDir string, 
 		return "", "", errorconstants.NewRealtimeEngineError("--file is required for kics-realtime command").Error()
 	}
 
-	if !contains(commonParams.KicsBaseFilters, filePath) {
+	if !hasSupportedExtension(filePath) {
 		return "", "", errorconstants.NewRealtimeEngineError("Provided file is not supported by iac-realtime").Error()
 	}
 
@@ -189,8 +189,8 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 	return result, nil
 }
 
-func contains(filters []string, target string) bool {
-	for _, f := range filters {
+func hasSupportedExtension(target string) bool {
+	for _, f := range commonParams.KicsBaseFilters {
 		if f != "" && strings.Contains(target, f) {
 			return true
 		}
