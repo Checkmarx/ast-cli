@@ -8,5 +8,5 @@ type IacRealtimeResult struct {
 	Description  string                    `json:"Description"`
 	Severity     string                    `json:"Severity"`
 	FilePath     string                    `json:"FilePath"`
-	Locations    []realtimeengine.Location `json:"locations"`
+	Locations    []realtimeengine.Location `json:"Locations"`
 }
