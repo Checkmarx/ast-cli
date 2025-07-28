@@ -33,6 +33,11 @@ var (
 	kicsErrorCodes = []string{"60", "50", "40", "30", "20"}
 )
 
+type LineIndex struct {
+	Start int
+	End   int
+}
+
 type IacRealtimeService struct {
 	JwtWrapper         wrappers.JWTWrapper
 	FeatureFlagWrapper wrappers.FeatureFlagsWrapper
@@ -45,7 +50,7 @@ func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsW
 	}
 }
 
-func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, ignoredFilePath string) ([]IacRealtimeResult, error) {
+func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFilePath string) ([]IacRealtimeResult, error) {
 	if enabled, err := realtimeengine.IsFeatureFlagEnabled(svc.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
 		logger.PrintfIfVerbose("IaC Realtime scan is not available (feature flag disabled or error: %v)", err)
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
@@ -58,6 +63,8 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, ignoredFilePath stri
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
+
+	indexes, err := getLineIndices(filePath)
 
 	svc.GenerateContainerID()
 
@@ -72,7 +79,7 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, ignoredFilePath stri
 		return nil, err
 	}
 
-	results, err := runKicsScan(volumeMap, tempDir)
+	results, err := runKicsScan(engine, volumeMap, tempDir, indexes)
 
 	_ = os.RemoveAll(tempDir)
 
@@ -116,7 +123,7 @@ func (svc *IacRealtimeService) GenerateContainerID() string {
 	return containerName
 }
 
-func runKicsScan(volumeMap, tempDir string) ([]IacRealtimeResult, error) {
+func runKicsScan(engine, volumeMap, tempDir string, indexes map[int]LineIndex) ([]IacRealtimeResult, error) {
 	args := []string{
 		"run", "--rm",
 		"-v", volumeMap,
@@ -128,12 +135,12 @@ func runKicsScan(volumeMap, tempDir string) ([]IacRealtimeResult, error) {
 		"--report-formats", containerFormat,
 	}
 
-	_, err := exec.Command("docker", args...).CombinedOutput()
+	_, err := exec.Command(engine, args...).CombinedOutput()
 
-	return handleKicsError(err, tempDir)
+	return handleKicsError(err, tempDir, indexes)
 }
 
-func handleKicsError(err error, tempDir string) ([]IacRealtimeResult, error) {
+func handleKicsError(err error, tempDir string, indexes map[int]LineIndex) ([]IacRealtimeResult, error) {
 	msg := err.Error()
 	code := extractErrorCode(msg)
 
@@ -142,7 +149,7 @@ func handleKicsError(err error, tempDir string) ([]IacRealtimeResult, error) {
 		if readErr != nil {
 			return nil, errors.Errorf("%s", readErr)
 		}
-		iacRealtimeResults, err := convertKicsCollectionToIacRealtimeResults(&results)
+		iacRealtimeResults, err := convertKicsCollectionToIacRealtimeResults(&results, indexes)
 		if err != nil {
 			return nil, errors.Errorf("failed to convert KICS results: %s", err)
 		}
@@ -175,7 +182,9 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 	if err != nil {
 		return result, err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	data, err := io.ReadAll(file)
 	if err != nil {
@@ -200,18 +209,30 @@ func hasSupportedExtension(target string) bool {
 
 func convertKicsCollectionToIacRealtimeResults(
 	results *wrappers.KicsResultsCollection,
+	indexes map[int]LineIndex,
 ) ([]IacRealtimeResult, error) {
 	var iacResults []IacRealtimeResult
 
 	for _, result := range results.Results {
+		lineNum := int(result.Locations[0].Line) - 1
+		lineIndex := indexes[lineNum]
+
 		iacResult := IacRealtimeResult{
-			Title:       result.QueryName,
-			Description: result.Description,
-			Severity:    Severities[strings.ToLower(result.Severity)],
-			FilePath:    result.Locations[0].Filename,
-			Locations:   nil,
+			Title:        result.QueryName,
+			Description:  result.Description,
+			Severity:     Severities[strings.ToLower(result.Severity)],
+			FilePath:     result.Locations[0].Filename,
+			SimilarityID: result.Locations[0].SimilarityID,
+			Locations: []realtimeengine.Location{
+				{
+					Line:       lineNum,
+					StartIndex: lineIndex.Start,
+					EndIndex:   lineIndex.End,
+				},
+			},
 		}
 		iacResults = append(iacResults, iacResult)
 	}
+
 	return iacResults, nil
 }

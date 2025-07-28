@@ -539,6 +539,12 @@ func scanIacRealtimeSubCommand(
 		"Path to a JSON file listing ignored packages",
 	)
 
+	scanIacRealtimeCmd.Flags().String(
+		commonParams.IacRealtimeEngineFlag,
+		"docker",
+		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
+	)
+
 	return scanIacRealtimeCmd
 }
 

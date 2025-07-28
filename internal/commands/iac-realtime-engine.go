@@ -20,10 +20,11 @@ func RunScanIacRealtimeCommand(
 		}
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
+		engine, _ := cmd.Flags().GetString(commonParams.IacRealtimeEngineFlag)
 
 		iacRealtimeService := iac_realtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper)
 
-		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
