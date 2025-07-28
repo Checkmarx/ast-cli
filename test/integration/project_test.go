@@ -145,7 +145,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
 	}
 
-	groups = []string{
+	groups := []string{
 		"it_test_group_1",
 		"it_test_group_2",
 	}
@@ -166,6 +166,13 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
 	}
 
+	groups := []string{
+		"it_test_group_1",
+		"it_test_group_2",
+	}
+
+	groupsStr := formatGroups(groups)
+
 	output := executeCmdNilAssertion(
 		t, "project", "create",
 		flag(params.FormatFlag),
@@ -175,7 +182,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 	_, readingError := io.ReadAll(output)
 	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
 	createdProjectnew := wrappers.ProjectResponseModel{}
-	createdProjectJSON := unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
+	_ := unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
 	fmt.Printf("New project created with id: %s \n", createdProjectnew.ID)
 	deleteProject(t, createdProjectnew.ID)
 }
