@@ -2500,7 +2500,7 @@ func TestContainerScan_EmptyDirectoryWithCustomImages(t *testing.T) {
 	
 	// Verify scan completed successfully
 	completedScan := showScan(t, scanResponse.ID)
-	assert.Equal(t, completedScan.Status, wrappers.ScanCompleted, 
+	assert.Assert(t, completedScan.Status == wrappers.ScanCompleted, 
 		"Scan should be in completed status, not failed")
 	
 	// Cleanup
