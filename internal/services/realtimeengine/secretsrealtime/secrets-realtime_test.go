@@ -139,8 +139,31 @@ func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, results)
-	// Note: The actual results depend on the 2ms scanner behavior
-	// This test mainly verifies that the function completes without error
+}
+
+func TestRunSecretsRealtimeScan_MultiLineResult_Success(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+	value := "PRIVATE_KEY = \"\"\"\n-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA7v8wF+SECRETKEYEXAMPLE+QIDAQABAoIBAQC0\n-----END RSA PRIVATE KEY-----\n\"\"\""
+	// Create a temporary file for testing
+	tempDir := t.TempDir()
+	tempFile := filepath.Join(tempDir, "test-secrets.txt")
+	testContent := value
+	err := os.WriteFile(tempFile, []byte(testContent), 0644)
+	assert.NoError(t, err)
+
+	service := &SecretsRealtimeService{
+		JwtWrapper:         &mock.JWTMockWrapper{},
+		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+	}
+
+	results, err := service.RunSecretsRealtimeScan(tempFile, "")
+
+	assert.NoError(t, err)
+	assert.NotNil(t, results)
+	assert.Len(t, results, 1)
+	assert.Len(t, results[0].Locations, 3)
+	assert.NotEmpty(t, results[0].SecretValue)
+
 }
 
 func TestReadFile_ValidFile_Success(t *testing.T) {
