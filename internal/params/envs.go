@@ -7,6 +7,7 @@ const (
 	BaseURIEnv                          = "CX_BASE_URI"
 	ClientTimeoutEnv                    = "CX_TIMEOUT"
 	ProxyEnv                            = "HTTP_PROXY"
+	ProxyLowerCaseEnv                   = "http_proxy"
 	CxProxyEnv                          = "CX_HTTP_PROXY"
 	ProxyTypeEnv                        = "CX_PROXY_AUTH_TYPE"
 	ProxyDomainEnv                      = "CX_PROXY_NTLM_DOMAIN"
