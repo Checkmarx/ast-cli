@@ -1,15 +1,22 @@
 package wrappers
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
 const (
 	// APIs
-	createAssignmentPath  = ""
-	entitiesForPath       = "entities-for"
-	hasAccessToGroupsPath = "has-access-to-groups"
+	createAssignmentPath = ""
+	entitiesForPath      = "entities-for"
+
 	// EntityTypes
 	groupEntityType     = "group"
 	projectResourceType = "project"
@@ -31,7 +38,6 @@ func NewAccessManagementHTTPWrapper(path string) AccessManagementWrapper {
 	}
 }
 
-/*
 func (a *AccessManagementHTTPWrapper) CreateGroupsAssignment(projectID, projectName string, groups []*Group) error {
 	var resp *http.Response
 	for _, group := range groups {
@@ -86,32 +92,3 @@ func (a *AccessManagementHTTPWrapper) GetGroups(projectID string) ([]*Group, err
 	}
 	return groups, nil
 }
-
-func (a *AccessManagementHTTPWrapper) HasEntityAccessToGroups(groupIDs []string) (bool, error) {
-	if len(groupIDs) == 0 {
-		return true, nil
-	}
-
-	path := fmt.Sprintf("%s/%s?group-ids=%s", a.path, hasAccessToGroupsPath, strings.Join(groupIDs, ","))
-	resp, err := SendHTTPRequest(http.MethodGet, path, nil, true, a.clientTimeout)
-	if err != nil {
-		return false, errors.Wrapf(err, "Failed to validate groups access")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return false, errors.Errorf("Failed to validate groups access, status code: %d", resp.StatusCode)
-	}
-
-	var result HasAccessResponse
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&result)
-	if err != nil {
-		return false, errors.Wrapf(err, "Failed to parse response body")
-	}
-
-	return result.HasAccess, nil
-}
-
-
-*/

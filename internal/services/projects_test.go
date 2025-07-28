@@ -11,13 +11,14 @@ import (
 
 func TestFindProject(t *testing.T) {
 	type args struct {
-		applicationID       []string
-		projectName         string
-		cmd                 *cobra.Command
-		projectsWrapper     wrappers.ProjectsWrapper
-		groupsWrapper       wrappers.GroupsWrapper
-		applicationsWrapper wrappers.ApplicationsWrapper
-		featureFlagsWrapper wrappers.FeatureFlagsWrapper
+		applicationID           []string
+		projectName             string
+		cmd                     *cobra.Command
+		projectsWrapper         wrappers.ProjectsWrapper
+		groupsWrapper           wrappers.GroupsWrapper
+		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
+		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -28,13 +29,14 @@ func TestFindProject(t *testing.T) {
 		{
 			name: "Testing the update flow",
 			args: args{
-				applicationID:       []string{"1"},
-				projectName:         "MOCK",
-				cmd:                 &cobra.Command{},
-				projectsWrapper:     &mock.ProjectsMockWrapper{},
-				groupsWrapper:       &mock.GroupsMockWrapper{},
-				applicationsWrapper: &mock.ApplicationsMockWrapper{},
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				applicationID:           []string{"1"},
+				projectName:             "MOCK",
+				cmd:                     &cobra.Command{},
+				projectsWrapper:         &mock.ProjectsMockWrapper{},
+				groupsWrapper:           &mock.GroupsMockWrapper{},
+				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
+				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "MOCK",
 			wantErr: false,
@@ -42,12 +44,13 @@ func TestFindProject(t *testing.T) {
 		{
 			name: "Testing the create flow",
 			args: args{
-				projectName:         "new-MOCK",
-				cmd:                 &cobra.Command{},
-				projectsWrapper:     &mock.ProjectsMockWrapper{},
-				groupsWrapper:       &mock.GroupsMockWrapper{},
-				applicationsWrapper: &mock.ApplicationsMockWrapper{},
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				projectName:             "new-MOCK",
+				cmd:                     &cobra.Command{},
+				projectsWrapper:         &mock.ProjectsMockWrapper{},
+				groupsWrapper:           &mock.GroupsMockWrapper{},
+				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
+				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "ID-new-MOCK",
 			wantErr: false,
@@ -61,7 +64,9 @@ func TestFindProject(t *testing.T) {
 				ttt.args.cmd,
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
-				ttt.args.applicationsWrapper)
+				ttt.args.accessManagementWrapper,
+				ttt.args.applicationsWrapper,
+				ttt.args.featureFlagsWrapper)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
@@ -75,15 +80,16 @@ func TestFindProject(t *testing.T) {
 
 func Test_createProject(t *testing.T) {
 	type args struct {
-		projectName           string
-		cmd                   *cobra.Command
-		projectsWrapper       wrappers.ProjectsWrapper
-		groupsWrapper         wrappers.GroupsWrapper
-		applicationsWrapper   wrappers.ApplicationsWrapper
-		applicationID         []string
-		projectGroups         string
-		projectPrivatePackage string
-		featureFlagsWrapper   wrappers.FeatureFlagsWrapper
+		projectName             string
+		cmd                     *cobra.Command
+		projectsWrapper         wrappers.ProjectsWrapper
+		groupsWrapper           wrappers.GroupsWrapper
+		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
+		applicationID           []string
+		projectGroups           string
+		projectPrivatePackage   string
+		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -92,50 +98,56 @@ func Test_createProject(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "When called with a new project name return the Id of the newly created project", args: args{
-			projectName:         "new-project-name",
-			cmd:                 &cobra.Command{},
-			projectsWrapper:     &mock.ProjectsMockWrapper{},
-			groupsWrapper:       &mock.GroupsMockWrapper{},
-			projectGroups:       "",
-			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and existing project groups return the Id of the newly created project", args: args{
-			projectName:         "new-project-name",
-			cmd:                 &cobra.Command{},
-			projectsWrapper:     &mock.ProjectsMockWrapper{},
-			groupsWrapper:       &mock.GroupsMockWrapper{},
-			projectGroups:       "existsGroup1,existsGroup2",
-			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "existsGroup1,existsGroup2",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
 		{name: "When called with a new project name and non existing project groups return error", args: args{
-			projectName:         "new-project-name",
-			cmd:                 &cobra.Command{},
-			projectsWrapper:     &mock.ProjectsMockWrapper{},
-			groupsWrapper:       &mock.GroupsMockWrapper{},
-			projectGroups:       "grp1,grp2",
-			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "grp1,grp2",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "", wantErr: true},
 		{name: "When called with mock fake error model return fake error from project create", args: args{
-			projectName:         "mock-some-error-model",
-			cmd:                 &cobra.Command{},
-			projectsWrapper:     &mock.ProjectsMockWrapper{},
-			groupsWrapper:       &mock.GroupsMockWrapper{},
-			projectGroups:       "",
-			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			projectName:             "mock-some-error-model",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "", wantErr: true},
 		{name: "When called with mock fake group error return fake error from project create", args: args{
-			projectName:         "new-project-name",
-			cmd:                 &cobra.Command{},
-			projectsWrapper:     &mock.ProjectsMockWrapper{},
-			groupsWrapper:       &mock.GroupsMockWrapper{},
-			projectGroups:       "fake-group-error",
-			featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+			projectGroups:           "fake-group-error",
+			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 		}, want: "", wantErr: true},
 		{name: "When called with a new project name and projectPrivatePackage set to true return the Id of the newly created project", args: args{
-			projectName:     "new-project-name",
-			cmd:             &cobra.Command{},
-			projectsWrapper: &mock.ProjectsMockWrapper{},
-			groupsWrapper:   &mock.GroupsMockWrapper{},
+			projectName:             "new-project-name",
+			cmd:                     &cobra.Command{},
+			projectsWrapper:         &mock.ProjectsMockWrapper{},
+			groupsWrapper:           &mock.GroupsMockWrapper{},
+			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 
 			projectGroups:         "",
 			projectPrivatePackage: "true",
@@ -150,10 +162,12 @@ func Test_createProject(t *testing.T) {
 				ttt.args.cmd,
 				ttt.args.projectsWrapper,
 				ttt.args.groupsWrapper,
+				ttt.args.accessManagementWrapper,
 				ttt.args.applicationsWrapper,
 				ttt.args.applicationID,
 				ttt.args.projectGroups,
-				ttt.args.projectPrivatePackage, false, "")
+				ttt.args.projectPrivatePackage,
+				ttt.args.featureFlagsWrapper, false, "")
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("createProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return

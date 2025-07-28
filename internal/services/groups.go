@@ -3,6 +3,7 @@ package services
 import (
 	"strings"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
@@ -59,6 +60,35 @@ func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrap
 		}
 	}
 	return groupsToAssign
+}
+
+func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
+	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+
+	amEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
+	groupValidationEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.GroupValidationEnabled)
+
+	// If  ACCESS_MANAGEMENT_ENABLED flag is OFF or (groupValidation is on and ACCESS_MANAGEMENT_ENABLED is also on )
+	// In both cases, we do not need to assign groups through the CreateGroupsAssignment call.
+
+	if !amEnabledFlag.Status || (amEnabledFlag.Status && groupValidationEnabledFlag.Status) {
+		return nil
+	}
+
+	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)
+	if err != nil {
+		return err
+	}
+	groupsToAssign := getGroupsToAssign(groups, groupsAssignedToTheProject)
+	if len(groupsToAssign) == 0 {
+		return nil
+	}
+
+	err = accessManagement.CreateGroupsAssignment(projectID, projectName, groupsToAssign)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetGroupIds(groups []*wrappers.Group) []string {

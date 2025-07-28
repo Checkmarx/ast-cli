@@ -29,8 +29,9 @@ func FindProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
-
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationWrapper wrappers.ApplicationsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (string, error) {
 	var isBranchPrimary bool
 	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
@@ -57,8 +58,8 @@ func FindProject(
 		return "", appErr
 	}
 
-	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, applicationWrapper,
-		applicationID, projectGroups, projectPrivatePackage,isBranchPrimary, branchName)
+	projectID, err := createProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationWrapper,
+		applicationID, projectGroups, projectPrivatePackage, featureFlagsWrapper, isBranchPrimary, branchName)
 	if err != nil {
 		logger.PrintIfVerbose("error in creating project!")
 		return "", err
@@ -94,10 +95,12 @@ func createProject(
 	cmd *cobra.Command,
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	applicationID []string,
 	projectGroups string,
 	projectPrivatePackage string,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	isBranchPrimary bool,
 	branchName string,
 ) (string, error) {
@@ -111,6 +114,7 @@ func createProject(
 		logger.PrintIfVerbose(fmt.Sprintf("Setting the branch in project : %s", branchName))
 		projModel.MainBranch = branchName
 	}
+	var groupsMap []*wrappers.Group
 	if projectGroups != "" {
 		var groups []string
 		var groupErr error
@@ -141,7 +145,7 @@ func createProject(
 		}
 
 		if projectGroups != "" {
-			err = UpsertProjectGroups(&projModel, projectsWrapper, projectID)
+			err = UpsertProjectGroups(&projModel, projectsWrapper, accessManagementWrapper, projectID, projectName, featureFlagsWrapper, groupsMap)
 			if err != nil {
 				return projectID, err
 			}
@@ -224,12 +228,16 @@ func updateProject(project *wrappers.ProjectResponseModel,
 
 	return projectID, nil
 }
-
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
-	projectID string) error {
+	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
+	err := AssignGroupsToProjectNewAccessManagement(projectID, projectName, groupsMap, accessManagementWrapper, featureFlagsWrapper)
+	if err != nil {
+		return err
+	}
 
 	logger.PrintIfVerbose("Updating project groups")
-	err := projectsWrapper.Update(projectID, projModel)
+	err = projectsWrapper.Update(projectID, projModel)
 	if err != nil {
 		return errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}

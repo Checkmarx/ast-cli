@@ -162,6 +162,7 @@ func NewScanCommand(
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	sastMetadataWrapper wrappers.SastMetadataWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
@@ -192,6 +193,7 @@ func NewScanCommand(
 		scsScanOverviewWrapper,
 		jwtWrapper,
 		policyWrapper,
+		accessManagementWrapper,
 		applicationsWrapper,
 		featureFlagsWrapper,
 	)
@@ -590,6 +592,7 @@ func scanCreateSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
@@ -622,6 +625,7 @@ func scanCreateSubCommand(
 			scsScanOverviewWrapper,
 			jwtWrapper,
 			policyWrapper,
+			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
 		),
@@ -837,6 +841,7 @@ func setupScanTypeProjectAndConfig(
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 ) error {
@@ -864,7 +869,9 @@ func setupScanTypeProjectAndConfig(
 		cmd,
 		projectsWrapper,
 		groupsWrapper,
+		accessManagementWrapper,
 		applicationsWrapper,
+		featureFlagsWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
@@ -1885,6 +1892,7 @@ func runCreateScanCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
@@ -1913,6 +1921,7 @@ func runCreateScanCommand(
 			projectsWrapper,
 			groupsWrapper,
 			scansWrapper,
+			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
 			jwtWrapper,
@@ -2009,6 +2018,7 @@ func createScanModel(
 	projectsWrapper wrappers.ProjectsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
 	scansWrapper wrappers.ScansWrapper,
+	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -2016,7 +2026,7 @@ func createScanModel(
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, featureFlagsWrapper, jwtWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper, jwtWrapper)
 	if err != nil {
 		return nil, "", err
 	}
