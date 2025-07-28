@@ -12,7 +12,7 @@ func NewLineParser() *LineParser {
 	return &LineParser{}
 }
 
-func (lp *LineParser) GetLineIndices(filePath string, lineNumber int) (startIndex int, endIndex int) {
+func (lp *LineParser) GetLineIndices(filePath string, lineNumber int) (startIndex, endIndex int) {
 	if filePath == "" {
 		return 0, 0
 	}
