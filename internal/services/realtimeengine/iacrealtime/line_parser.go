@@ -1,4 +1,4 @@
-package iac_realtime
+package iacrealtime
 
 import (
 	"os"
@@ -39,7 +39,7 @@ func (lp *LineParser) GetLineIndices(filePath string, lineNumber int) (startInde
 	return start, end
 }
 
-func (lp *LineParser) findContentBounds(line string) (start int, end int) {
+func (lp *LineParser) findContentBounds(line string) (start, end int) {
 	start = -1
 	end = -1
 

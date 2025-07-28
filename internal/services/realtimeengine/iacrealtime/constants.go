@@ -1,4 +1,4 @@
-package iac_realtime
+package iacrealtime
 
 const (
 	ContainerPath            = "/path"

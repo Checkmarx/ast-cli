@@ -1,4 +1,4 @@
-package iac_realtime
+package iacrealtime
 
 import (
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"

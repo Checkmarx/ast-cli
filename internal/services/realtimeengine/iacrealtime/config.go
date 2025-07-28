@@ -1,4 +1,4 @@
-package iac_realtime
+package iacrealtime
 
 import "github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 

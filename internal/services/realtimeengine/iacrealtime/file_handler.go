@@ -1,4 +1,4 @@
-package iac_realtime
+package iacrealtime
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ func NewFileHandler() *FileHandler {
 	return &FileHandler{}
 }
 
-func (fh *FileHandler) PrepareScanEnvironment(filePath string) (volumeMap string, tempDir string, err error) {
+func (fh *FileHandler) PrepareScanEnvironment(filePath string) (volumeMap, tempDir string, err error) {
 	if !fh.HasSupportedExtension(filePath) {
 		return "", "", errorconstants.NewRealtimeEngineError("Provided file is not supported by iac-realtime").Error()
 	}
