@@ -145,6 +145,13 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
 	}
 
+	groups = []string{
+		"it_test_group_1",
+		"it_test_group_2",
+	}
+
+	groupsStr := formatGroups(groups)
+
 	err, _ := executeCommand(
 		t, "project", "create",
 		flag(params.FormatFlag),
@@ -165,7 +172,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 		printer.FormatJSON,
 		flag(params.ProjectName), "project-4", flag(params.GroupList), groupsStr,
 	)
-	result, readingError := io.ReadAll(output)
+	_, readingError := io.ReadAll(output)
 	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
 	createdProjectnew := wrappers.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
