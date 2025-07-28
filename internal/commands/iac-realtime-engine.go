@@ -23,12 +23,12 @@ func RunScanIacRealtimeCommand(
 
 		iacRealtimeService := iac_realtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper)
 
-		packages, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
 
-		err = printer.Print(cmd.OutOrStdout(), packages, printer.FormatJSON)
+		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
 			return errorconstants.NewRealtimeEngineError("failed to return packages").Error()
 		}

@@ -3,7 +3,7 @@ package iac_realtime
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,8 +11,10 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -20,11 +22,10 @@ import (
 )
 
 const (
-	containerImage           = "checkmarx/kics:v2.1.11"
 	containerPath            = "/path"
 	containerFormat          = "json"
-	containerTempDirPattern  = "kics"
-	kicsContainerPrefix      = "cli-kics-realtime-"
+	containerTempDirPattern  = "iac-realtime"
+	kicsContainerPrefix      = "cli-iac-realtime-"
 	containerResultsFileName = "results.json"
 )
 
@@ -44,107 +45,119 @@ func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsW
 	}
 }
 
-func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, ignoredFilePath string) (*IacRealtimeResults, error) {
-	containerID := uuid.New().String()
-	containerName := kicsContainerPrefix + containerID
-	viper.Set(commonParams.KicsContainerNameKey, containerName)
+func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, ignoredFilePath string) ([]IacRealtimeResult, error) {
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(svc.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
+		logger.PrintfIfVerbose("IaC Realtime scan is not available (feature flag disabled or error: %v)", err)
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
+	}
+
+	if err := realtimeengine.EnsureLicense(svc.JwtWrapper); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+	}
+
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	}
+
+	svc.GenerateContainerID()
 
 	volumeMap, tempDir, err := prepareScanEnvironment(filePath)
+	defer func() {
+		if tempDir != "" {
+			_ = os.RemoveAll(tempDir)
+		}
+	}()
+
 	if err != nil {
 		return nil, err
 	}
 
-	err = runKicsScan(volumeMap, tempDir)
-	logger.PrintIfVerbose("Removing folder in temp")
-	removeErr := os.RemoveAll(tempDir)
-	if removeErr != nil {
-		logger.PrintIfVerbose(removeErr.Error())
-	}
+	results, err := runKicsScan(volumeMap, tempDir)
 
-	return nil, err
+	_ = os.RemoveAll(tempDir)
+
+	return results, err
 }
 
-func prepareScanEnvironment(filePath string) (string, string, error) {
+func prepareScanEnvironment(filePath string) (volumeMap string, tempDir string, err error) {
 	if filePath == "" {
-		return "", "", errors.New("--file is required for kics-realtime command")
+		return "", "", errorconstants.NewRealtimeEngineError("--file is required for kics-realtime command").Error()
 	}
 
 	if !contains(commonParams.KicsBaseFilters, filePath) {
-		return "", "", errors.Errorf("%s. Provided file is not supported by kics", filePath)
+		return "", "", errorconstants.NewRealtimeEngineError("Provided file is not supported by iac-realtime").Error()
 	}
 
-	tempDir, err := os.MkdirTemp("", containerTempDirPattern)
+	tempDir, err = os.MkdirTemp("", containerTempDirPattern)
 	if err != nil {
-		return "", "", errors.New("error creating temporary directory")
+		return "", "", errorconstants.NewRealtimeEngineError("error creating temporary directory").Error()
 	}
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", "", errors.New("error reading file")
+		return "", "", errorconstants.NewRealtimeEngineError("error reading file").Error()
 	}
 
 	_, file := filepath.Split(filePath)
 	destPath := filepath.Join(tempDir, file)
 
 	if err := os.WriteFile(destPath, data, os.ModePerm); err != nil {
-		return "", "", errors.New("error writing file to temporary directory")
+		return "", "", errorconstants.NewRealtimeEngineError("error writing file to temporary directory").Error()
 	}
 
-	volumeMap := fmt.Sprintf("%s:%s", tempDir, containerPath)
+	volumeMap = fmt.Sprintf("%s:%s", tempDir, containerPath)
 	return volumeMap, tempDir, nil
 }
 
-func runKicsScan(volumeMap, tempDir string) error {
+func (svc *IacRealtimeService) GenerateContainerID() string {
+	containerID := uuid.New().String()
+	containerName := kicsContainerPrefix + containerID
+	viper.Set(commonParams.KicsContainerNameKey, containerName)
+	return containerName
+}
+
+func runKicsScan(volumeMap, tempDir string) ([]IacRealtimeResult, error) {
 	args := []string{
 		"run", "--rm",
 		"-v", volumeMap,
 		"--name", viper.GetString(commonParams.KicsContainerNameKey),
-		containerImage,
+		util.ContainerImage,
 		"scan",
 		"-p", containerPath,
 		"-o", containerPath,
 		"--report-formats", containerFormat,
 	}
 
-	logger.PrintIfVerbose("Starting kics container")
-	logger.PrintIfVerbose("The report format and output path cannot be overridden.")
-
-	out, err := exec.Command("docker", args...).CombinedOutput()
-	logger.PrintIfVerbose(string(out))
-
-	if err == nil {
-		return nil
-	}
+	_, err := exec.Command("docker", args...).CombinedOutput()
 
 	return handleKicsError(err, tempDir)
 }
 
-func handleKicsError(err error, tempDir string) error {
+func handleKicsError(err error, tempDir string) ([]IacRealtimeResult, error) {
 	msg := err.Error()
 	code := extractErrorCode(msg)
 
 	if slices.Contains(kicsErrorCodes, code) {
 		results, readErr := readKicsResultsFile(tempDir)
 		if readErr != nil {
-			return errors.Errorf("%s", readErr)
+			return nil, errors.Errorf("%s", readErr)
 		}
-		if printErr := printKicsResults(&results); printErr != nil {
-			return errors.Errorf("%s", printErr)
+		iacRealtimeResults, err := convertKicsCollectionToIacRealtimeResults(&results)
+		if err != nil {
+			return nil, errors.Errorf("failed to convert KICS results: %s", err)
 		}
-		return nil
+		return iacRealtimeResults, nil
 	}
 
 	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == util.EngineNoRunningCode {
-		logger.PrintIfVerbose(msg)
-		return errors.New(util.NotRunningEngineMessage)
+		return nil, errors.New(util.NotRunningEngineMessage)
 	}
 
 	if strings.Contains(msg, util.InvalidEngineError) || strings.Contains(msg, util.InvalidEngineErrorWindows) {
-		logger.PrintIfVerbose(msg)
-		return errors.New(util.InvalidEngineMessage)
+		return nil, errors.New(util.InvalidEngineMessage)
 	}
 
-	return errors.Errorf("Check container engine state. Failed: %s", msg)
+	return nil, errors.Errorf("Check container engine state. Failed: %s", msg)
 }
 
 func extractErrorCode(msg string) string {
@@ -164,7 +177,7 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return result, err
 	}
@@ -176,15 +189,6 @@ func readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error)
 	return result, nil
 }
 
-func printKicsResults(results *wrappers.KicsResultsCollection) error {
-	data, err := json.Marshal(results)
-	if err != nil {
-		return errors.Errorf("%s", err)
-	}
-	fmt.Println(string(data))
-	return nil
-}
-
 func contains(filters []string, target string) bool {
 	for _, f := range filters {
 		if f != "" && strings.Contains(target, f) {
@@ -192,4 +196,22 @@ func contains(filters []string, target string) bool {
 		}
 	}
 	return false
+}
+
+func convertKicsCollectionToIacRealtimeResults(
+	results *wrappers.KicsResultsCollection,
+) ([]IacRealtimeResult, error) {
+	var iacResults []IacRealtimeResult
+
+	for _, result := range results.Results {
+		iacResult := IacRealtimeResult{
+			Title:       result.QueryName,
+			Description: result.Description,
+			Severity:    Severities[strings.ToLower(result.Severity)],
+			FilePath:    result.Locations[0].Filename,
+			Locations:   nil,
+		}
+		iacResults = append(iacResults, iacResult)
+	}
+	return iacResults, nil
 }
