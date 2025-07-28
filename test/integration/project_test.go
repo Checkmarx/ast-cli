@@ -182,7 +182,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 	_, readingError := io.ReadAll(output)
 	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
 	createdProjectnew := wrappers.ProjectResponseModel{}
-	_ := unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
+	_ = unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
 	fmt.Printf("New project created with id: %s \n", createdProjectnew.ID)
 	deleteProject(t, createdProjectnew.ID)
 }
