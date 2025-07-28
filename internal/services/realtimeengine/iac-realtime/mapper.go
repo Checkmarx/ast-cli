@@ -17,7 +17,7 @@ func NewMapper() *Mapper {
 	}
 }
 
-func (c *Mapper) ConvertKicsToIacResults(
+func (m *Mapper) ConvertKicsToIacResults(
 	results *wrappers.KicsResultsCollection,
 	filePath string,
 ) []IacRealtimeResult {
@@ -27,17 +27,17 @@ func (c *Mapper) ConvertKicsToIacResults(
 	for _, result := range results.Results {
 		for _, loc := range result.Locations {
 			locLine := int(loc.Line) - 1
-			lineIndex := c.getOrComputeLineIndex(filePath, locLine, indexMap)
+			lineIndex := m.getOrComputeLineIndex(filePath, locLine, indexMap)
 
 			iacResult := IacRealtimeResult{
 				Title:        result.QueryName,
 				Description:  result.Description,
-				Severity:     c.mapSeverity(result.Severity),
+				Severity:     m.mapSeverity(result.Severity),
 				FilePath:     filePath,
 				SimilarityID: loc.SimilarityID,
 				Locations: []realtimeengine.Location{
 					{
-						Line:       locLine, // Convert to 0-based
+						Line:       locLine,
 						StartIndex: lineIndex.Start,
 						EndIndex:   lineIndex.End,
 					},
@@ -49,18 +49,18 @@ func (c *Mapper) ConvertKicsToIacResults(
 	return iacResults
 }
 
-func (c *Mapper) getOrComputeLineIndex(filePath string, lineNum int, indexMap map[int]LineIndex) LineIndex {
+func (m *Mapper) getOrComputeLineIndex(filePath string, lineNum int, indexMap map[int]LineIndex) LineIndex {
 	if value, exists := indexMap[lineNum]; exists {
 		return value
 	}
 
-	startIndex, endIndex := c.lineParser.GetLineIndices(filePath, lineNum)
+	startIndex, endIndex := m.lineParser.GetLineIndices(filePath, lineNum)
 	lineIndex := LineIndex{Start: startIndex, End: endIndex}
 	indexMap[lineNum] = lineIndex
 	return lineIndex
 }
 
-func (c *Mapper) mapSeverity(severity string) string {
+func (m *Mapper) mapSeverity(severity string) string {
 	if mappedSeverity, exists := Severities[strings.ToLower(severity)]; exists {
 		return mappedSeverity
 	}

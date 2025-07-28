@@ -59,8 +59,8 @@ func (s *Scanner) processResults(tempDir, filePath string) ([]IacRealtimeResult,
 		return nil, errors.Errorf("failed to read KICS results: %s", err)
 	}
 
-	converter := NewMapper()
-	iacRealtimeResults := converter.ConvertKicsToIacResults(&results, filePath)
+	mapper := NewMapper()
+	iacRealtimeResults := mapper.ConvertKicsToIacResults(&results, filePath)
 
 	return iacRealtimeResults, nil
 }
