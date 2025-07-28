@@ -138,6 +138,41 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
 }
 
+// when both of these FF are on , validation based on permission of assign-groups-to-all is done by api call.
+// if user is not having this permission and user is trying to assign other groups , error is thrown
+func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || !isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") {
+		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+	}
+
+	err, _ := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project-1", flag(params.GroupList), groupsStr,
+	)
+	assertError(t, err, "Failed creating a project: CODE: 233, Unauthorized groups")
+}
+
+func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || (isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") && isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED")) {
+		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+	}
+
+	output := executeCmdNilAssertion(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project-4", flag(params.GroupList), groupsStr,
+	)
+	result, readingError := io.ReadAll(output)
+	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
+	createdProjectnew := wrappers.ProjectResponseModel{}
+	createdProjectJSON := unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
+	fmt.Printf("New project created with id: %s \n", createdProjectnew.ID)
+	deleteProject(t, createdProjectnew.ID)
+}
+
 func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
 	err, _ := executeCommand(
 		t, "project", "create",
