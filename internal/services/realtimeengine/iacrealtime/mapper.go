@@ -24,8 +24,10 @@ func (m *Mapper) ConvertKicsToIacResults(
 	var iacResults []IacRealtimeResult
 	indexMap := make(map[int]LineIndex)
 
-	for _, result := range results.Results {
-		for _, loc := range result.Locations {
+	for i := range results.Results {
+		result := &results.Results[i]
+		for j := range result.Locations {
+			loc := &result.Locations[j]
 			locLine := int(loc.Line) - 1
 			lineIndex := m.getOrComputeLineIndex(filePath, locLine, indexMap)
 
