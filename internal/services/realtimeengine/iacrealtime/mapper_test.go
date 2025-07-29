@@ -12,10 +12,6 @@ import (
 func TestNewMapper(t *testing.T) {
 	mapper := NewMapper()
 
-	if mapper == nil {
-		t.Error("NewMapper() should not return nil")
-	}
-
 	if mapper.lineParser == nil {
 		t.Error("NewMapper() should initialize lineParser")
 	}

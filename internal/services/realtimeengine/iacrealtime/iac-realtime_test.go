@@ -316,7 +316,7 @@ func TestIacRealtimeService_RunIacRealtimeScan_WithRealFile(t *testing.T) {
 	service := NewIacRealtimeService(mockJWT, mockFlags)
 
 	// Create a real test file
-	testContent := "apiVersion: v1\nkind: Pod\nmetadata:\n  name: test-pod"
+	testContent := "`apiVersion: v1\nkind: Pod\nmetadata:\n  name: test-pod"
 	tempFile, err := os.CreateTemp("", "iac-test-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)

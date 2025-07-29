@@ -16,6 +16,7 @@ func TestNewScanner(t *testing.T) {
 
 	if scanner == nil {
 		t.Error("NewScanner() should not return nil")
+		t.FailNow()
 	}
 
 	if scanner.dockerManager != dm {
@@ -119,7 +120,7 @@ func skipFileCreation(dir string) error {
 }
 
 // Helper function to validate KICS results
-func validateKicsResults(t *testing.T, result wrappers.KicsResultsCollection, expected *wrappers.KicsResultsCollection) {
+func validateKicsResults(t *testing.T, result *wrappers.KicsResultsCollection, expected *wrappers.KicsResultsCollection) {
 	if expected == nil {
 		return
 	}
@@ -228,25 +229,72 @@ func runReadKicsTestCase(t *testing.T, scanner *Scanner, testCase readKicsTestCa
 
 	// Validate results if no error expected
 	if !testCase.expectErr {
-		validateKicsResults(t, result, testCase.expectedData)
+		validateKicsResults(t, &result, testCase.expectedData)
 	}
 }
 
-func TestScanner_HandleScanResult(t *testing.T) {
-	scanner := NewScanner(NewDockerManager())
+// Test case structure for HandleScanResult
+type handleScanTestCase struct {
+	name       string
+	err        error
+	tempDir    string
+	filePath   string
+	expectErr  bool
+	errorCheck func(error) bool
+}
 
-	// Create a temp directory with valid KICS results
-	tempDir, err := os.MkdirTemp("", "test-handle-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
+// Helper function to create test error based on test case name
+func createTestError(testName string, originalErr error) error {
+	switch testName {
+	case "Engine not running error":
+		return &exec.ExitError{}
+	case "Invalid engine error", "Generic error":
+		return &exec.Error{Name: "docker", Err: nil}
+	default:
+		return originalErr
 	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Logf("Failed to cleanup temp dir: %v", err)
-		}
-	}()
+}
 
-	// Create a valid results file
+// Helper function to validate scan result success case
+func validateScanResultSuccess(t *testing.T, results []IacRealtimeResult, err error) {
+	if err != nil {
+		t.Errorf("HandleScanResult() unexpected error: %v", err)
+		return
+	}
+
+	if results == nil {
+		t.Error("HandleScanResult() should return results on success")
+	}
+}
+
+// Helper function to validate scan result error case
+func validateScanResultError(t *testing.T, err error, errorCheck func(error) bool) {
+	if err == nil {
+		t.Error("HandleScanResult() expected error but got none")
+		return
+	}
+
+	if errorCheck != nil && !errorCheck(err) {
+		t.Errorf("HandleScanResult() error doesn't match expected pattern: %v", err)
+	}
+}
+
+// Helper function to run a single handle scan result test case
+func runHandleScanTestCase(t *testing.T, scanner *Scanner, testCase handleScanTestCase) {
+	// Create specific error types for testing
+	testErr := createTestError(testCase.name, testCase.err)
+
+	results, err := scanner.HandleScanResult(testErr, testCase.tempDir, testCase.filePath)
+
+	if testCase.expectErr {
+		validateScanResultError(t, err, testCase.errorCheck)
+	} else {
+		validateScanResultSuccess(t, results, err)
+	}
+}
+
+// Helper function to create valid KICS results file for testing
+func createValidKicsResultsFile(tempDir string) error {
 	results := wrappers.KicsResultsCollection{
 		Results: []wrappers.KicsQueries{
 			{
@@ -259,18 +307,29 @@ func TestScanner_HandleScanResult(t *testing.T) {
 		},
 	}
 	data, _ := json.Marshal(results)
-	if err := os.WriteFile(filepath.Join(tempDir, ContainerResultsFileName), data, 0644); err != nil {
+	return os.WriteFile(filepath.Join(tempDir, ContainerResultsFileName), data, 0644)
+}
+
+func TestScanner_HandleScanResult(t *testing.T) {
+	scanner := NewScanner(NewDockerManager())
+
+	// Create a temp directory with valid KICS results
+	tempDir, err := os.MkdirTemp("", "test-handle-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
+			t.Logf("Failed to cleanup temp dir: %v", err)
+		}
+	}()
+
+	// Create a valid results file
+	if err := createValidKicsResultsFile(tempDir); err != nil {
 		t.Fatalf("Failed to create results file: %v", err)
 	}
 
-	tests := []struct {
-		name       string
-		err        error
-		tempDir    string
-		filePath   string
-		expectErr  bool
-		errorCheck func(error) bool
-	}{
+	tests := []handleScanTestCase{
 		{
 			name:      "No error - success case",
 			err:       nil,
@@ -288,44 +347,8 @@ func TestScanner_HandleScanResult(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			// Mock the error type for specific test cases
-			var testErr error = ttt.err
-
-			// Create specific error types for testing
-			if tt.name == "Engine not running error" {
-				exitErr := &exec.ExitError{}
-				// We can't easily set the exit code without reflection or other hacks
-				// So we'll simulate this scenario differently
-				testErr = exitErr
-			} else if tt.name == "Invalid engine error" {
-				testErr = &exec.Error{Name: "docker", Err: nil}
-			} else if tt.name == "Generic error" {
-				testErr = &exec.Error{Name: "docker", Err: nil}
-			}
-
-			results, err := scanner.HandleScanResult(testErr, ttt.tempDir, ttt.filePath)
-
-			if ttt.expectErr && err == nil {
-				t.Error("HandleScanResult() expected error but got none")
-			}
-
-			if !ttt.expectErr && err != nil {
-				t.Errorf("HandleScanResult() unexpected error: %v", err)
-			}
-
-			if !ttt.expectErr && err == nil {
-				if results == nil {
-					t.Error("HandleScanResult() should return results on success")
-				}
-			}
-
-			if ttt.errorCheck != nil && err != nil {
-				if !ttt.errorCheck(err) {
-					t.Errorf("HandleScanResult() error doesn't match expected pattern: %v", err)
-				}
-			}
+			runHandleScanTestCase(t, scanner, tt)
 		})
 	}
 }

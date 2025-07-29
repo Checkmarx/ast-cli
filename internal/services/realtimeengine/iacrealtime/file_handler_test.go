@@ -192,46 +192,102 @@ func TestFileHandler_HasSupportedExtension(t *testing.T) {
 	}
 }
 
-func TestFileHandler_CopyFileToTempDir(t *testing.T) {
-	fh := NewFileHandler()
+// Test case structure for CopyFileToTempDir
+type copyFileTestCase struct {
+	name      string
+	filePath  string
+	tempDir   string
+	expectErr bool
+}
 
-	// Create a test source file
+// Helper function to create test source file
+func createTestSourceFile(t *testing.T) (string, string) {
 	testContent := "apiVersion: v1\nkind: Pod\nmetadata:\n  name: test"
 	sourceFile, err := os.CreateTemp("", "source-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
 	}
-	defer func() {
-		if err := os.Remove(sourceFile.Name()); err != nil {
-			t.Logf("Failed to remove source file: %v", err)
-		}
-	}()
 
 	if _, err := sourceFile.WriteString(testContent); err != nil {
+		sourceFile.Close()
+		os.Remove(sourceFile.Name())
 		t.Fatalf("Failed to write to source file: %v", err)
 	}
 	sourceFile.Close()
 
-	// Create temp directory
+	return sourceFile.Name(), testContent
+}
+
+// Helper function to create test temp directory
+func createTestTempDir(t *testing.T) string {
 	tempDir, err := os.MkdirTemp("", "test-copy-*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
+	return tempDir
+}
+
+// Helper function to verify copied file
+func verifyCopiedFile(t *testing.T, originalPath, tempDir, expectedContent string) {
+	fileName := filepath.Base(originalPath)
+	destPath := filepath.Join(tempDir, fileName)
+
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		t.Error("CopyFileToTempDir() should create destination file")
+		return
+	}
+
+	// Verify content matches
+	destContent, err := os.ReadFile(destPath)
+	if err != nil {
+		t.Errorf("Failed to read destination file: %v", err)
+	} else if string(destContent) != expectedContent {
+		t.Error("CopyFileToTempDir() should preserve file content")
+	}
+}
+
+// Helper function to run a single copy file test case
+func runCopyFileTestCase(t *testing.T, fh *FileHandler, testCase copyFileTestCase, expectedContent string) {
+	err := fh.CopyFileToTempDir(testCase.filePath, testCase.tempDir)
+
+	if testCase.expectErr && err == nil {
+		t.Error("CopyFileToTempDir() expected error but got none")
+		return
+	}
+
+	if !testCase.expectErr && err != nil {
+		t.Errorf("CopyFileToTempDir() unexpected error: %v", err)
+		return
+	}
+
+	// If successful, verify file was copied
+	if !testCase.expectErr && err == nil {
+		verifyCopiedFile(t, testCase.filePath, testCase.tempDir, expectedContent)
+	}
+}
+
+func TestFileHandler_CopyFileToTempDir(t *testing.T) {
+	fh := NewFileHandler()
+
+	// Create test files and directories
+	sourceFilePath, testContent := createTestSourceFile(t)
 	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
+		if err := os.Remove(sourceFilePath); err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
+			t.Logf("Failed to remove source file: %v", err)
+		}
+	}()
+
+	tempDir := createTestTempDir(t)
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
 			t.Logf("Failed to cleanup temp dir: %v", err)
 		}
 	}()
 
-	tests := []struct {
-		name      string
-		filePath  string
-		tempDir   string
-		expectErr bool
-	}{
+	tests := []copyFileTestCase{
 		{
 			name:      "Valid file copy",
-			filePath:  sourceFile.Name(),
+			filePath:  sourceFilePath,
 			tempDir:   tempDir,
 			expectErr: false,
 		},
@@ -243,7 +299,7 @@ func TestFileHandler_CopyFileToTempDir(t *testing.T) {
 		},
 		{
 			name:      "Invalid temp directory",
-			filePath:  sourceFile.Name(),
+			filePath:  sourceFilePath,
 			tempDir:   "/non/existent/dir",
 			expectErr: true,
 		},
@@ -256,35 +312,8 @@ func TestFileHandler_CopyFileToTempDir(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			err := fh.CopyFileToTempDir(ttt.filePath, ttt.tempDir)
-
-			if ttt.expectErr && err == nil {
-				t.Error("CopyFileToTempDir() expected error but got none")
-			}
-
-			if !ttt.expectErr && err != nil {
-				t.Errorf("CopyFileToTempDir() unexpected error: %v", err)
-			}
-
-			// If successful, verify file was copied
-			if !ttt.expectErr && err == nil {
-				fileName := filepath.Base(ttt.filePath)
-				destPath := filepath.Join(ttt.tempDir, fileName)
-
-				if _, err := os.Stat(destPath); os.IsNotExist(err) {
-					t.Error("CopyFileToTempDir() should create destination file")
-				}
-
-				// Verify content matches
-				destContent, err := os.ReadFile(destPath)
-				if err != nil {
-					t.Errorf("Failed to read destination file: %v", err)
-				} else if string(destContent) != testContent {
-					t.Error("CopyFileToTempDir() should preserve file content")
-				}
-			}
+			runCopyFileTestCase(t, fh, tt, testContent)
 		})
 	}
 }
@@ -331,6 +360,86 @@ func TestFileHandler_CopyFileToTempDir_SecurityTests(t *testing.T) {
 	}
 }
 
+// Test case structure for PrepareScanEnvironment
+type prepareScanTestCase struct {
+	name      string
+	filePath  string
+	expectErr bool
+}
+
+// Helper function to create test source file for scan environment
+func createScanTestSourceFile(t *testing.T) (string, string) {
+	testContent := "apiVersion: v1\nkind: Pod"
+	sourceFile, err := os.CreateTemp("", "test-prepare-*.yaml")
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	if _, err := sourceFile.WriteString(testContent); err != nil {
+		sourceFile.Close()
+		os.Remove(sourceFile.Name())
+		t.Fatalf("Failed to write test content: %v", err)
+	}
+	sourceFile.Close()
+
+	return sourceFile.Name(), testContent
+}
+
+// Helper function to validate successful scan environment preparation
+func validateScanEnvironment(t *testing.T, volumeMap, tempDir, filePath string) {
+	// Verify volume map format
+	if volumeMap == "" {
+		t.Error("PrepareScanEnvironment() should return non-empty volume map")
+		return
+	}
+
+	expectedVolumeFormat := tempDir + ":" + ContainerPath
+	if volumeMap != expectedVolumeFormat {
+		t.Errorf("PrepareScanEnvironment() volume map = %s, want %s", volumeMap, expectedVolumeFormat)
+	}
+
+	// Verify temp directory exists
+	if _, err := os.Stat(tempDir); os.IsNotExist(err) {
+		t.Error("PrepareScanEnvironment() should create temp directory")
+		return
+	}
+
+	// Verify file was copied to temp directory
+	fileName := filepath.Base(filePath)
+	destPath := filepath.Join(tempDir, fileName)
+	if _, err := os.Stat(destPath); os.IsNotExist(err) {
+		t.Error("PrepareScanEnvironment() should copy file to temp directory")
+	}
+}
+
+// Helper function to run a single prepare scan environment test case
+func runPrepareScanTestCase(t *testing.T, fh *FileHandler, testCase prepareScanTestCase) {
+	volumeMap, tempDir, err := fh.PrepareScanEnvironment(testCase.filePath)
+
+	// Cleanup temp directory if created
+	if tempDir != "" {
+		defer func() {
+			if cleanupErr := fh.CleanupTempDirectory(tempDir); cleanupErr != nil {
+				t.Logf("Failed to cleanup temp dir: %v", cleanupErr)
+			}
+		}()
+	}
+
+	if testCase.expectErr && err == nil {
+		t.Error("PrepareScanEnvironment() expected error but got none")
+		return
+	}
+
+	if !testCase.expectErr && err != nil {
+		t.Errorf("PrepareScanEnvironment() unexpected error: %v", err)
+		return
+	}
+
+	if !testCase.expectErr {
+		validateScanEnvironment(t, volumeMap, tempDir, testCase.filePath)
+	}
+}
+
 func TestFileHandler_PrepareScanEnvironment(t *testing.T) {
 	fh := NewFileHandler()
 
@@ -342,30 +451,17 @@ func TestFileHandler_PrepareScanEnvironment(t *testing.T) {
 	}()
 
 	// Create a test file
-	testContent := "apiVersion: v1\nkind: Pod"
-	sourceFile, err := os.CreateTemp("", "test-prepare-*.yaml")
-	if err != nil {
-		t.Fatalf("Failed to create test file: %v", err)
-	}
+	sourceFilePath, _ := createScanTestSourceFile(t)
 	defer func() {
-		if err := os.Remove(sourceFile.Name()); err != nil {
+		if err := os.Remove(sourceFilePath); err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
 			t.Logf("Failed to remove test file: %v", err)
 		}
 	}()
 
-	if _, err := sourceFile.WriteString(testContent); err != nil {
-		t.Fatalf("Failed to write test content: %v", err)
-	}
-	sourceFile.Close()
-
-	tests := []struct {
-		name      string
-		filePath  string
-		expectErr bool
-	}{
+	tests := []prepareScanTestCase{
 		{
 			name:      "Valid YAML file",
-			filePath:  sourceFile.Name(),
+			filePath:  sourceFilePath,
 			expectErr: false,
 		},
 		{
@@ -386,50 +482,8 @@ func TestFileHandler_PrepareScanEnvironment(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			volumeMap, tempDir, err := fh.PrepareScanEnvironment(ttt.filePath)
-
-			// Cleanup temp directory if created
-			if tempDir != "" {
-				defer func() {
-					if cleanupErr := fh.CleanupTempDirectory(tempDir); cleanupErr != nil {
-						t.Logf("Failed to cleanup temp dir: %v", cleanupErr)
-					}
-				}()
-			}
-
-			if ttt.expectErr && err == nil {
-				t.Error("PrepareScanEnvironment() expected error but got none")
-			}
-
-			if !ttt.expectErr && err != nil {
-				t.Errorf("PrepareScanEnvironment() unexpected error: %v", err)
-			}
-
-			if !ttt.expectErr {
-				// Verify volume map format
-				if volumeMap == "" {
-					t.Error("PrepareScanEnvironment() should return non-empty volume map")
-				}
-
-				expectedVolumeFormat := tempDir + ":" + ContainerPath
-				if volumeMap != expectedVolumeFormat {
-					t.Errorf("PrepareScanEnvironment() volume map = %s, want %s", volumeMap, expectedVolumeFormat)
-				}
-
-				// Verify temp directory exists
-				if _, err := os.Stat(tempDir); os.IsNotExist(err) {
-					t.Error("PrepareScanEnvironment() should create temp directory")
-				}
-
-				// Verify file was copied to temp directory
-				fileName := filepath.Base(ttt.filePath)
-				destPath := filepath.Join(tempDir, fileName)
-				if _, err := os.Stat(destPath); os.IsNotExist(err) {
-					t.Error("PrepareScanEnvironment() should copy file to temp directory")
-				}
-			}
+			runPrepareScanTestCase(t, fh, tt)
 		})
 	}
 }
