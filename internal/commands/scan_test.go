@@ -1397,6 +1397,57 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 	}
 }
 
+func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
+
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
 func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
