@@ -9,6 +9,10 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
+const (
+	NonExistingDirectory = "/non/existent/directory"
+)
+
 func TestNewFileHandler(t *testing.T) {
 	fh := NewFileHandler()
 
@@ -82,7 +86,7 @@ func TestFileHandler_CleanupTempDirectory(t *testing.T) {
 		{
 			name: "Non-existent directory",
 			setup: func() string {
-				return "/non/existent/directory"
+				return NonExistingDirectory
 			},
 			expectErr: false, // os.RemoveAll doesn't error on non-existent paths
 		},
@@ -111,7 +115,7 @@ func TestFileHandler_CleanupTempDirectory(t *testing.T) {
 			}
 
 			// If tempDir was valid and not empty, verify it was removed
-			if tempDir != "" && tempDir != "/non/existent/directory" {
+			if tempDir != "" && tempDir != NonExistingDirectory {
 				if _, err := os.Stat(tempDir); !os.IsNotExist(err) {
 					t.Error("CleanupTempDirectory() should remove the directory")
 				}

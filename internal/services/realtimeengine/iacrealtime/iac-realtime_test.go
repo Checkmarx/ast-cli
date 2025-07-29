@@ -18,6 +18,7 @@ func TestNewIacRealtimeService(t *testing.T) {
 
 	if service == nil {
 		t.Error("NewIacRealtimeService() should not return nil")
+		t.FailNow()
 	}
 
 	if service.JwtWrapper == nil {
@@ -54,7 +55,6 @@ func TestIacRealtimeService_checkFeatureFlag(t *testing.T) {
 					Name:   wrappers.OssRealtimeEnabled,
 					Status: true,
 				}
-				mock.FFErr = nil
 			},
 			expectErr: false,
 		},
@@ -65,7 +65,6 @@ func TestIacRealtimeService_checkFeatureFlag(t *testing.T) {
 					Name:   wrappers.OssRealtimeEnabled,
 					Status: false,
 				}
-				mock.FFErr = nil
 			},
 			expectErr: true,
 		},
@@ -206,7 +205,6 @@ func TestIacRealtimeService_RunIacRealtimeScan_FeatureFlagValidation(t *testing.
 					Name:   wrappers.OssRealtimeEnabled,
 					Status: false,
 				}
-				mock.FFErr = nil
 			},
 			expectErr: true,
 			errorCheck: func(err error) bool {
@@ -220,7 +218,6 @@ func TestIacRealtimeService_RunIacRealtimeScan_FeatureFlagValidation(t *testing.
 					Name:   wrappers.OssRealtimeEnabled,
 					Status: true,
 				}
-				mock.FFErr = nil
 			},
 			expectErr: true, // Will fail at file validation stage since file doesn't exist
 			errorCheck: func(err error) bool {
@@ -262,7 +259,6 @@ func TestIacRealtimeService_RunIacRealtimeScan_FilePathValidation(t *testing.T) 
 		Name:   wrappers.OssRealtimeEnabled,
 		Status: true,
 	}
-	mock.FFErr = nil
 
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
@@ -307,7 +303,6 @@ func TestIacRealtimeService_RunIacRealtimeScan_WithRealFile(t *testing.T) {
 		Name:   wrappers.OssRealtimeEnabled,
 		Status: true,
 	}
-	mock.FFErr = nil
 
 	// Setup supported file extensions for testing
 	originalFilters := commonParams.KicsBaseFilters
@@ -355,7 +350,6 @@ func TestIacRealtimeService_Integration(t *testing.T) {
 		Name:   wrappers.OssRealtimeEnabled,
 		Status: true,
 	}
-	mock.FFErr = nil
 
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}

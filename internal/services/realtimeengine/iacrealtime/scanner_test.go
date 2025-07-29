@@ -74,6 +74,75 @@ func TestScanner_extractErrorCode(t *testing.T) {
 	}
 }
 
+// Helper function to create valid KICS results data
+func createValidKicsResults() wrappers.KicsResultsCollection {
+	return wrappers.KicsResultsCollection{
+		Version: "1.0.0",
+		Count:   1,
+		Results: []wrappers.KicsQueries{
+			{
+				QueryName: "Test Query",
+				Severity:  "high",
+				Locations: []wrappers.KicsFiles{
+					{
+						SimilarityID: "test-id",
+						Line:         10,
+					},
+				},
+			},
+		},
+	}
+}
+
+// Helper function to create test file with valid JSON
+func createValidKicsFile(dir string) error {
+	results := createValidKicsResults()
+	data, _ := json.Marshal(results)
+	return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), data, 0644)
+}
+
+// Helper function to create test file with empty results
+func createEmptyKicsFile(dir string) error {
+	results := wrappers.KicsResultsCollection{}
+	data, _ := json.Marshal(results)
+	return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), data, 0644)
+}
+
+// Helper function to create test file with invalid JSON
+func createInvalidKicsFile(dir string) error {
+	return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), []byte("invalid json"), 0644)
+}
+
+// Helper function to skip file creation (for non-existent file test)
+func skipFileCreation(dir string) error {
+	return nil
+}
+
+// Helper function to validate KICS results
+func validateKicsResults(t *testing.T, result wrappers.KicsResultsCollection, expected *wrappers.KicsResultsCollection) {
+	if expected == nil {
+		return
+	}
+
+	if result.Version != expected.Version {
+		t.Errorf("Version = %v, want %v", result.Version, expected.Version)
+	}
+	if result.Count != expected.Count {
+		t.Errorf("Count = %v, want %v", result.Count, expected.Count)
+	}
+	if len(result.Results) != len(expected.Results) {
+		t.Errorf("Results length = %v, want %v", len(result.Results), len(expected.Results))
+	}
+}
+
+// Test case structure for readKicsResultsFile
+type readKicsTestCase struct {
+	name         string
+	setupFile    func(string) error
+	expectErr    bool
+	expectedData *wrappers.KicsResultsCollection
+}
+
 func TestScanner_readKicsResultsFile(t *testing.T) {
 	scanner := NewScanner(NewDockerManager())
 
@@ -88,123 +157,78 @@ func TestScanner_readKicsResultsFile(t *testing.T) {
 		}
 	}()
 
-	tests := []struct {
-		name         string
-		setupFile    func(string) error
-		expectErr    bool
-		expectedData *wrappers.KicsResultsCollection
-	}{
+	validResults := createValidKicsResults()
+	emptyResults := wrappers.KicsResultsCollection{}
+
+	tests := []readKicsTestCase{
 		{
-			name: "Valid KICS results file",
-			setupFile: func(dir string) error {
-				results := wrappers.KicsResultsCollection{
-					Version: "1.0.0",
-					Count:   1,
-					Results: []wrappers.KicsQueries{
-						{
-							QueryName: "Test Query",
-							Severity:  "high",
-							Locations: []wrappers.KicsFiles{
-								{
-									SimilarityID: "test-id",
-									Line:         10,
-								},
-							},
-						},
-					},
-				}
-				data, _ := json.Marshal(results)
-				return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), data, 0644)
-			},
-			expectErr: false,
-			expectedData: &wrappers.KicsResultsCollection{
-				Version: "1.0.0",
-				Count:   1,
-				Results: []wrappers.KicsQueries{
-					{
-						QueryName: "Test Query",
-						Severity:  "high",
-						Locations: []wrappers.KicsFiles{
-							{
-								SimilarityID: "test-id",
-								Line:         10,
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Empty KICS results file",
-			setupFile: func(dir string) error {
-				results := wrappers.KicsResultsCollection{}
-				data, _ := json.Marshal(results)
-				return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), data, 0644)
-			},
+			name:         "Valid KICS results file",
+			setupFile:    createValidKicsFile,
 			expectErr:    false,
-			expectedData: &wrappers.KicsResultsCollection{},
+			expectedData: &validResults,
 		},
 		{
-			name: "Invalid JSON file",
-			setupFile: func(dir string) error {
-				return os.WriteFile(filepath.Join(dir, ContainerResultsFileName), []byte("invalid json"), 0644)
-			},
+			name:         "Empty KICS results file",
+			setupFile:    createEmptyKicsFile,
+			expectErr:    false,
+			expectedData: &emptyResults,
+		},
+		{
+			name:         "Invalid JSON file",
+			setupFile:    createInvalidKicsFile,
 			expectErr:    true,
 			expectedData: nil,
 		},
 		{
-			name: "Non-existent file",
-			setupFile: func(dir string) error {
-				// Don't create the file
-				return nil
-			},
+			name:         "Non-existent file",
+			setupFile:    skipFileCreation,
 			expectErr:    true,
 			expectedData: nil,
 		},
 	}
 
 	for _, tt := range tests {
-		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup test directory
-			testDir, err := os.MkdirTemp("", "test-read-*")
-			if err != nil {
-				t.Fatalf("Failed to create test dir: %v", err)
-			}
-			defer func() {
-				if err := os.RemoveAll(testDir); err != nil {
-					t.Logf("Failed to cleanup test dir: %v", err)
-				}
-			}()
-
-			// Setup the test file
-			if err := ttt.setupFile(testDir); err != nil {
-				t.Fatalf("Failed to setup test file: %v", err)
-			}
-
-			// Test the method
-			result, err := scanner.readKicsResultsFile(testDir)
-
-			if ttt.expectErr && err == nil {
-				t.Error("readKicsResultsFile() expected error but got none")
-			}
-
-			if !ttt.expectErr && err != nil {
-				t.Errorf("readKicsResultsFile() unexpected error: %v", err)
-			}
-
-			if !ttt.expectErr && ttt.expectedData != nil {
-				if result.Version != ttt.expectedData.Version {
-					t.Errorf("Version = %v, want %v", result.Version, ttt.expectedData.Version)
-				}
-				if result.Count != ttt.expectedData.Count {
-					t.Errorf("Count = %v, want %v", result.Count, ttt.expectedData.Count)
-				}
-				if len(result.Results) != len(ttt.expectedData.Results) {
-					t.Errorf("Results length = %v, want %v", len(result.Results), len(ttt.expectedData.Results))
-				}
-			}
+			runReadKicsTestCase(t, scanner, tt)
 		})
+	}
+}
+
+// Helper function to run a single test case
+func runReadKicsTestCase(t *testing.T, scanner *Scanner, testCase readKicsTestCase) {
+	// Setup test directory
+	testDir, err := os.MkdirTemp("", "test-read-*")
+	if err != nil {
+		t.Fatalf("Failed to create test dir: %v", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(testDir); err != nil {
+			t.Logf("Failed to cleanup test dir: %v", err)
+		}
+	}()
+
+	// Setup the test file
+	if err := testCase.setupFile(testDir); err != nil {
+		t.Fatalf("Failed to setup test file: %v", err)
+	}
+
+	// Test the method
+	result, err := scanner.readKicsResultsFile(testDir)
+
+	// Validate error expectations
+	if testCase.expectErr && err == nil {
+		t.Error("readKicsResultsFile() expected error but got none")
+		return
+	}
+
+	if !testCase.expectErr && err != nil {
+		t.Errorf("readKicsResultsFile() unexpected error: %v", err)
+		return
+	}
+
+	// Validate results if no error expected
+	if !testCase.expectErr {
+		validateKicsResults(t, result, testCase.expectedData)
 	}
 }
 
