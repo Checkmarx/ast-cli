@@ -1273,7 +1273,9 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
 	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
 	scsEnabled := scanTypeEnabled(commonParams.ScsType)
-	if !scsEnabled {
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
 	scsConfig := wrappers.SCSConfig{}
@@ -1292,9 +1294,6 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 	viper.Set(commonParams.SCSRepoURLFlag, scsRepoURL)
 	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
-
-	scsSecretDetectionAllowed := isScsEngineAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
-	scsScorecardAllowed := isScsEngineAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
 
 	if resubmitConfig != nil {
 		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, scsSecretDetectionAllowed, scsScorecardAllowed)
@@ -1336,6 +1335,20 @@ func isScsEngineAllowed(scsLicensingV2, hasNewLicense, hasOldLicense bool) bool 
 		return hasNewLicense
 	}
 	return hasOldLicense
+}
+
+func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
+	if scsLicensingV2 {
+		return hasRepositoryHealthLicense
+	}
+	return hasScsLicense
+}
+
+func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, hasScsLicense bool) bool {
+	if scsLicensingV2 {
+		return hasSecretDetectionLicense
+	}
+	return hasScsLicense && hasEnterpriseSecretsLicense
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {

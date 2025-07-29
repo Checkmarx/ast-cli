@@ -1149,7 +1149,7 @@ func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
 	assert.Assert(t, err.Error() == SCSScoreCardError)
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1209,7 +1209,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 	}
 }
 
-func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1269,7 +1269,7 @@ func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1322,7 +1322,7 @@ func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1397,7 +1397,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1478,7 +1478,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1559,7 +1559,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1640,7 +1640,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_s
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1721,7 +1721,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1802,7 +1802,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -1883,7 +1883,7 @@ func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
 	tests := []struct {
 		name                        string
 		scsLicensingV2              bool
@@ -2841,43 +2841,95 @@ func TestValidateScanTypes(t *testing.T) {
 	}
 }
 
-func TestIsScsEngineAllowed(t *testing.T) {
+func TestIsScsScorecardAllowed(t *testing.T) {
 	tests := []struct {
-		name            string
-		scsLicensingV2  bool
-		hasNewLicense   bool
-		hasOldLicense   bool
-		expectedAllowed bool
+		name                       string
+		scsLicensingV2             bool
+		hasRepositoryHealthLicense bool
+		hasScsLicense              bool
+		expectedAllowed            bool
 	}{
 		{
-			name:            "scsLicensingV2 disabled and has old license",
+			name:            "scsLicensingV2 disabled and has scs license",
 			scsLicensingV2:  false,
-			hasOldLicense:   true,
+			hasScsLicense:   true,
 			expectedAllowed: true,
 		},
 		{
-			name:            "scsLicensingV2 disabled and does not have old license",
+			name:            "scsLicensingV2 disabled and does not have scs license",
 			scsLicensingV2:  false,
-			hasOldLicense:   false,
+			hasScsLicense:   false,
 			expectedAllowed: false,
 		},
 		{
-			name:            "scsLicensingV2 enabled and has new license",
-			scsLicensingV2:  true,
-			hasNewLicense:   true,
-			expectedAllowed: true,
+			name:                       "scsLicensingV2 enabled and has repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: true,
+			expectedAllowed:            true,
 		},
 		{
-			name:            "scsLicensingV2 enabled and does not have new license",
-			scsLicensingV2:  true,
-			hasNewLicense:   false,
-			expectedAllowed: false,
+			name:                       "scsLicensingV2 enabled and does not have repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: false,
+			expectedAllowed:            false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualAllowed := isScsEngineAllowed(tt.scsLicensingV2, tt.hasNewLicense, tt.hasOldLicense)
+			actualAllowed := isScsScorecardAllowed(tt.scsLicensingV2, tt.hasRepositoryHealthLicense, tt.hasScsLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
+		})
+	}
+}
+
+func TestIsScsSecretDetectionAllowed(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+		hasScsLicense               bool
+		expectedAllowed             bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled and has scs and enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               true,
+			expectedAllowed:             true,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has enterprise secrets but does not have scs license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               false,
+			expectedAllowed:             false,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has scs license but does not have enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: false,
+			hasScsLicense:               true,
+			expectedAllowed:             false,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and has secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: true,
+			expectedAllowed:           true,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and does not have secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: false,
+			expectedAllowed:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsSecretDetectionAllowed(tt.scsLicensingV2, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, tt.hasScsLicense)
 			assert.Equal(t, tt.expectedAllowed, actualAllowed)
 		})
 	}
