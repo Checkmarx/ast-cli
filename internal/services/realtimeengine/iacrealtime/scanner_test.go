@@ -120,7 +120,7 @@ func skipFileCreation(dir string) error {
 }
 
 // Helper function to validate KICS results
-func validateKicsResults(t *testing.T, result *wrappers.KicsResultsCollection, expected *wrappers.KicsResultsCollection) {
+func validateKicsResults(t *testing.T, result, expected *wrappers.KicsResultsCollection) {
 	if expected == nil {
 		return
 	}
@@ -280,7 +280,7 @@ func validateScanResultError(t *testing.T, err error, errorCheck func(error) boo
 }
 
 // Helper function to run a single handle scan result test case
-func runHandleScanTestCase(t *testing.T, scanner *Scanner, testCase handleScanTestCase) {
+func runHandleScanTestCase(t *testing.T, scanner *Scanner, testCase *handleScanTestCase) {
 	// Create specific error types for testing
 	testErr := createTestError(testCase.name, testCase.err)
 
@@ -348,7 +348,7 @@ func TestScanner_HandleScanResult(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			runHandleScanTestCase(t, scanner, tt)
+			runHandleScanTestCase(t, scanner, &tt)
 		})
 	}
 }

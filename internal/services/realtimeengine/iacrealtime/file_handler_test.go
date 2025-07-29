@@ -201,8 +201,8 @@ type copyFileTestCase struct {
 }
 
 // Helper function to create test source file
-func createTestSourceFile(t *testing.T) (string, string) {
-	testContent := "apiVersion: v1\nkind: Pod\nmetadata:\n  name: test"
+func createTestSourceFile(t *testing.T) (srcFileName, testContent string) {
+	testContent = "apiVersion: v1\nkind: Pod\nmetadata:\n  name: test"
 	sourceFile, err := os.CreateTemp("", "source-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create source file: %v", err)
@@ -368,8 +368,8 @@ type prepareScanTestCase struct {
 }
 
 // Helper function to create test source file for scan environment
-func createScanTestSourceFile(t *testing.T) (string, string) {
-	testContent := "apiVersion: v1\nkind: Pod"
+func createScanTestSourceFile(t *testing.T) (sourceFilePath, testContent string) {
+	testContent = "apiVersion: v1\nkind: Pod"
 	sourceFile, err := os.CreateTemp("", "test-prepare-*.yaml")
 	if err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
