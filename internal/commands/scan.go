@@ -230,6 +230,8 @@ func NewScanCommand(
 
 	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
+	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
@@ -252,6 +254,7 @@ func NewScanCommand(
 		ossRealtimeCmd,
 		containersRealtimeCmd,
 		secretsRealtimeCmd,
+		iacRealtimeCmd,
 	)
 	return scanCmd
 }
@@ -502,6 +505,52 @@ func scanOssRealtimeSubCommand(
 	)
 
 	return scanOssRealtimeCmd
+}
+
+func scanIacRealtimeSubCommand(
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
+	scanIacRealtimeCmd := &cobra.Command{
+		Hidden: true,
+		Use:    "iac-realtime",
+		Short:  "Run a IaC-Realtime scan",
+		Long:   "Running a IaC-Realtime scan is a fast and efficient way to identify Infrustructure as Code vulnerabilities in a file.",
+		Example: heredoc.Doc(
+			`
+			$ cx scan iac-realtime -s <path to a manifest file> --ignored-file-path <path to ignored iac vulnerabilities JSON file>
+			`,
+		),
+		Annotations: map[string]string{
+			"command:doc": heredoc.Doc(
+				`
+				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
+				`,
+			),
+		},
+		RunE: RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+	}
+
+	scanIacRealtimeCmd.PersistentFlags().StringP(
+		commonParams.SourcesFlag,
+		commonParams.SourcesFlagSh,
+		"",
+		"The file source should be the path to a single file",
+	)
+
+	scanIacRealtimeCmd.Flags().String(
+		commonParams.IgnoredFilePathFlag,
+		"",
+		"Path to a JSON file listing ignored iac vulnerabilities",
+	)
+
+	scanIacRealtimeCmd.Flags().String(
+		commonParams.EngineFlag,
+		"docker",
+		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
+	)
+
+	return scanIacRealtimeCmd
 }
 
 func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
