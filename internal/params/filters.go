@@ -140,7 +140,7 @@ var BaseIncludeFilters = []string{
 	"*.jsx",
 	"*.bicepparam",
 	"*.bicep",
-	"Gemfile*",
+	"Gemfile",
 }
 
 var BaseExcludeFilters = []string{
