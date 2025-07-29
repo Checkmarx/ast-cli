@@ -247,7 +247,7 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 		kicsFilesPath + filesContainerVolume,
 		containerNameFlag,
 		containerName,
-		containerImage,
+		ContainerImage,
 		remediateCommand,
 		resultsFlag,
 		resultsContainerLocation + file,
