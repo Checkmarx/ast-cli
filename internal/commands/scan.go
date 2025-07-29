@@ -1330,13 +1330,6 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 	return scsMapConfig, nil
 }
 
-func isScsEngineAllowed(scsLicensingV2, hasNewLicense, hasOldLicense bool) bool {
-	if scsLicensingV2 {
-		return hasNewLicense
-	}
-	return hasOldLicense
-}
-
 func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
 	if scsLicensingV2 {
 		return hasRepositoryHealthLicense
