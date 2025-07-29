@@ -14,7 +14,7 @@ func TestNewIacRealtimeService(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
 
-	service := NewIacRealtimeService(mockJWT, mockFlags)
+	service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 	if service == nil {
 		t.Error("NewIacRealtimeService() should not return nil")
@@ -33,8 +33,8 @@ func TestNewIacRealtimeService(t *testing.T) {
 		t.Error("NewIacRealtimeService() should initialize fileHandler")
 	}
 
-	if service.dockerManager == nil {
-		t.Error("NewIacRealtimeService() should initialize dockerManager")
+	if service.containerManager == nil {
+		t.Error("NewIacRealtimeService() should initialize containerManager")
 	}
 
 	if service.scanner == nil {
@@ -79,7 +79,7 @@ func TestIacRealtimeService_checkFeatureFlag(t *testing.T) {
 			mockJWT := &mock.JWTMockWrapper{}
 			mockFlags := &mock.FeatureFlagsMockWrapper{}
 
-			service := NewIacRealtimeService(mockJWT, mockFlags)
+			service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 			err := service.checkFeatureFlag()
 
 			if ttt.expectErr && err == nil {
@@ -116,7 +116,7 @@ func TestIacRealtimeService_ensureLicense(t *testing.T) {
 			mockJWT := &mock.JWTMockWrapper{}
 			mockFlags := &mock.FeatureFlagsMockWrapper{}
 
-			service := NewIacRealtimeService(mockJWT, mockFlags)
+			service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 			err := service.ensureLicense()
 
 			if ttt.expectErr && err == nil {
@@ -133,7 +133,7 @@ func TestIacRealtimeService_ensureLicense(t *testing.T) {
 func TestIacRealtimeService_validateFilePath(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
-	service := NewIacRealtimeService(mockJWT, mockFlags)
+	service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 	// Create a real test file for valid path testing
 	testFile, err := os.CreateTemp("", "validate-test-*.yaml")
@@ -234,7 +234,7 @@ func TestIacRealtimeService_RunIacRealtimeScan_FeatureFlagValidation(t *testing.
 			mockJWT := &mock.JWTMockWrapper{}
 			mockFlags := &mock.FeatureFlagsMockWrapper{}
 
-			service := NewIacRealtimeService(mockJWT, mockFlags)
+			service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 			_, err := service.RunIacRealtimeScan("test.yaml", "docker", "")
 
@@ -262,7 +262,7 @@ func TestIacRealtimeService_RunIacRealtimeScan_FilePathValidation(t *testing.T) 
 
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
-	service := NewIacRealtimeService(mockJWT, mockFlags)
+	service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 	tests := []struct {
 		name      string
@@ -313,7 +313,7 @@ func TestIacRealtimeService_RunIacRealtimeScan_WithRealFile(t *testing.T) {
 
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
-	service := NewIacRealtimeService(mockJWT, mockFlags)
+	service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 	// Create a real test file
 	testContent := "`apiVersion: v1\nkind: Pod\nmetadata:\n  name: test-pod"
@@ -354,7 +354,7 @@ func TestIacRealtimeService_Integration(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
 
-	service := NewIacRealtimeService(mockJWT, mockFlags)
+	service := NewIacRealtimeService(mockJWT, mockFlags, NewMockContainerManager())
 
 	// Test service initialization
 	if service.JwtWrapper == nil {
@@ -369,7 +369,7 @@ func TestIacRealtimeService_Integration(t *testing.T) {
 		t.Error("Service should have file handler")
 	}
 
-	if service.dockerManager == nil {
+	if service.containerManager == nil {
 		t.Error("Service should have docker manager")
 	}
 
@@ -404,13 +404,13 @@ func TestIacRealtimeService_Integration(t *testing.T) {
 	}
 
 	// Test that the container ID generation works
-	containerID := service.dockerManager.GenerateContainerID()
+	containerID := service.containerManager.GenerateContainerID()
 	if containerID == "" {
 		t.Error("Docker manager should generate container ID")
 	}
 
 	// Test that subsequent container IDs are different
-	containerID2 := service.dockerManager.GenerateContainerID()
+	containerID2 := service.containerManager.GenerateContainerID()
 	if containerID == containerID2 {
 		t.Error("Docker manager should generate unique container IDs")
 	}

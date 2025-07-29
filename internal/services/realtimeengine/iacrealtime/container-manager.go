@@ -9,10 +9,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+// IContainerManager interface for container operations
+type IContainerManager interface {
+	GenerateContainerID() string
+	RunKicsContainer(engine, volumeMap string) error
+}
+
 // ContainerManager handles Docker container operations
 type ContainerManager struct{}
 
-func NewContainerManager() *ContainerManager {
+func NewContainerManager() IContainerManager {
 	return &ContainerManager{}
 }
 

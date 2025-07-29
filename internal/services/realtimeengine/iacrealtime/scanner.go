@@ -14,13 +14,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Scanner handles the KICS scan process
 type Scanner struct {
-	dockerManager *ContainerManager
+	dockerManager IContainerManager
+	mapper        *Mapper
 }
 
-func NewScanner(dockerManager *ContainerManager) *Scanner {
+func NewScanner(dockerManager IContainerManager) *Scanner {
 	return &Scanner{
 		dockerManager: dockerManager,
+		mapper:        NewMapper(),
 	}
 }
 
@@ -72,6 +75,8 @@ func (s *Scanner) extractErrorCode(msg string) string {
 	return ""
 }
 
+const maxJSONFileSize = 50 * 1024 * 1024 // 50MB limit for JSON files
+
 func (s *Scanner) readKicsResultsFile(tempDir string) (wrappers.KicsResultsCollection, error) {
 	var result wrappers.KicsResultsCollection
 	path := filepath.Join(tempDir, ContainerResultsFileName)
@@ -84,12 +89,21 @@ func (s *Scanner) readKicsResultsFile(tempDir string) (wrappers.KicsResultsColle
 		_ = file.Close()
 	}()
 
-	data, err := io.ReadAll(file)
+	// Limit file size to prevent unsafe deserialization
+	fileInfo, err := file.Stat()
 	if err != nil {
 		return result, err
 	}
 
-	if err := json.Unmarshal(data, &result); err != nil {
+	if fileInfo.Size() > maxJSONFileSize {
+		return result, errors.New("JSON file too large for safe deserialization")
+	}
+
+	// Use a limited reader for additional safety
+	limitedReader := io.LimitReader(file, maxJSONFileSize)
+	decoder := json.NewDecoder(limitedReader)
+
+	if err := decoder.Decode(&result); err != nil {
 		return result, err
 	}
 

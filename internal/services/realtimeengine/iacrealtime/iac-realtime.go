@@ -10,20 +10,19 @@ type IacRealtimeService struct {
 	JwtWrapper         wrappers.JWTWrapper
 	FeatureFlagWrapper wrappers.FeatureFlagsWrapper
 	fileHandler        *FileHandler
-	dockerManager      *ContainerManager
+	containerManager   IContainerManager
 	scanner            *Scanner
 }
 
-func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsWrapper) *IacRealtimeService {
+func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsWrapper, containerManager IContainerManager) *IacRealtimeService {
 	fileHandler := NewFileHandler()
-	dockerManager := NewContainerManager()
-	scanner := NewScanner(dockerManager)
+	scanner := NewScanner(containerManager)
 
 	return &IacRealtimeService{
 		JwtWrapper:         jwt,
 		FeatureFlagWrapper: flags,
 		fileHandler:        fileHandler,
-		dockerManager:      dockerManager,
+		containerManager:   containerManager,
 		scanner:            scanner,
 	}
 }
@@ -34,7 +33,7 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 		return nil, err
 	}
 
-	svc.dockerManager.GenerateContainerID()
+	svc.containerManager.GenerateContainerID()
 
 	volumeMap, tempDir, err := svc.fileHandler.PrepareScanEnvironment(filePath)
 	if err != nil {

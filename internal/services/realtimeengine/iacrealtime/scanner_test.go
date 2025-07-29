@@ -2,6 +2,7 @@ package iacrealtime
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,21 +12,24 @@ import (
 )
 
 func TestNewScanner(t *testing.T) {
-	dm := NewContainerManager()
+	dm := NewMockContainerManager()
 	scanner := NewScanner(dm)
 
 	if scanner == nil {
 		t.Error("NewScanner() should not return nil")
-		t.FailNow()
 	}
 
-	if scanner.dockerManager != dm {
-		t.Error("NewScanner() should set dockerManager field")
+	if scanner.dockerManager == nil {
+		t.Error("Scanner should have a container manager")
+	}
+
+	if scanner.mapper == nil {
+		t.Error("Scanner should have a mapper")
 	}
 }
 
 func TestScanner_extractErrorCode(t *testing.T) {
-	scanner := NewScanner(NewContainerManager())
+	scanner := NewScanner(NewMockContainerManager())
 
 	tests := []struct {
 		name     string
@@ -145,7 +149,7 @@ type readKicsTestCase struct {
 }
 
 func TestScanner_readKicsResultsFile(t *testing.T) {
-	scanner := NewScanner(NewContainerManager())
+	scanner := NewScanner(NewMockContainerManager())
 
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "test-scanner-*")
@@ -153,7 +157,7 @@ func TestScanner_readKicsResultsFile(t *testing.T) {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
+		if err := os.RemoveAll(tempDir); err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
 			t.Logf("Failed to cleanup temp dir: %v", err)
 		}
 	}()
@@ -249,7 +253,7 @@ func createTestError(testName string, originalErr error) error {
 	case "Engine not running error":
 		return &exec.ExitError{}
 	case "Invalid engine error", "Generic error":
-		return &exec.Error{Name: "docker", Err: nil}
+		return &exec.Error{Name: "docker", Err: errors.New("some error")}
 	default:
 		return originalErr
 	}
@@ -311,7 +315,7 @@ func createValidKicsResultsFile(tempDir string) error {
 }
 
 func TestScanner_HandleScanResult(t *testing.T) {
-	scanner := NewScanner(NewContainerManager())
+	scanner := NewScanner(NewMockContainerManager())
 
 	// Create a temp directory with valid KICS results
 	tempDir, err := os.MkdirTemp("", "test-handle-*")
@@ -354,7 +358,7 @@ func TestScanner_HandleScanResult(t *testing.T) {
 }
 
 func TestScanner_processResults(t *testing.T) {
-	scanner := NewScanner(NewContainerManager())
+	scanner := NewScanner(NewMockContainerManager())
 
 	tests := []struct {
 		name      string
@@ -452,10 +456,6 @@ func TestScanner_processResults(t *testing.T) {
 }
 
 func TestScanner_RunScan(t *testing.T) {
-	// This test mainly verifies the integration between RunScan and HandleScanResult
-	// The actual Docker execution will likely fail in test environment
-	scanner := NewScanner(NewContainerManager())
-
 	// Create temp directory with results file for successful processing
 	tempDir, err := os.MkdirTemp("", "test-run-scan-*")
 	if err != nil {
@@ -491,6 +491,7 @@ func TestScanner_RunScan(t *testing.T) {
 		tempDir   string
 		filePath  string
 		expectErr bool
+		setupMock func(*MockContainerManager)
 	}{
 		{
 			name:      "Invalid engine",
@@ -499,6 +500,10 @@ func TestScanner_RunScan(t *testing.T) {
 			tempDir:   tempDir,
 			filePath:  "test.yaml",
 			expectErr: true,
+			setupMock: func(mock *MockContainerManager) {
+				mock.ShouldFailRun = true
+				mock.RunError = &exec.Error{Name: "invalid-engine", Err: errors.New("some error")}
+			},
 		},
 		{
 			name:      "Empty engine",
@@ -507,16 +512,38 @@ func TestScanner_RunScan(t *testing.T) {
 			tempDir:   tempDir,
 			filePath:  "test.yaml",
 			expectErr: true,
+			setupMock: func(mock *MockContainerManager) {
+				mock.ShouldFailRun = true
+				mock.RunError = &exec.Error{Name: "", Err: errors.New("some error")}
+			},
+		},
+		{
+			name:      "Valid parameters - should succeed with mock",
+			engine:    "docker",
+			volumeMap: "/tmp:/path",
+			tempDir:   tempDir,
+			filePath:  "test.yaml",
+			expectErr: false,
+			setupMock: func(mock *MockContainerManager) {
+				// Mock succeeds by default, no setup needed
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			// Create a fresh mock for each test
+			mockContainer := NewMockContainerManager()
+			scanner := NewScanner(mockContainer)
+
+			// Apply test-specific mock configuration
+			ttt.setupMock(mockContainer)
+
 			_, err := scanner.RunScan(ttt.engine, ttt.volumeMap, ttt.tempDir, ttt.filePath)
 
 			if ttt.expectErr && err == nil {
-				t.Error("RunScan() expected error but got none (docker might be available)")
+				t.Error("RunScan() expected error but got none")
 			}
 
 			if !ttt.expectErr && err != nil {
@@ -527,8 +554,8 @@ func TestScanner_RunScan(t *testing.T) {
 }
 
 func TestScanner_Integration(t *testing.T) {
-	// Test the full scanner workflow
-	scanner := NewScanner(NewContainerManager())
+	// Test the full scanner workflow with mock container manager
+	scanner := NewScanner(NewMockContainerManager())
 
 	// Create temp directory
 	tempDir, err := os.MkdirTemp("", "test-scanner-integration-*")

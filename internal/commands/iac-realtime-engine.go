@@ -22,7 +22,7 @@ func RunScanIacRealtimeCommand(
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
 
-		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper)
+		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper, iacrealtime.NewContainerManager())
 
 		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag)
 		if err != nil {
