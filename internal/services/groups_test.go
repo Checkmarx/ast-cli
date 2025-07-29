@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -87,7 +88,7 @@ func TestAssignGroupsToProject(t *testing.T) {
 				}
 				os.Stdout = originalStdout
 				var buf bytes.Buffer
-				_, err = buf.ReadFrom(r)
+				_, err = io.Copy(&buf, r)
 				if err != nil {
 					t.Errorf("failed to read buffered output")
 				}
