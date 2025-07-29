@@ -78,7 +78,7 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		fmt.Println("The project.Groups-->", project.Groups)
 		fmt.Println("The Groups assigned are --->", groups)
 	}
-	// todo: current used grps are created by another users, as ACCESSMGMT FF is on, grps will not be assigned
+	// todo : current used grps are created by another users, as ACCESSMGMT FF is on, grps will not be assigned
 	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 

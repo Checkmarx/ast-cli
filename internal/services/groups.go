@@ -68,7 +68,7 @@ func AssignGroupsToProjectNewAccessManagement(projectID string, projectName stri
 	amEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
 	groupValidationEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.GroupValidationEnabled)
 
-	// If  ACCESS_MANAGEMENT_ENABLED flag is OFF or (groupValidation is on and ACCESS_MANAGEMENT_ENABLED is also on )
+	// If  ACCESS_MANAGEMENT_ENABLED flag is OFF or (GROUP_VALIDATION_ENABLED is on and ACCESS_MANAGEMENT_ENABLED is also on )
 	// In both cases, we do not need to assign groups through the CreateGroupsAssignment call.
 
 	if !amEnabledFlag.Status || (amEnabledFlag.Status && groupValidationEnabledFlag.Status) {
