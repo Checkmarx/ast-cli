@@ -107,7 +107,7 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 
 	results := convertToSecretsRealtimeResult(report)
-	resultsPerLineMap := createResultsPerLineMap(results)
+	resultsPerLineMap := createResultsPerLocationMap(results)
 	results = filterGenericAPIKeyVulIfNeeded(results, resultsPerLineMap)
 
 	if ignoredFilePath == "" {
@@ -163,6 +163,7 @@ func convertSecretToResult(secret *secrets.Secret) SecretsRealtimeResult {
 	return SecretsRealtimeResult{
 		Title:       secret.RuleID,
 		Description: secret.RuleDescription,
+		SecretValue: secret.Value,
 		Severity:    getSeverity(secret),
 		FilePath:    secret.Source,
 		Locations:   locations,
@@ -182,15 +183,17 @@ func getSeverity(secret *secrets.Secret) string {
 	}
 }
 
-func createResultsPerLineMap(results []SecretsRealtimeResult) map[string][]SecretsRealtimeResult {
-	resultsPerLine := make(map[string][]SecretsRealtimeResult)
+func createResultsPerLocationMap(results []SecretsRealtimeResult) map[string][]SecretsRealtimeResult {
+	resultsPerLocation := make(map[string][]SecretsRealtimeResult)
 	for _, result := range results {
+		var locationKey string
 		for _, location := range result.Locations {
-			lineKey := fmt.Sprintf("%s:%d", result.FilePath, location.Line)
-			resultsPerLine[lineKey] = append(resultsPerLine[lineKey], result)
+			locationKey = fmt.Sprintf("%s:%d", locationKey, location.Line)
 		}
+		resultKey := fmt.Sprintf("%s%s", result.FilePath, locationKey)
+		resultsPerLocation[resultKey] = append(resultsPerLocation[resultKey], result)
 	}
-	return resultsPerLine
+	return resultsPerLocation
 }
 
 func filterGenericAPIKeyVulIfNeeded(
