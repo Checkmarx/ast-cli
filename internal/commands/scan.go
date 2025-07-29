@@ -513,7 +513,7 @@ func scanIacRealtimeSubCommand(
 		Long:   "Running a IaC-Realtime scan is a fast and efficient way to identify Infrustructure as Code vulnerabilities in a file.",
 		Example: heredoc.Doc(
 			`
-			$ cx scan iac-realtime -s <path to a manifest file> --ignored-file-path <path to ignored iac vulnerabilities JSON>
+			$ cx scan iac-realtime -s <path to a manifest file> --ignored-file-path <path to ignored iac vulnerabilities JSON file>
 			`,
 		),
 		Annotations: map[string]string{
@@ -536,11 +536,11 @@ func scanIacRealtimeSubCommand(
 	scanIacRealtimeCmd.Flags().String(
 		commonParams.IgnoredFilePathFlag,
 		"",
-		"Path to a JSON file listing ignored packages",
+		"Path to a JSON file listing ignored iac vulnerabilities",
 	)
 
 	scanIacRealtimeCmd.Flags().String(
-		commonParams.IacRealtimeEngineFlag,
+		commonParams.EngineFlag,
 		"docker",
 		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
 	)

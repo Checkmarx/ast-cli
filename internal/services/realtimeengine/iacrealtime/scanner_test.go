@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewScanner(t *testing.T) {
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 	scanner := NewScanner(dm)
 
 	if scanner == nil {
@@ -25,7 +25,7 @@ func TestNewScanner(t *testing.T) {
 }
 
 func TestScanner_extractErrorCode(t *testing.T) {
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	tests := []struct {
 		name     string
@@ -145,7 +145,7 @@ type readKicsTestCase struct {
 }
 
 func TestScanner_readKicsResultsFile(t *testing.T) {
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	// Create a temporary directory
 	tempDir, err := os.MkdirTemp("", "test-scanner-*")
@@ -311,7 +311,7 @@ func createValidKicsResultsFile(tempDir string) error {
 }
 
 func TestScanner_HandleScanResult(t *testing.T) {
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	// Create a temp directory with valid KICS results
 	tempDir, err := os.MkdirTemp("", "test-handle-*")
@@ -354,7 +354,7 @@ func TestScanner_HandleScanResult(t *testing.T) {
 }
 
 func TestScanner_processResults(t *testing.T) {
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	tests := []struct {
 		name      string
@@ -454,7 +454,7 @@ func TestScanner_processResults(t *testing.T) {
 func TestScanner_RunScan(t *testing.T) {
 	// This test mainly verifies the integration between RunScan and HandleScanResult
 	// The actual Docker execution will likely fail in test environment
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	// Create temp directory with results file for successful processing
 	tempDir, err := os.MkdirTemp("", "test-run-scan-*")
@@ -528,7 +528,7 @@ func TestScanner_RunScan(t *testing.T) {
 
 func TestScanner_Integration(t *testing.T) {
 	// Test the full scanner workflow
-	scanner := NewScanner(NewDockerManager())
+	scanner := NewScanner(NewContainerManager())
 
 	// Create temp directory
 	tempDir, err := os.MkdirTemp("", "test-scanner-integration-*")

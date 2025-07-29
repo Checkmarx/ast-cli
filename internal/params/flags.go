@@ -231,9 +231,6 @@ const (
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
-
-	// IaC Realtime Engine
-	IacRealtimeEngineFlag = "engine"
 )
 
 // Parameter values

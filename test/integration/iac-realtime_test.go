@@ -37,7 +37,7 @@ func TestIacRealtimeScan_TerraformFile_Success(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/positive1.tf",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, bytes := executeCommand(t, args...)
@@ -66,7 +66,7 @@ func TestIacRealtimeScan_DockerFile_Success(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/positive/Dockerfile",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, bytes := executeCommand(t, args...)
@@ -99,7 +99,7 @@ func TestIacRealtimeScan_YamlConfigFile_Success(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/config.yaml",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, bytes := executeCommand(t, args...)
@@ -121,7 +121,7 @@ func TestIacRealtimeScan_EmptyDockerFile_Success(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/empty/Dockerfile",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, bytes := executeCommand(t, args...)
@@ -142,7 +142,7 @@ func TestIacRealtimeScan_NonExistentFile_ShouldFail(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/nonexistent.yaml",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -165,7 +165,7 @@ func TestIacRealtimeScan_UnsupportedFileExtension_ShouldFail(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), tempFile.Name(),
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, _ = executeCommand(t, args...)
@@ -178,7 +178,7 @@ func TestIacRealtimeScan_MissingSourceFlag_ShouldFail(t *testing.T) {
 
 	args := []string{
 		"scan", "iac-realtime",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, _ := executeCommand(t, args...)
@@ -202,7 +202,7 @@ func TestIacRealtimeScan_WithIgnoredFilePath_Success(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/positive1.tf",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 		flag(commonParams.IgnoredFilePathFlag), tempIgnoreFile.Name(),
 	}
 
@@ -222,7 +222,7 @@ func TestIacRealtimeScan_ResultsValidation_DetailedCheck(t *testing.T) {
 	args := []string{
 		"scan", "iac-realtime",
 		flag(commonParams.SourcesFlag), "data/positive1.tf",
-		flag(commonParams.IacRealtimeEngineFlag), "docker",
+		flag(commonParams.EngineFlag), "docker",
 	}
 
 	err, bytes := executeCommand(t, args...)

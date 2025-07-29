@@ -9,21 +9,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-// DockerManager handles Docker container operations
-type DockerManager struct{}
+// ContainerManager handles Docker container operations
+type ContainerManager struct{}
 
-func NewDockerManager() *DockerManager {
-	return &DockerManager{}
+func NewContainerManager() *ContainerManager {
+	return &ContainerManager{}
 }
 
-func (dm *DockerManager) GenerateContainerID() string {
+func (dm *ContainerManager) GenerateContainerID() string {
 	containerID := uuid.New().String()
 	containerName := KicsContainerPrefix + containerID
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
 	return containerName
 }
 
-func (dm *DockerManager) RunKicsContainer(engine, volumeMap string) error {
+func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
 	args := []string{
 		"run", "--rm",
 		"-v", volumeMap,

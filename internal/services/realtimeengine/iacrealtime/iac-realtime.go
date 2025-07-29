@@ -10,13 +10,13 @@ type IacRealtimeService struct {
 	JwtWrapper         wrappers.JWTWrapper
 	FeatureFlagWrapper wrappers.FeatureFlagsWrapper
 	fileHandler        *FileHandler
-	dockerManager      *DockerManager
+	dockerManager      *ContainerManager
 	scanner            *Scanner
 }
 
 func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsWrapper) *IacRealtimeService {
 	fileHandler := NewFileHandler()
-	dockerManager := NewDockerManager()
+	dockerManager := NewContainerManager()
 	scanner := NewScanner(dockerManager)
 
 	return &IacRealtimeService{
@@ -29,15 +29,8 @@ func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsW
 }
 
 func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFilePath string) ([]IacRealtimeResult, error) {
-	if err := svc.checkFeatureFlag(); err != nil {
-		return nil, err
-	}
-
-	if err := svc.ensureLicense(); err != nil {
-		return nil, err
-	}
-
-	if err := svc.validateFilePath(filePath); err != nil {
+	err := svc.runValidations(filePath)
+	if err != nil {
 		return nil, err
 	}
 
@@ -57,6 +50,21 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 	results, err := svc.scanner.RunScan(engine, volumeMap, tempDir, filePath)
 
 	return results, err
+}
+
+func (svc *IacRealtimeService) runValidations(filePath string) error {
+	if err := svc.checkFeatureFlag(); err != nil {
+		return err
+	}
+
+	if err := svc.ensureLicense(); err != nil {
+		return err
+	}
+
+	if err := svc.validateFilePath(filePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (svc *IacRealtimeService) checkFeatureFlag() error {

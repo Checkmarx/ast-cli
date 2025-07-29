@@ -20,7 +20,7 @@ func RunScanIacRealtimeCommand(
 		}
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
-		engine, _ := cmd.Flags().GetString(commonParams.IacRealtimeEngineFlag)
+		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
 
 		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper)
 
@@ -31,7 +31,7 @@ func RunScanIacRealtimeCommand(
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
-			return errorconstants.NewRealtimeEngineError("failed to return packages").Error()
+			return errorconstants.NewRealtimeEngineError("failed to return IaC Realtime vulnerabilities").Error()
 		}
 
 		return nil

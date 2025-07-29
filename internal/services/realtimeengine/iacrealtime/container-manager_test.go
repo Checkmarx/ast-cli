@@ -9,15 +9,15 @@ import (
 )
 
 func TestNewDockerManager(t *testing.T) {
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 
 	if dm == nil {
-		t.Error("NewDockerManager() should not return nil")
+		t.Error("NewContainerManager() should not return nil")
 	}
 }
 
 func TestDockerManager_GenerateContainerID(t *testing.T) {
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 
 	// Clear any existing value
 	viper.Set(commonParams.KicsContainerNameKey, "")
@@ -53,7 +53,7 @@ func TestDockerManager_GenerateContainerID(t *testing.T) {
 }
 
 func TestDockerManager_RunKicsContainer(t *testing.T) {
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 
 	// Set up test parameters
 	containerName := "test-container"
@@ -121,7 +121,7 @@ func TestDockerManager_RunKicsContainer(t *testing.T) {
 func TestDockerManager_RunKicsContainer_Arguments(t *testing.T) {
 	// This test verifies that the docker command is constructed correctly
 	// We can't easily test the actual execution without mocking exec.Command
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 
 	containerName := "test-container-args"
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
@@ -143,7 +143,7 @@ func TestDockerManager_RunKicsContainer_Arguments(t *testing.T) {
 }
 
 func TestDockerManager_Integration(t *testing.T) {
-	dm := NewDockerManager()
+	dm := NewContainerManager()
 
 	// Test the full workflow
 	containerName := dm.GenerateContainerID()

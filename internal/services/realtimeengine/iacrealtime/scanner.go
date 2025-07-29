@@ -15,34 +15,34 @@ import (
 )
 
 type Scanner struct {
-	dockerManager *DockerManager
+	dockerManager *ContainerManager
 }
 
-func NewScanner(dockerManager *DockerManager) *Scanner {
+func NewScanner(dockerManager *ContainerManager) *Scanner {
 	return &Scanner{
 		dockerManager: dockerManager,
 	}
 }
 
 func (s *Scanner) RunScan(engine, volumeMap, tempDir, filePath string) ([]IacRealtimeResult, error) {
-	err := s.dockerManager.RunKicsContainer(engine, volumeMap)
-	return s.HandleScanResult(err, tempDir, filePath)
+	kicsErrCode := s.dockerManager.RunKicsContainer(engine, volumeMap)
+	return s.HandleScanResult(kicsErrCode, tempDir, filePath)
 }
 
-func (s *Scanner) HandleScanResult(err error, tempDir, filePath string) ([]IacRealtimeResult, error) {
-	if err == nil {
+func (s *Scanner) HandleScanResult(kicsErrorCode error, tempDir, filePath string) ([]IacRealtimeResult, error) {
+	if kicsErrorCode == nil {
 		// No error, process results
 		return s.processResults(tempDir, filePath)
 	}
 
-	msg := err.Error()
+	msg := kicsErrorCode.Error()
 	code := s.extractErrorCode(msg)
 
 	if slices.Contains(KicsErrorCodes, code) {
 		return s.processResults(tempDir, filePath)
 	}
 
-	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == util.EngineNoRunningCode {
+	if exitErr, ok := kicsErrorCode.(*exec.ExitError); ok && exitErr.ExitCode() == util.EngineNoRunningCode {
 		return nil, errors.New(util.NotRunningEngineMessage)
 	}
 
