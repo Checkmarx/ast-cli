@@ -21,7 +21,7 @@ func (m *Mapper) ConvertKicsToIacResults(
 	results *wrappers.KicsResultsCollection,
 	filePath string,
 ) []IacRealtimeResult {
-	var iacResults []IacRealtimeResult
+	iacResults := make([]IacRealtimeResult, 0)
 	indexMap := make(map[int]LineIndex)
 
 	for i := range results.Results {
