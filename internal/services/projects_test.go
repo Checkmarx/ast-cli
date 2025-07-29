@@ -181,16 +181,17 @@ func Test_createProject(t *testing.T) {
 
 func Test_updateProject(t *testing.T) {
 	type args struct {
-		project               *wrappers.ProjectResponseModel
-		cmd                   *cobra.Command
-		projectsWrapper       wrappers.ProjectsWrapper
-		groupsWrapper         wrappers.GroupsWrapper
-		applicationsWrapper   wrappers.ApplicationsWrapper
-		projectName           string
-		applicationID         []string
-		projectTags           string
-		projectPrivatePackage string
-		featureFlagsWrapper   wrappers.FeatureFlagsWrapper
+		project                 *wrappers.ProjectResponseModel
+		cmd                     *cobra.Command
+		projectsWrapper         wrappers.ProjectsWrapper
+		groupsWrapper           wrappers.GroupsWrapper
+		accessManagementWrapper wrappers.AccessManagementWrapper
+		applicationsWrapper     wrappers.ApplicationsWrapper
+		projectName             string
+		applicationID           []string
+		projectTags             string
+		projectPrivatePackage   string
+		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
 		name    string
@@ -205,12 +206,13 @@ func Test_updateProject(t *testing.T) {
 					ID:   "ID-project-name",
 					Name: "project-name",
 				},
-				cmd:                 &cobra.Command{},
-				projectsWrapper:     &mock.ProjectsMockWrapper{},
-				groupsWrapper:       &mock.GroupsMockWrapper{},
-				projectName:         "project-name",
-				applicationID:       nil,
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				cmd:                     &cobra.Command{},
+				projectsWrapper:         &mock.ProjectsMockWrapper{},
+				groupsWrapper:           &mock.GroupsMockWrapper{},
+				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				projectName:             "project-name",
+				applicationID:           nil,
+				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "ID-project-name",
 			wantErr: false,
@@ -222,13 +224,14 @@ func Test_updateProject(t *testing.T) {
 					ID:   "ID-project-name",
 					Name: "project-name",
 				},
-				cmd:                 &cobra.Command{},
-				projectsWrapper:     &mock.ProjectsMockWrapper{},
-				groupsWrapper:       &mock.GroupsMockWrapper{},
-				projectName:         "project-name",
-				projectTags:         "tag1,tag2",
-				applicationID:       nil,
-				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+				cmd:                     &cobra.Command{},
+				projectsWrapper:         &mock.ProjectsMockWrapper{},
+				groupsWrapper:           &mock.GroupsMockWrapper{},
+				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
+				projectName:             "project-name",
+				projectTags:             "tag1,tag2",
+				applicationID:           nil,
+				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
 			},
 			want:    "ID-project-name",
 			wantErr: false,

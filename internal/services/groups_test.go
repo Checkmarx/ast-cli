@@ -2,13 +2,13 @@ package services
 
 import (
 	"bytes"
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
