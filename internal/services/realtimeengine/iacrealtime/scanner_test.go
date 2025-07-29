@@ -17,6 +17,7 @@ func TestNewScanner(t *testing.T) {
 
 	if scanner == nil {
 		t.Error("NewScanner() should not return nil")
+		t.FailNow()
 	}
 
 	if scanner.dockerManager == nil {

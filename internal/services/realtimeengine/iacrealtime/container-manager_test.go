@@ -65,6 +65,7 @@ func TestNewMockContainerManager(t *testing.T) {
 
 	if dm == nil {
 		t.Error("NewMockContainerManager() should not return nil")
+		t.FailNow()
 	}
 
 	// Verify initial state
