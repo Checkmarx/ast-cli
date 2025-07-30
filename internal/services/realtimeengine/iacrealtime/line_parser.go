@@ -37,7 +37,7 @@ func (lp *LineParser) findContentBounds(line string) (start, end int) {
 			if start == -1 {
 				start = i
 			}
-			end = i
+			end = i + 1
 		}
 	}
 
