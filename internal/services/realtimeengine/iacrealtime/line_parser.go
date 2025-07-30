@@ -1,8 +1,6 @@
 package iacrealtime
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -12,17 +10,8 @@ func NewLineParser() *LineParser {
 	return &LineParser{}
 }
 
-func (lp *LineParser) GetLineIndices(filePath string, lineNumber int) (startIndex, endIndex int) {
-	if filePath == "" {
-		return 0, 0
-	}
-
-	data, err := os.ReadFile(filepath.Clean(filePath))
-	if err != nil {
-		return 0, 0
-	}
-
-	lines := strings.Split(string(data), "\n")
+func (lp *LineParser) GetLineIndices(content string, lineNumber int) (startIndex, endIndex int) {
+	lines := strings.Split(content, "\n")
 
 	if lineNumber < 0 || lineNumber >= len(lines) {
 		return 0, 0

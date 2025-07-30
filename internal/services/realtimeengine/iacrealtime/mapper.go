@@ -1,6 +1,8 @@
 package iacrealtime
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
@@ -24,12 +26,15 @@ func (m *Mapper) ConvertKicsToIacResults(
 	iacResults := make([]IacRealtimeResult, 0)
 	indexMap := make(map[int]LineIndex)
 
+	data, _ := os.ReadFile(filepath.Clean(filePath))
+	fileContent := string(data)
+
 	for i := range results.Results {
 		result := &results.Results[i]
 		for j := range result.Locations {
 			loc := &result.Locations[j]
 			locLine := int(loc.Line) - 1
-			lineIndex := m.getOrComputeLineIndex(filePath, locLine, indexMap)
+			lineIndex := m.getOrComputeLineIndex(fileContent, locLine, indexMap)
 
 			iacResult := IacRealtimeResult{
 				Title:        result.QueryName,
@@ -51,12 +56,12 @@ func (m *Mapper) ConvertKicsToIacResults(
 	return iacResults
 }
 
-func (m *Mapper) getOrComputeLineIndex(filePath string, lineNum int, indexMap map[int]LineIndex) LineIndex {
+func (m *Mapper) getOrComputeLineIndex(content string, lineNum int, indexMap map[int]LineIndex) LineIndex {
 	if value, exists := indexMap[lineNum]; exists {
 		return value
 	}
 
-	startIndex, endIndex := m.lineParser.GetLineIndices(filePath, lineNum)
+	startIndex, endIndex := m.lineParser.GetLineIndices(content, lineNum)
 	lineIndex := LineIndex{Start: startIndex, End: endIndex}
 	indexMap[lineNum] = lineIndex
 	return lineIndex

@@ -277,59 +277,38 @@ func TestMapper_getOrComputeLineIndex(t *testing.T) {
 
 	// Create a temporary file for testing
 	content := "line 0\nline 1\n  line 2 with spaces  \nline 3\n"
-	tempFile, err := os.CreateTemp("", "test_file_*.txt")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer func() {
-		if err := os.Remove(tempFile.Name()); err != nil && !os.IsNotExist(err) {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
-
-	if _, err := tempFile.WriteString(content); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-	tempFile.Close()
 
 	tests := []struct {
 		name         string
-		filePath     string
+		fileContent  string
 		lineNum      int
 		indexMap     map[int]LineIndex
 		expected     LineIndex
 		expectCached bool
 	}{
 		{
-			name:     "Compute line index for valid line",
-			filePath: tempFile.Name(),
-			lineNum:  2,
-			indexMap: make(map[int]LineIndex),
-			expected: LineIndex{Start: 2, End: 19}, // "  line 2 with spaces  " - starts at index 2, ends at index 19 (last 's')
+			name:        "Compute line index for valid line",
+			fileContent: content,
+			lineNum:     2,
+			indexMap:    make(map[int]LineIndex),
+			expected:    LineIndex{Start: 2, End: 19}, // "  line 2 with spaces  " - starts at index 2, ends at index 19 (last 's')
 		},
 		{
-			name:     "Return cached line index",
-			filePath: tempFile.Name(),
-			lineNum:  1,
+			name:        "Return cached line index",
+			fileContent: content,
+			lineNum:     1,
 			indexMap: map[int]LineIndex{
 				1: {Start: 10, End: 20},
 			},
 			expected:     LineIndex{Start: 10, End: 20},
 			expectCached: true,
 		},
-		{
-			name:     "Handle invalid file path",
-			filePath: "/nonexistent/file.txt",
-			lineNum:  0,
-			indexMap: make(map[int]LineIndex),
-			expected: LineIndex{Start: 0, End: 0},
-		},
 	}
 
 	for _, tt := range tests {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := mapper.getOrComputeLineIndex(ttt.filePath, ttt.lineNum, ttt.indexMap)
+			got := mapper.getOrComputeLineIndex(ttt.fileContent, ttt.lineNum, ttt.indexMap)
 			if !reflect.DeepEqual(got, ttt.expected) {
 				t.Errorf("getOrComputeLineIndex() = %v, want %v", got, ttt.expected)
 			}
@@ -356,29 +335,14 @@ spec:
   containers:
   - name: test`
 
-	tempFile, err := os.CreateTemp("", "test_integration_*.yaml")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer func() {
-		if err := os.Remove(tempFile.Name()); err != nil && !os.IsNotExist(err) {
-			t.Logf("Failed to remove temp file: %v", err)
-		}
-	}()
-
-	if _, err := tempFile.WriteString(testContent); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-	tempFile.Close()
-
 	// Test that the same line number returns cached results on subsequent calls
 	indexMap := make(map[int]LineIndex)
 
 	// First call should compute
-	result1 := mapper.getOrComputeLineIndex(tempFile.Name(), 1, indexMap)
+	result1 := mapper.getOrComputeLineIndex(testContent, 1, indexMap)
 
 	// Second call should use cache
-	result2 := mapper.getOrComputeLineIndex(tempFile.Name(), 1, indexMap)
+	result2 := mapper.getOrComputeLineIndex(testContent, 1, indexMap)
 
 	if !reflect.DeepEqual(result1, result2) {
 		t.Errorf("Cached result should be identical to computed result")
