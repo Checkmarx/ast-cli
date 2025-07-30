@@ -45,11 +45,7 @@ func NewSecretsRealtimeService(
 func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]bool) []SecretsRealtimeResult {
 	filtered := make([]SecretsRealtimeResult, 0, len(results))
 	for _, r := range results {
-		if len(r.Locations) == 0 {
-			filtered = append(filtered, r)
-			continue
-		}
-		key := fmt.Sprintf("%s_%s_%d", r.Title, r.FilePath, r.Locations[0].Line)
+		key := fmt.Sprintf("%s_%s_%s", r.Title, r.FilePath, r.SecretValue)
 		if !ignoreMap[key] {
 			filtered = append(filtered, r)
 		}
@@ -60,7 +56,7 @@ func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]
 func buildIgnoreMap(ignored []IgnoredSecret) map[string]bool {
 	m := make(map[string]bool)
 	for _, s := range ignored {
-		key := fmt.Sprintf("%s_%s_%d", s.Title, s.FilePath, s.Line)
+		key := fmt.Sprintf("%s_%s_%s", s.Title, s.FilePath, s.SecretValue)
 		m[key] = true
 	}
 	return m
@@ -131,7 +127,6 @@ func readFile(filePath string) (string, error) {
 }
 
 func runScan(source, content string) (*reporting.Report, error) {
-
 	item := scanner.ScanItem{
 		Content: &content,
 		Source:  source,

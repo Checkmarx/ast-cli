@@ -73,12 +73,12 @@ func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 	tempDir := t.TempDir()
 
 	testFile := filepath.Join(tempDir, "test.txt")
-	testContent := "pat = \"ghp_1234567890abcdef1234567890abcdef12345678\""
+	testContent := "pat = \"ghp_1234567890abcdef123\""
 	assert.NoError(t, os.WriteFile(testFile, []byte(testContent), 0644))
 
 	ignoreFile := filepath.Join(tempDir, "ignored.json")
 	ignored := []IgnoredSecret{
-		{Title: "github-pat", FilePath: testFile, Line: 0},
+		{Title: "github-pat", FilePath: testFile, SecretValue: "ghp_1234567890abcdef123"},
 	}
 	data, _ := json.Marshal(ignored)
 	assert.NoError(t, os.WriteFile(ignoreFile, data, 0644))
