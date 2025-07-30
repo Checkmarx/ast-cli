@@ -143,6 +143,7 @@ type ScaConfig struct {
 	LastSastScanTime      string `json:"LastSastScanTime,omitempty"`
 	PrivatePackageVersion string `json:"privatePackageVersion,omitempty"`
 	EnableContainersScan  bool   `json:"enableContainersScan,omitempty"`
+	SBom                  string `json:"sbom,omitempty"`
 }
 type ContainerConfig struct {
 	FilesFilter          string `json:"filesFilter,omitempty"`
