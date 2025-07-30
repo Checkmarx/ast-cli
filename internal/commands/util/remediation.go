@@ -27,7 +27,7 @@ const (
 	filesContainerVolume      = ":/files"
 	resultsContainerLocation  = "/kics/"
 	containerRemove           = "--rm"
-	containerImage            = "checkmarx/kics:v2.1.11"
+	ContainerImage            = "checkmarx/kics:v2.1.11"
 	containerNameFlag         = "--name"
 	remediateCommand          = "remediate"
 	resultsFlag               = "--results"
@@ -247,7 +247,7 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 		kicsFilesPath + filesContainerVolume,
 		containerNameFlag,
 		containerName,
-		containerImage,
+		ContainerImage,
 		remediateCommand,
 		resultsFlag,
 		resultsContainerLocation + file,
