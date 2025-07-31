@@ -1,17 +1,21 @@
 package services
 
 import (
+	"bytes"
+	"io"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
-
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
 func setup() {
 	wrappers.ClearCache()
+
 }
 
 func TestAssignGroupsToProject(t *testing.T) {
@@ -24,9 +28,11 @@ func TestAssignGroupsToProject(t *testing.T) {
 		featureFlagsWrapper wrappers.FeatureFlagsWrapper
 	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name              string
+		args              args
+		wantErr           bool
+		grpValidationflag bool
+		aMFlag            bool
 	}{
 		{
 			name: "When assigning group to project, no error should be returned",
@@ -40,16 +46,58 @@ func TestAssignGroupsToProject(t *testing.T) {
 				accessManagement:    &mock.AccessManagementMockWrapper{},
 				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
 			},
-			wantErr: false,
+			wantErr:           false,
+			grpValidationflag: false,
+			aMFlag:            true,
+		},
+		{
+			name: "When assigning group to project, error should be returned ",
+			args: args{
+				projectID:   "project-id",
+				projectName: "project-name",
+				groups: []*wrappers.Group{{
+					ID:   "group-id-to-assign",
+					Name: "group-name-to-assign",
+				}},
+				accessManagement:    &mock.AccessManagementMockWrapper{},
+				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			},
+			wantErr:           false,
+			grpValidationflag: true,
+			aMFlag:            true,
 		},
 	}
 	for _, tt := range tests {
 		ttt := tt
-		mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
+		if ttt.aMFlag {
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
+		}
+		if ttt.grpValidationflag {
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.GroupValidationEnabled, Status: true}
+		}
+		originalStdout := os.Stdout
+		r, w, _ := os.Pipe()
+		os.Stdout = w
 		t.Run(tt.name, func(t *testing.T) {
 			if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
 				ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 				t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
+				err := w.Close()
+				if err != nil {
+					t.Errorf("failed to close file")
+				}
+				os.Stdout = originalStdout
+				var buf bytes.Buffer
+				_, err = io.Copy(&buf, r)
+				if err != nil {
+					t.Errorf("failed to read buffered output")
+				}
+				if ttt.aMFlag && !ttt.grpValidationflag && !strings.Contains(buf.String(), "Called CreateGroupsAssignment in AccessManagementMockWrapper") {
+					t.Errorf("Should  call create assignment API ")
+				}
+				if ttt.grpValidationflag && ttt.aMFlag && strings.Contains(buf.String(), "Called CreateGroupsAssignment in AccessManagementMockWrapper") {
+					t.Errorf("Should not call create assignment API")
+				}
 			}
 		})
 	}

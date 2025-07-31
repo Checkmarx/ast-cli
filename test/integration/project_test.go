@@ -75,8 +75,10 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		val, ok := project.Tags[key]
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
+		fmt.Println("The project.Groups-->", project.Groups)
+		fmt.Println("The Groups assigned are --->", groups)
 	}
-
+	// todo : current used grps are created by another users, as ACCESSMGMT FF is on, grps will not be assigned
 	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
@@ -134,6 +136,55 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
 	)
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
+}
+
+// when both of these FF are on , validation based on permission of assign-groups-to-all is done by api call.
+// if user is not having this permission and user is trying to assign other groups , error is thrown
+func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || !isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") {
+		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+	}
+
+	groups := []string{
+		"it_test_group_1",
+		"it_test_group_2",
+	}
+
+	groupsStr := formatGroups(groups)
+
+	err, _ := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project-1", flag(params.GroupList), groupsStr,
+	)
+	assertError(t, err, "Failed creating a project: CODE: 233, Unauthorized groups")
+}
+
+func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || (isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") && isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED")) {
+		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+	}
+
+	groups := []string{
+		"it_test_group_1",
+		"it_test_group_2",
+	}
+
+	groupsStr := formatGroups(groups)
+
+	output := executeCmdNilAssertion(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), "project-4", flag(params.GroupList), groupsStr,
+	)
+	_, readingError := io.ReadAll(output)
+	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
+	createdProjectnew := wrappers.ProjectResponseModel{}
+	_ = unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
+	fmt.Printf("New project created with id: %s \n", createdProjectnew.ID)
+	deleteProject(t, createdProjectnew.ID)
 }
 
 func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
@@ -224,7 +275,7 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-	fmt.Println("Listing project for id output buffer", outputBuffer)
+	fmt.Println("Listing project for id output buffer-->", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 	fmt.Println("Listing project for id projects length: ", len(projects))
@@ -258,6 +309,8 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 	)
+	fmt.Println("Got output Buffered..")
+	fmt.Println("Output Buffered from show project is --> ", outputBuffer)
 
 	var project wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
