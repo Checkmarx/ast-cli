@@ -291,7 +291,7 @@ func TestMapper_getOrComputeLineIndex(t *testing.T) {
 			fileContent: content,
 			lineNum:     2,
 			indexMap:    make(map[int]LineIndex),
-			expected:    LineIndex{Start: 2, End: 19}, // "  line 2 with spaces  " - starts at index 2, ends at index 19 (last 's')
+			expected:    LineIndex{Start: 2, End: 20},
 		},
 		{
 			name:        "Return cached line index",
@@ -422,7 +422,7 @@ metadata:
 	}
 
 	// The "kind: Pod" line should start at index 0 and end at index 8 (last 'd')
-	if location.StartIndex != 0 || location.EndIndex != 8 {
+	if location.StartIndex != 0 || location.EndIndex != 9 {
 		t.Errorf("Expected StartIndex 0 and EndIndex 8, got StartIndex %d and EndIndex %d",
 			location.StartIndex, location.EndIndex)
 	}

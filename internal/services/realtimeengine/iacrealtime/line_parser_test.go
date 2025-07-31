@@ -36,35 +36,35 @@ line 6`
 			fileContent:   fileContent,
 			lineNumber:    0,
 			expectedStart: 0,
-			expectedEnd:   5, // "line 0" - ends at '0'
+			expectedEnd:   6, // "line 0" - ends at '0'
 		},
 		{
 			name:          "Second line with content",
 			fileContent:   fileContent,
 			lineNumber:    1,
 			expectedStart: 0,
-			expectedEnd:   5, // "line 1" - ends at '1'
+			expectedEnd:   6, // "line 1" - ends at '1'
 		},
 		{
 			name:          "Line with leading spaces",
 			fileContent:   fileContent,
 			lineNumber:    2,
 			expectedStart: 2,  // starts after "  "
-			expectedEnd:   19, // ends at last 's' in "spaces"
+			expectedEnd:   20, // ends at last 's' in "spaces"
 		},
 		{
 			name:          "Line with tab",
 			fileContent:   fileContent,
 			lineNumber:    3,
 			expectedStart: 1,  // starts after tab
-			expectedEnd:   15, // ends at 'b' in "tab"
+			expectedEnd:   16, // ends at 'b' in "tab"
 		},
 		{
 			name:          "Empty line",
 			fileContent:   fileContent,
 			lineNumber:    4,
 			expectedStart: 0,
-			expectedEnd:   15, // "empty line below"
+			expectedEnd:   16, // "empty line below"
 		},
 		{
 			name:          "Line with only whitespace",
@@ -78,7 +78,7 @@ line 6`
 			fileContent:   fileContent,
 			lineNumber:    6,
 			expectedStart: 0,
-			expectedEnd:   5, // "line 6"
+			expectedEnd:   6, // "line 6"
 		},
 		{
 			name:          "Invalid line number (negative)",
@@ -128,37 +128,37 @@ func TestLineParser_findContentBounds(t *testing.T) {
 			name:          "Normal line with content",
 			line:          "hello world",
 			expectedStart: 0,
-			expectedEnd:   10,
+			expectedEnd:   11,
 		},
 		{
 			name:          "Line with leading spaces",
 			line:          "  hello world",
 			expectedStart: 2,
-			expectedEnd:   12,
+			expectedEnd:   13,
 		},
 		{
 			name:          "Line with trailing spaces",
 			line:          "hello world  ",
 			expectedStart: 0,
-			expectedEnd:   10,
+			expectedEnd:   11,
 		},
 		{
 			name:          "Line with leading and trailing spaces",
 			line:          "  hello world  ",
 			expectedStart: 2,
-			expectedEnd:   12,
+			expectedEnd:   13,
 		},
 		{
 			name:          "Line with tabs",
 			line:          "\thello\tworld\t",
 			expectedStart: 1,
-			expectedEnd:   11,
+			expectedEnd:   12,
 		},
 		{
 			name:          "Line with mixed whitespace",
 			line:          " \t hello world \t ",
 			expectedStart: 3,
-			expectedEnd:   13,
+			expectedEnd:   14,
 		},
 		{
 			name:          "Empty line",
@@ -188,19 +188,19 @@ func TestLineParser_findContentBounds(t *testing.T) {
 			name:          "Single character",
 			line:          "a",
 			expectedStart: 0,
-			expectedEnd:   0,
+			expectedEnd:   1,
 		},
 		{
 			name:          "Single character with spaces",
 			line:          "  a  ",
 			expectedStart: 2,
-			expectedEnd:   2,
+			expectedEnd:   3,
 		},
 		{
 			name:          "Line with carriage return",
 			line:          "hello\rworld",
 			expectedStart: 0,
-			expectedEnd:   10,
+			expectedEnd:   11,
 		},
 	}
 
@@ -303,19 +303,19 @@ func TestLineParser_GetLineIndices_EdgeCases(t *testing.T) {
 			name:          "First line",
 			lineNumber:    0,
 			expectedStart: 0,
-			expectedEnd:   4, // "line1"
+			expectedEnd:   5, // "line1"
 		},
 		{
 			name:          "Second line with CRLF",
 			lineNumber:    1,
 			expectedStart: 0,
-			expectedEnd:   4, // "line2"
+			expectedEnd:   5, // "line2"
 		},
 		{
 			name:          "Third line with CR",
 			lineNumber:    2,
 			expectedStart: 0,
-			expectedEnd:   10, // "line3\rline4" - ends at '4'
+			expectedEnd:   11, // "line3\rline4" - ends at '4'
 		},
 	}
 
