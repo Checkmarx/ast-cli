@@ -166,7 +166,7 @@ func bindKeysToEnvAndDefault() {
 }
 
 func bindProxy() {
-	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
+	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv, params.ProxyLowerCaseEnv)
 	if err != nil {
 		exitIfError(err)
 	}
