@@ -14,6 +14,8 @@ type JWTMockWrapper struct {
 
 const AIProtectionDisabled = 1
 
+var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
+
 // GetAllowedEngines mock for tests
 func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error) {
 	if j.CustomGetAllowedEngines != nil {
@@ -21,7 +23,7 @@ func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureF
 		return allowedEngines, j.ScsLicensingV2, err
 	}
 	allowedEngines = make(map[string]bool)
-	engines := []string{"sast", "iac-security", "sca", "api-security", "containers", "scs"}
+
 	for _, value := range engines {
 		allowedEngines[strings.ToLower(value)] = true
 	}
