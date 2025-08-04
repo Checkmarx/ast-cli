@@ -2577,7 +2577,7 @@ func TestGetGitignorePatterns_DirPath_GitIgnore_EmptyPatternList(t *testing.T) {
 
 func TestGetGitignorePatterns_DirPath_GitIgnore_PatternList(t *testing.T) {
 	dir := t.TempDir()
-	gitignoreContent := `src
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(`src
 src/
 **/vullib
 **/admin/
@@ -2589,8 +2589,7 @@ LoginController[!0-3].java
 LoginController[01].java
 LoginController[!456].java
 ?pplication-jira.yml
-a*cation-jira.yml`
-	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignoreContent), 0644)
+a*cation-jira.yml`), 0644)
 	if err != nil {
 		t.Fatalf("Failed to write .gitignore: %v", err)
 	}
@@ -2709,8 +2708,7 @@ func TestGetGitignorePatterns_ZipPath_GitIgnore_PatternList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to add file to zip: %v", err)
 	}
-
-	gitignoreContent := `src
+	_, err = fileInZip.Write([]byte(`src
 src/
 **/vullib
 **/admin/
@@ -2722,8 +2720,7 @@ LoginController[!0-3].java
 LoginController[01].java
 LoginController[!456].java
 ?pplication-jira.yml
-a*cation-jira.yml`
-	_, err = fileInZip.Write([]byte(gitignoreContent))
+a*cation-jira.yml`))
 	if err != nil {
 		t.Fatalf("Failed to write data to zip: %v", err)
 	}
@@ -2768,7 +2765,8 @@ func TestGetGitignorePatterns_ZipPath_GitIgnore_PermissionDenied(t *testing.T) {
 		t.Fatalf("Failed to add file to zip: %v", err)
 	}
 
-	gitignoreContent := `src
+	// Write content to the file in the zip archive
+	_, err = fileInZip.Write([]byte(`src
 src/
 **/vullib
 **/admin/
@@ -2780,10 +2778,7 @@ LoginController[!0-3].java
 LoginController[01].java
 LoginController[!456].java
 ?pplication-jira.yml
-a*cation-jira.yml`
-
-	// Write content to the file in the zip archive
-	_, err = fileInZip.Write([]byte(gitignoreContent))
+a*cation-jira.yml`))
 	if err != nil {
 		t.Fatalf("Failed to write data to zip: %v", err)
 	}
