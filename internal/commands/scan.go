@@ -1407,7 +1407,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	var scanTypes []string
 
 	allowedEngines, scsLicensingV2Enabled, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
-  
+
 	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 
 	if err != nil {
