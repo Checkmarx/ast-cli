@@ -74,7 +74,6 @@ func filterIgnoredContainers(results []ContainerImage, ignoreMap map[string]bool
 
 // RunContainersRealtimeScan performs a containers real-time scan on the given file.
 func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredFilePath string) (*ContainerImageResults, error) {
-
 	if err := realtimeengine.EnsureLicense(c.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
 	}
