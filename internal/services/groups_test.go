@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -50,7 +51,9 @@ func TestAssignGroupsToProject(t *testing.T) {
 		ttt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
-			_ = captureStdout(func() {
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.GroupValidationEnabled, Status: false}
+			var output string
+			output = captureStdout(func() {
 				if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
 					ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 					t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
@@ -58,6 +61,62 @@ func TestAssignGroupsToProject(t *testing.T) {
 						t.Errorf("failed to close file")
 					}
 
+					if output != "" && !strings.Contains(output, "Called CreateGroupsAssignment in AccessManagementMockWrapper") {
+						t.Errorf("Create GroupAssignment should not get called when GroupValidation Flag is ON")
+					}
+
+				}
+			})
+
+		})
+	}
+}
+
+func TestAssignGroupsToProjectWithGroupValidationFlag(t *testing.T) {
+	setup() // Clear the map before starting this test
+	type args struct {
+		projectID           string
+		projectName         string
+		groups              []*wrappers.Group
+		accessManagement    wrappers.AccessManagementWrapper
+		featureFlagsWrapper wrappers.FeatureFlagsWrapper
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "When assigning group to project,error should be returned when Access_management_enabled is ON and GroupValidationFlag is also On",
+			args: args{
+				projectID:   "project-id",
+				projectName: "project-name",
+				groups: []*wrappers.Group{{
+					ID:   "group-id-to-assign",
+					Name: "group-name-to-assign",
+				}},
+				accessManagement:    &mock.AccessManagementMockWrapper{},
+				featureFlagsWrapper: &mock.FeatureFlagsMockWrapper{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.GroupValidationEnabled, Status: true}
+			var output string
+			output = captureStdout(func() {
+				if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
+					ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
+					t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
+					if err != nil {
+						t.Errorf("failed to close file")
+					}
+					if output != "" && strings.Contains(output, "Called CreateGroupsAssignment in AccessManagementMockWrapper") {
+						t.Errorf("Create GroupAssignment should not get called when GroupValidation Flag is ON")
+					}
 				}
 			})
 
