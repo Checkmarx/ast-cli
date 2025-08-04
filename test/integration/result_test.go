@@ -692,3 +692,36 @@ func TestRiskManagementResults_ReturnResults(t *testing.T) {
 
 	assert.Assert(t, (len(result.Results) <= 20), "Should have results")
 }
+
+func TestResultsIncludePublishedAtJsonOutput(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	for _, res := range result.Results {
+		if res.Type == "sca" {
+			assert.Assert(t, res.ScanResultData.PublishedAt != "", "PublishedAt should not be empty for SCA results")
+		}
+	}
+}
