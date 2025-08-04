@@ -1219,7 +1219,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	return containerMapConfig, nil
 }
 
-func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool, isGitScan bool) {
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally, isGitScan bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
 			continue
