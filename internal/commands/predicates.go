@@ -1,14 +1,15 @@
 package commands
 
 import (
+	"strings"
+	"time"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"strings"
-	"time"
 )
 
 var systemStates = []wrappers.CustomState{

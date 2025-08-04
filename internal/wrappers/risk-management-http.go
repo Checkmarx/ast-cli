@@ -3,9 +3,10 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
