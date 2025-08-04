@@ -29,6 +29,12 @@ type ScanDetail struct {
 	Description     string `json:"description"`
 }
 
+type AscaIgnoreFinding struct {
+	FileName string `json:"FileName"`
+	Line     uint32 `json:"Line"`
+	RuleID   uint32 `json:"RuleID"`
+}
+
 type Error struct {
 	Code        ErrorCode `json:"code,omitempty"`
 	Description string    `json:"description,omitempty"`

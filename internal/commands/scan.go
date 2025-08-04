@@ -442,6 +442,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
+			$ cx scan asca --file-source <path to a single file> --ignored-file-path <path to ignored in file>	
 		`,
 		),
 		Annotations: map[string]string{
@@ -463,6 +464,8 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"",
 		"The file source should be the path to a single file",
 	)
+
+	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
 	return scanASCACmd
 }
 
