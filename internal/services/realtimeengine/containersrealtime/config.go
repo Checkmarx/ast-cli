@@ -12,6 +12,12 @@ type ContainerImage struct {
 	Vulnerabilities []Vulnerability           `json:"Vulnerabilities"`
 }
 
+type IgnoredContainersFinding struct {
+	ImageName string `json:"ImageName"`
+	ImageTag  string `json:"ImageTag"`
+	FilePath  string `json:"FilePath"`
+}
+
 // ContainerImageResults holds the results of a containers realtime scan.
 type ContainerImageResults struct {
 	Images []ContainerImage `json:"Images"`

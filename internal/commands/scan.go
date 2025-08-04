@@ -562,6 +562,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		Example: heredoc.Doc(
 			`
 			$ cx scan containers-realtime -s <path to containers file>
+			$ cx scan containers-realtime -s <path to file> --ignored-file-path <path to ignored containers file>
 		`,
 		),
 		Annotations: map[string]string{
@@ -580,6 +581,8 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		"",
 		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
 	)
+	scanContainersRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored containers file")
+
 	return scanContainersRealtimeCmd
 }
 

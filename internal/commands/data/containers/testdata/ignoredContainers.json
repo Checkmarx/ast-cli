@@ -1,0 +1,7 @@
+[
+  {
+    "ImageName": "nginx",
+    "ImageTag": "latest",
+    "FilePath": "Dockerfile"
+  }
+  ]

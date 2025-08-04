@@ -1,6 +1,8 @@
 package containersrealtime
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,16 +39,41 @@ func NewContainersRealtimeService(
 	}
 }
 
-// RunContainersRealtimeScan performs a containers real-time scan on the given file.
-func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (results *ContainerImageResults, err error) {
-	if filePath == "" {
-		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
+func loadIgnoredContainerFindings(path string) ([]IgnoredContainersFinding, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
+	var ignored []IgnoredContainersFinding
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
 
-	if enabled, err := realtimeengine.IsFeatureFlagEnabled(c.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
-		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
-		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
+func buildContainerIgnoreMap(ignored []IgnoredContainersFinding) map[string]bool {
+	m := make(map[string]bool)
+	for _, f := range ignored {
+		key := fmt.Sprintf("%s_%s_%s", f.ImageName, f.ImageTag, f.FilePath)
+		m[key] = true
 	}
+	return m
+}
+
+func filterIgnoredContainers(results []ContainerImage, ignoreMap map[string]bool) []ContainerImage {
+	filtered := make([]ContainerImage, 0, len(results))
+	for _, r := range results {
+		key := fmt.Sprintf("%s_%s_%s", r.ImageName, r.ImageTag, r.FilePath)
+		if !ignoreMap[key] {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
+}
+
+// RunContainersRealtimeScan performs a containers real-time scan on the given file.
+func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string, ignoredFilePath string) (*ContainerImageResults, error) {
 
 	if err := realtimeengine.EnsureLicense(c.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
@@ -58,7 +85,6 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 
 	images, err := parseContainersFile(filePath)
 	if err != nil {
-		logger.PrintfIfVerbose("Failed to parse containers file %s: %v", filePath, err)
 		return nil, errorconstants.NewRealtimeEngineError("failed to parse containers file").Error()
 	}
 
@@ -68,13 +94,21 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath string) (
 
 	images = splitLocationsToSeparateResults(images)
 
-	result, err := c.scanImages(images, filePath)
+	results, err := c.scanImages(images, filePath)
 	if err != nil {
-		logger.PrintfIfVerbose("Failed to scan images via realtime service: %v", err)
 		return nil, errorconstants.NewRealtimeEngineError("Realtime scanner engine failed").Error()
 	}
 
-	return result, nil
+	if ignoredFilePath != "" {
+		ignored, err := loadIgnoredContainerFindings(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored containers").Error()
+		}
+		ignoreMap := buildContainerIgnoreMap(ignored)
+		results.Images = filterIgnoredContainers(results.Images, ignoreMap)
+	}
+
+	return results, nil
 }
 
 func splitLocationsToSeparateResults(images []types.ImageModel) []types.ImageModel {
