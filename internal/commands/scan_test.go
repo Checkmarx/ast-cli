@@ -2681,9 +2681,8 @@ func TestGetGitignorePatterns_ZipPath_GitIgnore_EmptyPatternList(t *testing.T) {
 		return
 	}
 
-	gitIgnoreFilter, err := getGitignorePatterns("", zipPath)
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
 	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
-
 }
 
 func TestGetGitignorePatterns_ZipPath_GitIgnore_PatternList(t *testing.T) {
@@ -2733,9 +2732,8 @@ a*cation-jira.yml`
 		return
 	}
 
-	gitIgnoreFilter, err := getGitignorePatterns("", zipPath)
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
 	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
-
 }
 
 func TestGetGitignorePatterns_ZipPath_GitIgnore_PermissionDenied(t *testing.T) {
