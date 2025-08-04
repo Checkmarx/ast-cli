@@ -3,10 +3,11 @@ package iacrealtime
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"os"
 )
 
 type IacRealtimeService struct {

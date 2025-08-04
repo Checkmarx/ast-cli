@@ -415,3 +415,37 @@ func TestIacRealtimeService_Integration(t *testing.T) {
 		t.Error("Docker manager should generate unique container IDs")
 	}
 }
+
+func TestFilterIgnoredFindings_WithOneIgnored(t *testing.T) {
+	results := []IacRealtimeResult{
+		{
+			Title:        "Container Traffic Not Bound To Host Interface",
+			FilePath:     "test/path/to/file.yaml",
+			SimilarityID: "7540e8c3cdc3b13c3a24b8ce501d9e39fb485368e20922df18cec9564e075049",
+		},
+		{
+			Title:        "Memory Not Limited",
+			FilePath:     "test/path/to/file.yaml",
+			SimilarityID: "4022c1441ba03ca00c1ad057f5e3cfb25ed165cb6b94988276bacad0485d3b74",
+		},
+	}
+
+	ignored := []IgnoredIacFinding{
+		{
+			Title:        "Container Traffic Not Bound To Host Interface",
+			FilePath:     "test/path/to/file.yaml",
+			SimilarityID: "7540e8c3cdc3b13c3a24b8ce501d9e39fb485368e20922df18cec9564e075049",
+		},
+	}
+
+	ignoreMap := buildIgnoreMap(ignored)
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 1 {
+		t.Fatalf("Expected 1 result after filtering, got %d", len(filtered))
+	}
+
+	if filtered[0].Title != "Memory Not Limited" {
+		t.Errorf("Unexpected result after filtering: got %s, expected 'Memory Not Limited'", filtered[0].Title)
+	}
+}
