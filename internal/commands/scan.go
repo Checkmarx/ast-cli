@@ -870,6 +870,7 @@ func scanCreateSubCommand(
 
 	// reading sbom-only flag
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
+	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 
 	return createScanCmd
 }
@@ -1747,6 +1748,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
+	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
 	var directoryPath string
 	if isSbom {
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -1763,6 +1765,29 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 	} else {
 		zipFilePath, directoryPath, err = definePathForZipFileOrDirectory(cmd)
+		if isGitIgnoreFilter {
+			gitIgnoreFilter, err := getGitignorePatterns(directoryPath, zipFilePath)
+			if err != nil {
+				return "", "", err
+			}
+
+			if len(gitIgnoreFilter) > 0 {
+				if sourceDirFilter == "" {
+					sourceDirFilter = gitIgnoreFilter[0]
+					for i := 1; i < len(gitIgnoreFilter); i++ {
+						if !strings.Contains(sourceDirFilter, gitIgnoreFilter[i]) {
+							sourceDirFilter += "," + gitIgnoreFilter[i]
+						}
+					}
+				} else {
+					for _, pattern := range gitIgnoreFilter {
+						if !strings.Contains(sourceDirFilter, pattern) {
+							sourceDirFilter += "," + pattern
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if zipFilePath != "" && scaResolverPath != "" {
@@ -3248,4 +3273,90 @@ func isValidJSONOrXML(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func getGitignorePatterns(directoryPath, zipFilePath string) ([]string, error) {
+	var data []byte
+	var err error
+	if directoryPath != "" {
+		gitignorePath := filepath.Join(directoryPath, ".gitignore")
+		if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+			return nil, fmt.Errorf(".gitignore file not found in directory: %s", directoryPath)
+		}
+		data, err = os.ReadFile(gitignorePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if zipFilePath != "" {
+		data, err = readGitIgnoreFromZip(zipFilePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lines := strings.Split(string(data), "\n")
+	var patterns []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		//This condition skips lines that are empty, comments.
+		// Excluding the lines that contain negotiation characters like !, which are used to negate patterns
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
+			continue
+		}
+		// Convert build/** to build for path.Match() supported patterns
+		if strings.HasSuffix(line, "/**") {
+			line = strings.TrimSuffix(line, "/**")
+		}
+		// Convert **/temp/ to temp for path.Match() supported patterns
+		if strings.HasPrefix(line, "**/") {
+			line = strings.TrimPrefix(line, "**/")
+		}
+		// Convert temp/ to temp for path.Match() supported patterns
+		if strings.HasSuffix(line, "/") {
+			line = strings.TrimSuffix(line, "/")
+		}
+
+		// Convert LoginController[!0-3].java to LoginController[^0-3].java for path.Match() supported patterns
+		if strings.Contains(line, "!") {
+			line = strings.ReplaceAll(line, "!", "^")
+		}
+		patterns = append(patterns, "!"+line)
+	}
+	return patterns, nil
+}
+
+func readGitIgnoreFromZip(zipPath string) ([]byte, error) {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return []byte(""), fmt.Errorf("failed to open zip: %s", zipPath)
+	}
+	defer r.Close()
+
+	rootFolder := ""
+	if len(r.File) > 0 {
+		parts := strings.Split(r.File[0].Name, "/")
+		if len(parts) > 1 {
+			rootFolder = parts[0]
+		}
+	}
+	expectedGitignorePath := rootFolder + "/.gitignore"
+
+	for _, f := range r.File {
+		if f.Name == expectedGitignorePath {
+			rc, err := f.Open()
+			if err != nil {
+				return []byte(""), fmt.Errorf("failed to open .gitignore inside zip: %w", err)
+			}
+			defer rc.Close()
+
+			// Read file content
+			data, err := io.ReadAll(rc)
+			if err != nil {
+				return []byte(""), fmt.Errorf("failed to read .gitignore content inside zip : %w", err)
+			}
+			return data, nil
+		}
+	}
+	return []byte(""), fmt.Errorf(".gitignore not found in zip: %s", zipPath)
 }

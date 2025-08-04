@@ -2544,3 +2544,16 @@ func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 
 }
+
+func TestCreateScanFilterGitIgnoreFile(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}

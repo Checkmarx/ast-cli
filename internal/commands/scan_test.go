@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -2543,4 +2544,256 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 	)
 
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	_, err := getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, ".gitignore file not found in directory")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_PermissionDenied(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0000)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	_, err = getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, "permission denied")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
+	}
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	gitignoreContent := `src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignoreContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
+	}
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_FailedToOpenZipFIle(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, "failed to open zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+
+	_, err = fileInZip.Write([]byte(""))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, err := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
+
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+
+	gitignoreContent := `src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`
+	_, err = fileInZip.Write([]byte(gitignoreContent))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, err := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
+
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_PermissionDenied(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Set up a header with 0000 permission for .gitignore
+	header := &zip.FileHeader{
+		Name:   "example/.gitignore",
+		Method: zip.Deflate,
+	}
+	header.SetMode(0) // UNIX permission 0000 — no access for anyone
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.CreateHeader(header)
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+
+	gitignoreContent := `src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`
+
+	// Write content to the file in the zip archive
+	_, err = fileInZip.Write([]byte(gitignoreContent))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, "permission denied")
 }
