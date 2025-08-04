@@ -232,3 +232,17 @@ func TestRunContainersRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.Equal(t, 0, len(result.Images))
 }
+
+func TestBuildContainerIgnoreMap_Basic(t *testing.T) {
+	ignored := []IgnoredContainersFinding{
+		{
+			ImageName: "nginx",
+			ImageTag:  "latest",
+			FilePath:  "Dockerfile",
+		},
+	}
+	result := buildContainerIgnoreMap(ignored)
+
+	key := "nginx_latest_Dockerfile"
+	assert.Contains(t, result, key)
+}
