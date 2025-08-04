@@ -101,7 +101,7 @@ func validateFilePath(filePath string) *grpcs.ScanResult {
 	return nil
 }
 
-func executeScan(ascaWrapper grpcs.AscaWrapper, filePath string, ignoredFilePath string) (*grpcs.ScanResult, error) {
+func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string) (*grpcs.ScanResult, error) {
 	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
