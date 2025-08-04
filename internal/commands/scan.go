@@ -3292,7 +3292,7 @@ func getGitignorePatterns(directoryPath, zipFilePath string) ([]string, error) {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 
-		//This condition skips lines that are empty, comments.
+		// This condition skips lines that are empty, comments.
 		// Excluding the lines that contain negotiation characters like !, which are used to negate patterns
 		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
 			continue
@@ -3336,20 +3336,28 @@ func readGitIgnoreFromZip(zipPath string) ([]byte, error) {
 	expectedGitignorePath := rootFolder + "/.gitignore"
 
 	for _, f := range r.File {
-		if f.Name == expectedGitignorePath {
-			rc, err := f.Open()
-			if err != nil {
-				return []byte(""), fmt.Errorf("failed to open .gitignore inside zip: %w", err)
-			}
-			defer rc.Close()
-
-			// Read file content
-			data, err := io.ReadAll(rc)
-			if err != nil {
-				return []byte(""), fmt.Errorf("failed to read .gitignore content inside zip : %w", err)
-			}
-			return data, nil
+		if f.Name != expectedGitignorePath {
+			continue
 		}
+		rc, err := f.Open()
+		if err != nil {
+			return []byte(""), fmt.Errorf("failed to open .gitignore inside zip: %w", err)
+		}
+
+		// Read file content
+		data, err := io.ReadAll(rc)
+		if err != nil {
+			err := rc.Close()
+			if err != nil {
+				return nil, err
+			}
+			return []byte(""), fmt.Errorf("failed to read .gitignore content inside zip : %w", err)
+		}
+		// Close with error handling
+		if err := rc.Close(); err != nil {
+			logger.PrintfIfVerbose("Error closing .gitignore reader: %v", err)
+		}
+		return data, nil
 	}
 	return []byte(""), fmt.Errorf(".gitignore not found in zip: %s", zipPath)
 }
