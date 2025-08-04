@@ -2563,7 +2563,7 @@ func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.SourcesFlag), "sources-gitignore.zip",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
 		flag(params.GitIgnoreFileFilterFlag),
 	}
 
