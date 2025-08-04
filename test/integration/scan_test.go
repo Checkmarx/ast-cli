@@ -2429,7 +2429,7 @@ func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
 
 }
 
-func TestCreateScanFilterGitIgnoreFile(t *testing.T) {
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreNotFound(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), getProjectNameForScanTests(),
@@ -2440,4 +2440,17 @@ func TestCreateScanFilterGitIgnoreFile(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "sources-gitignore.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with gitignore filter should pass without error")
 }
