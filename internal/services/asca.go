@@ -137,10 +137,11 @@ func loadIgnoredAscaFindings(path string) ([]grpcs.AscaIgnoreFinding, error) {
 }
 func filterIgnoredAscaFindings(results []grpcs.ScanDetail, ignoreMap map[string]bool) []grpcs.ScanDetail {
 	filtered := make([]grpcs.ScanDetail, 0, len(results))
-	for _, r := range results {
+	for i := range results {
+		r := &results[i]
 		key := fmt.Sprintf("%s_%d_%d", r.FileName, r.Line, r.RuleID)
 		if !ignoreMap[key] {
-			filtered = append(filtered, r)
+			filtered = append(filtered, *r)
 		}
 	}
 	return filtered
