@@ -1123,7 +1123,10 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	containerConfig := wrappers.ContainerConfig{}
 
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
-	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally)
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	sourceTrimmed := strings.TrimSpace(source)
+	isGitScan := util.IsGitURL(sourceTrimmed)
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally, isGitScan)
 
 	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
 	if fileFolderFilter != "" {
@@ -1142,7 +1145,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 		containerConfig.ImagesFilter = imageTagFilter
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if userCustomImages != "" && !containerResolveLocally {
+	if userCustomImages != "" && (!containerResolveLocally || isGitScan) {
 		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
 		for _, containerImageName := range containerImagesList {
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
@@ -1157,7 +1160,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	return containerMapConfig, nil
 }
 
-func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool) {
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool, isGitScan bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
 			continue
@@ -1179,7 +1182,7 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
 		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
-		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && !containerResolveLocally {
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && (!containerResolveLocally || isGitScan) {
 			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}
