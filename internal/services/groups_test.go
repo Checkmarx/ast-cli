@@ -2,13 +2,14 @@ package services
 
 import (
 	"bytes"
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+	"fmt"
 	"io"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
@@ -53,7 +54,7 @@ func TestAssignGroupsToProject(t *testing.T) {
 			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
 			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.GroupValidationEnabled, Status: false}
 			var output string
-			output = captureStdout(func() {
+			output, _ = captureStdout(func() {
 				if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
 					ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 					t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
@@ -64,10 +65,8 @@ func TestAssignGroupsToProject(t *testing.T) {
 					if output != "" && !strings.Contains(output, "Called CreateGroupsAssignment in AccessManagementMockWrapper") {
 						t.Errorf("Create GroupAssignment should not get called when GroupValidation Flag is ON")
 					}
-
 				}
 			})
-
 		})
 	}
 }
@@ -107,7 +106,7 @@ func TestAssignGroupsToProjectWithGroupValidationFlag(t *testing.T) {
 			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.AccessManagementEnabled, Status: true}
 			mock.Flag = wrappers.FeatureFlagResponseModel{Name: featureFlagsConstants.GroupValidationEnabled, Status: true}
 			var output string
-			output = captureStdout(func() {
+			output, _ = captureStdout(func() {
 				if err := AssignGroupsToProjectNewAccessManagement(ttt.args.projectID, ttt.args.projectName, ttt.args.groups,
 					ttt.args.accessManagement, ttt.args.featureFlagsWrapper); (err != nil) != ttt.wantErr {
 					t.Errorf("AssignGroupsToProjectNewAccessManagement() error = %v, wantErr %v", err, ttt.wantErr)
@@ -119,7 +118,6 @@ func TestAssignGroupsToProjectWithGroupValidationFlag(t *testing.T) {
 					}
 				}
 			})
-
 		})
 	}
 }
@@ -271,7 +269,7 @@ func Test_getGroupsToAssign(t *testing.T) {
 	}
 }
 
-func captureStdout(fn func()) string {
+func captureStdout(fn func()) (string, error) {
 	originalStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -279,7 +277,10 @@ func captureStdout(fn func()) string {
 	w.Close()
 	os.Stdout = originalStdout
 	var buf bytes.Buffer
-	io.Copy(&buf, r)
+	_, err := io.Copy(&buf, r)
+	if err != nil {
+		return "", fmt.Errorf("Cannot copy the pipe ouput into buffer: %v", err)
+	}
 
-	return buf.String()
+	return buf.String(), nil
 }
