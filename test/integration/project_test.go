@@ -361,8 +361,7 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 	createdProject := wrappers.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 
-	fmt.Printf("Response after project is created : ", string(createdProjectJSON))
+	fmt.Println("Response after project is created : ", string(createdProjectJSON))
 	fmt.Printf("New project created with id: %s \n", createdProject.ID)
-
 	deleteProject(t, createdProject.ID)
 }
