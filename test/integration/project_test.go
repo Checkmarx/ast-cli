@@ -170,7 +170,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 
 	groupsStr := formatGroups(groups)
 
-	output := executeCmdNilAssertion(
+	_, output := executeCommand(
 		t, "project", "create",
 		flag(params.FormatFlag),
 		printer.FormatJSON,
