@@ -121,17 +121,17 @@ func (*JWTStruct) ExtractTenantFromToken() (tenant string, err error) {
 	}
 	return jwtStruct.Tenant, nil
 }
-func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error) {
+func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (hasPermission bool, err error) {
 	jwtStruct, err := getJwtStruct()
 	if err != nil {
 		return false, err
 	}
-	overriddenPolicyManagement := false
+	permission := false
 	for _, role := range jwtStruct.ASTRoles {
 		if role == requiredPermission {
-			overriddenPolicyManagement = true
+			permission = true
 			break
 		}
 	}
-	return overriddenPolicyManagement, nil
+	return permission, nil
 }
