@@ -188,6 +188,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -201,7 +202,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,6 +264,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -273,7 +275,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -1016,6 +1018,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1028,6 +1031,17 @@ func runGetResultCommand(
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		if ignorePolicy {
+			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagement {
+				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
+				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			}
+
+		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
