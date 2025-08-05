@@ -75,10 +75,7 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		val, ok := project.Tags[key]
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
-		fmt.Println("The project.Groups-->", project.Groups)
-		fmt.Println("The Groups assigned are --->", groups)
 	}
-	// todo : current used grps are created by another users, as ACCESSMGMT FF is on, grps will not be assigned
 	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
@@ -275,7 +272,6 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-	fmt.Println("Listing project for id output buffer-->", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 	fmt.Println("Listing project for id projects length: ", len(projects))
@@ -309,8 +305,6 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 		flag(params.FormatFlag), printer.FormatJSON,
 		flag(params.ProjectIDFlag), projectID,
 	)
-	fmt.Println("Got output Buffered..")
-	fmt.Println("Output Buffered from show project is --> ", outputBuffer)
 
 	var project wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &project, "Reading project JSON should pass")
