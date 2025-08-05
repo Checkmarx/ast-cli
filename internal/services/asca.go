@@ -9,15 +9,14 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	getport "github.com/jsumners/go-getport"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -165,20 +164,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		assistAllowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.CheckmarxOneAssistType)
-		if err != nil {
-			return errors.Wrap(err, "failed to check CheckmarxOneAssistType engine allowance")
-		}
-
-		aiAllowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
-		if err != nil {
-			return errors.Wrap(err, "failed to check AIProtectionType engine allowance")
-		}
-
-		if aiAllowed || assistAllowed {
-			return nil
-		}
-		return fmt.Errorf("%v", errorconstants.NoASCALicense)
+		realtimeengine.EnsureLicense(wrapperParams.JwtWrapper)
 	}
 	return nil
 }

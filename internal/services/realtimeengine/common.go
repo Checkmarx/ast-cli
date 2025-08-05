@@ -3,6 +3,7 @@ package realtimeengine
 import (
 	"os"
 
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -36,7 +37,7 @@ func EnsureLicense(jwtWrapper wrappers.JWTWrapper) error {
 	if aiAllowed || assistAllowed {
 		return nil
 	}
-	return errors.Wrap(err, "user does not have \"Checkmarx One Assist\" or \"AI Protection\" license")
+	return errors.Wrap(err, errorconstants.NoASCALicense)
 }
 
 // ValidateFilePath validates that the file path exists and is accessible.
