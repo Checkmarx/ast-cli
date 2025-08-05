@@ -37,7 +37,7 @@ func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
 
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
-	if engine == params.AiProviderFlag {
+	if engine == params.AiProviderFlag || engine == params.EnterpriseSecretsLabel {
 		if j.AIEnabled == AIProtectionDisabled {
 			return false, nil
 		}
