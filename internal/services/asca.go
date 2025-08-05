@@ -164,7 +164,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		realtimeengine.EnsureLicense(wrapperParams.JwtWrapper)
+		return realtimeengine.EnsureLicense(wrapperParams.JwtWrapper)
 	}
 	return nil
 }
