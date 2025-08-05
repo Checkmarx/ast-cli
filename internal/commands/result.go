@@ -1040,7 +1040,6 @@ func runGetResultCommand(
 				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
 				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
 			}
-
 		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
