@@ -17,6 +17,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	getport "github.com/jsumners/go-getport"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -164,13 +165,20 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
+		assistAllowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.CheckmarxOneAssistType)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to check CheckmarxOneAssistType engine allowance")
 		}
-		if !allowed {
-			return fmt.Errorf("%v", errorconstants.NoASCALicense)
+
+		aiAllowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
+		if err != nil {
+			return errors.Wrap(err, "failed to check AIProtectionType engine allowance")
 		}
+
+		if aiAllowed || assistAllowed {
+			return nil
+		}
+		return fmt.Errorf("%v", errorconstants.NoASCALicense)
 	}
 	return nil
 }
