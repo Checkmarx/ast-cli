@@ -160,7 +160,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 
 func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
 	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || (isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") && isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED")) {
-		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+		t.Skip("ACCESS_MANAGEMENT_ENABLED FFs are not enabled... Skipping test")
 	}
 
 	groups := []string{
@@ -170,18 +170,17 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 
 	groupsStr := formatGroups(groups)
 
-	_, output := executeCommand(
+	_, outBuffer := executeCommand(
 		t, "project", "create",
 		flag(params.FormatFlag),
 		printer.FormatJSON,
 		flag(params.ProjectName), projectNameRandom, flag(params.GroupList), groupsStr,
 	)
-	_, readingError := io.ReadAll(output)
-	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
-	createdProjectnew := wrappers.ProjectResponseModel{}
-	_ = unmarshall(t, output, &createdProjectnew, "Reading project create response JSON should pass")
-	fmt.Printf("New project created with id: %s \n", createdProjectnew.ID)
-	deleteProject(t, createdProjectnew.ID)
+
+	createdProject := wrappers.ProjectResponseModel{}
+	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
+	defer deleteProject(t, createdProject.ID)
 }
 
 func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
@@ -362,7 +361,7 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 	createdProject := wrappers.ProjectResponseModel{}
 	createdProjectJSON := unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 
-	fmt.Println("Response after project is created : ", string(createdProjectJSON))
+	fmt.Printf("Response after project is created : ", string(createdProjectJSON))
 	fmt.Printf("New project created with id: %s \n", createdProject.ID)
 
 	deleteProject(t, createdProject.ID)
