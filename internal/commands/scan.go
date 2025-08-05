@@ -120,10 +120,11 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt             = ".json"
-	xmlExt              = ".xml"
-	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix = "--branch-primary="
+	jsonExt                  = ".json"
+	xmlExt                   = ".xml"
+	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix      = "--branch-primary="
+	OverridePolicyManagement = "override-policy-management"
 )
 
 var (
@@ -2014,6 +2015,18 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		if ignorePolicy {
+			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagement {
+				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
+				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			}
+
+		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
@@ -2076,7 +2089,6 @@ func runCreateScanCommand(
 			}
 
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
-			ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
@@ -3130,7 +3142,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
-
 	return nil
 }
 
