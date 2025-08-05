@@ -139,7 +139,7 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 // if user is not having this permission and user is trying to assign other groups , error is thrown
 func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || !isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") {
-		t.Skip("Accessmanagement FFs are not enabled... Skipping test")
+		t.Skip("ACCESS_MANAGEMENT_ENABLED OR  GROUPS_VALIDATION_ENABLED FFs are not enabled... Skipping test")
 	}
 
 	groups := []string{
@@ -174,7 +174,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 		t, "project", "create",
 		flag(params.FormatFlag),
 		printer.FormatJSON,
-		flag(params.ProjectName), "project-4", flag(params.GroupList), groupsStr,
+		flag(params.ProjectName), projectNameRandom, flag(params.GroupList), groupsStr,
 	)
 	_, readingError := io.ReadAll(output)
 	assert.NilError(t, readingError, "Failed creating a project: CODE: 233, Unauthorized groups")
