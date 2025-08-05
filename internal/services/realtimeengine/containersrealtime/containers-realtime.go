@@ -55,7 +55,7 @@ func loadIgnoredContainerFindings(path string) ([]IgnoredContainersFinding, erro
 func buildContainerIgnoreMap(ignored []IgnoredContainersFinding) map[string]bool {
 	m := make(map[string]bool)
 	for _, f := range ignored {
-		key := fmt.Sprintf("%s_%s_%s", f.ImageName, f.ImageTag, f.FilePath)
+		key := fmt.Sprintf("%s_%s", f.ImageName, f.ImageTag)
 		m[key] = true
 	}
 	return m
@@ -64,7 +64,7 @@ func buildContainerIgnoreMap(ignored []IgnoredContainersFinding) map[string]bool
 func filterIgnoredContainers(results []ContainerImage, ignoreMap map[string]bool) []ContainerImage {
 	filtered := make([]ContainerImage, 0, len(results))
 	for _, r := range results {
-		key := fmt.Sprintf("%s_%s_%s", r.ImageName, r.ImageTag, r.FilePath)
+		key := fmt.Sprintf("%s_%s", r.ImageName, r.ImageTag)
 		if !ignoreMap[key] {
 			filtered = append(filtered, r)
 		}

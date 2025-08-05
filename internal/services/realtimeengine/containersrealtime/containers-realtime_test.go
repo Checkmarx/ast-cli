@@ -238,11 +238,10 @@ func TestBuildContainerIgnoreMap_Basic(t *testing.T) {
 		{
 			ImageName: "nginx",
 			ImageTag:  "latest",
-			FilePath:  "Dockerfile",
 		},
 	}
 	result := buildContainerIgnoreMap(ignored)
 
-	key := "nginx_latest_Dockerfile"
+	key := "nginx_latest"
 	assert.Contains(t, result, key)
 }

@@ -433,7 +433,6 @@ func TestFilterIgnoredFindings_WithOneIgnored(t *testing.T) {
 	ignored := []IgnoredIacFinding{
 		{
 			Title:        "Container Traffic Not Bound To Host Interface",
-			FilePath:     "test/path/to/file.yaml",
 			SimilarityID: "7540e8c3cdc3b13c3a24b8ce501d9e39fb485368e20922df18cec9564e075049",
 		},
 	}

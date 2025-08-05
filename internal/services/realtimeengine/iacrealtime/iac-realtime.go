@@ -47,7 +47,7 @@ func loadIgnoredIacFindings(path string) ([]IgnoredIacFinding, error) {
 func buildIgnoreMap(ignored []IgnoredIacFinding) map[string]bool {
 	m := make(map[string]bool)
 	for _, f := range ignored {
-		key := fmt.Sprintf("%s_%s_%s", f.Title, f.FilePath, f.SimilarityID)
+		key := fmt.Sprintf("%s_%s", f.Title, f.SimilarityID)
 		m[key] = true
 	}
 	return m
@@ -56,7 +56,7 @@ func buildIgnoreMap(ignored []IgnoredIacFinding) map[string]bool {
 func filterIgnoredFindings(results []IacRealtimeResult, ignoreMap map[string]bool) []IacRealtimeResult {
 	filtered := make([]IacRealtimeResult, 0, len(results))
 	for _, r := range results {
-		key := fmt.Sprintf("%s_%s_%s", r.Title, r.FilePath, r.SimilarityID)
+		key := fmt.Sprintf("%s_%s", r.Title, r.SimilarityID)
 		if !ignoreMap[key] {
 			filtered = append(filtered, r)
 		}

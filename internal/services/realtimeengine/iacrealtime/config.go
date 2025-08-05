@@ -13,6 +13,5 @@ type IacRealtimeResult struct {
 
 type IgnoredIacFinding struct {
 	Title        string `json:"Title"`
-	FilePath     string `json:"FilePath"`
 	SimilarityID string `json:"SimilarityID"`
 }
