@@ -2019,7 +2019,6 @@ func runCreateScanCommand(
 				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
 				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
 			}
-
 		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
