@@ -15,6 +15,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const defaultTag = "latest"
+
 // ContainersRealtimeService is the service responsible for performing real-time container scanning.
 type ContainersRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
@@ -105,7 +107,7 @@ func parseContainersFile(filePath string) ([]types.ImageModel, error) {
 		return nil, errors.Errorf("directory does not exist: %s", scanPath)
 	}
 
-	files, envVars, _, err := extractor.ExtractFiles(scanPath)
+	files, envVars, _, err := extractor.ExtractFiles(scanPath, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "error extracting files")
 	}
@@ -199,11 +201,14 @@ func (c *ContainersRealtimeService) buildContainerImageResults(responseImages, i
 
 func mergeImagesToResults(listOfImages []wrappers.ContainerImageResponseItem, result ContainerImageResults, images *[]types.ImageModel, filePath string) ContainerImageResults {
 	for _, respImg := range listOfImages {
-		locations := getImageLocations(images, respImg.ImageName, respImg.ImageTag)
+		locations, specificFilePath := getImageLocations(images, respImg.ImageName, respImg.ImageTag)
+		if specificFilePath == "" {
+			specificFilePath = filePath
+		}
 		containerImage := ContainerImage{
 			ImageName:       respImg.ImageName,
 			ImageTag:        respImg.ImageTag,
-			FilePath:        filePath,
+			FilePath:        specificFilePath,
 			Locations:       locations,
 			Status:          respImg.Status,
 			Vulnerabilities: convertVulnerabilities(respImg.Vulnerabilities),
@@ -213,15 +218,24 @@ func mergeImagesToResults(listOfImages []wrappers.ContainerImageResponseItem, re
 	return result
 }
 
-func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) []realtimeengine.Location {
+func getImageLocations(images *[]types.ImageModel, imageName, imageTag string) (location []realtimeengine.Location, filePath string) {
 	for i, img := range *images {
-		if img.Name == imageName+":"+imageTag || img.Name == imageName+"@"+imageTag {
-			location := convertLocations(&img.ImageLocations)
-			*images = append((*images)[:i], (*images)[i+1:]...)
-			return location
+		if !isSameImage(img.Name, imageName, imageTag) {
+			continue
 		}
+		location := convertLocations(&img.ImageLocations)
+		filePath := ""
+		if len(img.ImageLocations) > 0 {
+			filePath = img.ImageLocations[0].Path
+		}
+		*images = append((*images)[:i], (*images)[i+1:]...)
+		return location, filePath
 	}
-	return []realtimeengine.Location{}
+	return []realtimeengine.Location{}, ""
+}
+
+func isSameImage(curImage, imageName, imageTag string) bool {
+	return curImage == imageName+":"+imageTag || curImage == imageName+"@"+imageTag || curImage == imageName && imageTag == defaultTag
 }
 
 // splitToImageAndTag splits the image string into name and tag components.
@@ -229,8 +243,8 @@ func splitToImageAndTag(image string) (imageName, imageTag string) {
 	// Split the image string by the last colon to separate name and tag
 	lastColonIndex := strings.LastIndex(image, ":")
 
-	if lastColonIndex == len(image)-1 {
-		return image, "latest" // No tag specified, default to "latest"
+	if lastColonIndex == len(image)-1 || lastColonIndex == -1 {
+		return image, defaultTag // No tag specified, default to "latest"
 	}
 
 	imageName = image[:lastColonIndex]
