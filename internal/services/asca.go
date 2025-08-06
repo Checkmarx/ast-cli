@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
@@ -234,13 +234,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
-		if err != nil {
-			return err
-		}
-		if !allowed {
-			return fmt.Errorf("%v", errorconstants.NoASCALicense)
-		}
+		return realtimeengine.EnsureLicense(wrapperParams.JwtWrapper)
 	}
 	return nil
 }
