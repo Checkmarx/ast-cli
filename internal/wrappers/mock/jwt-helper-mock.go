@@ -1,9 +1,9 @@
 package mock
 
 import (
-	"github.com/checkmarx/ast-cli/internal/params"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
