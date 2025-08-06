@@ -85,6 +85,10 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
+	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+	}
+
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
 		return nil, errorconstants.NewRealtimeEngineError("failed to read file").Error()
