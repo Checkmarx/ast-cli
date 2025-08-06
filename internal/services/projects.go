@@ -118,7 +118,7 @@ func createProject(
 	if projectGroups != "" {
 		var groups []string
 		var groupErr error
-		_, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil)
+		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil)
 		if groupErr != nil {
 			return "", groupErr
 		}
