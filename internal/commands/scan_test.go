@@ -2498,14 +2498,14 @@ func TestCreateScan_WithContainerImagesAndDirectory_ShouldProcessDirectoryFiles(
 	// This test ensures that when using --container-images with a directory source,
 	// the directory files are properly processed instead of creating a minimal zip
 	baseArgs := []string{
-		"scan", "create", 
-		"--project-name", "MOCK", 
+		"scan", "create",
+		"--project-name", "MOCK",
 		"-b", "dummy_branch",
 		"-s", ".",
 		"--scan-types", "containers",
 		"--container-images", "nginx:latest,alpine:3.14",
 	}
-	
+
 	// This should succeed - directory files should be processed normally
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2516,12 +2516,12 @@ func TestCreateScan_WithSingleContainerScanAndDirectory_ShouldProcessAllFiles(t 
 	baseArgs := []string{
 		"scan", "create",
 		"--project-name", "MOCK",
-		"-b", "dummy_branch", 
+		"-b", "dummy_branch",
 		"-s", "data",
 		"--scan-types", "containers",
 		"--containers-local-resolution",
 	}
-	
+
 	// This should succeed and process the entire directory
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2533,10 +2533,10 @@ func TestCreateScan_WithContainerImagesAndZipSource_ShouldProcessZipNormally(t *
 		"--project-name", "MOCK",
 		"-b", "dummy_branch",
 		"-s", "data/sources.zip",
-		"--scan-types", "containers", 
+		"--scan-types", "containers",
 		"--container-images", "redis:6.2,postgres:13",
 	}
-	
+
 	// This should succeed and process the zip file normally
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2545,13 +2545,13 @@ func TestCreateScan_WithMixedScanTypesAndContainerImages_ShouldProcessAllFiles(t
 	// Test that mixed scan types with container images process all files
 	baseArgs := []string{
 		"scan", "create",
-		"--project-name", "MOCK", 
+		"--project-name", "MOCK",
 		"-b", "dummy_branch",
 		"-s", ".",
 		"--scan-types", "sast,containers,iac-security",
 		"--container-images", "ubuntu:20.04",
 	}
-	
+
 	// This should succeed and process all source files for all scan types
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2562,11 +2562,11 @@ func TestCreateScan_WithContainerImagesOnly_ShouldNotCreateMinimalZip(t *testing
 	baseArgs := []string{
 		"scan", "create",
 		"--project-name", "MOCK",
-		"-b", "dummy_branch", 
+		"-b", "dummy_branch",
 		"-s", "data",
 		"--container-images", "mongo:4.4,elasticsearch:7.15.0",
 	}
-	
+
 	// This should succeed and process directory files normally
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2582,7 +2582,7 @@ func TestCreateScan_WithContainerResolveLocallyAndImages_ShouldProcessDirectoryC
 		"--containers-local-resolution",
 		"--container-images", "node:16-alpine,python:3.9-slim",
 	}
-	
+
 	// This should succeed and process both directory contents and external images
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2598,7 +2598,7 @@ func TestCreateScan_WithContainerScanAndFileFilters_ShouldApplyFiltersToDirector
 		"--container-images", "nginx:latest",
 		"--file-filter", "!*.log,!temp/**",
 	}
-	
+
 	// This should succeed and apply file filters to the directory scan
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2616,7 +2616,7 @@ func TestCreateScan_WithComplexContainerScenario_ShouldHandleAllCases(t *testing
 		"--file-filter", "!node_modules/**",
 		"--containers-file-folder-filter", "!*.tmp",
 	}
-	
+
 	// This complex scenario should work correctly after the bug fix
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2630,7 +2630,7 @@ func TestCreateScan_WithContainerImagesAndEmptyDirectory_ShouldProcessEmptyDirec
 		"-s", ".",
 		"--container-images", "busybox:latest",
 	}
-	
+
 	// This should succeed and process the directory even if empty
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2645,7 +2645,7 @@ func TestCreateScan_WithOnlyContainerResolveLocally_ShouldProcessDirectory(t *te
 		"--scan-types", "containers",
 		"--containers-local-resolution",
 	}
-	
+
 	// This should succeed and process directory for local container resolution
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2661,7 +2661,7 @@ func TestCreateScan_WithContainerImagesAndIncludeFilters_ShouldApplyFilters(t *t
 		"--container-images", "alpine:latest",
 		"--file-include", "*.dockerfile,*.yaml",
 	}
-	
+
 	// This should succeed and apply include filters to directory scan
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2669,16 +2669,16 @@ func TestCreateScan_WithContainerImagesAndIncludeFilters_ShouldApplyFilters(t *t
 func TestCreateScan_EdgeCase_SingleContainerWithCustomImages_ShouldNotCreateMinimalZip(t *testing.T) {
 	// This is the exact edge case that was fixed - single container scan with custom images
 	// Before the fix, this would create a minimal zip instead of processing directory
-	
+
 	// Save original actualScanTypes
 	originalScanTypes := actualScanTypes
 	defer func() {
 		actualScanTypes = originalScanTypes
 	}()
-	
+
 	// Set to single container scan type
 	actualScanTypes = commonParams.ContainersType
-	
+
 	baseArgs := []string{
 		"scan", "create",
 		"--project-name", "MOCK",
@@ -2687,7 +2687,7 @@ func TestCreateScan_EdgeCase_SingleContainerWithCustomImages_ShouldNotCreateMini
 		"--scan-types", "containers",
 		"--container-images", "nginx:1.21,php:8.0-apache",
 	}
-	
+
 	// This was the failing case before the bug fix - should now succeed
 	execCmdNilAssertion(t, baseArgs...)
 }
@@ -2695,7 +2695,7 @@ func TestCreateScan_EdgeCase_SingleContainerWithCustomImages_ShouldNotCreateMini
 func TestCreateScan_VerifyNoMinimalZipCreation_WithContainerImagesFlag(t *testing.T) {
 	// This test verifies that the createMinimalZipFile function is no longer called
 	// when using container images with directory sources
-	
+
 	baseArgs := []string{
 		"scan", "create",
 		"--project-name", "MOCK",
@@ -2705,7 +2705,7 @@ func TestCreateScan_VerifyNoMinimalZipCreation_WithContainerImagesFlag(t *testin
 		"--container-images", "mariadb:10.6,redis:6.2-alpine",
 		"--file-filter", "!*.md",
 	}
-	
+
 	// Before the fix, this would have triggered createMinimalZipFile
 	// After the fix, it should process directory contents normally
 	execCmdNilAssertion(t, baseArgs...)
