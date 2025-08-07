@@ -2012,7 +2012,7 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string, projectID string, scanID string) {
+func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI, projectID, scanID string) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
 			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI, projectID, scanID)
@@ -2035,7 +2035,7 @@ func convertCxResultToGlScaFiles(results *wrappers.ScanResultsCollection, glScaR
 		}
 	}
 }
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string, projectID string, scanID string) *wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI, projectID, scanID string) *wrappers.GlSastResultsCollection {
 	hostName := parseURI(summaryBaseURI)
 
 	queryName := result.ScanResultData.QueryName
