@@ -47,18 +47,34 @@ func CreateGroupsMap(groupsStr string, groupsWrapper wrappers.GroupsWrapper) ([]
 	}
 	return groupsMap, nil
 }
+func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrappers.Group {
+	var groupsToAssign []*wrappers.Group
+	var groupsMap = make(map[string]bool)
+	for _, existingGroup := range existingGroups {
+		groupsMap[existingGroup.ID] = true
+	}
+	for _, receivedGroup := range receivedGroups {
+		find := groupsMap[receivedGroup.ID]
+		if !find {
+			groupsToAssign = append(groupsToAssign, receivedGroup)
+		}
+	}
+	return groupsToAssign
+}
 
 func AssignGroupsToProjectNewAccessManagement(projectID string, projectName string, groups []*wrappers.Group,
 	accessManagement wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 
 	amEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementEnabled)
-	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
+	groupValidationEnabledFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.GroupValidationEnabled)
 
-	// If ACCESS_MANAGEMENT_PHASE2 flag is ON and if the ACCESS_MANAGEMENT_ENABLED flag is OFF
+	// If  ACCESS_MANAGEMENT_ENABLED flag is OFF or (GROUP_VALIDATION_ENABLED is on and ACCESS_MANAGEMENT_ENABLED is also on )
 	// In both cases, we do not need to assign groups through the CreateGroupsAssignment call.
-	if !amEnabledFlag.Status || amPhase2Flag.Status {
+
+	if !amEnabledFlag.Status || (amEnabledFlag.Status && groupValidationEnabledFlag.Status) {
 		return nil
 	}
+
 	groupsAssignedToTheProject, err := accessManagement.GetGroups(projectID)
 	if err != nil {
 		return err
@@ -73,21 +89,6 @@ func AssignGroupsToProjectNewAccessManagement(projectID string, projectName stri
 		return err
 	}
 	return nil
-}
-
-func getGroupsToAssign(receivedGroups, existingGroups []*wrappers.Group) []*wrappers.Group {
-	var groupsToAssign []*wrappers.Group
-	var groupsMap = make(map[string]bool)
-	for _, existingGroup := range existingGroups {
-		groupsMap[existingGroup.ID] = true
-	}
-	for _, receivedGroup := range receivedGroups {
-		find := groupsMap[receivedGroup.ID]
-		if !find {
-			groupsToAssign = append(groupsToAssign, receivedGroup)
-		}
-	}
-	return groupsToAssign
 }
 
 func GetGroupIds(groups []*wrappers.Group) []string {
