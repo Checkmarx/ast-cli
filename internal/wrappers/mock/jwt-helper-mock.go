@@ -52,3 +52,7 @@ func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 	}
 	return true, nil
 }
+
+func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error) {
+	return false, nil
+}

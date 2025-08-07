@@ -188,6 +188,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -201,7 +202,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,6 +264,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -273,7 +275,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -309,8 +311,7 @@ func resultShowSubCommand(
 		commonParams.ResultPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skips policy evaluation and allows the scan to proceed even if violations are found. Requires override-policy-management permission.")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
@@ -1017,6 +1018,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1028,6 +1030,16 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		if ignorePolicy {
+			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagement {
+				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			}
+		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
@@ -1055,7 +1067,7 @@ func runGetResultCommand(
 
 		var policyResponseModel *wrappers.PolicyResponseModel
 		if !isScanPending(string(scan.Status)) {
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}

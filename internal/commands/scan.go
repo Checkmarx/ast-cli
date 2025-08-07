@@ -120,10 +120,11 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt             = ".json"
-	xmlExt              = ".xml"
-	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix = "--branch-primary="
+	jsonExt                  = ".json"
+	xmlExt                   = ".xml"
+	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix      = "--branch-primary="
+	OverridePolicyManagement = "override-policy-management"
 )
 
 var (
@@ -839,8 +840,7 @@ func scanCreateSubCommand(
 		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skips policy evaluation and allows the scan to proceed even if violations are found. Requires override-policy-management permission.")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
@@ -2009,6 +2009,16 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		if ignorePolicy {
+			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagement {
+				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			}
+		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
@@ -2072,7 +2082,7 @@ func runCreateScanCommand(
 
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
@@ -2099,7 +2109,7 @@ func runCreateScanCommand(
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
-			return errors.Errorf("Policy Violation - Break Build Enabled.")
+			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
 		return nil
 	}
@@ -3124,7 +3134,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
-
 	return nil
 }
 
