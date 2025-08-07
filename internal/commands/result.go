@@ -311,7 +311,7 @@ func resultShowSubCommand(
 		commonParams.ResultPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skips policy evaluation and allows the scan to proceed even if violations are found. Requires override-policy-management permission.")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
@@ -1037,7 +1037,6 @@ func runGetResultCommand(
 				return err
 			}
 			if !overridePolicyManagement {
-				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
 				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
 			}
 		}
