@@ -2518,3 +2518,47 @@ func TestContainerScan_DirectoryWithFilesAndFilters(t *testing.T) {
 	// Cleanup
 	deleteScan(t, scanResponse.ID)
 }
+ 
+func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/project-with-directory-symlink",
+		flag(params.ScanTypes), "sast,sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "The --sbom-only flag can only be used when the scan type is sca")
+
+}
+
+func TestCreateScan_SbomScanForInvalidFileExtension(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/project-with-directory-symlink",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Failed creating a scan: Input in bad format: not a JSON/XML file, provide valid JSON/XMl file")
+
+}
+
+func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/sbom.json",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+}

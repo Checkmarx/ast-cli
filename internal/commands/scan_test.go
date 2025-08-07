@@ -787,6 +787,7 @@ func TestAddScaScan(t *testing.T) {
 		ExploitablePath:       "true",
 		LastSastScanTime:      "1",
 		PrivatePackageVersion: "1.1.1",
+		SBom:                  "false",
 	}
 	scaMapConfig := make(map[string]interface{})
 	scaMapConfig[resultsMapType] = commonParams.ScaType
@@ -2411,4 +2412,33 @@ func Test_parseArgs(t *testing.T) {
 			t.Errorf(" test case failed for params %v", test)
 		}
 	}
+}
+
+func Test_isValidJSONOrXML(t *testing.T) {
+	tests := []struct {
+		description string
+		inputPath   string
+		output      bool
+	}{
+		{"wrong extension", "somefile.txt", false},
+		{"wrong json file", "wrongfilepath.json", false},
+		{"wrong xml file", "wrongfilepath.xml", false},
+		{"correct file", "data/package.json", true},
+	}
+
+	for _, test := range tests {
+		isValid, _ := isValidJSONOrXML(test.inputPath)
+		if isValid != test.output {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}
+
+func Test_CreateScanWithSbomFlag(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "newProject", "-s", "data/sbom.json", "--branch", "dummy_branch", "--sbom-only",
+	)
+
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }

@@ -3,15 +3,20 @@ package mock
 import (
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type JWTMockWrapper struct {
-	AIEnabled               int
-	CustomGetAllowedEngines func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
+	AIEnabled                 int
+	CheckmarxOneAssistEnabled int
+	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
 }
 
 const AIProtectionDisabled = 1
+const CheckmarxOneAssistDisabled = 1
+
+var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
 // GetAllowedEngines mock for tests
 func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
@@ -19,7 +24,7 @@ func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureF
 		return j.CustomGetAllowedEngines(featureFlagsWrapper)
 	}
 	allowedEngines = make(map[string]bool)
-	engines := []string{"sast", "iac-security", "sca", "api-security", "containers", "scs"}
+
 	for _, value := range engines {
 		allowedEngines[strings.ToLower(value)] = true
 	}
@@ -32,8 +37,18 @@ func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
 
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
-	if j.AIEnabled == AIProtectionDisabled {
-		return false, nil
+	if engine == params.AiProviderFlag || engine == params.EnterpriseSecretsLabel {
+		if j.AIEnabled == AIProtectionDisabled {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if engine == params.CheckmarxOneAssistType {
+		if j.CheckmarxOneAssistEnabled == CheckmarxOneAssistDisabled {
+			return false, nil
+		}
+		return true, nil
 	}
 	return true, nil
 }

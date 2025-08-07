@@ -231,6 +231,9 @@ const (
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
 	ContainersPackageFilterFlag         = "containers-package-filter"
 	ContainersExcludeNonFinalStagesFlag = "containers-exclude-non-final-stages"
+
+	// SBOM - flag
+	SbomFlag = "sbom-only"
 )
 
 // Parameter values
@@ -274,6 +277,7 @@ const (
 	KicsType                       = "kics"
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
+	CheckmarxOneAssistType         = "Checkmarx One Assist"
 	ContainersType                 = "containers"
 	APIDocumentationFlag           = "apisec-swagger-filter"
 	IacType                        = "iac-security"
