@@ -1643,7 +1643,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl-sast report", failedListingResults)
 	}
-	convertCxResultToGlSastVulnerability(results, glSast, summary.BaseURI)
+	convertCxResultToGlSastVulnerability(results, glSast, summary.BaseURI, summary.ProjectID, summary.ScanID)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
@@ -2012,10 +2012,10 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string, projectID string, scanID string) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
-			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI)
+			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI, projectID, scanID)
 		}
 	}
 }
@@ -2035,7 +2035,9 @@ func convertCxResultToGlScaFiles(results *wrappers.ScanResultsCollection, glScaR
 		}
 	}
 }
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) *wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string, projectID string, scanID string) *wrappers.GlSastResultsCollection {
+	hostName := parseURI(summaryBaseURI)
+
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
@@ -2044,13 +2046,14 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	ID := fmt.Sprintf("%s:%s:%s", queryName, fileName, lineNumber)
 	category := fmt.Sprintf("%s-%s", wrappers.VendorName, result.Type)
 	message := fmt.Sprintf("%s@%s:%s", queryName, fileName, lineNumber)
+	QueryDescriptionLink := fmt.Sprintf("%s/results/%s/%s/sast/description/%s/%s", hostName, scanID, projectID, result.VulnerabilityDetails.CweID, result.ScanResultData.QueryID)
 
 	glSast.Vulnerabilities = append(glSast.Vulnerabilities, wrappers.GlVulnerabilities{
 		ID:          ID,
 		Category:    category,
 		Name:        queryName,
 		Message:     message,
-		Description: result.Description,
+		Description: result.Description + QueryDescriptionLink,
 		CVE:         ID,
 		Severity:    cases.Title(language.English).String(result.Severity),
 		Confidence:  cases.Title(language.English).String(result.Severity),
@@ -2866,4 +2869,14 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
+}
+
+func parseURI(summaryBaseURI string) (hostName string) {
+	parsedURL, err := url.Parse(summaryBaseURI)
+	if err != nil {
+		return ""
+	}
+	hostName = fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+
+	return hostName
 }
