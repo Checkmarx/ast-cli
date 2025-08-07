@@ -846,7 +846,7 @@ func scanCreateSubCommand(
 		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
+	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skips policy evaluation and allows the scan to proceed even if violations are found. Requires override-policy-management permission.")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
@@ -2022,7 +2022,6 @@ func runCreateScanCommand(
 				return err
 			}
 			if !overridePolicyManagement {
-				logger.PrintIfVerbose("You do not have " + OverridePolicyManagement + " permission")
 				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
 			}
 		}
