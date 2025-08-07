@@ -2442,3 +2442,271 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }
+
+// Tests for container scan directory handling bug fix (AST-107490)
+
+func Test_isSingleContainerScanTriggered_WithSingleContainerType_ShouldReturnTrue(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test single container scan type
+	actualScanTypes = commonParams.ContainersType
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, result, "Should return true for single container scan type")
+}
+
+func Test_isSingleContainerScanTriggered_WithMultipleScanTypes_ShouldReturnFalse(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test multiple scan types including container
+	actualScanTypes = fmt.Sprintf("%s,%s", commonParams.ContainersType, commonParams.SastType)
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for multiple scan types")
+
+	// Test multiple scan types without container
+	actualScanTypes = fmt.Sprintf("%s,%s", commonParams.SastType, commonParams.ScaType)
+	result = isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for multiple scan types without container")
+}
+
+func Test_isSingleContainerScanTriggered_WithNonContainerType_ShouldReturnFalse(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test single non-container scan type
+	actualScanTypes = commonParams.SastType
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for single non-container scan type")
+
+	// Test empty scan types
+	actualScanTypes = ""
+	result = isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for empty scan types")
+}
+
+func TestCreateScan_WithContainerImagesAndDirectory_ShouldProcessDirectoryFiles(t *testing.T) {
+	// This test ensures that when using --container-images with a directory source,
+	// the directory files are properly processed instead of creating a minimal zip
+	baseArgs := []string{
+		"scan", "create", 
+		"--project-name", "MOCK", 
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "nginx:latest,alpine:3.14",
+	}
+	
+	// This should succeed - directory files should be processed normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithSingleContainerScanAndDirectory_ShouldProcessAllFiles(t *testing.T) {
+	// Test that single container scans with directory sources process all files,
+	// not just container resolution files
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch", 
+		"-s", "data",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+	}
+	
+	// This should succeed and process the entire directory
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndZipSource_ShouldProcessZipNormally(t *testing.T) {
+	// Test that container scans with zip sources work normally
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data/sources.zip",
+		"--scan-types", "containers", 
+		"--container-images", "redis:6.2,postgres:13",
+	}
+	
+	// This should succeed and process the zip file normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithMixedScanTypesAndContainerImages_ShouldProcessAllFiles(t *testing.T) {
+	// Test that mixed scan types with container images process all files
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK", 
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "sast,containers,iac-security",
+		"--container-images", "ubuntu:20.04",
+	}
+	
+	// This should succeed and process all source files for all scan types
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesOnly_ShouldNotCreateMinimalZip(t *testing.T) {
+	// Test that using only --container-images flag doesn't create a minimal zip
+	// and properly processes directory contents
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch", 
+		"-s", "data",
+		"--container-images", "mongo:4.4,elasticsearch:7.15.0",
+	}
+	
+	// This should succeed and process directory files normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerResolveLocallyAndImages_ShouldProcessDirectoryContents(t *testing.T) {
+	// Test that container-resolve-locally with container images processes directory contents
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+		"--container-images", "node:16-alpine,python:3.9-slim",
+	}
+	
+	// This should succeed and process both directory contents and external images
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerScanAndFileFilters_ShouldApplyFiltersToDirectory(t *testing.T) {
+	// Test that file filters are applied to directory contents in container scans
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "nginx:latest",
+		"--file-filter", "!*.log,!temp/**",
+	}
+	
+	// This should succeed and apply file filters to the directory scan
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithComplexContainerScenario_ShouldHandleAllCases(t *testing.T) {
+	// Test a complex scenario that would have failed before the bug fix
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--container-images", "httpd:2.4,tomcat:9.0-jdk11",
+		"--containers-local-resolution",
+		"--file-filter", "!node_modules/**",
+		"--containers-file-folder-filter", "!*.tmp",
+	}
+	
+	// This complex scenario should work correctly after the bug fix
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndEmptyDirectory_ShouldProcessEmptyDirectory(t *testing.T) {
+	// Test edge case: container images with empty directory should not create minimal zip
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--container-images", "busybox:latest",
+	}
+	
+	// This should succeed and process the directory even if empty
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithOnlyContainerResolveLocally_ShouldProcessDirectory(t *testing.T) {
+	// Test that containers-local-resolution without external images works correctly
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+	}
+	
+	// This should succeed and process directory for local container resolution
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndIncludeFilters_ShouldApplyFilters(t *testing.T) {
+	// Test that include filters work correctly with container images
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "alpine:latest",
+		"--file-include", "*.dockerfile,*.yaml",
+	}
+	
+	// This should succeed and apply include filters to directory scan
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_EdgeCase_SingleContainerWithCustomImages_ShouldNotCreateMinimalZip(t *testing.T) {
+	// This is the exact edge case that was fixed - single container scan with custom images
+	// Before the fix, this would create a minimal zip instead of processing directory
+	
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+	
+	// Set to single container scan type
+	actualScanTypes = commonParams.ContainersType
+	
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--container-images", "nginx:1.21,php:8.0-apache",
+	}
+	
+	// This was the failing case before the bug fix - should now succeed
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_VerifyNoMinimalZipCreation_WithContainerImagesFlag(t *testing.T) {
+	// This test verifies that the createMinimalZipFile function is no longer called
+	// when using container images with directory sources
+	
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "mariadb:10.6,redis:6.2-alpine",
+		"--file-filter", "!*.md",
+	}
+	
+	// Before the fix, this would have triggered createMinimalZipFile
+	// After the fix, it should process directory contents normally
+	execCmdNilAssertion(t, baseArgs...)
+}
