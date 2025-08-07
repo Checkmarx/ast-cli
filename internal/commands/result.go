@@ -2686,7 +2686,7 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 	properties.Severity = result.Severity
 	properties.Validity = result.ScanResultData.Validity
 	properties.IsInSource = result.ScanResultData.IsInSource
-	properties.CommitUrl = result.ScanResultData.CommitUrl
+	properties.CommitURL = result.ScanResultData.CommitURL
 	scanResult.Properties = &properties
 
 	scanResults = append(scanResults, scanResult)
