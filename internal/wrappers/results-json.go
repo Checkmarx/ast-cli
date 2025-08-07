@@ -126,4 +126,6 @@ type ScanResultData struct {
 	RemediationLink       string  `json:"remediationLink,omitempty"`
 	RemediationAdditional string  `json:"remediationAdditional,omitempty"`
 	Validity              string  `json:"validity,omitempty"`
+	IsInSource            bool    `json:"isInSource,omitempty"`
+	CommitUrl             string  `json:"commitUrl,omitempty"`
 }

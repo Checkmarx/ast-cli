@@ -96,6 +96,8 @@ type SarifResultFingerprint struct {
 }
 
 type SarifResultProperties struct {
-	Severity string `json:"severity,omitempty"`
-	Validity string `json:"validity,omitempty"`
+	Severity   string `json:"severity,omitempty"`
+	Validity   string `json:"validity,omitempty"`
+	IsInSource bool   `json:"isInSource,omitempty"`
+	CommitUrl  string `json:"commitUrl,omitempty"`
 }
