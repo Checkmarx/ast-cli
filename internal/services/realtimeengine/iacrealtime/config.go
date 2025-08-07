@@ -10,3 +10,8 @@ type IacRealtimeResult struct {
 	FilePath     string                    `json:"FilePath"`
 	Locations    []realtimeengine.Location `json:"Locations"`
 }
+
+type IgnoredIacFinding struct {
+	Title        string `json:"Title"`
+	SimilarityID string `json:"SimilarityID"`
+}

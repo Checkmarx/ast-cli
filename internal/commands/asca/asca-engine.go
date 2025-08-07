@@ -14,6 +14,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 	return func(cmd *cobra.Command, args []string) error {
 		ASCALatestVersion, _ := cmd.Flags().GetBool(commonParams.ASCALatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		var port = viper.GetInt(commonParams.ASCAPortKey)
 		ASCAWrapper := grpcs.NewASCAGrpcWrapper(port)
@@ -21,6 +22,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			FilePath:          fileSourceFlag,
 			ASCAUpdateVersion: ASCALatestVersion,
 			IsDefaultAgent:    agent == commonParams.DefaultAgent,
+			IgnoredFilePath:   ignoredFilePathFlag,
 		}
 		wrapperParams := services.AscaWrappersParam{
 			JwtWrapper:  jwtWrapper,
