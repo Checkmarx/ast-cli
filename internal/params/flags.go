@@ -169,6 +169,8 @@ const (
 	LogFileUsage                 = "Saves logs to the specified file path only"
 	LogFileConsoleFlag           = "log-file-console"
 	LogFileConsoleUsage          = "Saves logs to the specified file path as well as to the console"
+	GitIgnoreFileFilterFlag      = "use-gitignore"
+	GitIgnoreFileFilterUsage     = "Exclude files and directories from the scan based on the patterns defined in the directory's .gitignore file"
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"
