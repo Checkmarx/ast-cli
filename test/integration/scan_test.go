@@ -2388,7 +2388,7 @@ func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
 // via CLI and scanning a directory with Dockerfiles, both sets of images are scanned
 func TestContainerScan_WithCustomImagesAndDockerfile(t *testing.T) {
 	createASTIntegrationTestCommand(t)
-	
+
 	// Create a temporary directory with a Dockerfile
 	testDir := "test-container-extraction"
 	os.RemoveAll(testDir)
@@ -2430,7 +2430,7 @@ services:
 	scanID, projectID := executeCreateScan(t, args)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	
+
 	log.Printf("Created container scan with ID: %s", scanID)
 }
 
@@ -2438,7 +2438,7 @@ services:
 // with custom images works correctly (the fix adds a placeholder file)
 func TestContainerScan_EmptyDirectoryWithCustomImages(t *testing.T) {
 	createASTIntegrationTestCommand(t)
-	
+
 	// Create an empty directory
 	emptyDir := "test-empty-container-scan"
 	os.RemoveAll(emptyDir)
@@ -2461,7 +2461,7 @@ func TestContainerScan_EmptyDirectoryWithCustomImages(t *testing.T) {
 	scanID, projectID := executeCreateScan(t, args)
 	assert.Assert(t, scanID != "", "Scan ID should not be empty")
 	assert.Assert(t, projectID != "", "Project ID should not be empty")
-	
+
 	log.Printf("Created scan on empty directory with ID: %s", scanID)
 }
 
@@ -2500,25 +2500,25 @@ func TestContainerScan_DirectoryWithFilesAndFilters(t *testing.T) {
 	}
 
 	// Execute the scan - directory appears empty after filtering
-	outputBuffer := executeCmdWithTimeOutNilAssertion(t, 
+	outputBuffer := executeCmdWithTimeOutNilAssertion(t,
 		"Container scan on filtered directory should pass", timeout, args...)
-	
+
 	// Extract scan ID from output
 	scanResponse := wrappers.ScanResponseModel{}
 	err = json.Unmarshal(outputBuffer.Bytes(), &scanResponse)
 	assert.NilError(t, err, "Failed to parse scan response")
-	
+
 	// Verify scan was created successfully
 	assert.Assert(t, scanResponse.ID != "", "Scan ID should not be empty")
-	assert.Assert(t, scanResponse.Status != wrappers.ScanFailed, 
+	assert.Assert(t, scanResponse.Status != wrappers.ScanFailed,
 		"Scan should not fail with 'no files found' error")
-	
+
 	log.Printf("Created scan on filtered directory with ID: %s", scanResponse.ID)
-	
+
 	// Cleanup
 	deleteScan(t, scanResponse.ID)
 }
- 
+
 func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
 	args := []string{
 		"scan", "create",
