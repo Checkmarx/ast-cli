@@ -62,8 +62,9 @@ const (
 	InvalidEngineMessage                   = "Please verify if engine is installed"
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
-	outputFileName              = "test_output.log"
-	noUpdatesForExistingProject = "No tags to update. Skipping project update."
+	outputFileName                = "test_output.log"
+	noUpdatesForExistingProject   = "No tags or branch to update. Skipping project update."
+	ScaResolverZipNotSupportedErr = "Scanning Zip files is not supported by ScaResolver.Please use non-zip source"
 )
 
 func TestScanHelp(t *testing.T) {
@@ -148,53 +149,38 @@ func TestCreateScan(t *testing.T) {
 
 func TestCreateScanFromFolder_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScanFromZip_ContainersImagesAndDefaultScanTypes_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "-b", "dummy_branch", "--container-images", "image1:latest,image2:tag")
 }
 
 func TestCreateScanFromZip_ContainerTypeAndFilterFlags_ScanCreatedSuccessfully(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--scan-types", "container-security", "-s", "data/sources.zip", "-b", "dummy_branch", "--file-filter", "!.java")
 }
 
 func TestCreateScanFromFolder_InvalidContainersImagesAndNoContainerScanType_ScanCreatedSuccessfully(t *testing.T) {
 	// When no container scan type is provided, we will ignore the container images flag and its value
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "sast", "--container-images", "image1,image2:tag"}
 	execCmdNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
 }
 
 func TestCreateScanFromFolder_ContainerImagesFlagWithoutValue_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
 	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--container-images")
 	assert.Assert(t, err.Error() == "flag needs an argument: --container-images")
 }
 
 func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag"}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag", "--scan-types", "containers", "--containers-local-resolution"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
-}
-
-func TestCreateContainersScan_ContainerFFIsOff_FailCreatingScan(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--scan-types", "container-security"}
-	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	fmt.Println(err)
-	assert.ErrorContains(t, err, "you would need to purchase a license")
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -285,6 +271,51 @@ func TestCreateScanWithScaResolverFailed(t *testing.T) {
 	assert.Assert(t, strings.Contains(err.Error(), scaPathError), err.Error())
 }
 
+func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
+	tests := []struct {
+		name              string
+		sourceDir         string
+		scaResolver       string
+		scaResolverParams string
+		projectName       string
+		expectedError     string
+	}{
+		{
+			name:              "ScaResolver wrong scaResolver path",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "params",
+			projectName:       "ProjectName",
+			expectedError:     "/ScaResolver: no such file or directory",
+		},
+		{
+			name:              "Invalid scaResolverParams format",
+			sourceDir:         "/sourceDir",
+			scaResolver:       "./ScaResolver",
+			scaResolverParams: "\"unclosed quote",
+			projectName:       "ProjectName",
+			expectedError:     "/ScaResolver: no such file or directory", // Actual error from command execution
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
+		})
+	}
+}
+
+func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
+	var sourceDir = "/sourceDir"
+	var scaResolver = ""
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	assert.Assert(t, err == nil)
+}
+
 func TestCreateScanWithScanTypes(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch"}
 	execCmdNilAssertion(t, append(baseArgs, "--scan-types", "sast")...)
@@ -369,6 +400,7 @@ func TestCreateScanBranches(t *testing.T) {
 	// Bind cx_branch environment variable
 	_ = viper.BindEnv("cx_branch", "CX_BRANCH")
 	viper.SetDefault("cx_branch", "branch_from_environment_variable")
+	assert.Equal(t, viper.GetString("cx_branch"), "branch_from_environment_variable")
 
 	// Test branch from environment variable. Since the cx_branch is bind the scan must run successfully without a branch flag defined
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo)
@@ -606,6 +638,35 @@ func TestCreateScanResubmitWithScanTypes(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--scan-types", "sast,iac-security,sca", "--debug", "--resubmit")
 }
 
+func TestCreateScanWithPrimaryBranchFlag_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary")
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueTrue_Failed(t *testing.T) {
+	original := os.Args
+	defer func() { os.Args = original }()
+	os.Args = []string{
+		"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=true",
+	}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=true")
+	assert.ErrorContains(t, err, "invalid value for --branch-primary flag", err.Error())
+}
+
+func TestCreateScanWithPrimaryBranchFlagBooleanValueFalse_Failed(t *testing.T) {
+	original := os.Args
+	defer func() { os.Args = original }()
+	os.Args = []string{
+		"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=false",
+	}
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=false")
+	assert.ErrorContains(t, err, "invalid value for --branch-primary flag", err.Error())
+}
+
+func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--branch-primary=string")
+	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
@@ -614,7 +675,6 @@ func Test_parseThresholdSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdsSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["sast-high"] = 1
@@ -625,7 +685,6 @@ func Test_parseThresholdsSuccess(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func Test_parseThresholdParseError(t *testing.T) {
 	want := make(map[string]int)
 	threshold := " KICS - LoW=error"
@@ -633,7 +692,6 @@ func Test_parseThresholdParseError(t *testing.T) {
 		t.Errorf("parseThreshold() = %v, want %v", got, want)
 	}
 }
-
 func TestCreateScanProjectTags(t *testing.T) {
 	execCmdNilAssertion(t, scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
 		"--project-tags", "test", "--debug")
@@ -729,6 +787,7 @@ func TestAddScaScan(t *testing.T) {
 		ExploitablePath:       "true",
 		LastSastScanTime:      "1",
 		PrivatePackageVersion: "1.1.1",
+		SBom:                  "false",
 	}
 	scaMapConfig := make(map[string]interface{})
 	scaMapConfig[resultsMapType] = commonParams.ScaType
@@ -860,6 +919,50 @@ func TestAddSastScan_WithFastScanFlag_ShouldPass(t *testing.T) {
 	}
 }
 
+func TestAddSastScan_WithLightQueryAndRecommendedExclusions_ShouldPass(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project with SAST fast scan configuration`,
+	}
+
+	cmdCommand.PersistentFlags().String(commonParams.PresetName, "", "Preset name")
+	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
+
+	_ = cmdCommand.Execute()
+
+	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
+	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
+	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "false")
+	_ = cmdCommand.Flags().Set(commonParams.SastFastScanFlag, "false")
+	_ = cmdCommand.Flags().Set(commonParams.SastLightQueriesFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastRecommendedExclusionsFlags, "true")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	sastConfig := wrappers.SastConfig{
+		PresetName:            "test",
+		Filter:                "test",
+		Incremental:           "false",
+		FastScanMode:          "false",
+		LightQueries:          "true",
+		RecommendedExclusions: "true",
+	}
+	sastMapConfig := make(map[string]interface{})
+	sastMapConfig[resultsMapType] = commonParams.SastType
+	sastMapConfig[resultsMapValue] = &sastConfig
+
+	if !reflect.DeepEqual(result, sastMapConfig) {
+		t.Errorf("Expected %+v, but got %+v", sastMapConfig, result)
+	}
+}
+
 func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
 
@@ -868,6 +971,26 @@ func TestCreateScanWithFastScanFlagIncorrectCase(t *testing.T) {
 
 	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Fast-Scan", "true")...)
 	assert.ErrorContains(t, err, "unknown flag: --Sast-Fast-Scan", err.Error())
+}
+
+func TestCreateScanWithLightQueryIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-LIGHT-QUERIES", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-LIGHT-QUERIES", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Light-Queries", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Light-Queries", err.Error())
+}
+
+func TestCreateScanWithRecommendedExclusionsIncorrectCase(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "--branch", "b", "--scan-types", "sast", "--file-source", "."}
+
+	err := execCmdNotNilAssertion(t, append(baseArgs, "--SAST-RECOMMENDED-EXCLUSIONS", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --SAST-RECOMMENDED-EXCLUSIONS", err.Error())
+
+	err = execCmdNotNilAssertion(t, append(baseArgs, "--Sast-Recommended-Exclusions", "true")...)
+	assert.ErrorContains(t, err, "unknown flag: --Sast-Recommended-Exclusions", err.Error())
 }
 
 func TestAddSastScan(t *testing.T) {
@@ -883,20 +1006,26 @@ func TestAddSastScan(t *testing.T) {
 	cmdCommand.PersistentFlags().String(commonParams.SastFilterFlag, "", "Filter for SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental SAST scan")
 	cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Enable SAST Fast Scan")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+	cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
 	_ = cmdCommand.Execute()
 
 	_ = cmdCommand.Flags().Set(commonParams.PresetName, "test")
 	_ = cmdCommand.Flags().Set(commonParams.SastFilterFlag, "test")
 	_ = cmdCommand.Flags().Set(commonParams.IncrementalSast, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastLightQueriesFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SastRecommendedExclusionsFlags, "true")
 
 	result := addSastScan(cmdCommand, resubmitConfig)
 
 	sastConfig := wrappers.SastConfig{
-		PresetName:   "test",
-		Filter:       "test",
-		Incremental:  "true",
-		FastScanMode: "",
+		PresetName:            "test",
+		Filter:                "test",
+		Incremental:           "true",
+		FastScanMode:          "",
+		LightQueries:          "true",
+		RecommendedExclusions: "true",
 	}
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig[resultsMapType] = commonParams.SastType
@@ -1630,6 +1759,8 @@ func Test_validateThresholds(t *testing.T) {
 }
 
 func TestValidateContainerImageFormat(t *testing.T) {
+	var errMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar"
+
 	testCases := []struct {
 		name           string
 		containerImage string
@@ -1641,34 +1772,29 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
-			name:           "Valid container image format",
-			containerImage: "service.test.whatever.image:8443/service/registries:custom-value",
+			name:           "Valid compressed container image format",
+			containerImage: "nginx.tar",
 			expectedError:  nil,
-		},
-		{
-			name:           "Valid container image format",
-			containerImage: "nginx",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
 		},
 		{
 			name:           "Missing image name",
 			containerImage: ":latest",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Missing image tag",
 			containerImage: "nginx:",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Empty image name and tag",
 			containerImage: ":",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 		{
 			name:           "Extra colon",
 			containerImage: "nginx:latest:extra",
-			expectedError:  errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>"),
+			expectedError:  errors.New(errMessage),
 		},
 	}
 
@@ -1686,6 +1812,131 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			if err == nil && tc.expectedError != nil {
 				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
+		})
+	}
+}
+
+func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flag
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+
+	// Set test values for container images (comma-separated private artifactory images)
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType // Use string instead of slice
+	defer func() {
+		actualScanTypes = originalScanTypes // Restore original value instead of nil
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s', but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
+func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
+	// Define test cases
+	testCases := []struct {
+		name                    string
+		resubmitConfig          []wrappers.Config
+		containerResolveLocally bool
+		expectedCustomImages    string
+	}{
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is false, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: false,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			expectedCustomImages:    "",
+		},
+		{
+			name: "When UserCustomImages is empty string, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "",
+					},
+				},
+			},
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
+		},
+		{
+			name: "When UserCustomImages is nil, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: nil,
+					},
+				},
+			},
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
+		},
+		{
+			name: "When config.Value doesn't have UserCustomImages key, containerConfig should not be updated",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type:  commonParams.ContainersType,
+					Value: map[string]interface{}{},
+				},
+			},
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
+		},
+	}
+
+	// Run each test case
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Initialize containerConfig
+			containerConfig := &wrappers.ContainerConfig{}
+
+			// Call the function under test
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
+
+			// Assert the result
+			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
+				"Expected UserCustomImages to be %q but got %q", tc.expectedCustomImages, containerConfig.UserCustomImages)
 		})
 	}
 }
@@ -1840,77 +2091,181 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 	var resubmitConfig []wrappers.Config
 
 	tests := []struct {
-		name                   string
-		requiredIncrementalSet bool
-		requiredFastScanSet    bool
-		fastScanFlag           string
-		incrementalFlag        string
-		expectedConfig         wrappers.SastConfig
+		name                             string
+		requiredIncrementalSet           bool
+		requiredFastScanSet              bool
+		requiredLightQueriesSet          bool
+		requiredRecommendedExclusionsSet bool
+		fastScanFlag                     string
+		incrementalFlag                  string
+		lightQueriesFlag                 string
+		recommendedExclusionsFlag        string
+		expectedConfig                   wrappers.SastConfig
 	}{
 		{
-			name:                   "Fast scan and Incremental scan both false",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "false",
-			incrementalFlag:        "false",
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion are false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
 			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "false",
-				Incremental:  "false",
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
 			},
 		},
 		{
-			name:                   "Fast scan and Incremental scan both true",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "true",
-			incrementalFlag:        "true",
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion are true",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan, Incremental scan, Light Queries and Recommended Exclusion not set",
+			requiredIncrementalSet:           false,
+			requiredFastScanSet:              false,
+			requiredLightQueriesSet:          false,
+			requiredRecommendedExclusionsSet: false,
+			expectedConfig:                   wrappers.SastConfig{},
+		},
+		{
+			name:                             "Fast scan is true, Incremental is false, Light Queries is false and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is true, Light Queries is false and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "true",
+				LightQueries:          "false",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is false, Light Queries is true and Recommended Exclusions is false",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "false",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "true",
+				RecommendedExclusions: "false",
+			},
+		},
+		{
+			name:                             "Fast scan is false, Incremental is false, Light Queries is false and Recommended Exclusions is true",
+			requiredIncrementalSet:           true,
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "false",
+			incrementalFlag:                  "false",
+			lightQueriesFlag:                 "false",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "false",
+				Incremental:           "false",
+				LightQueries:          "false",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is not set , Incremental is true , Light Queries is true and Recommended Exclusion is true",
+			requiredIncrementalSet:           true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			incrementalFlag:                  "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				Incremental:           "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is true , Incremental is not set , Light Queries is true and Recommended Exclusion is true",
+			requiredFastScanSet:              true,
+			requiredLightQueriesSet:          true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			lightQueriesFlag:                 "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				LightQueries:          "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                             "Fast scan is true , Incremental is true , Light Queries is not set and Recommended Exclusion is true",
+			requiredFastScanSet:              true,
+			requiredIncrementalSet:           true,
+			requiredRecommendedExclusionsSet: true,
+			fastScanFlag:                     "true",
+			incrementalFlag:                  "true",
+			recommendedExclusionsFlag:        "true",
+			expectedConfig: wrappers.SastConfig{
+				FastScanMode:          "true",
+				Incremental:           "true",
+				RecommendedExclusions: "true",
+			},
+		},
+		{
+			name:                    "Fast scan is true , Incremental is true , Light Queries is true and Recommended Exclusion is not set",
+			requiredFastScanSet:     true,
+			requiredIncrementalSet:  true,
+			requiredLightQueriesSet: true,
+			fastScanFlag:            "true",
+			incrementalFlag:         "true",
+			lightQueriesFlag:        "true",
 			expectedConfig: wrappers.SastConfig{
 				FastScanMode: "true",
 				Incremental:  "true",
-			},
-		},
-		{
-			name:                   "Fast scan and Incremental not set",
-			requiredIncrementalSet: false,
-			requiredFastScanSet:    false,
-			expectedConfig:         wrappers.SastConfig{},
-		},
-		{
-			name:                   "Fast scan is true and Incremental is false",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "true",
-			incrementalFlag:        "false",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "true",
-				Incremental:  "false",
-			},
-		},
-		{
-			name:                   "Fast scan is false and Incremental is true",
-			requiredIncrementalSet: true,
-			requiredFastScanSet:    true,
-			fastScanFlag:           "false",
-			incrementalFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "false",
-				Incremental:  "true",
-			},
-		},
-		{
-			name:                   "Fast scan is not set and Incremental is true",
-			requiredIncrementalSet: true,
-			incrementalFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				Incremental: "true",
-			},
-		},
-		{
-			name:                "Fast scan is true and Incremental is not set",
-			requiredFastScanSet: true,
-			fastScanFlag:        "true",
-			expectedConfig: wrappers.SastConfig{
-				FastScanMode: "true",
+				LightQueries: "true",
 			},
 		},
 	}
@@ -1931,6 +2286,8 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
 			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+			cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
+			cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
 			_ = cmdCommand.Execute()
 
@@ -1939,6 +2296,14 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			if tt.requiredIncrementalSet {
 				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+
+			if tt.requiredLightQueriesSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastLightQueriesFlag, tt.lightQueriesFlag)
+			}
+
+			if tt.requiredRecommendedExclusionsSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastRecommendedExclusionsFlags, tt.recommendedExclusionsFlag)
 			}
 
 			result := addSastScan(cmdCommand, resubmitConfig)
@@ -1961,36 +2326,32 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 
 func TestValidateScanTypes(t *testing.T) {
 	tests := []struct {
-		name                      string
-		userScanTypes             string
-		userSCSScanTypes          string
-		allowedEngines            map[string]bool
-		containerEngineCLIEnabled bool
-		expectedError             string
+		name             string
+		userScanTypes    string
+		userSCSScanTypes string
+		allowedEngines   map[string]bool
+		expectedError    string
 	}{
 		{
-			name:                      "No licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "scs,secret-detection",
-			allowedEngines:            map[string]bool{"scs": false, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"scs\" scan type does",
+			name:             "No licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "sast,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"scs\" scan type does",
 		},
 		{
-			name:                      "SCS license available, secret-detection not available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": false},
-			containerEngineCLIEnabled: true,
-			expectedError:             "It looks like the \"secret-detection\" scan type does not exist",
+			name:             "SCS license available, secret-detection not available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
 		},
 		{
-			name:                      "All licenses available",
-			userScanTypes:             "scs",
-			userSCSScanTypes:          "secret-detection",
-			allowedEngines:            map[string]bool{"scs": true, "enterprise-secrets": true},
-			containerEngineCLIEnabled: true,
-			expectedError:             "",
+			name:             "All licenses available",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			expectedError:    "",
 		},
 	}
 
@@ -2016,21 +2377,68 @@ func TestValidateScanTypes(t *testing.T) {
 	}
 }
 
-func TestIsContainersEngineEnabled_FlagEnabled(t *testing.T) {
+func TestCreateScanWith_ScaResolver_Source_as_Zip(t *testing.T) {
 	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: true}
-	mock.FFErr = nil
-
-	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
-	assert.Assert(t, result, "expected result to be true")
+	baseArgs := []string{
+		"scan",
+		"create",
+		"--project-name",
+		"MOCK",
+		"-s",
+		"data/sources.zip",
+		"-b",
+		"dummy_branch",
+		"--sca-resolver",
+		"ScaResolver.exe",
+	}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Assert(t, strings.Contains(err.Error(), ScaResolverZipNotSupportedErr), err.Error())
 }
 
-func TestIsContainersEngineEnabled_FlagRetrievalFails(t *testing.T) {
-	clearFlags()
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.ContainerEngineCLIEnabled, Status: false}
-	mock.FFErr = errors.New("something went wrong while fetching ff")
+func Test_parseArgs(t *testing.T) {
+	tests := []struct {
+		inputString string
+		lenOfArgs   int
+	}{
+		{"--log-level Debug --break-on-manifest-failure", 3},
+		{`test test1`, 2},
+		{"--gradle-parameters='-Prepository.proxy.url=123 -Prepository.proxy.username=123 -Prepository.proxy.password=123' --log-level Debug", 3},
+	}
 
-	result := isContainersEngineEnabled(mock.FeatureFlagsMockWrapper{})
+	for _, test := range tests {
+		fmt.Println("test ::", test)
+		result := parseArgs(test.inputString)
+		if len(result) != test.lenOfArgs {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}
 
-	assert.Assert(t, !result, "expected result to be false")
+func Test_isValidJSONOrXML(t *testing.T) {
+	tests := []struct {
+		description string
+		inputPath   string
+		output      bool
+	}{
+		{"wrong extension", "somefile.txt", false},
+		{"wrong json file", "wrongfilepath.json", false},
+		{"wrong xml file", "wrongfilepath.xml", false},
+		{"correct file", "data/package.json", true},
+	}
+
+	for _, test := range tests {
+		isValid, _ := isValidJSONOrXML(test.inputPath)
+		if isValid != test.output {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}
+
+func Test_CreateScanWithSbomFlag(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "newProject", "-s", "data/sbom.json", "--branch", "dummy_branch", "--sbom-only",
+	)
+
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }

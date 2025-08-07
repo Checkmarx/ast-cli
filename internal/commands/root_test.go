@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/params"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
@@ -38,6 +40,7 @@ func createASTTestCommand() *cobra.Command {
 	scansMockWrapper := &mock.ScansMockWrapper{}
 	exportWrapper := &mock.ExportMockWrapper{}
 	resultsPdfWrapper := &mock.ResultsPdfWrapper{}
+	resultsJSONWrapper := &mock.ResultsJSONWrapper{}
 	scansMockWrapper.Running = true
 	resultsPredicatesMockWrapper := &mock.ResultsPredicatesMockWrapper{}
 	groupsMockWrapper := &mock.GroupsMockWrapper{}
@@ -69,11 +72,13 @@ func createASTTestCommand() *cobra.Command {
 	containerResolverMockWrapper := &mock.ContainerResolverMockWrapper{}
 	customStatesMockWrapper := &mock.CustomStatesMockWrapper{}
 	realTimeWrapper := &mock.RealtimeScannerMockWrapper{}
+	telemetryWrapper := &mock.TelemetryMockWrapper{}
 	return NewAstCLI(
 		applicationWrapper,
 		scansMockWrapper,
 		exportWrapper,
 		resultsPdfWrapper,
+		resultsJSONWrapper,
 		resultsPredicatesMockWrapper,
 		customStatesMockWrapper,
 		codeBashingWrapper,
@@ -105,6 +110,7 @@ func createASTTestCommand() *cobra.Command {
 		byorWrapper,
 		containerResolverMockWrapper,
 		realTimeWrapper,
+		telemetryWrapper,
 	)
 }
 
@@ -249,4 +255,56 @@ func Test_stateExclude_not_exploitableRepalceForAllStatesExceptNot_exploitable(t
 			}
 		})
 	}
+}
+func TestSetLogOutputFromFlag_InvalidDir1(t *testing.T) {
+	err := setLogOutputFromFlag(params.LogFileFlag, "/custom/path")
+	assert.ErrorContains(t, err, "the specified directory path does not exist.")
+}
+
+func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
+	err := setLogOutputFromFlag(params.LogFileFlag, "")
+	assert.ErrorContains(t, err, "flag needs an argument")
+}
+
+func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
+	tempFile, _ := os.CreateTemp("", "ast-cli.txt")
+	defer func() {
+		if err := os.RemoveAll(tempFile.Name()); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempFile.Name(), err)
+		}
+	}()
+	err := setLogOutputFromFlag(params.LogFileFlag, tempFile.Name())
+	assert.ErrorContains(t, err, "expected a directory path but got a file")
+}
+
+func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
+	tempDir, _ := os.MkdirTemp("", "tempdir")
+	_ = os.Chmod(tempDir, 0000)
+	defer func(path string) {
+		_ = os.RemoveAll(path)
+	}(tempDir)
+	err := setLogOutputFromFlag(params.LogFileFlag, tempDir)
+	assert.ErrorContains(t, err, "permission denied: cannot write to directory")
+}
+
+func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
+	tempDir, _ := os.MkdirTemp("", "tempdir")
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+		}
+	}()
+	err := setLogOutputFromFlag(params.LogFileFlag, tempDir)
+	assert.NilError(t, err)
+}
+
+func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
+	tempDir, _ := os.MkdirTemp("", "tempdir")
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+		}
+	}()
+	err := setLogOutputFromFlag(params.LogFileConsoleFlag, tempDir)
+	assert.NilError(t, err)
 }

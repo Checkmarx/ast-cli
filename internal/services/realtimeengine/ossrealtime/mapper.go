@@ -1,7 +1,7 @@
 package ossrealtime
 
 import (
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 

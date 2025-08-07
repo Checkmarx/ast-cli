@@ -3,7 +3,9 @@
 				"@CheckmarxDev/ast-cli-javascript-wrapper": "file:../ast-cli-javascript-wrapper/CheckmarxDev-ast-cli-javascript-wrapper-0.0.54.tgz",
 				"@checkmarxdev/ast-cli-javascript-wrapper": "0.0.54",
 				"copyfiles": "200",
-				"tree-kill": "^1.2.2"
+				"tree-kill": "^1.2.2",
+				"coa":"3.1.3"
+
 		},
 		"description": "Beat vulnerabilities with more-secure code",
 		"devDependencies": {

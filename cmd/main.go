@@ -50,6 +50,7 @@ func main() {
 	descriptionsPath := viper.GetString(params.DescriptionsPathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
+	resultsJSONPath := viper.GetString(params.ResultsJSONReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
@@ -61,6 +62,7 @@ func main() {
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
+	resultsJSONReportsWrapper := wrappers.NewResultsJSONReportsHTTPWrapper(resultsJSONPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	groupsWrapper := wrappers.NewHTTPGroupsWrapper(groups)
 	logsWrapper := wrappers.NewLogsWrapper(logs)
@@ -93,12 +95,14 @@ func main() {
 	byorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
+	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		resultsPredicatesWrapper,
 		customStatesWrapper,
 		codeBashingWrapper,
@@ -130,6 +134,7 @@ func main() {
 		byorWrapper,
 		containerResolverWrapper,
 		realTimeWrapper,
+		telemetryWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
@@ -161,7 +166,7 @@ func bindKeysToEnvAndDefault() {
 }
 
 func bindProxy() {
-	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv)
+	err := viper.BindEnv(params.ProxyKey, params.CxProxyEnv, params.ProxyEnv, params.ProxyLowerCaseEnv)
 	if err != nil {
 		exitIfError(err)
 	}

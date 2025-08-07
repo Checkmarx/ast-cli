@@ -2,8 +2,10 @@ package commands
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -12,6 +14,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -25,6 +28,7 @@ func NewAstCLI(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	customStatesWrapper wrappers.CustomStatesWrapper,
 	codeBashingWrapper wrappers.CodeBashingWrapper,
@@ -56,12 +60,13 @@ func NewAstCLI(
 	byorWrapper wrappers.ByorWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
 		Use:   "cx <command> <subcommand> [flags]",
 		Short: "Checkmarx One CLI",
-		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server.",
+		Long:  "The Checkmarx One CLI is a fully functional Command Line Interface (CLI) that interacts with the Checkmarx One server",
 		Example: heredoc.Doc(
 			`
 			$ cx configure
@@ -95,20 +100,32 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.TenantFlag, params.Tenant, params.TenantFlagUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryFlag, params.RetryDefault, params.RetryUsage)
 	rootCmd.PersistentFlags().Uint(params.RetryDelayFlag, params.RetryDelayDefault, params.RetryDelayUsage)
+	rootCmd.PersistentFlags().String(params.ConfigFilePathFlag, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
+	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
+	rootCmd.PersistentFlags().String(params.LogFileConsoleFlag, "", params.LogFileConsoleUsage)
 
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
-	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		err := customLogConfiguration(rootCmd)
+		if err != nil {
+			return err
+		}
 		PrintConfiguration()
+		err = configuration.LoadConfiguration()
+		if err != nil {
+			return err
+		}
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
 			os.Exit(0)
 		}
+		return err
 	}
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
@@ -124,13 +141,15 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
+	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePathFlag))
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
 	_ = viper.BindPFlag(params.RetryFlag, rootCmd.PersistentFlags().Lookup(params.RetryFlag))
 	_ = viper.BindPFlag(params.RetryDelayFlag, rootCmd.PersistentFlags().Lookup(params.RetryDelayFlag))
 	_ = viper.BindPFlag(params.ApikeyOverrideFlag, rootCmd.PersistentFlags().Lookup(params.ApikeyOverrideFlag))
-
+	_ = viper.BindPFlag(params.LogFileFlag, rootCmd.PersistentFlags().Lookup(params.LogFileFlag))
+	_ = viper.BindPFlag(params.LogFileConsoleFlag, rootCmd.PersistentFlags().Lookup(params.LogFileConsoleFlag))
 	// Set help func
 	rootCmd.SetHelpFunc(
 		func(command *cobra.Command, args []string) {
@@ -144,6 +163,7 @@ func NewAstCLI(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		uploadsWrapper,
 		resultsWrapper,
 		projectsWrapper,
@@ -167,6 +187,7 @@ func NewAstCLI(
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		codeBashingWrapper,
 		bflWrapper,
 		risksOverviewWrapper,
@@ -204,7 +225,7 @@ func NewAstCLI(
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper)
-
+	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -216,6 +237,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		telemetryCmd,
 	)
 
 	rootCmd.SilenceUsage = true
@@ -325,4 +347,62 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
+}
+
+func customLogConfiguration(cmd *cobra.Command) error {
+	if cmd.PersistentFlags().Changed(params.LogFileFlag) {
+		if err := setLogOutputFromFlag(params.LogFileFlag, viper.GetString(params.LogFileFlag)); err != nil {
+			return err
+		}
+	}
+	if cmd.PersistentFlags().Changed(params.LogFileConsoleFlag) {
+		if err := setLogOutputFromFlag(params.LogFileConsoleFlag, viper.GetString(params.LogFileConsoleFlag)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func setLogOutputFromFlag(flag, dirPath string) error {
+	if strings.TrimSpace(dirPath) == "" {
+		return errors.New("flag needs an argument: --" + flag)
+	}
+
+	// Confirm it’s a directory
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("the specified directory path does not exist. Please check the path: %s", dirPath)
+		}
+		return fmt.Errorf("an error occurred while accessing the directory path. Please check the path: %s", dirPath)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("expected a directory path but got a file: %s", dirPath)
+	}
+
+	// Create full path for the log file
+	logFilePath := filepath.Join(dirPath, "ast-cli.log")
+
+	const defaultFilePermissions = 0666
+	// open the log file with write and append permissions
+	// If file doesn't exist, it will be created. If permission is denied for directory path, return an error.
+	file, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, defaultFilePermissions)
+	if err != nil {
+		if os.IsPermission(err) {
+			return fmt.Errorf("permission denied: cannot write to directory %s", dirPath)
+		}
+		return fmt.Errorf("unable to open log file %s: %v", logFilePath, err)
+	}
+
+	// Configure the logger to write to the log file and optionally to stdout.
+	// If the flag indicates stdout logging is enabled, log output is duplicated to both file and console.
+	// Otherwise, logs are written only to the file.
+	var multiWriter io.Writer
+	if flag == params.LogFileConsoleFlag {
+		multiWriter = io.MultiWriter(file, os.Stdout)
+	} else {
+		multiWriter = io.MultiWriter(file)
+	}
+	log.SetOutput(multiWriter)
+	return nil
 }

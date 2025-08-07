@@ -21,27 +21,29 @@ const (
 	SarifInvalidFileExtension              = "Invalid file extension. Supported extensions are .sarif and .zip containing sarif files."
 	ImportSarifFileError                   = "There was a problem importing the SARIF file. Please contact support for further details."
 	ImportSarifFileErrorMessageWithMessage = "There was a problem importing the SARIF file. Please contact support for further details with the following error code: %d %s"
-	NoASCALicense                          = "User doesn't have \"AI Protection\" license"
+	NoASCALicense                          = "User doesn't have \"AI Protection\" or \"Checkmarx One Assist\" license"
 	FailedUploadFileMsgWithDomain          = "Unable to upload the file to the pre-signed URL. Try adding the domain: %s to your allow list."
 	FailedUploadFileMsgWithURL             = "Unable to upload the file to the pre-signed URL. Try adding the URL: %s to your allow list."
 
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
 
-	// OSS Realtime
-	OssRealtimeErrFormat = "OSS Realtime error: %s"
+	// Realtime
+	RealtimeEngineErrFormat        = "realtime engine error: %s"
+	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
+	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
 )
 
-type OssRealtimeError struct {
+type RealtimeEngineError struct {
 	Message string
 }
 
-func (e *OssRealtimeError) Error() error {
-	return fmt.Errorf(OssRealtimeErrFormat, e.Message)
+func (e *RealtimeEngineError) Error() error {
+	return fmt.Errorf(RealtimeEngineErrFormat, e.Message)
 }
 
-func NewOssRealtimeError(message string) *OssRealtimeError {
-	return &OssRealtimeError{
+func NewRealtimeEngineError(message string) *RealtimeEngineError {
+	return &RealtimeEngineError{
 		Message: message,
 	}
 }

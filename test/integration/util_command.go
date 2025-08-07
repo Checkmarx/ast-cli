@@ -80,6 +80,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	prDecorationAzurePath := viper.GetString(params.PRDecorationAzurePathKey)
 	tenantConfigurationPath := viper.GetString(params.TenantConfigurationPathKey)
 	resultsPdfPath := viper.GetString(params.ResultsPdfReportPathKey)
+	resultsJsonPath := viper.GetString(params.ResultsJSONReportPathKey)
 	exportPath := viper.GetString(params.ExportPathKey)
 	featureFlagsPath := viper.GetString(params.FeatureFlagsKey)
 	policyEvaluationPath := viper.GetString(params.PolicyEvaluationPathKey)
@@ -91,6 +92,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
 	resultsPdfReportsWrapper := wrappers.NewResultsPdfReportsHTTPWrapper(resultsPdfPath)
+	resultsJSONReportsWrapper := wrappers.NewResultsJSONReportsHTTPWrapper(resultsJsonPath)
 	exportWrapper := wrappers.NewExportHTTPWrapper(exportPath)
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 
@@ -123,12 +125,14 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	ByorWrapper := wrappers.NewByorHTTPWrapper(byorPath)
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realtimeScannerWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
+	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
 		scansWrapper,
 		exportWrapper,
 		resultsPdfReportsWrapper,
+		resultsJSONReportsWrapper,
 		resultsPredicatesWrapper,
 		customStatesWrapper,
 		codeBashingWrapper,
@@ -160,6 +164,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		ByorWrapper,
 		containerResolverWrapper,
 		realtimeScannerWrapper,
+		telemetryWrapper,
 	)
 	return astCli
 }

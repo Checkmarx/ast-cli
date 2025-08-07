@@ -70,10 +70,6 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMap
 	}
 
 	for _, pkg := range packages.Packages {
-		if pkg.Status == "Unknown" {
-			continue
-		}
-
 		key := GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		vulnerabilities := vulnerabilityMapper.FromRealtimeScannerVulnerability(pkg.Vulnerabilities)
 

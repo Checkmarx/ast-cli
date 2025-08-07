@@ -49,8 +49,13 @@ linters-settings:
           - github.com/CheckmarxDev/containers-resolver/pkg/containerResolver
           - github.com/Checkmarx/manifest-parser/pkg/parser/models
           - github.com/Checkmarx/manifest-parser/pkg/parser
+          - github.com/Checkmarx/secret-detection/pkg/hooks/pre-commit
+          - github.com/Checkmarx/secret-detection/pkg/hooks/pre-receive
           - github.com/Checkmarx/gen-ai-prompts/prompts/sast_result_remediation
           - github.com/spf13/viper
+          - github.com/checkmarx/2ms/v3/lib/reporting
+          - github.com/checkmarx/2ms/v3/lib/secrets
+          - github.com/checkmarx/2ms/v3/pkg
           - github.com/Checkmarx/gen-ai-wrapper
           - github.com/spf13/cobra
           - github.com/pkg/errors
@@ -60,6 +65,8 @@ linters-settings:
           - github.com/stretchr/testify/assert
           - github.com/gofrs/flock
           - github.com/golang-jwt/jwt/v5
+          - github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor
+          - github.com/Checkmarx/containers-types/types
   dupl:
     threshold: 500
   funlen:

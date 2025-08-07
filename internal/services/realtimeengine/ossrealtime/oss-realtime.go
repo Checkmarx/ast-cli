@@ -1,17 +1,33 @@
 package ossrealtime
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
 	"github.com/Checkmarx/manifest-parser/pkg/parser/models"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/services/ossrealtime/osscache"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
+
+// convertLocations converts models.Location to realtimeengine.Location
+func convertLocations(locations []models.Location) []realtimeengine.Location {
+	var result []realtimeengine.Location
+	for _, loc := range locations {
+		result = append(result, realtimeengine.Location{
+			Line:       loc.Line,
+			StartIndex: loc.StartIndex,
+			EndIndex:   loc.EndIndex,
+		})
+	}
+	return result
+}
 
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
@@ -34,24 +50,28 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageResults, error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
-		return nil, errorconstants.NewOssRealtimeError("file path is required").Error()
+		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
 
-	if enabled, err := o.isFeatureFlagEnabled(); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return nil, errorconstants.NewOssRealtimeError("Realtime engine is not available for this tenant").Error()
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(o.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
+		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
-	if err := o.ensureLicense(); err != nil {
-		return nil, errorconstants.NewOssRealtimeError("failed to ensure license").Error()
+	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+	}
+
+	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to parse manifest file %s: %v", filePath, err)
-		return nil, errorconstants.NewOssRealtimeError("failed to parse manifest file").Error()
+		return nil, errorconstants.NewRealtimeEngineError("failed to parse manifest file").Error()
 	}
 
 	response, toScan := prepareScan(pkgs)
@@ -60,12 +80,61 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath string) (*OssPackageRes
 		result, err := o.scanAndCache(toScan)
 		if err != nil {
 			logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
-			return nil, errorconstants.NewOssRealtimeError("Realtime scanner engine failed").Error()
+			return nil, errorconstants.NewRealtimeEngineError("Realtime scanner engine failed").Error()
 		}
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
 	}
+
+	if ignoredFilePath != "" {
+		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+		}
+
+		ignoreMap := buildIgnoreMap(ignoredPkgs)
+		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
+	}
+	for i := range response.Packages {
+		response.Packages[i].FilePath = filePath
+	}
 	return response, nil
+}
+
+func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {
+	m := make(map[string]bool)
+	for _, ign := range ignored {
+		m[ign.GetID()] = true
+	}
+	return m
+}
+
+func isIgnored(pkg *OssPackage, ignoreMap map[string]bool) bool {
+	return ignoreMap[pkg.GetID()]
+}
+
+func loadIgnoredPackages(path string) ([]IgnoredPackage, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []IgnoredPackage
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+
+func filterIgnoredPackages(packages []OssPackage, ignoreMap map[string]bool) []OssPackage {
+	filtered := make([]OssPackage, 0, len(packages))
+	for i := range packages {
+		pkg := &packages[i]
+		if !isIgnored(pkg, ignoreMap) {
+			filtered = append(filtered, *pkg)
+		}
+	}
+	return filtered
 }
 
 func enrichResponseWithRealtimeScannerResults(
@@ -81,10 +150,7 @@ func enrichResponseWithRealtimeScannerResults(
 			PackageName:     pkg.PackageName,
 			PackageVersion:  pkg.Version,
 			FilePath:        entry.FilePath,
-			LineStart:       entry.LineStart,
-			LineEnd:         entry.LineEnd,
-			StartIndex:      entry.StartIndex,
-			EndIndex:        entry.EndIndex,
+			Locations:       entry.Locations,
 			Status:          pkg.Status,
 			Vulnerabilities: vulnerabilityMapper.FromRealtimeScanner(pkg.Vulnerabilities),
 		})
@@ -102,23 +168,6 @@ func getPackageEntryFromPackageMap(
 		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
 	}
 	return &entry
-}
-
-// isFeatureFlagEnabled checks if the OSS Realtime feature flag is enabled.
-func (o *OssRealtimeService) isFeatureFlagEnabled() (bool, error) {
-	enabled, err := o.FeatureFlagWrapper.GetSpecificFlag(wrappers.OssRealtimeEnabled)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
-// ensureLicense validates that a valid JWT wrapper is available.
-func (o *OssRealtimeService) ensureLicense() error {
-	if o.JwtWrapper == nil {
-		return errors.New("JWT wrapper is not initialized, cannot ensure license")
-	}
-	return nil
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
@@ -157,11 +206,8 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 				PackageManager:  pkg.PackageManager,
 				PackageName:     pkg.PackageName,
 				PackageVersion:  pkg.Version,
-				LineStart:       pkg.LineStart,
-				LineEnd:         pkg.LineEnd,
 				FilePath:        pkg.FilePath,
-				StartIndex:      pkg.StartIndex,
-				EndIndex:        pkg.EndIndex,
+				Locations:       convertLocations(pkg.Locations),
 				Status:          cachedPkg.Status,
 				Vulnerabilities: vulnerabilityMapper.FromCache(cachedPkg.Vulnerabilities),
 			})
@@ -181,10 +227,7 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
-			LineStart:      pkg.LineStart,
-			LineEnd:        pkg.LineEnd,
-			StartIndex:     pkg.StartIndex,
-			EndIndex:       pkg.EndIndex,
+			Locations:      convertLocations(pkg.Locations),
 		}
 	}
 	return packageMap
@@ -196,8 +239,8 @@ func generatePackageMapEntry(pkgManager, pkgName, pkgVersion string) string {
 }
 
 // scanAndCache performs a scan on the provided packages and caches the results.
-func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
-	result, err := o.RealtimeScannerWrapper.Scan(requestPackages)
+func (o *OssRealtimeService) scanAndCache(requestPackages *wrappers.RealtimeScannerPackageRequest) (results *wrappers.RealtimeScannerPackageResponse, err error) {
+	result, err := o.RealtimeScannerWrapper.ScanPackages(requestPackages)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to scan packages via realtime service: %v", err)
 		return nil, errors.Wrap(err, "scanning packages via realtime service")

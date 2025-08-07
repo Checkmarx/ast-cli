@@ -64,7 +64,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
-		Long:  "The project command enables the ability to manage projects in Checkmarx One.",
+		Long:  "The project command enables the ability to manage projects in Checkmarx One",
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
@@ -77,7 +77,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 	createProjCmd := &cobra.Command{
 		Use:   "create",
 		Short: "Creates a new project",
-		Long:  "The project create command enables the ability to create a new project in Checkmarx One.",
+		Long:  "The project create command enables the ability to create a new project in Checkmarx One",
 		Example: heredoc.Doc(
 			`
 			$ cx project create --project-name <Project Name>
@@ -136,7 +136,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 		},
 		RunE: runGetProjectByIDCommand(projectsWrapper),
 	}
-	addProjectIDFlag(showProjectCmd, "Project ID to show.")
+	addProjectIDFlag(showProjectCmd, "Project ID to show")
 
 	projectBranchesCmd := &cobra.Command{
 		Use:   "branches",
@@ -155,7 +155,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 		},
 		RunE: runGetBranchesByIDCommand(projectsWrapper),
 	}
-	addProjectIDFlag(projectBranchesCmd, "Project ID to get branches.")
+	addProjectIDFlag(projectBranchesCmd, "Project ID to get branches")
 	projectBranchesCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterBranchesFlagUsage)
 
 	deleteProjCmd := &cobra.Command{
@@ -175,7 +175,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 		},
 		RunE: runDeleteProjectCommand(projectsWrapper),
 	}
-	addProjectIDFlag(deleteProjCmd, "Project ID to delete.")
+	addProjectIDFlag(deleteProjCmd, "Project ID to delete")
 
 	tagsCmd := &cobra.Command{
 		Use:   "tags",

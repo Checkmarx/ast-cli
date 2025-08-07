@@ -139,10 +139,7 @@ func LoadConfiguration() error {
 		}
 		fullPath := usr.HomeDir + configDirName
 		verifyConfigDir(fullPath)
-		viper.AddConfigPath(fullPath)
-		configFile := "checkmarxcli"
-		viper.SetConfigName(configFile)
-		viper.SetConfigType("yaml")
+		viper.SetConfigFile(fullPath + "/checkmarxcli.yaml")
 		_ = viper.ReadInConfig()
 	}
 	return nil

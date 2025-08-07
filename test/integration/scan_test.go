@@ -421,11 +421,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndScanType(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
@@ -439,11 +437,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagOnly(t *testing.T) {
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
@@ -458,11 +454,11 @@ func TestContainerEngineScansE2E_ContainerImagesAndDebugFlags(t *testing.T) {
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+
 }
 
 func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *testing.T) {
@@ -476,11 +472,9 @@ func TestContainerEngineScansE2E_ContainerImagesFlagAndEmptyFolderProject(t *tes
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty")
-		assert.Assert(t, projectID != "", "Project ID should not be empty")
-	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
 }
 
 func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
@@ -493,10 +487,8 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		err, _ := executeCommand(t, testArgs...)
-		assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
-	}
+	err, _ := executeCommand(t, testArgs...)
+	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
@@ -533,8 +525,32 @@ func TestFastScan(t *testing.T) {
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
+func TestLightQueries(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithLightQueries(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
+func TestRecommendedExclusions(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	// Create a scan
+	scanID, projectID := createScanWithRecommendedExclusions(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
 func createScanWithFastScan(t *testing.T, source string, name string, tags map[string]string) (string, string) {
 	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastFastScanFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithLightQueries(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastLightQueriesFlag))
+	return executeCreateScan(t, args)
+}
+
+func createScanWithRecommendedExclusions(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	args := append(getCreateArgsWithName(source, tags, name, "sast"), flag(params.SastRecommendedExclusionsFlags))
 	return executeCreateScan(t, args)
 }
 
@@ -636,6 +652,12 @@ func TestIncrementalScan(t *testing.T) {
 
 	executeScanAssertions(t, projectID, scanID, map[string]string{})
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
+}
+
+func TestBranchPrimaryFlag(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	scanID, projectID := createScanWithPrimaryBranchFlag(t, Dir, projectName, map[string]string{})
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
 }
 
 // Start a scan guaranteed to take considerable time, cancel it and assert the status
@@ -918,11 +940,7 @@ func executeScanAssertions(t *testing.T, projectID, scanID string, tags map[stri
 }
 
 func createScan(t *testing.T, source string, tags map[string]string) (string, string) {
-	if isFFEnabled(t, wrappers.ContainerEngineCLIEnabled) {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security,   container-security, scs"))
-	} else {
-		return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, scs"))
-	}
+	return executeCreateScan(t, getCreateArgs(source, tags, "sast , sca , iac-security , api-security, container-security, scs"))
 }
 
 func createScanNoWait(t *testing.T, source string, tags map[string]string, projectName string) (string, string) {
@@ -955,6 +973,10 @@ func createScanScaWithResolver(
 			"-q",
 		),
 	)
+}
+
+func createScanWithPrimaryBranchFlag(t *testing.T, source string, name string, tags map[string]string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--branch-primary"))
 }
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
@@ -1579,6 +1601,23 @@ func TestScanGeneratingPdfReportWithPdfOptions(t *testing.T) {
 
 }
 
+func TestScanGeneratingJsonV2Report(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	outputBuffer := executeCmdNilAssertion(
+		t, "Scan create with API key generating json to email report should pass",
+		scanCommand, "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), "iac-security",
+		flag(params.PresetName), "Checkmarx Default",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.TargetFormatFlag), "json-v2",
+	)
+
+	assert.Assert(t, outputBuffer != nil, "Scan must complete successfully")
+}
+
 //func TestScanCreateUsingProjectGroupsAndProjectTags(t *testing.T) {
 //	_, projectName := getRootProject(t)
 //
@@ -1820,6 +1859,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
+				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -1848,6 +1888,7 @@ func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
+				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -2326,4 +2367,64 @@ func deletePreset(engine, presetID string) error {
 	}
 
 	return nil
+}
+
+func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
+	configuration.LoadConfiguration()
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.ScanTypes), params.ScaType,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScaResolverFlag), "ScaResolver.exe",
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
+}
+
+func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/project-with-directory-symlink",
+		flag(params.ScanTypes), "sast,sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "The --sbom-only flag can only be used when the scan type is sca")
+
+}
+
+func TestCreateScan_SbomScanForInvalidFileExtension(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/project-with-directory-symlink",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.Error(t, err, "Failed creating a scan: Input in bad format: not a JSON/XML file, provide valid JSON/XMl file")
+
+}
+
+func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "random_proj",
+		flag(params.SourcesFlag), "data/sbom.json",
+		flag(params.ScanTypes), "sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SbomFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+
 }

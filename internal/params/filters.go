@@ -135,8 +135,12 @@ var BaseIncludeFilters = []string{
 	"Podfile.lock",
 	"*.cmp",
 	"Directory.Packages.props",
+	"Directory.Build.props",
 	"*.rs",
 	"*.jsx",
+	"*.bicepparam",
+	"*.bicep",
+	"Gemfile",
 }
 
 var BaseExcludeFilters = []string{

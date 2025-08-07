@@ -121,12 +121,14 @@ type ScansWrapper interface {
 }
 
 type SastConfig struct {
-	Incremental   string `json:"incremental,omitempty"`
-	Filter        string `json:"filter,omitempty"`
-	EngineVerbose string `json:"engineVerbose,omitempty"`
-	LanguageMode  string `json:"languageMode,omitempty"`
-	PresetName    string `json:"presetName,omitempty"`
-	FastScanMode  string `json:"fastScanMode,omitempty"`
+	Incremental           string `json:"incremental,omitempty"`
+	Filter                string `json:"filter,omitempty"`
+	EngineVerbose         string `json:"engineVerbose,omitempty"`
+	LanguageMode          string `json:"languageMode,omitempty"`
+	PresetName            string `json:"presetName,omitempty"`
+	FastScanMode          string `json:"fastScanMode,omitempty"`
+	LightQueries          string `json:"lightQueries,omitempty"`
+	RecommendedExclusions string `json:"recommendedExclusions,omitempty"`
 }
 
 type KicsConfig struct {
@@ -141,12 +143,14 @@ type ScaConfig struct {
 	LastSastScanTime      string `json:"LastSastScanTime,omitempty"`
 	PrivatePackageVersion string `json:"privatePackageVersion,omitempty"`
 	EnableContainersScan  bool   `json:"enableContainersScan,omitempty"`
+	SBom                  string `json:"sbom,omitempty"`
 }
 type ContainerConfig struct {
 	FilesFilter          string `json:"filesFilter,omitempty"`
 	ImagesFilter         string `json:"imagesFilter,omitempty"`
 	PackagesFilter       string `json:"packagesFilter,omitempty"`
 	NonFinalStagesFilter string `json:"nonFinalStagesFilter,omitempty"`
+	UserCustomImages     string `json:"userCustomImages,omitempty"`
 }
 type APISecConfig struct {
 	SwaggerFilter string `json:"swaggerFilter,omitempty"`
