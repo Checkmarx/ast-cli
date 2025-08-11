@@ -1314,7 +1314,7 @@ func TestPrintPoliciesSummary_WhenNoRolViolated_ShouldNotContainPolicyViolation(
 	old := os.Stdout
 	os.Stdout = w
 
-	printPoliciesSummary(summary)
+	printPoliciesSummary(summary, false)
 
 	w.Close()
 	os.Stdout = old

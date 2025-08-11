@@ -2016,13 +2016,17 @@ func runCreateScanCommand(
 			return err
 		}
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
 		if ignorePolicy {
-			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
 			if err != nil {
 				return err
 			}
-			if !overridePolicyManagement {
-				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
 			}
 		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
@@ -2081,7 +2085,8 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
-				featureFlagsWrapper)
+				featureFlagsWrapper,
+				ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2094,7 +2099,7 @@ func runCreateScanCommand(
 			}
 
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if reportErr != nil {
 				return reportErr
 			}
@@ -2106,7 +2111,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2268,6 +2273,7 @@ func handleWait(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	err := waitForScanCompletion(
 		scanResponseModel,
@@ -2281,7 +2287,8 @@ func handleWait(
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
 		cmd,
-		featureFlagsWrapper)
+		featureFlagsWrapper,
+		ignorePolicyFlagOmit)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -2306,6 +2313,7 @@ func createReportsAfterScan(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -2354,6 +2362,7 @@ func createReportsAfterScan(
 		agent,
 		resultsParams,
 		featureFlagsWrapper,
+		ignorePolicyFlagOmit,
 	)
 }
 
@@ -2501,6 +2510,7 @@ func waitForScanCompletion(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
@@ -2515,7 +2525,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return err
 		}
@@ -2550,6 +2560,7 @@ func isScanRunning(
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -2579,7 +2590,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
-			nil, featureFlagsWrapper) // check this partial case, how to handle it
+			nil, featureFlagsWrapper, ignorePolicyFlagOmit) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}

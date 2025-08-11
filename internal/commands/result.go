@@ -854,7 +854,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper, ignorePolicyFlagOmit bool) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -866,7 +866,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			summary.RiskMsg,
 		)
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			printPoliciesSummary(summary)
+			printPoliciesSummary(summary, ignorePolicyFlagOmit)
 		}
 
 		printResultsSummaryTable(summary)
@@ -887,7 +887,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 	return nil
 }
 
-func printPoliciesSummary(summary *wrappers.ResultSummary) {
+func printPoliciesSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit bool) {
 	hasViolations := false
 	for _, policy := range summary.Policies.Policies {
 		if len(policy.RulesViolated) > 0 {
@@ -897,6 +897,9 @@ func printPoliciesSummary(summary *wrappers.ResultSummary) {
 	}
 	if hasViolations {
 		fmt.Printf(tableLine + "\n")
+		if ignorePolicyFlagOmit {
+			printWarningIfIgnorePolicyOmiited()
+		}
 		if summary.Policies.BreakBuild {
 			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
 		} else {
@@ -1031,13 +1034,16 @@ func runGetResultCommand(
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
 		if ignorePolicy {
-			overridePolicyManagement, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
 			if err != nil {
 				return err
 			}
-			if !overridePolicyManagement {
-				return errors.Errorf("You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
 			}
 		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
@@ -1081,7 +1087,7 @@ func runGetResultCommand(
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
 			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
-			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper, ignorePolicyFlagOmit)
 		return err
 	}
 }
@@ -1188,6 +1194,7 @@ func CreateScanReport(
 	agent string,
 	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
@@ -1218,7 +1225,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent, ignorePolicyFlagOmit)
 		if err != nil {
 			return nil, err
 		}
@@ -1398,7 +1405,9 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	agent string) error {
+	agent string,
+	ignorePolicyFlagOmit bool,
+) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1428,7 +1437,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary, featureFlagsWrapper)
+		return writeConsoleSummary(summary, featureFlagsWrapper, ignorePolicyFlagOmit)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -2878,4 +2887,8 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
+}
+
+func printWarningIfIgnorePolicyOmiited() {
+	fmt.Printf("            Warning: Ignore Policy flag ommitted because you dont have permission                     \n")
 }
