@@ -3,6 +3,8 @@ package realtimeengine
 import (
 	"os"
 
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
@@ -21,7 +23,21 @@ func EnsureLicense(jwtWrapper wrappers.JWTWrapper) error {
 	if jwtWrapper == nil {
 		return errors.New("JWT wrapper is not initialized, cannot ensure license")
 	}
-	return nil
+
+	assistAllowed, err := jwtWrapper.IsAllowedEngine(params.CheckmarxOneAssistType)
+	if err != nil {
+		return errors.Wrap(err, "failed to check CheckmarxOneAssistType engine allowance")
+	}
+
+	aiAllowed, err := jwtWrapper.IsAllowedEngine(params.AIProtectionType)
+	if err != nil {
+		return errors.Wrap(err, "failed to check AIProtectionType engine allowance")
+	}
+
+	if aiAllowed || assistAllowed {
+		return nil
+	}
+	return errors.Wrap(err, errorconstants.NoASCALicense)
 }
 
 // ValidateFilePath validates that the file path exists and is accessible.
