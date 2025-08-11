@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
+
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
@@ -62,13 +63,18 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 		}
 		return &model, nil, nil
 	case http.StatusUnauthorized:
-		amPhase1Enabled, _ := r.featureFlagWrapper.GetSpecificFlag(featureFlagsConstants.AccessManagementPhase2)
-
+		//decoding the error response
+		errorModel := WebError{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToGetPolicies)
+		}
+		// policyManagement checks if AM1 Feature flag is ON,if yes policy permissions are checked otherwise skipped
+		amPhase1Enabled, _ := r.featureFlagWrapper.GetSpecificFlag(featureFlagsConstants.AccessManagementEnabled)
 		if amPhase1Enabled != nil && amPhase1Enabled.Status {
 			logger.Printf("This user doesn’t have the necessary permissions to view the Policy Management evaluation for this scan.")
-			return nil, nil, nil
+			return nil, &errorModel, nil
 		}
-
 		fallthrough
 
 	default:
