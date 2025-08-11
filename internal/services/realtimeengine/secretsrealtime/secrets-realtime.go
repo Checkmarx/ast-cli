@@ -3,9 +3,10 @@ package secretsrealtime
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
-	"os"
 
 	"github.com/checkmarx/2ms/v3/lib/reporting"
 	"github.com/checkmarx/2ms/v3/lib/secrets"
@@ -22,6 +23,7 @@ const (
 	criticalSeverity = "Critical"
 	highSeverity     = "High"
 	mediumSeverity   = "Medium"
+	genericAPIKey    = "generic-api-key"
 )
 
 type SecretsRealtimeService struct {
@@ -43,11 +45,7 @@ func NewSecretsRealtimeService(
 func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]bool) []SecretsRealtimeResult {
 	filtered := make([]SecretsRealtimeResult, 0, len(results))
 	for _, r := range results {
-		if len(r.Locations) == 0 {
-			filtered = append(filtered, r)
-			continue
-		}
-		key := fmt.Sprintf("%s_%s_%d", r.Title, r.FilePath, r.Locations[0].Line)
+		key := fmt.Sprintf("%s_%s_%s", r.Title, r.FilePath, r.SecretValue)
 		if !ignoreMap[key] {
 			filtered = append(filtered, r)
 		}
@@ -58,7 +56,7 @@ func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]
 func buildIgnoreMap(ignored []IgnoredSecret) map[string]bool {
 	m := make(map[string]bool)
 	for _, s := range ignored {
-		key := fmt.Sprintf("%s_%s_%d", s.Title, s.FilePath, s.Line)
+		key := fmt.Sprintf("%s_%s_%s", s.Title, s.FilePath, s.SecretValue)
 		m[key] = true
 	}
 	return m
@@ -105,6 +103,8 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 
 	results := convertToSecretsRealtimeResult(report)
+	resultsPerLineMap := createResultsPerLocationMap(results)
+	results = filterGenericAPIKeyVulIfNeeded(results, resultsPerLineMap)
 
 	if ignoredFilePath == "" {
 		return results, nil
@@ -127,7 +127,6 @@ func readFile(filePath string) (string, error) {
 }
 
 func runScan(source, content string) (*reporting.Report, error) {
-
 	item := scanner.ScanItem{
 		Content: &content,
 		Source:  source,
@@ -159,6 +158,7 @@ func convertSecretToResult(secret *secrets.Secret) SecretsRealtimeResult {
 	return SecretsRealtimeResult{
 		Title:       secret.RuleID,
 		Description: secret.RuleDescription,
+		SecretValue: secret.Value,
 		Severity:    getSeverity(secret),
 		FilePath:    secret.Source,
 		Locations:   locations,
@@ -176,4 +176,41 @@ func getSeverity(secret *secrets.Secret) string {
 	default:
 		return highSeverity
 	}
+}
+
+func createResultsPerLocationMap(results []SecretsRealtimeResult) map[string][]SecretsRealtimeResult {
+	resultsPerLocation := make(map[string][]SecretsRealtimeResult)
+	for _, result := range results {
+		var locationKey string
+		for _, location := range result.Locations {
+			locationKey = fmt.Sprintf("%s:%d", locationKey, location.Line)
+		}
+		resultKey := fmt.Sprintf("%s%s", result.FilePath, locationKey)
+		resultsPerLocation[resultKey] = append(resultsPerLocation[resultKey], result)
+	}
+	return resultsPerLocation
+}
+
+func filterGenericAPIKeyVulIfNeeded(
+	results []SecretsRealtimeResult,
+	resultsPerLine map[string][]SecretsRealtimeResult,
+) []SecretsRealtimeResult {
+	if len(results) == 0 || len(resultsPerLine) == 0 {
+		return results
+	}
+
+	var filtered []SecretsRealtimeResult
+	for _, entries := range resultsPerLine {
+		if len(entries) <= 1 {
+			filtered = append(filtered, entries...)
+			continue
+		}
+
+		for i := 0; i < len(entries); i++ {
+			if entries[i].Title != genericAPIKey {
+				filtered = append(filtered, entries[i])
+			}
+		}
+	}
+	return filtered
 }

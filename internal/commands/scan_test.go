@@ -787,6 +787,7 @@ func TestAddScaScan(t *testing.T) {
 		ExploitablePath:       "true",
 		LastSastScanTime:      "1",
 		PrivatePackageVersion: "1.1.1",
+		SBom:                  "false",
 	}
 	scaMapConfig := make(map[string]interface{})
 	scaMapConfig[resultsMapType] = commonParams.ScaType
@@ -1854,12 +1855,13 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
-		name                 string
-		resubmitConfig       []wrappers.Config
-		expectedCustomImages string
+		name                    string
+		resubmitConfig          []wrappers.Config
+		containerResolveLocally bool
+		expectedCustomImages    string
 	}{
 		{
-			name: "When UserCustomImages is valid string, it should be set in containerConfig",
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is false, it should be set in containerConfig",
 			resubmitConfig: []wrappers.Config{
 				{
 					Type: commonParams.ContainersType,
@@ -1868,7 +1870,21 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "image1:tag1,image2:tag2",
+			containerResolveLocally: false,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When UserCustomImages is empty string, containerConfig should not be updated",
@@ -1880,7 +1896,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When UserCustomImages is nil, containerConfig should not be updated",
@@ -1892,7 +1909,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 		{
 			name: "When config.Value doesn't have UserCustomImages key, containerConfig should not be updated",
@@ -1902,7 +1920,8 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 					Value: map[string]interface{}{},
 				},
 			},
-			expectedCustomImages: "",
+			containerResolveLocally: false,
+			expectedCustomImages:    "",
 		},
 	}
 
@@ -1913,7 +1932,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 			containerConfig := &wrappers.ContainerConfig{}
 
 			// Call the function under test
-			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig)
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
 
 			// Assert the result
 			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
@@ -2393,4 +2412,33 @@ func Test_parseArgs(t *testing.T) {
 			t.Errorf(" test case failed for params %v", test)
 		}
 	}
+}
+
+func Test_isValidJSONOrXML(t *testing.T) {
+	tests := []struct {
+		description string
+		inputPath   string
+		output      bool
+	}{
+		{"wrong extension", "somefile.txt", false},
+		{"wrong json file", "wrongfilepath.json", false},
+		{"wrong xml file", "wrongfilepath.xml", false},
+		{"correct file", "data/package.json", true},
+	}
+
+	for _, test := range tests {
+		isValid, _ := isValidJSONOrXML(test.inputPath)
+		if isValid != test.output {
+			t.Errorf(" test case failed for params %v", test)
+		}
+	}
+}
+
+func Test_CreateScanWithSbomFlag(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "newProject", "-s", "data/sbom.json", "--branch", "dummy_branch", "--sbom-only",
+	)
+
+	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }
