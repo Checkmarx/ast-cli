@@ -63,7 +63,7 @@ func (r *PolicyHTTPWrapper) EvaluatePolicy(params map[string]string) (
 		}
 		return &model, nil, nil
 	case http.StatusUnauthorized:
-		//decoding the error response
+		// decoding the error response
 		errorModel := WebError{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
