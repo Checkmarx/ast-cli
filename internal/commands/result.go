@@ -1406,8 +1406,7 @@ func createReport(format,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	agent string,
-	ignorePolicyFlagOmit bool,
-) error {
+	ignorePolicyFlagOmit bool) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
