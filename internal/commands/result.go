@@ -1225,7 +1225,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent, ignorePolicyFlagOmit)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return nil, err
 		}
@@ -1405,7 +1405,7 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	agent string, ignorePolicyFlagOmit bool) error {
+	ignorePolicyFlagOmit bool) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}

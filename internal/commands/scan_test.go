@@ -2442,6 +2442,69 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }
+
 func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy")
+}
+
+func TestIsExploitable(t *testing.T) {
+	tests := []struct {
+		state    string
+		expected bool
+	}{
+		{"NOT_EXPLOITABLE", false},
+		{"not_exploitable", false},
+		{"IGNORED", false},
+		{"ignored", false},
+		{"EXPLOITABLE", true},
+		{"other", true},
+		{"", true},
+	}
+	for _, tt := range tests {
+		result := isExploitable(tt.state)
+		if result != tt.expected {
+			t.Errorf("isExploitable(%q) = %v, want %v", tt.state, result, tt.expected)
+		}
+	}
+}
+
+func TestBuildFilters(t *testing.T) {
+	base := []string{"a", "b"}
+	tests := []struct {
+		extra    string
+		expected []string
+	}{
+		{"", base},
+		{"c", []string{"a", "b", "c"}},
+		{"c,d", []string{"a", "b", "c", "d"}},
+	}
+	for _, tt := range tests {
+		result := buildFilters(base, tt.extra)
+		if !reflect.DeepEqual(result, tt.expected) {
+			t.Errorf("buildFilters(%v, %q) = %v, want %v", base, tt.extra, result, tt.expected)
+		}
+	}
+}
+
+func TestContainsIgnoreCase(t *testing.T) {
+	s := []string{"foo", "Bar", "baz"}
+	tests := []struct {
+		str      string
+		expected bool
+	}{
+		{"foo", true},
+		{"FOO", true},
+		{"bar", true},
+		{"BAR", true},
+		{"baz", true},
+		{"BAZ", true},
+		{"qux", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		result := containsIgnoreCase(s, tt.str)
+		if result != tt.expected {
+			t.Errorf("containsIgnoreCase(%v, %q) = %v, want %v", s, tt.str, result, tt.expected)
+		}
+	}
 }
