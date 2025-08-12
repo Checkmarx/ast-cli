@@ -2442,3 +2442,6 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }
+func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy")
+}
