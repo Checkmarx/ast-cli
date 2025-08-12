@@ -846,7 +846,7 @@ func scanCreateSubCommand(
 		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation, allowing the build to proceed despite policy violations. Requires override-policy-management permission.")
+	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation. Requires override-policy-management permission.")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
