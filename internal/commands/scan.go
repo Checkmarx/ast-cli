@@ -1182,9 +1182,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	containerConfig := wrappers.ContainerConfig{}
 
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
-	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-	sourceTrimmed := strings.TrimSpace(source)
-	isGitScan := util.IsGitURL(sourceTrimmed)
+	isGitScan := getUploadType(cmd) == git
 	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally, isGitScan)
 
 	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
