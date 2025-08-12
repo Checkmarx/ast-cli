@@ -1633,13 +1633,12 @@ func Test_addPackageInformation_DependencyTypes(t *testing.T) {
 func TestIgnorePolicyWithNoPermission(t *testing.T) {
 	policyResponseModel := wrappers.PolicyResponseModel{}
 	policyResponseModel.BreakBuild = false
-	policyResponseModel.Status = "COMPLETED"
 
 	policy := wrappers.Policy{}
-	policy.Name = "MOCK_NAME"
+	policy.Name = "MOCK_NAME1"
 	policy.RulesViolated = make([]string, 1)
 	policy.BreakBuild = true
-	policy.Description = "MOCK_DESC"
+	policy.Description = "MOCK_DESC1"
 	policy.Tags = make([]string, 0)
 
 	var policies []wrappers.Policy
@@ -1668,13 +1667,12 @@ func TestIgnorePolicyWithNoPermission(t *testing.T) {
 func TestIgnorePolicyWithPermission(t *testing.T) {
 	policyResponseModel := wrappers.PolicyResponseModel{}
 	policyResponseModel.BreakBuild = false
-	policyResponseModel.Status = "COMPLETED"
 
 	policy := wrappers.Policy{}
-	policy.Name = "MOCK_NAME"
+	policy.Name = "MOCK_NAME2"
 	policy.RulesViolated = make([]string, 1)
 	policy.BreakBuild = true
-	policy.Description = "MOCK_DESC"
+	policy.Description = "MOCK_DESC2"
 	policy.Tags = make([]string, 0)
 
 	var policies []wrappers.Policy
