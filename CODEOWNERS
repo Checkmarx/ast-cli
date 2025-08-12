@@ -1,5 +1,9 @@
-# Codeowners file
+# Code ownership rules
+
+# Only this user can approve changes to the CODEOWNERS file
+/CODEOWNERS @cx-anurag-dalke
+
 # Each line is a file pattern followed by one or more owners
 
 # Specify the default owners for the entire repository
-*       @cx-anurag-dalke
+*       @cx-anurag-dalke @cx-anjali-deore @cx-umesh-waghode
