@@ -1629,3 +1629,73 @@ func Test_addPackageInformation_DependencyTypes(t *testing.T) {
 	assert.Equal(t, false, testPackage.IsDevelopmentDependency, "Second package should not be marked as development dependency")
 	assert.Equal(t, true, testPackage.IsTestDependency, "Second package should be marked as test dependency")
 }
+
+func TestIgnorePolicyWithNoPermission(t *testing.T) {
+	policyResponseModel := wrappers.PolicyResponseModel{}
+	policyResponseModel.BreakBuild = false
+	policyResponseModel.Status = "COMPLETED"
+
+	policy := wrappers.Policy{}
+	policy.Name = "MOCK_NAME"
+	policy.RulesViolated = make([]string, 1)
+	policy.BreakBuild = true
+	policy.Description = "MOCK_DESC"
+	policy.Tags = make([]string, 0)
+
+	var policies []wrappers.Policy
+	policies = append(policies, policy)
+	policyResponseModel.Policies = policies
+	summary := &wrappers.ResultSummary{
+		Policies: &policyResponseModel,
+	}
+	r, w, _ := os.Pipe()
+	old := os.Stdout
+	os.Stdout = w
+
+	printPoliciesSummary(summary, true)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
+	}
+	output := buf.String()
+	assert.Assert(t, strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission. Only users with 'override-policy-management' permission can use this flag."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
+}
+
+func TestIgnorePolicyWithPermission(t *testing.T) {
+	policyResponseModel := wrappers.PolicyResponseModel{}
+	policyResponseModel.BreakBuild = false
+	policyResponseModel.Status = "COMPLETED"
+
+	policy := wrappers.Policy{}
+	policy.Name = "MOCK_NAME"
+	policy.RulesViolated = make([]string, 1)
+	policy.BreakBuild = true
+	policy.Description = "MOCK_DESC"
+	policy.Tags = make([]string, 0)
+
+	var policies []wrappers.Policy
+	policies = append(policies, policy)
+	policyResponseModel.Policies = policies
+	summary := &wrappers.ResultSummary{
+		Policies: &policyResponseModel,
+	}
+	r, w, _ := os.Pipe()
+	old := os.Stdout
+	os.Stdout = w
+
+	printPoliciesSummary(summary, false)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	if _, err := io.Copy(&buf, r); err != nil {
+		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
+	}
+	output := buf.String()
+	assert.Assert(t, !strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission. Only users with 'override-policy-management' permission can use this flag."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
+}
