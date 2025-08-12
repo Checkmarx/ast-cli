@@ -1661,7 +1661,7 @@ func TestIgnorePolicyWithNoPermission(t *testing.T) {
 		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
 	}
 	output := buf.String()
-	assert.Assert(t, strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission. Only users with 'override-policy-management' permission can use this flag."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
+	assert.Assert(t, strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
 }
 
 func TestIgnorePolicyWithPermission(t *testing.T) {
@@ -1695,5 +1695,5 @@ func TestIgnorePolicyWithPermission(t *testing.T) {
 		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
 	}
 	output := buf.String()
-	assert.Assert(t, !strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission. Only users with 'override-policy-management' permission can use this flag."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
+	assert.Assert(t, !strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
 }
