@@ -205,3 +205,31 @@ func TestCreateASCAScanRequest_EngineRunningAndDefaultAgentAndNoLicense_Success(
 	assert.Nil(t, wrapperParams.ASCAWrapper.HealthCheck())
 	_ = wrapperParams.ASCAWrapper.ShutDown()
 }
+
+func TestCreateASCAScanRequest_WithSingleIgnoredFinding_FiltersResult(t *testing.T) {
+	ASCAParams := AscaScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: false,
+		IsDefaultAgent:    true,
+		IgnoredFilePath:   "data/ignoredAsca.json",
+	}
+	wrapperParams := AscaWrappersParam{
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: mock.NewASCAMockWrapper(1234),
+	}
+
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
+	if err != nil {
+		t.Fatalf("Failed to create ASCA scan request: %v", err)
+	}
+	if sr == nil {
+		t.Fatalf("Scan result is nil")
+	}
+
+	for _, finding := range sr.ScanDetails {
+		assert.False(t,
+			finding.FileName == "python-vul-file.py" && finding.Line == 34 && finding.RuleID == 4006,
+			"Expected ignored finding to be filtered out, but it was present: %+v", finding,
+		)
+	}
+}
