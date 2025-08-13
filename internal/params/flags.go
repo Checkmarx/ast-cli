@@ -277,6 +277,7 @@ const (
 	KicsType                       = "kics"
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
+	CheckmarxOneAssistType         = "Checkmarx One Assist"
 	ContainersType                 = "containers"
 	APIDocumentationFlag           = "apisec-swagger-filter"
 	IacType                        = "iac-security"

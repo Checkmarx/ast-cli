@@ -62,7 +62,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.11"
+	containerImage                          = "checkmarx/kics:v2.1.13"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -447,6 +447,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
+			$ cx scan asca --file-source <path to a single file> --ignored-file-path <path to ignored in file>	
 		`,
 		),
 		Annotations: map[string]string{
@@ -468,6 +469,8 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"",
 		"The file source should be the path to a single file",
 	)
+
+	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
 	return scanASCACmd
 }
 
@@ -567,6 +570,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		Example: heredoc.Doc(
 			`
 			$ cx scan containers-realtime -s <path to containers file>
+			$ cx scan containers-realtime -s <path to file> --ignored-file-path <path to ignored containers file>
 		`,
 		),
 		Annotations: map[string]string{
@@ -585,6 +589,8 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		"",
 		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
 	)
+	scanContainersRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored containers file")
+
 	return scanContainersRealtimeCmd
 }
 
@@ -1188,7 +1194,8 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	containerConfig := wrappers.ContainerConfig{}
 
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
-	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally)
+	isGitScan := getUploadType(cmd) == git
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally, isGitScan)
 
 	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
 	if fileFolderFilter != "" {
@@ -1207,7 +1214,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 		containerConfig.ImagesFilter = imageTagFilter
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if userCustomImages != "" && !containerResolveLocally {
+	if userCustomImages != "" && (!containerResolveLocally || isGitScan) {
 		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
 		for _, containerImageName := range containerImagesList {
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
@@ -1222,7 +1229,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	return containerMapConfig, nil
 }
 
-func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool) {
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally, isGitScan bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
 			continue
@@ -1244,7 +1251,7 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
 		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
-		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && !containerResolveLocally {
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && (!containerResolveLocally || isGitScan) {
 			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -9,10 +10,10 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
@@ -29,6 +30,7 @@ type AscaScanParams struct {
 	FilePath          string
 	ASCAUpdateVersion bool
 	IsDefaultAgent    bool
+	IgnoredFilePath   string
 }
 
 type AscaWrappersParam struct {
@@ -52,7 +54,30 @@ func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappers
 		return emptyResults, nil
 	}
 
-	return executeScan(wrapperParams.ASCAWrapper, ascaParams.FilePath)
+	ignoredResults := validateIgnoredFilePath(ascaParams.IgnoredFilePath)
+	if ignoredResults != nil {
+		return ignoredResults, nil
+	}
+
+	return executeScan(wrapperParams.ASCAWrapper, ascaParams.FilePath, ascaParams.IgnoredFilePath)
+}
+
+func validateIgnoredFilePath(filePath string) *grpcs.ScanResult {
+	if filePath == "" {
+		return nil
+	}
+
+	if exists, _ := osinstaller.FileExists(filePath); !exists {
+		fileNotFoundMsg := fmt.Sprintf("Ignore file %s not found", filePath)
+		logger.PrintIfVerbose(fileNotFoundMsg)
+		return &grpcs.ScanResult{
+			Error: &grpcs.Error{
+				Description: fileNotFoundMsg,
+			},
+		}
+	}
+
+	return nil
 }
 
 func validateFilePath(filePath string) *grpcs.ScanResult {
@@ -76,14 +101,59 @@ func validateFilePath(filePath string) *grpcs.ScanResult {
 	return nil
 }
 
-func executeScan(ascaWrapper grpcs.AscaWrapper, filePath string) (*grpcs.ScanResult, error) {
+func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string) (*grpcs.ScanResult, error) {
 	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
 	}
 
 	_, fileName := filepath.Split(filePath)
-	return ascaWrapper.Scan(fileName, sourceCode)
+	scanResult, err := ascaWrapper.Scan(fileName, sourceCode)
+	if err != nil {
+		return nil, err
+	}
+
+	if ignoredFilePath != "" {
+		ignoredFindings, err := loadIgnoredAscaFindings(ignoredFilePath)
+		if err == nil {
+			ignoreMap := buildAscaIgnoreMap(ignoredFindings)
+			scanResult.ScanDetails = filterIgnoredAscaFindings(scanResult.ScanDetails, ignoreMap)
+		}
+	}
+
+	return scanResult, nil
+}
+func loadIgnoredAscaFindings(path string) ([]grpcs.AscaIgnoreFinding, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var ignored []grpcs.AscaIgnoreFinding
+	err = json.Unmarshal(data, &ignored)
+	if err != nil {
+		return nil, err
+	}
+	return ignored, nil
+}
+func filterIgnoredAscaFindings(results []grpcs.ScanDetail, ignoreMap map[string]bool) []grpcs.ScanDetail {
+	filtered := make([]grpcs.ScanDetail, 0, len(results))
+	for i := range results {
+		r := &results[i]
+		key := fmt.Sprintf("%s_%d_%d", r.FileName, r.Line, r.RuleID)
+		if !ignoreMap[key] {
+			filtered = append(filtered, *r)
+		}
+	}
+	return filtered
+}
+
+func buildAscaIgnoreMap(ignored []grpcs.AscaIgnoreFinding) map[string]bool {
+	m := make(map[string]bool)
+	for _, f := range ignored {
+		key := fmt.Sprintf("%s_%d_%d", f.FileName, f.Line, f.RuleID)
+		m[key] = true
+	}
+	return m
 }
 
 func manageASCAInstallation(ascaParams AscaScanParams, ascaWrappers AscaWrappersParam) error {
@@ -164,13 +234,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 
 func checkLicense(isDefaultAgent bool, wrapperParams AscaWrappersParam) error {
 	if !isDefaultAgent {
-		allowed, err := wrapperParams.JwtWrapper.IsAllowedEngine(params.AIProtectionType)
-		if err != nil {
-			return err
-		}
-		if !allowed {
-			return fmt.Errorf("%v", errorconstants.NoASCALicense)
-		}
+		return realtimeengine.EnsureLicense(wrapperParams.JwtWrapper)
 	}
 	return nil
 }
