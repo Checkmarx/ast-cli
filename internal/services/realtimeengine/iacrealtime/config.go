@@ -3,13 +3,14 @@ package iacrealtime
 import "github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 
 type IacRealtimeResult struct {
-	SimilarityID      string                    `json:"SimilarityID"`
-	Title             string                    `json:"Title"`
-	Description       string                    `json:"Description"`
-	RemediationAdvice string                    `json:"RemediationAdvice"`
-	Severity          string                    `json:"Severity"`
-	FilePath          string                    `json:"FilePath"`
-	Locations         []realtimeengine.Location `json:"Locations"`
+	SimilarityID  string                    `json:"SimilarityID"`
+	Title         string                    `json:"Title"`
+	Description   string                    `json:"Description"`
+	ExpectedValue string                    `json:"ExpectedValue"`
+	ActualValue   string                    `json:"ActualValue"`
+	Severity      string                    `json:"Severity"`
+	FilePath      string                    `json:"FilePath"`
+	Locations     []realtimeengine.Location `json:"Locations"`
 }
 
 type IgnoredIacFinding struct {
