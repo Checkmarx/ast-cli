@@ -26,12 +26,6 @@ const (
 	resultPolicyDefaultTimeout          = 1
 	failedGettingScanError              = "Failed showing a scan"
 	noPRDecorationCreated               = "A PR couldn't be created for this scan because it is still in progress."
-	githubOnPremURLSuffix               = "/api/v3/repos/"
-	gitlabOnPremURLSuffix               = "/api/v4/"
-	githubCloudURL                      = "https://api.github.com/repos/"
-	gitlabCloudURL                      = "https://gitlab.com" + gitlabOnPremURLSuffix
-	azureCloudURL                       = "https://dev.azure.com/"
-	bitbucketCloudURL                   = "bitbucket.org"
 	errorAzureOnPremParams              = "code-repository-url must be set when code-repository-username is set"
 )
 
@@ -276,8 +270,9 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 			return errors.Errorf(policyErrorFormat, failedCreatingGithubPrDecoration)
 		}
 
-		// Build and post the pr decoration
-		updatedAPIURL := updateAPIURLForGithubOnPrem(apiURL)
+		// Build and post the pr decoration using dynamic URL builder
+		urlBuilder := NewSCMURLBuilder(apiURL, "github")
+		updatedAPIURL := urlBuilder.GetFullURL()
 
 		prModel := &wrappers.PRModel{
 			ScanID:    scanID,
@@ -301,27 +296,6 @@ func runPRDecoration(prWrapper wrappers.PRWrapper, policyWrapper wrappers.Policy
 
 		return nil
 	}
-}
-
-func updateAPIURLForGithubOnPrem(apiURL string) string {
-	if apiURL != "" {
-		return apiURL + githubOnPremURLSuffix
-	}
-	return githubCloudURL
-}
-
-func updateAPIURLForGitlabOnPrem(apiURL string) string {
-	if apiURL != "" {
-		return apiURL + gitlabOnPremURLSuffix
-	}
-	return gitlabCloudURL
-}
-
-func getAzureAPIURL(apiURL string) string {
-	if apiURL != "" {
-		return apiURL
-	}
-	return azureCloudURL
 }
 
 func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.PolicyWrapper, scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
@@ -351,8 +325,9 @@ func runPRDecorationGitlab(prWrapper wrappers.PRWrapper, policyWrapper wrappers.
 			return errors.Errorf(policyErrorFormat, failedCreatingGitlabPrDecoration)
 		}
 
-		// Build and post the mr decoration
-		updatedAPIURL := updateAPIURLForGitlabOnPrem(apiURL)
+		// Build and post the mr decoration using dynamic URL builder
+		urlBuilder := NewSCMURLBuilder(apiURL, "gitlab")
+		updatedAPIURL := urlBuilder.GetFullURL()
 
 		prModel := &wrappers.GitlabPRModel{
 			ScanID:          scanID,
@@ -460,8 +435,9 @@ func runPRDecorationAzure(prWrapper wrappers.PRWrapper, policyWrapper wrappers.P
 			return errors.Errorf(policyErrorFormat, failedCreatingAzurePrDecoration)
 		}
 
-		// Build and post the pr decoration
-		updatedAPIURL := getAzureAPIURL(apiURL)
+		// Build and post the pr decoration using dynamic URL builder
+		urlBuilder := NewSCMURLBuilder(apiURL, "azure")
+		updatedAPIURL := urlBuilder.GetFullURL()
 		updatedScmToken := updateScmTokenForAzure(scmTokenFlag, codeRepositoryUserName)
 		azureNameSpace := createAzureNameSpace(namespaceFlag, projectNameFlag)
 
@@ -513,7 +489,9 @@ func formatRepoNameSlugBB(repoName string) string {
 }
 
 func checkIsCloudAndValidateFlag(apiURL, namespaceFlag, projectKey string) (bool, error) {
-	isCloud := isBitbucketCloud(apiURL)
+	// Use dynamic URL builder to determine if it's cloud
+	urlBuilder := NewSCMURLBuilder(apiURL, "bitbucket")
+	isCloud := urlBuilder.IsCloud()
 	flagRequiredErr := validateBitbucketFlags(isCloud, namespaceFlag, projectKey)
 	return isCloud, flagRequiredErr
 }
@@ -531,17 +509,12 @@ func validateBitbucketFlags(isCloud bool, namespaceFlag, projectKey string) erro
 	return nil
 }
 
-func isBitbucketCloud(apiURL string) bool {
-	if apiURL == "" || strings.Contains(apiURL, bitbucketCloudURL) {
-		return true
-	}
-	return false
-}
-
 func createBBPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoNameFlag string, prIDFlag int, apiURL, projectKey string, policies []wrappers.PrPolicy) interface{} {
 	formattedRepoNameSlug := formatRepoNameSlugBB(repoNameFlag)
 
 	if isCloud {
+		// Use dynamic URL builder for cloud
+		urlBuilder := NewSCMURLBuilder("", "bitbucket")
 		return &wrappers.BitbucketCloudPRModel{
 			ScanID:    scanID,
 			ScmToken:  scmTokenFlag,
@@ -549,8 +522,11 @@ func createBBPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoName
 			RepoName:  formattedRepoNameSlug,
 			PRID:      prIDFlag,
 			Policies:  policies,
+			APIURL:    urlBuilder.GetFullURL(),
 		}
 	}
+	// For on-premise, use the provided URL directly
+	urlBuilder := NewSCMURLBuilder(apiURL, "bitbucket")
 	return &wrappers.BitbucketServerPRModel{
 		ScanID:     scanID,
 		ScmToken:   scmTokenFlag,
@@ -558,7 +534,7 @@ func createBBPRModel(isCloud bool, scanID, scmTokenFlag, namespaceFlag, repoName
 		RepoName:   formattedRepoNameSlug,
 		PRID:       prIDFlag,
 		Policies:   policies,
-		ServerURL:  apiURL,
+		ServerURL:  urlBuilder.GetFullURL(),
 	}
 }
 

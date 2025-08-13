@@ -57,7 +57,7 @@ func (r *PRHTTPWrapper) PostPRDecoration(model interface{}) (string, *WebError, 
 }
 
 func (r *PRHTTPWrapper) getPRDecorationURL(model interface{}) (string, error) {
-	switch model.(type) {
+	switch m := model.(type) {
 	case *PRModel:
 		return r.githubPath, nil
 	case *GitlabPRModel:
@@ -65,6 +65,11 @@ func (r *PRHTTPWrapper) getPRDecorationURL(model interface{}) (string, error) {
 	case *BitbucketCloudPRModel:
 		return r.bitbucketCloudPath, nil
 	case *BitbucketServerPRModel:
+		// Use the dynamic ServerURL from the model instead of hardcoded path
+		if m.ServerURL != "" {
+			return m.ServerURL, nil
+		}
+		// Fallback to hardcoded path if ServerURL is not set (for backward compatibility)
 		return r.bitbucketServerPath, nil
 	case *AzurePRModel:
 		return r.azurePath, nil

@@ -41,6 +41,7 @@ type BitbucketCloudPRModel struct {
 	RepoName  string     `json:"repoName"`
 	PRID      int        `json:"prId"`
 	Policies  []PrPolicy `json:"violatedPolicyList"`
+	APIURL    string     `json:"apiUrl"`
 }
 
 type BitbucketServerPRModel struct {
