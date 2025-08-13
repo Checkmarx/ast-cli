@@ -1852,12 +1852,95 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 		expectedImages, containerMapConfig.UserCustomImages)
 }
 
+func TestAddContainersScan_GitScanWithResolveLocallyAndCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for git scan with resolve locally and custom images
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	gitURL := "https://github.com/user/repo.git"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, gitURL)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set even with resolve locally true (because it's a git scan)
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s' for git scan even with resolve locally, but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
+func TestAddContainersScan_UploadScanWithResolveLocallyAndCustomImages_ShouldNotSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for upload scan (local path) with resolve locally and custom images
+	customImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	localPath := "/path/to/local/directory"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, customImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, localPath)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was NOT set for upload scan with resolve locally
+	assert.Equal(t, containerMapConfig.UserCustomImages, "",
+		"Expected UserCustomImages to be empty for upload scan with resolve locally, but got '%s'",
+		containerMapConfig.UserCustomImages)
+}
+
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
 		name                    string
 		resubmitConfig          []wrappers.Config
 		containerResolveLocally bool
+		isGitScan               bool
 		expectedCustomImages    string
 	}{
 		{
@@ -1871,10 +1954,11 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
-			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true (upload scan), it should not be set in containerConfig",
 			resubmitConfig: []wrappers.Config{
 				{
 					Type: commonParams.ContainersType,
@@ -1884,7 +1968,22 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: true,
+			isGitScan:               false,
 			expectedCustomImages:    "",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true but is git scan, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			isGitScan:               true,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
 			name: "When UserCustomImages is empty string, containerConfig should not be updated",
@@ -1897,6 +1996,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1910,6 +2010,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1921,6 +2022,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 	}
@@ -1932,7 +2034,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 			containerConfig := &wrappers.ContainerConfig{}
 
 			// Call the function under test
-			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally, tc.isGitScan)
 
 			// Assert the result
 			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
