@@ -37,12 +37,13 @@ func (m *Mapper) ConvertKicsToIacResults(
 			lineIndex := m.getOrComputeLineIndex(fileContent, locLine, indexMap)
 
 			iacResult := IacRealtimeResult{
-				Title:             result.QueryName,
-				Description:       result.Description,
-				RemediationAdvice: loc.ExpectedValue,
-				Severity:          m.mapSeverity(result.Severity),
-				FilePath:          filePath,
-				SimilarityID:      loc.SimilarityID,
+				Title:         result.QueryName,
+				Description:   result.Description,
+				ExpectedValue: loc.ExpectedValue,
+				ActualValue:   loc.ActualValue,
+				Severity:      m.mapSeverity(result.Severity),
+				FilePath:      filePath,
+				SimilarityID:  loc.SimilarityID,
 				Locations: []realtimeengine.Location{
 					{
 						Line:       locLine,
