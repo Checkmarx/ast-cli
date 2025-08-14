@@ -2279,6 +2279,122 @@ func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLate
 	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
 }
 
+func TestScanCreate_GitScanWithContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+	gitRepo := SlowRepo // Use the git repository from root_test.go
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), gitRepo, // Git URL for git scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For git scans, UserCustomImages should be included even with containerResolveLocally=true
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], customImages, "UserCustomImages should be set for git scan even with resolve locally")
+}
+
+func TestScanCreate_UploadScanWithContainerResolveLocallyAndCustomImages_ShouldNotIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), ".", // Local directory for upload scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For upload scans with containerResolveLocally=true, UserCustomImages should NOT be included
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], nil, "UserCustomImages should not be set for upload scan with resolve locally")
+}
+
+func TestScanCreate_GitScanWithoutContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+	gitRepo := SlowRepo // Use the git repository from root_test.go
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), gitRepo, // Git URL for git scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		// Note: NOT using ContainerResolveLocallyFlag
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For git scans without containerResolveLocally, UserCustomImages should be included (existing behavior)
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], customImages, "UserCustomImages should be set for git scan without resolve locally")
+}
+
 func TestCreateScanWithAsyncFlag_TryShowResults_PolicyNotEvaluated(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	configuration.LoadConfiguration()
@@ -2427,4 +2543,30 @@ func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 
+}
+
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreNotFound(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with gitignore filter should pass without error")
 }

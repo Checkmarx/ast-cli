@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -1852,12 +1853,95 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 		expectedImages, containerMapConfig.UserCustomImages)
 }
 
+func TestAddContainersScan_GitScanWithResolveLocallyAndCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for git scan with resolve locally and custom images
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	gitURL := "https://github.com/user/repo.git"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, gitURL)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set even with resolve locally true (because it's a git scan)
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s' for git scan even with resolve locally, but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
+func TestAddContainersScan_UploadScanWithResolveLocallyAndCustomImages_ShouldNotSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for upload scan (local path) with resolve locally and custom images
+	customImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	localPath := "/path/to/local/directory"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, customImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, localPath)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was NOT set for upload scan with resolve locally
+	assert.Equal(t, containerMapConfig.UserCustomImages, "",
+		"Expected UserCustomImages to be empty for upload scan with resolve locally, but got '%s'",
+		containerMapConfig.UserCustomImages)
+}
+
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
 		name                    string
 		resubmitConfig          []wrappers.Config
 		containerResolveLocally bool
+		isGitScan               bool
 		expectedCustomImages    string
 	}{
 		{
@@ -1871,10 +1955,11 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
-			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true (upload scan), it should not be set in containerConfig",
 			resubmitConfig: []wrappers.Config{
 				{
 					Type: commonParams.ContainersType,
@@ -1884,7 +1969,22 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: true,
+			isGitScan:               false,
 			expectedCustomImages:    "",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true but is git scan, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			isGitScan:               true,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
 			name: "When UserCustomImages is empty string, containerConfig should not be updated",
@@ -1897,6 +1997,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1910,6 +2011,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1921,6 +2023,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 	}
@@ -1932,7 +2035,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 			containerConfig := &wrappers.ContainerConfig{}
 
 			// Call the function under test
-			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally, tc.isGitScan)
 
 			// Assert the result
 			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
@@ -2443,68 +2546,189 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
 }
 
-func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy")
+func TestGetGitignorePatterns_DirPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	_, err := getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, ".gitignore file not found in directory")
 }
 
-func TestIsExploitable(t *testing.T) {
-	tests := []struct {
-		state    string
-		expected bool
-	}{
-		{"NOT_EXPLOITABLE", false},
-		{"not_exploitable", false},
-		{"IGNORED", false},
-		{"ignored", false},
-		{"EXPLOITABLE", true},
-		{"other", true},
-		{"", true},
+func TestGetGitignorePatterns_DirPath_GitIgnore_PermissionDenied(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0000)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
 	}
-	for _, tt := range tests {
-		result := isExploitable(tt.state)
-		if result != tt.expected {
-			t.Errorf("isExploitable(%q) = %v, want %v", tt.state, result, tt.expected)
-		}
-	}
+	_, err = getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, "permission denied")
 }
 
-func TestBuildFilters(t *testing.T) {
-	base := []string{"a", "b"}
-	tests := []struct {
-		extra    string
-		expected []string
-	}{
-		{"", base},
-		{"c", []string{"a", "b", "c"}},
-		{"c,d", []string{"a", "b", "c", "d"}},
+func TestGetGitignorePatterns_DirPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
 	}
-	for _, tt := range tests {
-		result := buildFilters(base, tt.extra)
-		if !reflect.DeepEqual(result, tt.expected) {
-			t.Errorf("buildFilters(%v, %q) = %v, want %v", base, tt.extra, result, tt.expected)
-		}
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
 	}
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
 }
 
-func TestContainsIgnoreCase(t *testing.T) {
-	s := []string{"foo", "Bar", "baz"}
-	tests := []struct {
-		str      string
-		expected bool
-	}{
-		{"foo", true},
-		{"FOO", true},
-		{"bar", true},
-		{"BAR", true},
-		{"baz", true},
-		{"BAZ", true},
-		{"qux", false},
-		{"", false},
+func TestGetGitignorePatterns_DirPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(`src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
 	}
-	for _, tt := range tests {
-		result := containsIgnoreCase(s, tt.str)
-		if result != tt.expected {
-			t.Errorf("containsIgnoreCase(%v, %q) = %v, want %v", s, tt.str, result, tt.expected)
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
+	}
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_FailedToOpenZipFIle(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
 		}
+	}(zipFile)
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, "failed to open zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
 	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+
+	_, err = fileInZip.Write([]byte(""))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+	_, err = fileInZip.Write([]byte(`src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
 }
