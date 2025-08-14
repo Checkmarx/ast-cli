@@ -148,9 +148,10 @@ func Test_createProject(t *testing.T) {
 			projectsWrapper:         &mock.ProjectsMockWrapper{},
 			groupsWrapper:           &mock.GroupsMockWrapper{},
 			accessManagementWrapper: &mock.AccessManagementMockWrapper{},
-			projectGroups:           "",
-			projectPrivatePackage:   "true",
-			featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
+
+			projectGroups:         "",
+			projectPrivatePackage: "true",
+			featureFlagsWrapper:   &mock.FeatureFlagsMockWrapper{},
 		}, want: "ID-new-project-name", wantErr: false},
 	}
 	for _, tt := range tests {
