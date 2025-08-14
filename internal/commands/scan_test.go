@@ -2732,3 +2732,11 @@ a*cation-jira.yml`))
 	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
 	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
 }
+
+func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy",
+	)
+	assert.ErrorContains(t, err, "You do not have permission to override policy enforcement. The --ignore-policy flag cannot be used without the 'override-policy-management' permission.")
+}
