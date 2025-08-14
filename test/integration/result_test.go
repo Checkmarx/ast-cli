@@ -725,3 +725,55 @@ func TestResultsIncludePublishedAtJsonOutput(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateQueryDescriptionLinkInGlSASTReport(t *testing.T) {
+	scanID, _ := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating gl-sast report should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatGLSast,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer os.RemoveAll(resultsDirectory)
+	reportPath := fmt.Sprintf("%s%s.%s-%s", resultsDirectory, fileName, printer.FormatGLSast, fileExtention)
+	file, err := os.ReadFile(reportPath)
+	assert.NilError(t, err, "error reading gl-sast file")
+
+	var glReport wrappers.GlSastResultsCollection
+	err = json.Unmarshal(file, &glReport)
+	assert.NilError(t, err, "error unmarshalling gl-sast file")
+
+	link, found := findQueryDescriptionLink(glReport)
+	assert.Assert(t, found, "Should find at least one QueryDescriptionLink")
+
+	t.Logf("Found QueryDescriptionLink: %s", link)
+}
+
+func findQueryDescriptionLink(glReport wrappers.GlSastResultsCollection) (string, bool) {
+	for _, vulnerability := range glReport.Vulnerabilities {
+		if !strings.Contains(vulnerability.Description, "/results/") {
+			continue
+		}
+
+		if httpIndex := strings.Index(vulnerability.Description, "http"); httpIndex != -1 {
+			urlStart := httpIndex
+			urlEnd := len(vulnerability.Description)
+
+			for _, terminator := range []string{" ", "\n", "\t", ")", "]", "}"} {
+				if idx := strings.Index(vulnerability.Description[urlStart:], terminator); idx != -1 {
+					urlEnd = urlStart + idx
+					break
+				}
+			}
+
+			link := vulnerability.Description[urlStart:urlEnd]
+			if link != "" {
+				return link, true
+			}
+		}
+	}
+	return "", false
+}
