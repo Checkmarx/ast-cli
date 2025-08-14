@@ -2811,7 +2811,7 @@ func TestCreateScan_VerifyNoMinimalZipCreation_WithContainerImagesFlag(t *testin
 
 	// Before the fix, this would have triggered createMinimalZipFile
 	// After the fix, it should process directory contents normally
-	execCmdNilAssertion(t, baseArgs...)  
+	execCmdNilAssertion(t, baseArgs...)
 }
 
 func TestGetGitignorePatterns_DirPath_GitIgnore_NotFound(t *testing.T) {
