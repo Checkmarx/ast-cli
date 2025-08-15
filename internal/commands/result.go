@@ -188,6 +188,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -201,7 +202,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,6 +264,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -273,7 +275,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -309,8 +311,7 @@ func resultShowSubCommand(
 		commonParams.ResultPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation. Requires override-policy-management permission.")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
@@ -853,7 +854,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper, ignorePolicyFlagOmit bool) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -865,7 +866,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			summary.RiskMsg,
 		)
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			printPoliciesSummary(summary)
+			printPoliciesSummary(summary, ignorePolicyFlagOmit)
 		}
 
 		printResultsSummaryTable(summary)
@@ -886,7 +887,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 	return nil
 }
 
-func printPoliciesSummary(summary *wrappers.ResultSummary) {
+func printPoliciesSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit bool) {
 	hasViolations := false
 	for _, policy := range summary.Policies.Policies {
 		if len(policy.RulesViolated) > 0 {
@@ -896,6 +897,9 @@ func printPoliciesSummary(summary *wrappers.ResultSummary) {
 	}
 	if hasViolations {
 		fmt.Printf(tableLine + "\n")
+		if ignorePolicyFlagOmit {
+			printWarningIfIgnorePolicyOmiited()
+		}
 		if summary.Policies.BreakBuild {
 			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
 		} else {
@@ -1017,6 +1021,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1028,6 +1033,19 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
+		if ignorePolicy {
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
+			}
+		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
@@ -1055,7 +1073,7 @@ func runGetResultCommand(
 
 		var policyResponseModel *wrappers.PolicyResponseModel
 		if !isScanPending(string(scan.Status)) {
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
@@ -1069,7 +1087,7 @@ func runGetResultCommand(
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
 			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
-			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper, ignorePolicyFlagOmit)
 		return err
 	}
 }
@@ -1176,6 +1194,7 @@ func CreateScanReport(
 	agent string,
 	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
@@ -1206,7 +1225,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return nil, err
 		}
@@ -1386,7 +1405,7 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	agent string) error {
+	ignorePolicyFlagOmit bool) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1416,7 +1435,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary, featureFlagsWrapper)
+		return writeConsoleSummary(summary, featureFlagsWrapper, ignorePolicyFlagOmit)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -2866,4 +2885,8 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
+}
+
+func printWarningIfIgnorePolicyOmiited() {
+	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don’t have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
 }
