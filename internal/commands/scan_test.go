@@ -3000,3 +3000,10 @@ a*cation-jira.yml`))
 	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
 	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
 }
+
+func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
+	execCmdNilAssertion(
+		t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy",
+	)
+}

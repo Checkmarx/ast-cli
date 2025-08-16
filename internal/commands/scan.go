@@ -120,10 +120,11 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt             = ".json"
-	xmlExt              = ".xml"
-	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix = "--branch-primary="
+	jsonExt                  = ".json"
+	xmlExt                   = ".xml"
+	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix      = "--branch-primary="
+	OverridePolicyManagement = "override-policy-management"
 )
 
 var (
@@ -845,8 +846,7 @@ func scanCreateSubCommand(
 		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation. Requires override-policy-management permission.")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
@@ -2091,6 +2091,20 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
+		if ignorePolicy {
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
+			}
+		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
 			return errors.Errorf("--%s should be equal or higher than 0", commonParams.ScanTimeoutFlag)
@@ -2147,20 +2161,21 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
-				featureFlagsWrapper)
+				featureFlagsWrapper,
+				ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
 
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
 
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if reportErr != nil {
 				return reportErr
 			}
@@ -2172,7 +2187,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2181,7 +2196,7 @@ func runCreateScanCommand(
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
-			return errors.Errorf("Policy Violation - Break Build Enabled.")
+			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
 		return nil
 	}
@@ -2334,6 +2349,7 @@ func handleWait(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	err := waitForScanCompletion(
 		scanResponseModel,
@@ -2347,7 +2363,8 @@ func handleWait(
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
 		cmd,
-		featureFlagsWrapper)
+		featureFlagsWrapper,
+		ignorePolicyFlagOmit)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -2372,6 +2389,7 @@ func createReportsAfterScan(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -2420,6 +2438,7 @@ func createReportsAfterScan(
 		agent,
 		resultsParams,
 		featureFlagsWrapper,
+		ignorePolicyFlagOmit,
 	)
 }
 
@@ -2567,6 +2586,7 @@ func waitForScanCompletion(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
@@ -2581,7 +2601,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return err
 		}
@@ -2616,6 +2636,7 @@ func isScanRunning(
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -2645,7 +2666,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
-			nil, featureFlagsWrapper) // check this partial case, how to handle it
+			nil, featureFlagsWrapper, ignorePolicyFlagOmit) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
@@ -3206,7 +3227,6 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
-
 	return nil
 }
 

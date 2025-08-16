@@ -17,7 +17,8 @@ type JWTStruct struct {
 			AllowedEngines []string `json:"allowedEngines"`
 		} `json:"LicenseData"`
 	} `json:"ast-license"`
-	jwt.RegisteredClaims // Embedding the standard claims
+	ASTRoles             []string `json:"roles_ast"`
+	jwt.RegisteredClaims          // Embedding the standard claims
 }
 
 var enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
@@ -36,6 +37,7 @@ type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
+	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
 }
 
 func NewJwtWrapper() JWTWrapper {
@@ -118,4 +120,18 @@ func (*JWTStruct) ExtractTenantFromToken() (tenant string, err error) {
 		return "", err
 	}
 	return jwtStruct.Tenant, nil
+}
+func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (hasPermission bool, err error) {
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return false, err
+	}
+	permission := false
+	for _, role := range jwtStruct.ASTRoles {
+		if role == requiredPermission {
+			permission = true
+			break
+		}
+	}
+	return permission, nil
 }
