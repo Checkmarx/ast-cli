@@ -1473,16 +1473,39 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+
+	// First check if the directory is empty or all files are filtered out
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
+
+	// If directory is effectively empty, add a placeholder file
+	if isEmpty {
+		logger.PrintIfVerbose("Directory is empty or all files are filtered out, adding placeholder file")
+		f, err := zipWriter.Create(".container-scan")
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
+		}
+		_, err = f.Write([]byte("1"))
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot write to placeholder file")
+		}
+	} else {
+		// Add directory files normally
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+		if err != nil {
+			return "", err
+		}
+	}
+
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
 			return "", err
 		}
 	}
+
 	// Close the file
 	err = zipWriter.Close()
 	if err != nil {
@@ -1499,6 +1522,44 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 func isSingleContainerScanTriggered() bool {
 	scanTypeList := strings.Split(actualScanTypes, ",")
 	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
+}
+
+// isDirEmpty checks if a directory is empty or if all files are filtered out
+func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
+	empty := true
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the root directory itself
+		if path == dir {
+			return nil
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		// Check if file passes filters
+		filename := filepath.Base(relPath)
+		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
+			empty = false
+			return filepath.SkipAll // We found at least one file that will be included
+		}
+
+		return nil
+	})
+
+	return empty, err
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
@@ -1836,17 +1897,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
-		} else if isSingleContainerScanTriggered() && containerImagesFlag != "" {
-			logger.PrintIfVerbose("Single container scan with external images: creating minimal zip file")
-			// For container scans with external images, we need to create a minimal zip file
-			// since the API requires an upload URL even for container-only scans
-			zipFilePath, dirPathErr = createMinimalZipFile()
-			if unzip {
-				dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
-				if dirRemovalErr != nil {
-					return "", "", dirRemovalErr
-				}
-			}
 		} else {
 			if !isSbom {
 				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
@@ -3237,33 +3287,6 @@ func parseArgs(input string) []string {
 	}
 
 	return args
-}
-
-// createMinimalZipFile creates a minimal zip file for container scans with external images
-// The API requires an upload URL even for container-only scans, so we create a minimal placeholder
-func createMinimalZipFile() (string, error) {
-	outputFile, err := os.CreateTemp(os.TempDir(), "cx-container-*.zip")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create temp file for container-only scan")
-	}
-	defer outputFile.Close()
-
-	zipWriter := zip.NewWriter(outputFile)
-	defer zipWriter.Close()
-
-	// Create a minimal placeholder file
-	f, err := zipWriter.Create(".container-scan")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
-	}
-
-	// Write minimal content (just a single byte)
-	_, err = f.Write([]byte("1"))
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot write to placeholder file")
-	}
-
-	return outputFile.Name(), nil
 }
 
 func isValidJSONOrXML(path string) (bool, error) {
