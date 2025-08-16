@@ -3,12 +3,13 @@
 package integration
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/spf13/viper"
-	"gotest.tools/assert"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/spf13/viper"
+	"gotest.tools/assert"
 )
 
 const filePath = "data/config.yaml"
