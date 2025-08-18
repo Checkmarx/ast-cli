@@ -195,6 +195,7 @@ func NewAstCLI(
 		scsScanOverviewWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
+		jwtWrapper,
 	)
 
 	versionCmd := util.NewVersionCommand()
