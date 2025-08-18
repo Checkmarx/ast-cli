@@ -27,7 +27,7 @@ type GlVulnerabilities struct {
 	Solution    string       `json:"solution"`
 	Scanner     GlScanner    `json:"scanner"`
 	Identifiers []Identifier `json:"identifiers"`
-	Links       []string     `json:"links"`
+	Links       []Link       `json:"links"`
 	Tracking    Tracking     `json:"tracking"`
 	Flags       []Flag       `json:"flags"`
 	Location    Location     `json:"location"`
@@ -113,4 +113,9 @@ type GlSastFlags struct {
 	Type        string `json:"type"`
 	Origin      string `json:"origin"`
 	Description string `json:"description"`
+}
+
+type Link struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
