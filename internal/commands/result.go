@@ -2073,7 +2073,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 		},
 		Links: []wrappers.Link{
 			{
-				Name: queryName,
+				Name: "Learn more",
 				URL:  QueryDescriptionLink,
 			},
 		},
