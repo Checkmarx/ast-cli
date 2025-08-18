@@ -102,6 +102,22 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		_ = resp.Body.Close()
 	}()
 
+	// in case of ne/pne when mandatory comment arent provided, cli is not transforming error message
+	responseMap := make(map[string]interface{})
+	if err := json.NewDecoder(resp.Body).Decode(&responseMap); err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("failed to read the response, %v", err.Error()))
+	} else {
+		if val, ok := responseMap["code"].(float64); ok {
+			if val == 4002 && responseMap["message"] != nil {
+				if errMsg, ok := responseMap["message"].(string); ok {
+					if errMsg == "A comment is required to make changes to the result state" {
+						return nil, errors.Errorf(errMsg)
+					}
+				}
+			}
+		}
+	}
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
 		return nil, errors.Errorf("Predicate bad request.")
