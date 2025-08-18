@@ -60,7 +60,8 @@ var (
 )
 
 func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, projectsWrapper wrappers.ProjectsWrapper, groupsWrapper wrappers.GroupsWrapper,
-	accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) *cobra.Command {
 	projCmd := &cobra.Command{
 		Use:   "project",
 		Short: "Manage projects",
@@ -249,17 +250,11 @@ func runCreateProjectCommand(
 		if err != nil {
 			return err
 		}
+
 		groups, err := updateGroupValues(&input, cmd, groupsWrapper)
 		if err != nil {
 			return err
 		}
-		// Validate groups access before creating the project.
-		// This validation will only be performed if the ACCESS_MANAGEMENT_PHASE2 flag is ON.
-		err = services.ValidateGroupsAccessPhase2(groups, accessManagementWrapper, featureFlagsWrapper)
-		if err != nil {
-			return err
-		}
-
 		setupScanTags(&input, cmd)
 		err = validateConfiguration(cmd)
 		if err != nil {
@@ -291,7 +286,9 @@ func runCreateProjectCommand(
 				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
 		}
+
 		err = services.AssignGroupsToProjectNewAccessManagement(projResponseModel.ID, projResponseModel.Name, groups, accessManagementWrapper, featureFlagsWrapper)
+
 		if err != nil {
 			return err
 		}
