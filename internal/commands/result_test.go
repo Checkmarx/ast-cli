@@ -1095,7 +1095,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsCompleted_ScsCompletedInRe
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := "| Scorecard                 0      0        0      1      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1130,7 +1130,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := " | Scorecard                 0      0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1157,7 +1157,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := "| Scorecard                 -      -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1701,12 +1701,14 @@ func TestIgnorePolicyWithPermission(t *testing.T) {
 func TestParseGlSastVulnerability_QueryDescriptionLink_Succeed(t *testing.T) {
 	mockResult := createMockScanResult("q1234", "c5678")
 	glSast := &wrappers.GlSastResultsCollection{}
-	summaryBaseURI := "https://example.com/overview"
-	scanID := "scanID"
-	projectID := "projectID"
+	summary := &wrappers.ResultSummary{
+		BaseURI:   "https://example.com/overview",
+		ScanID:    "scanID",
+		ProjectID: "projectID",
+	}
 	expectedURL := "https://example.com/results/scanID/projectID/sast/description/c5678/q1234"
 
-	glSast = parseGlSastVulnerability(mockResult, glSast, summaryBaseURI, projectID, scanID)
+	glSast = parseGlSastVulnerability(mockResult, glSast, summary)
 
 	assert.Assert(t, len(glSast.Vulnerabilities) > 0)
 
@@ -1718,12 +1720,14 @@ func TestParseGlSastVulnerability_QueryDescriptionLink_Succeed(t *testing.T) {
 func TestParseGlSastVulnerability_QueryDescriptionLink_Negative(t *testing.T) {
 	mockResult := createMockScanResult("", "")
 	glSast := &wrappers.GlSastResultsCollection{}
-	summaryBaseURI := "invalid-url"
-	scanID := "scanID"
-	projectID := "projectID"
+	summary := &wrappers.ResultSummary{
+		BaseURI:   "invalid-url",
+		ScanID:    "scanID",
+		ProjectID: "projectID",
+	}
 	expectedPattern := "/results/scanID/projectID/sast/description//"
 
-	glSast = parseGlSastVulnerability(mockResult, glSast, summaryBaseURI, projectID, scanID)
+	glSast = parseGlSastVulnerability(mockResult, glSast, summary)
 
 	assert.Assert(t, len(glSast.Vulnerabilities) > 0)
 	vuln := glSast.Vulnerabilities[0]
