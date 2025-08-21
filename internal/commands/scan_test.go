@@ -2975,6 +2975,12 @@ func TestValidateScanTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
 			cmd.Flags().String(commonParams.SCSEnginesFlag, tt.userSCSScanTypes, "")
@@ -2984,6 +2990,7 @@ func TestValidateScanTypes(t *testing.T) {
 					return tt.allowedEngines, nil
 				},
 			}
+
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
 			if tt.expectedError != "" {
