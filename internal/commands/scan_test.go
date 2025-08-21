@@ -2983,7 +2983,6 @@ func TestValidateScanTypes(t *testing.T) {
 				CustomGetAllowedEngines: func(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]bool, error) {
 					return tt.allowedEngines, nil
 				},
-				ScsLicensingV2: tt.scsLicensingV2,
 			}
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
