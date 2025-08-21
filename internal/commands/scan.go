@@ -110,10 +110,9 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
-	// TODO VERIFY MESSAGE BELOW WITH CLI TEAM
-	engineScsNotAllowed = "You are trying to run a scan with the \"scs\" scan type and it requires either the \"repository‑health\" or the \"secret‑detection\" package license." +
-		"\nTo use this feature, you would need to purchase the appropriate license." +
-		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
+	engineScsNotAllowed = "You are trying to run a scan with the \"scs\" scan type. This requires either the \"repository‑health\" or the \"secret‑detection\" package license, depending on which scanner you are running." +
+		"\nTo use this feature, you need to purchase the appropriate license." +
+		"\nIf you think that you have already purchased the relevant license, please contact our support team for assistance." +
 		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
 	directoryCreationPrefix     = "cx-"
