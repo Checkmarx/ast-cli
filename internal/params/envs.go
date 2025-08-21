@@ -28,6 +28,7 @@ const (
 	ScsScanOverviewPathEnv              = "CX_SCS_SCAN_OVERVIEW_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
+	ScaResultsPredicatesPathEnv         = "CX_SCA_RESULTS_PREDICATES_PATH"
 	KicsResultsPathEnv                  = "CX_KICS_RESULTS_PATH"
 	KicsResultsPredicatesPathEnv        = "CX_KICS_RESULTS_PREDICATES_PATH"
 	ScsResultsReadPredicatesPathEnv     = "CX_SCS_RESULTS_PREDICATES_READ_PATH"

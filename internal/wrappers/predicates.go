@@ -22,6 +22,31 @@ type PredicateRequest struct {
 	Severity      string  `json:"severity"`
 }
 
+type ScaPredicateRequest struct {
+	PackageName     string      `json:"packageName"`
+	PackageVersion  string      `json:"packageVersion"`
+	PackageManager  string      `json:"packageManager"`
+	VulnerabilityId string      `json:"vulnerabilityId"`
+	ProjectIds      []string    `json:"projectIds"`
+	Actions         []ScaAction `json:"actions"`
+}
+
+type State string
+
+const (
+	ToVerify               string = "ToVerify"
+	Confirmed              string = "Confirmed"
+	NotExploitable         string = "NotExploitable"
+	ProposedNotExploitable string = "ProposedNotExploitable"
+	Urgent                 string = "Urgent"
+)
+
+type ScaAction struct {
+	ActionType string `json:"actionType"`
+	Value      string `json:"value"`
+	Comment    string `json:"comment"`
+}
+
 type Predicate struct {
 	BasePredicate
 	ID        string    `json:"ID"`
@@ -52,7 +77,7 @@ type CustomStatesWrapper interface {
 }
 
 type ResultsPredicatesWrapper interface {
-	PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (*WebError, error)
+	PredicateSeverityAndState(predicate interface{}, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,
 	) (*PredicatesCollectionResponseModel, *WebError, error)

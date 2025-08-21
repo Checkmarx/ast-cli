@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -116,6 +117,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 				--scan-type <SAST|IAC-SECURITY>
 		`,
 		),
+
 		RunE: runTriageUpdate(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper),
 	}
 
@@ -126,9 +128,8 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	triageUpdateCmd.PersistentFlags().Int(params.CustomStateIDFlag, -1, "Specify the ID of the states that you would like to apply to this result")
 	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
+	triageUpdateCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "List Vulnerabilities string")
 
-	markFlagAsRequired(triageUpdateCmd, params.SimilarityIDFlag)
-	markFlagAsRequired(triageUpdateCmd, params.SeverityFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
 
@@ -181,6 +182,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
@@ -190,38 +192,109 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		// check if the current tenant has critical severity available
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+		vulnerabilityDetails, _ := cmd.Flags().GetStringSlice(params.VulnerabilitiesFlag)
+
 		criticalEnabled := flagResponse.Status
 		if !criticalEnabled && strings.EqualFold(severity, "critical") {
 			return errors.Errorf("%s", "Critical severity is not available for your tenant.This severity status will be enabled shortly")
 		}
-
 		var err error
 		state, customStateID, err = determineSystemOrCustomState(customStatesWrapper, featureFlagsWrapper, state, customStateID)
+		predicate, err := handlePredicate(vulnerabilityDetails, similarityID, projectID, severity, state, customStateID, comment, scanType)
 		if err != nil {
 			return err
 		}
+		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
+		if err != nil {
+			return errors.Wrapf(err, "%s", "Failed updating the predicate")
+		}
+		return nil
+	}
+}
 
-		predicate := &wrappers.PredicateRequest{
+func handlePredicate(vulnerabilityDetails []string, similarityID string, projectID string, severity string, state string, customStateID int, comment string, scanType string) (interface{}, error) {
+	// TODO trim space here
+	scanType = strings.ToLower(scanType)
+	if strings.EqualFold(scanType, Sca) {
+		state = transformState(state)
+		payload, err := handleScaTriage(vulnerabilityDetails, comment, state, projectID)
+		if err != nil {
+			return nil, errors.Errorf("%s", "Failed Sca handling")
+		}
+		return payload, nil
+	} else {
+		payload := &wrappers.PredicateRequest{
 			SimilarityID: similarityID,
 			ProjectID:    projectID,
 			Severity:     severity,
 			Comment:      comment,
 		}
-
 		if state != "" {
-			predicate.State = &state
+			payload.State = &state
 		} else {
-			predicate.CustomStateID = &customStateID
+			payload.CustomStateID = &customStateID
 		}
-
-		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
-		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed updating the predicate")
-		}
-
-		return nil
+		return payload, nil
 	}
 }
+
+func transformState(state string) string {
+	state = strings.ToLower(strings.TrimSpace(state))
+	switch state {
+	case strings.ToLower(params.ToVerify):
+		return wrappers.ToVerify
+	case strings.ToLower(params.URGENT):
+		return wrappers.Urgent
+	case strings.ToLower(params.NotExploitable):
+		return wrappers.NotExploitable
+	case strings.ToLower(params.ProposedNotExploitable):
+		return wrappers.ProposedNotExploitable
+	case strings.ToLower(params.CONFIRMED):
+		return wrappers.Confirmed
+	}
+	return ""
+}
+
+// TODO rename the function
+func handleScaTriage(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
+	scaTriageInfo := make(map[string]interface{})
+	for _, vulnerability := range vulnerabilityDetails {
+		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)
+		err := validateVulnerabilityDetails(vulnerabilityKeyVal)
+		if err != nil {
+			return nil, err
+		}
+		scaTriageInfo[vulnerabilityKeyVal[0]] = vulnerabilityKeyVal[1]
+	}
+	scaTriageInfo["projectIds"] = []string{projectId}
+	actionInfo := make(map[string]interface{})
+	actionInfo["actionType"] = params.ChangeState
+	actionInfo["value"] = state
+	actionInfo["comment"] = comment
+	scaTriageInfo["actions"] = []map[string]interface{}{actionInfo}
+
+	b, err := json.Marshal(scaTriageInfo)
+	if err != nil {
+		return nil, errors.Errorf("Failed to serialize vulnerabilities %s", scaTriageInfo)
+	}
+	payload := &wrappers.ScaPredicateRequest{}
+	err = json.Unmarshal(b, payload)
+	if err != nil {
+		return nil, errors.Errorf("Failed to deserialize vulnerabilities %s", b)
+	}
+	return payload, nil
+}
+
+func validateVulnerabilityDetails(vulnerability []string) error {
+	if len(vulnerability) != params.KeyValuePairSize {
+		return errors.Errorf("Invalid vulnerabilities. It should be in a KEY=VALUE format")
+	}
+	if len(strings.Split(vulnerability[1], ",")) > params.SingleValueSize || len(strings.Split(vulnerability[1], ",")) > params.SingleValueSize {
+		return errors.Errorf("Cannot specify multiple values to key %s", vulnerability[0])
+	}
+	return nil
+}
+
 func determineSystemOrCustomState(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, state string, customStateID int) (string, int, error) {
 	if !isCustomState(state) {
 		return state, -1, nil

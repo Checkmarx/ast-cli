@@ -65,12 +65,56 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 	r.path = newPath
 }
 
-func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *PredicateRequest, scanType string) (
+func (r *ResultsPredicatesHTTPWrapper) PredicateScaState(predicate *ScaPredicateRequest) (*WebError, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+	jsonBody, err := json.Marshal(predicate)
+	if err != nil {
+		return nil, err
+	}
+	var scaTriageAPIPath string
+
+	scaTriageAPIPath = viper.GetString(params.ScaResultsPredicatesPathEnv)
+	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", scaTriageAPIPath))
+	logger.PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBody)))
+
+	r.SetPath(scaTriageAPIPath)
+
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBody), true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	switch resp.StatusCode {
+	case http.StatusOK, http.StatusCreated:
+		fmt.Println("Predicate updated successfully.")
+		return nil, nil
+	case http.StatusForbidden:
+		return nil, errors.Errorf("You do not have permission to update state")
+	case http.StatusNotFound:
+		return nil, errors.Errorf("Predicate not found.")
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return nil, errors.Errorf("Predicate bad request.")
+
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+}
+
+func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interface{}, scanType string) (
 	*WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
-	b := [...]PredicateRequest{*predicate}
-	jsonBytes, err := json.Marshal(b)
+	var predicateModel interface{}
+	if !strings.EqualFold(strings.TrimSpace(scanType), params.ScaType) {
+		predicateModel = []interface{}{predicate}
+	} else {
+		predicateModel = predicate
+	}
+	jsonBytes, err := json.Marshal(predicateModel)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +126,8 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
 	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScsType) {
 		triageAPIPath = viper.GetString(params.ScsResultsWritePredicatesPathKey)
+	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScaType) {
+		triageAPIPath = viper.GetString(params.ScaResultsPredicatesPathEnv)
 	} else {
 		return nil, errors.Errorf(invalidScanType, scanType)
 	}
@@ -91,7 +137,7 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate *Predi
 
 	r.SetPath(triageAPIPath)
 
-	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}

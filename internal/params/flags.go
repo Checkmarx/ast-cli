@@ -119,7 +119,10 @@ const (
 		"Example: scan --threshold \"sast-high=10;sca-high=5;iac-security-low=10\""
 	KeyValuePairSize             = 2
 	WaitDelayDefault             = 5
+	SingleValueSize              = 1
+	ChangeState                  = "ChangeState"
 	SimilarityIDFlag             = "similarity-id"
+	VulnerabilitiesFlag          = "vulnerabilities"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
 	CustomStateIDFlag            = "state-id"
