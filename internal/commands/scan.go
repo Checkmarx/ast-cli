@@ -913,7 +913,7 @@ func setupScanTypeProjectAndConfig(
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 ) error {
-	userAllowedEngines, scsLicensingV2, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
 	newProjectName, _ := cmd.Flags().GetString(commonParams.ProjectName)
 
@@ -990,7 +990,8 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2, userAllowedEngines[commonParams.RepositoryHealthType],
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2Flag.Status, userAllowedEngines[commonParams.RepositoryHealthType],
 		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
@@ -1413,7 +1414,9 @@ func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasE
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
 
-	allowedEngines, scsLicensingV2Enabled, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+
+	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 
 	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 
@@ -1444,7 +1447,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 
 		for _, scanType := range scanTypes {
-			if scanType == commonParams.ScsType && scsLicensingV2Enabled {
+			if scanType == commonParams.ScsType && scsLicensingV2Flag.Status {
 				// the SCS scan type is a special case because it contains two engines.
 				// Before the new licensing model, the main license was named "scs".
 				// Licenses are now separated for each engine, so this validation no longer makes sense.
@@ -1460,7 +1463,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if slices.Contains(scanTypes, commonParams.ScsType) {
-			err = validateSCSEngines(allowedEngines, userSCSScanTypes, scsLicensingV2Enabled)
+			err = validateSCSEngines(allowedEngines, userSCSScanTypes, scsLicensingV2Flag.Status)
 			if err != nil {
 				return err
 			}

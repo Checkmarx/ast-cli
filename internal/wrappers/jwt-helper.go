@@ -22,7 +22,7 @@ type JWTStruct struct {
 }
 
 type JWTWrapper interface {
-	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error)
+	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
@@ -61,20 +61,19 @@ func getDefaultEngines(scsLicensingV2 bool) (defaultEngines map[string]bool) {
 }
 
 // GetAllowedEngines will return a map with user allowed engines
-func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error) {
+func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	scsLicensingV2Flag, _ := GetSpecificFeatureFlag(featureFlagsWrapper, ScsLicensingV2Enabled)
-	scsLicensingV2 = scsLicensingV2Flag.Status
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
 	if flagResponse.Status {
 		jwtStruct, err := getJwtStruct()
 		if err != nil {
-			return nil, scsLicensingV2, err
+			return nil, err
 		}
-		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, scsLicensingV2)
-		return allowedEngines, scsLicensingV2, nil
+		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, scsLicensingV2Flag.Status)
+		return allowedEngines, nil
 	}
 
-	return getDefaultEngines(scsLicensingV2), scsLicensingV2, nil
+	return getDefaultEngines(scsLicensingV2Flag.Status), nil
 }
 
 func getJwtStruct() (*JWTStruct, error) {

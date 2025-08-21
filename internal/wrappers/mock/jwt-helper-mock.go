@@ -11,7 +11,6 @@ type JWTMockWrapper struct {
 	AIEnabled                 int
 	CheckmarxOneAssistEnabled int
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
-	ScsLicensingV2            bool
 }
 
 const AIProtectionDisabled = 1
@@ -20,17 +19,17 @@ const CheckmarxOneAssistDisabled = 1
 var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
 // GetAllowedEngines mock for tests
-func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, scsLicensingV2 bool, err error) {
+func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	if j.CustomGetAllowedEngines != nil {
 		allowedEngines, err = j.CustomGetAllowedEngines(featureFlagsWrapper)
-		return allowedEngines, j.ScsLicensingV2, err
+		return allowedEngines, err
 	}
 	allowedEngines = make(map[string]bool)
 
 	for _, value := range engines {
 		allowedEngines[strings.ToLower(value)] = true
 	}
-	return allowedEngines, j.ScsLicensingV2, nil
+	return allowedEngines, nil
 }
 
 func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
