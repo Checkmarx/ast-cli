@@ -7,7 +7,7 @@ require (
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.2
-	github.com/Checkmarx/manifest-parser v0.1.0
+	github.com/Checkmarx/manifest-parser v0.1.1
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/bouk/monkey v1.0.0
@@ -225,6 +225,7 @@ require (
 	github.com/saferwall/pe v1.5.6 // indirect
 	github.com/sagikazarmark/locafero v0.9.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/sassoftware/go-rpmutils v0.4.0 // indirect
 	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/secDre4mer/pkcs7 v0.0.0-20240322103146-665324a4461d // indirect
@@ -239,7 +240,7 @@ require (
 	github.com/spdx/tools-golang v0.5.5 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/sylabs/sif/v2 v2.21.1 // indirect
 	github.com/sylabs/squashfs v1.0.6 // indirect
@@ -268,6 +269,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/mock v0.5.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
+	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
@@ -283,17 +286,17 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	helm.sh/helm/v3 v3.18.4 // indirect
-	k8s.io/api v0.33.2 // indirect
-	k8s.io/apiextensions-apiserver v0.33.2 // indirect
-	k8s.io/apimachinery v0.33.2 // indirect
-	k8s.io/apiserver v0.33.2 // indirect
-	k8s.io/cli-runtime v0.33.2 // indirect
-	k8s.io/client-go v0.33.2 // indirect
-	k8s.io/component-base v0.33.2 // indirect
+	helm.sh/helm/v3 v3.18.5 // indirect
+	k8s.io/api v0.33.3 // indirect
+	k8s.io/apiextensions-apiserver v0.33.3 // indirect
+	k8s.io/apimachinery v0.33.3 // indirect
+	k8s.io/apiserver v0.33.3 // indirect
+	k8s.io/cli-runtime v0.33.3 // indirect
+	k8s.io/client-go v0.33.3 // indirect
+	k8s.io/component-base v0.33.3 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
-	k8s.io/kubectl v0.33.2 // indirect
+	k8s.io/kubectl v0.33.3 // indirect
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
@@ -301,7 +304,7 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
+	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
 replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.27
