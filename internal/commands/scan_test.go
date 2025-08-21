@@ -2856,7 +2856,7 @@ func TestValidateScanTypes(t *testing.T) {
 			userSCSScanTypes: "",
 			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
 			scsLicensingV2:   true,
-			expectedError:    "it requires either the \"repository‑health\" or the \"secret‑detection\" package license",
+			expectedError:    "This requires either the \"repository‑health\" or the \"secret‑detection\" package license",
 		},
 		{
 			name:             "no specific micro engines selected with repository-health license available using new sscs licensing",
