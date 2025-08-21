@@ -31,6 +31,9 @@ func (m *Mapper) ConvertKicsToIacResults(
 
 	for i := range results.Results {
 		result := &results.Results[i]
+		if strings.EqualFold(result.Severity, InfoSeverity) {
+			continue
+		}
 		for j := range result.Locations {
 			loc := &result.Locations[j]
 			locLine := int(loc.Line) - 1

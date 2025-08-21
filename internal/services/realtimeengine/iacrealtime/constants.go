@@ -6,6 +6,7 @@ const (
 	ContainerTempDirPattern  = "iac-realtime"
 	KicsContainerPrefix      = "cli-iac-realtime-"
 	ContainerResultsFileName = "results.json"
+	InfoSeverity             = "info"
 )
 
 var KicsErrorCodes = []string{"60", "50", "40", "30", "20"}
