@@ -1,11 +1,12 @@
 package util
 
 import (
-	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/spf13/viper"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/viper"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	asserts "github.com/stretchr/testify/assert"
