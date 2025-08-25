@@ -798,87 +798,143 @@ func TestAddScaScan(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
 	}
 }
-func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
-
-	_ = cmdCommand.Execute()
-
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, "")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, "")
-
-	resubmitConfig := []wrappers.Config{
+func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
 		{
-			Type: commonParams.ScsType,
-			Value: map[string]interface{}{
-				configTwoms:      trueString,
-				ScsScoreCardType: falseString,
-			},
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
 
-	expectedConfig := wrappers.SCSConfig{
-		Twoms:     trueString,
-		Scorecard: falseString,
-	}
+			_ = cmdCommand.Execute()
 
-	expectedMapConfig := make(map[string]interface{})
-	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	expectedMapConfig[resultsMapValue] = &expectedConfig
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, "")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, "")
 
-	if !reflect.DeepEqual(result, expectedMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			resubmitConfig := []wrappers.Config{
+				{
+					Type: commonParams.ScsType,
+					Value: map[string]interface{}{
+						configTwoms:      trueString,
+						ScsScoreCardType: falseString,
+					},
+				},
+			}
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			expectedConfig := wrappers.SCSConfig{
+				Twoms:     trueString,
+				Scorecard: falseString,
+			}
+
+			expectedMapConfig := make(map[string]interface{})
+			expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			expectedMapConfig[resultsMapValue] = &expectedConfig
+
+			if !reflect.DeepEqual(result, expectedMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			}
+		})
 	}
 }
 
 func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
-
-	_ = cmdCommand.Execute()
-
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-
-	resubmitConfig := []wrappers.Config{
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
 		{
-			Type: commonParams.ScsType,
-			Value: map[string]interface{}{
-				configTwoms:      trueString,
-				ScsScoreCardType: trueString,
-			},
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
 
-	expectedConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: trueString,
-		RepoToken: dummyToken,
-		RepoURL:   dummyRepo,
-	}
+			_ = cmdCommand.Execute()
 
-	expectedMapConfig := make(map[string]interface{})
-	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	expectedMapConfig[resultsMapValue] = &expectedConfig
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 
-	if !reflect.DeepEqual(result, expectedMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			resubmitConfig := []wrappers.Config{
+				{
+					Type: commonParams.ScsType,
+					Value: map[string]interface{}{
+						configTwoms:      trueString,
+						ScsScoreCardType: trueString,
+					},
+				},
+			}
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			expectedConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: trueString,
+				RepoToken: dummyToken,
+				RepoURL:   dummyRepo,
+			}
+
+			expectedMapConfig := make(map[string]interface{})
+			expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			expectedMapConfig[resultsMapValue] = &expectedConfig
+
+			if !reflect.DeepEqual(result, expectedMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			}
+		})
 	}
 }
 
@@ -1095,510 +1151,869 @@ func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
 	assert.Assert(t, err.Error() == SCSScoreCardError)
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "",
-		Scorecard: "true",
-		RepoURL:   dummyRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms: "true",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
-
-func TestCreateScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypeFlag, "scs", "")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms: "true",
+func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: false,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	output := buf.String()
-	if !strings.Contains(output, ScsRepoWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsRepoWarningMsg, output)
-	}
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "",
+				Scorecard: "true",
+				RepoURL:   dummyRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedGithubRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
-
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedRepoWithToken,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepoWithToken,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypeFlag, "scs", "")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
 
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
 
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
+			output := buf.String()
+			if !strings.Contains(output, ScsRepoWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsRepoWarningMsg, output)
+			}
 
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepoWithTokenAndUsername,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedRepoWithTokenAndUsername,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
+
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "",
-		RepoURL:   "",
-		RepoToken: "",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedGithubRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedRepoWithToken,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "",
-		RepoURL:   "",
-		RepoToken: "",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepoWithToken,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepoWithTokenAndUsername,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedRepoWithTokenAndUsername,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "",
+				RepoURL:   "",
+				RepoToken: "",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "",
+				RepoURL:   "",
+				RepoToken: "",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
@@ -2433,33 +2848,139 @@ func TestValidateScanTypes(t *testing.T) {
 		userScanTypes    string
 		userSCSScanTypes string
 		allowedEngines   map[string]bool
+		scsLicensingV2   bool
 		expectedError    string
 	}{
 		{
-			name:             "No licenses available",
+			name:             "no specific micro engines selected with no licenses available using new sscs licensing",
 			userScanTypes:    "scs",
-			userSCSScanTypes: "sast,secret-detection",
-			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"scs\" scan type does",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "This requires either the \"repository‑health\" or the \"secret‑detection\" package license",
 		},
 		{
-			name:             "SCS license available, secret-detection not available",
+			name:             "no specific micro engines selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "no specific micro engines selected with scs license available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with SCS license available, secret-detection not available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
 		},
 		{
-			name:             "All licenses available",
+			name:             "secret-detection selected with repository-health license available, secret-detection not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard selected with secret-detection license available and repository-health not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"repository-health\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with all licenses available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "secret-detection selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
 			expectedError:    "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
 			cmd.Flags().String(commonParams.SCSEnginesFlag, tt.userSCSScanTypes, "")
@@ -2469,6 +2990,7 @@ func TestValidateScanTypes(t *testing.T) {
 					return tt.allowedEngines, nil
 				},
 			}
+
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
 			if tt.expectedError != "" {
@@ -2476,6 +2998,100 @@ func TestValidateScanTypes(t *testing.T) {
 			} else {
 				assert.NilError(t, err)
 			}
+		})
+	}
+}
+
+func TestIsScsScorecardAllowed(t *testing.T) {
+	tests := []struct {
+		name                       string
+		scsLicensingV2             bool
+		hasRepositoryHealthLicense bool
+		hasScsLicense              bool
+		expectedAllowed            bool
+	}{
+		{
+			name:            "scsLicensingV2 disabled and has scs license",
+			scsLicensingV2:  false,
+			hasScsLicense:   true,
+			expectedAllowed: true,
+		},
+		{
+			name:            "scsLicensingV2 disabled and does not have scs license",
+			scsLicensingV2:  false,
+			hasScsLicense:   false,
+			expectedAllowed: false,
+		},
+		{
+			name:                       "scsLicensingV2 enabled and has repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: true,
+			expectedAllowed:            true,
+		},
+		{
+			name:                       "scsLicensingV2 enabled and does not have repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: false,
+			expectedAllowed:            false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsScorecardAllowed(tt.scsLicensingV2, tt.hasRepositoryHealthLicense, tt.hasScsLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
+		})
+	}
+}
+
+func TestIsScsSecretDetectionAllowed(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+		hasScsLicense               bool
+		expectedAllowed             bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled and has scs and enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               true,
+			expectedAllowed:             true,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has enterprise secrets but does not have scs license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               false,
+			expectedAllowed:             false,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has scs license but does not have enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: false,
+			hasScsLicense:               true,
+			expectedAllowed:             false,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and has secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: true,
+			expectedAllowed:           true,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and does not have secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: false,
+			expectedAllowed:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsSecretDetectionAllowed(tt.scsLicensingV2, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, tt.hasScsLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
 		})
 	}
 }

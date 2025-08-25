@@ -1,9 +1,10 @@
 package util
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	asserts "github.com/stretchr/testify/assert"
-	"testing"
 
 	"gotest.tools/assert"
 )
