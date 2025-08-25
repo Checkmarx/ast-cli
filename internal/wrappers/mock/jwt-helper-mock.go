@@ -21,7 +21,8 @@ var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "co
 // GetAllowedEngines mock for tests
 func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	if j.CustomGetAllowedEngines != nil {
-		return j.CustomGetAllowedEngines(featureFlagsWrapper)
+		allowedEngines, err = j.CustomGetAllowedEngines(featureFlagsWrapper)
+		return allowedEngines, err
 	}
 	allowedEngines = make(map[string]bool)
 

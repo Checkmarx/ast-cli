@@ -2,6 +2,7 @@ package mock
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"

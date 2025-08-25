@@ -293,8 +293,12 @@ const (
 	Success                        = "success"
 	SCSScorecardType               = "sscs-scorecard"
 	SCSSecretDetectionType         = "sscs-secret-detection"
+	SecretDetectionType            = "secret-detection"
+	SecretDetectionLabel           = "Secret Detection"
 	EnterpriseSecretsLabel         = "Enterprise Secrets"
 	EnterpriseSecretsType          = "enterprise-secrets"
+	RepositoryHealthType           = "repository-health"
+	RepositoryHealthLabel          = "Repository Health"
 	SCSScorecardOverviewType       = "Scorecard"
 	SCSSecretDetectionOverviewType = "2ms"
 )
