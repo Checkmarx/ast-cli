@@ -1095,7 +1095,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsCompleted_ScsCompletedInRe
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := "| Scorecard                 0      0        0      1      0   Completed  |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1130,7 +1130,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(cleanString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := " | Scorecard                 0      0        0      0      0   Failed     |"
 	assert.Equal(t, strings.Contains(cleanString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1157,7 +1157,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 		"Expected SCS summary:"+scsSummary)
 	secretDetectionSummary := secretDetectionLine
 	assert.Equal(t, strings.Contains(stdoutString, secretDetectionSummary), true,
-		"Expected Secret Detection summary:"+secretDetectionSummary)
+		"Expected Secret Detection summary:"+secretDetectionLine)
 	scorecardSummary := "| Scorecard                 -      -        -      -      -       -      |"
 	assert.Equal(t, strings.Contains(stdoutString, scorecardSummary), true,
 		"Expected Scorecard summary:"+scorecardSummary)
@@ -1696,4 +1696,78 @@ func TestIgnorePolicyWithPermission(t *testing.T) {
 	}
 	output := buf.String()
 	assert.Assert(t, !strings.Contains(output, "Warning: The --ignore-policy flag was not implemented because you don’t have the required permission."), "'Ignore Policy flag omitted because you dont have permission' should not be present in the output")
+}
+
+func TestParseGlSastVulnerability_QueryDescriptionLink_Succeed(t *testing.T) {
+	mockResult := createMockScanResult("q1234", "c5678")
+	glSast := &wrappers.GlSastResultsCollection{}
+	summary := &wrappers.ResultSummary{
+		BaseURI:   "https://example.com/overview",
+		ScanID:    "scanID",
+		ProjectID: "projectID",
+	}
+	expectedURL := "https://example.com/results/scanID/projectID/sast/description/c5678/q1234"
+
+	glSast = parseGlSastVulnerability(mockResult, glSast, summary)
+
+	assert.Assert(t, len(glSast.Vulnerabilities) > 0)
+
+	actualURL := extractURLFromDescription(glSast.Vulnerabilities[0].Description)
+
+	assert.Equal(t, actualURL, expectedURL, "QueryDescriptionLink URL does not match expected format")
+}
+
+func TestParseGlSastVulnerability_QueryDescriptionLink_Negative(t *testing.T) {
+	mockResult := createMockScanResult("", "")
+	glSast := &wrappers.GlSastResultsCollection{}
+	summary := &wrappers.ResultSummary{
+		BaseURI:   "invalid-url",
+		ScanID:    "scanID",
+		ProjectID: "projectID",
+	}
+	expectedPattern := "/results/scanID/projectID/sast/description//"
+
+	glSast = parseGlSastVulnerability(mockResult, glSast, summary)
+
+	assert.Assert(t, len(glSast.Vulnerabilities) > 0)
+	vuln := glSast.Vulnerabilities[0]
+
+	assert.Assert(t, strings.Contains(vuln.Description, expectedPattern),
+		"URL should contain pattern with empty values")
+
+	actualURL := extractURLFromDescription(vuln.Description)
+	assert.Assert(t, actualURL != "", "Extracted URL should not be empty")
+}
+
+func createMockScanResult(queryID, cweID string) *wrappers.ScanResult {
+	return &wrappers.ScanResult{
+		Type: "sast",
+		ScanResultData: wrappers.ScanResultData{
+			QueryName: "TestQuery",
+			QueryID:   queryID,
+			Nodes: []*wrappers.ScanResultNode{
+				{
+					FileName: "file.go",
+					Line:     42,
+					Length:   1,
+				},
+			},
+		},
+		VulnerabilityDetails: wrappers.VulnerabilityDetails{
+			CweID: cweID,
+		},
+		ID:          "vuln-1",
+		Description: "desc-",
+		Severity:    "high",
+	}
+}
+
+func extractURLFromDescription(description string) string {
+	parts := strings.Split(description, "http")
+	if len(parts) == 1 {
+		return "http" + strings.Split(parts[0], " ")[0]
+	} else if len(parts) > 1 {
+		return "http" + strings.Split(parts[1], " ")[0]
+	}
+	return ""
 }
