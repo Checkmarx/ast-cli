@@ -15,7 +15,7 @@ const (
 	SuccessFullSecretsLicenceValidation = "License for pre-receive secret detection has been validated successfully"
 )
 
-func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	preReceiveCmd := &cobra.Command{
 		Use:   "pre-receive",
 		Short: "Manage pre-receive hooks and run secret detection scans",
@@ -27,7 +27,7 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		),
 	}
 	preReceiveCmd.AddCommand(scanSecretsPreReceiveCommand())
-	preReceiveCmd.AddCommand(validateSecretsLicence(jwtWrapper))
+	preReceiveCmd.AddCommand(validateSecretsLicence(jwtWrapper, featureFlagsWrapper))
 
 	return preReceiveCmd
 }
@@ -54,7 +54,7 @@ func scanSecretsPreReceiveCommand() *cobra.Command {
 	return scanPrereceiveCmd
 }
 
-func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	validateLicence := &cobra.Command{
 		Use:   "validate",
 		Short: "Validates the license for pre-receive secret detection",
@@ -64,19 +64,27 @@ func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 		    $ cx hooks pre-receive validate
 			`,
 		),
-		RunE: checkLicence(jwtWrapper),
+		RunE: checkLicence(jwtWrapper, featureFlagsWrapper),
 	}
 	return validateLicence
 }
 
-func checkLicence(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
+func checkLicence(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		isAllowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
+		scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+		var licenseName string
+		if scsLicensingV2Flag.Status {
+			licenseName = params.SecretDetectionLabel
+		} else {
+			licenseName = params.EnterpriseSecretsLabel
+		}
+
+		isAllowed, err := jwtWrapper.IsAllowedEngine(licenseName)
 		if err != nil {
 			log.Fatalf("%s: %s", "Failed the licence check", err)
 		}
 		if !isAllowed {
-			log.Fatalf("Error: License validation failed. Please ensure that your Checkmarx One license includes Enterprise Secrets")
+			log.Fatalf("Error: License validation failed. Please ensure that your Checkmarx One license includes %s", licenseName)
 		}
 		_, _ = fmt.Fprintln(cmd.OutOrStdout(), SuccessFullSecretsLicenceValidation)
 		return nil

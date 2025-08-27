@@ -11,7 +11,8 @@ import (
 
 func TestPreReceiveCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	cmd := PreReceiveCommand(mockJWT)
+	mockFF := &mock.FeatureFlagsMockWrapper{}
+	cmd := PreReceiveCommand(mockJWT, mockFF)
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "pre-receive", cmd.Use)
 	subCmds := cmd.Commands()
