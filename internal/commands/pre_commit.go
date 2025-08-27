@@ -27,7 +27,7 @@ func PreCommitCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappe
 	preCommitCmd.PersistentFlags().Bool("global", false, "Install the hook globally for all repositories")
 
 	preCommitCmd.AddCommand(secretsInstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
-	preCommitCmd.AddCommand(secretsUninstallGitHookCommand(jwtWrapper, featureFlagsWrapper))
+	preCommitCmd.AddCommand(secretsUninstallGitHookCommand())
 	preCommitCmd.AddCommand(secretsUpdateGitHookCommand(jwtWrapper, featureFlagsWrapper))
 	preCommitCmd.AddCommand(secretsScanCommand(jwtWrapper, featureFlagsWrapper))
 	preCommitCmd.AddCommand(secretsIgnoreCommand(jwtWrapper, featureFlagsWrapper))
@@ -60,7 +60,7 @@ func secretsInstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWr
 	return cmd
 }
 
-func secretsUninstallGitHookCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func secretsUninstallGitHookCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets-uninstall-git-hook",
 		Short: "Uninstall the pre-commit hook",
