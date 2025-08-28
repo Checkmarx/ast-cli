@@ -1,4 +1,4 @@
-name: Code Review with OpenAI
+name: OpenAI Code Review
 
 on:
   pull_request:
