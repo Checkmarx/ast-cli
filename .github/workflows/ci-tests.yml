@@ -1,4 +1,4 @@
-name: Checkmarx One CLI
+name: CI Tests CLI
 
 on:
   pull_request:
