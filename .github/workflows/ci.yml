@@ -1,4 +1,4 @@
-name: Checkmarx One CLI
+name: Continuous Tests and Checks CLI
 
 on:
   pull_request:
