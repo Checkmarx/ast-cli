@@ -1160,7 +1160,7 @@ func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent stri
 		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
 		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
-		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType},
 	}
 
 	excludedTypes := make(map[string]struct{})
