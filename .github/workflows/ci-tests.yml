@@ -1,4 +1,4 @@
-name: CI Tests CLI
+name: Continuous Integration Tests
 
 on:
   pull_request:
