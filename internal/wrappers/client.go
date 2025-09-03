@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -228,6 +229,17 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 		krb5ConfPath = kerberos.GetDefaultKrb5ConfPath()
 	}
 	ccachePath := viper.GetString(commonParams.ProxyKerberosCcacheKey)
+
+	// Early validation: Check Kerberos setup before creating client
+	// This ensures errors are caught immediately during client creation, not during HTTP requests
+	if err := kerberos.ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN); err != nil {
+		logger.PrintIfVerbose("ERROR: Kerberos proxy authentication setup failed: " + err.Error())
+		logger.PrintIfVerbose("Falling back to basic proxy authentication")
+		// This allows the CLI to continue working even with Kerberos misconfiguration
+		logger.Print("ERROR: Kerberos proxy authentication setup failed: " + err.Error())
+		os.Exit(1)
+		// return basicProxyClient(timeout, proxyStr)
+	}
 
 	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
 	logger.PrintIfVerbose("Kerberos SPN: " + proxySPN)

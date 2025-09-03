@@ -172,6 +172,63 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	return conn, nil
 }
 
+// ValidateKerberosSetup validates Kerberos configuration early to fail fast
+// This function performs all the same checks as dialAndNegotiate but without actually
+// making network connections, allowing early detection of configuration problems
+func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
+	// Validate SPN
+	if proxySPN == "" {
+		return errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
+	}
+
+	// Use default krb5.conf path if not specified
+	if krb5ConfPath == "" {
+		krb5ConfPath = GetDefaultKrb5ConfPath()
+	}
+
+	// Check if krb5.conf exists
+	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
+		return errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
+	}
+
+	// Load krb5.conf to validate it's readable
+	_, err := config.Load(krb5ConfPath)
+	if err != nil {
+		return errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
+	}
+
+	// Get default credential cache path if not specified
+	if ccachePath == "" {
+		ccachePath = getDefaultCCachePath()
+	}
+
+	// Check if credential cache exists
+	if ccachePath != "" {
+		if _, err := os.Stat(ccachePath); os.IsNotExist(err) {
+			return errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
+		}
+	}
+
+	// Try to load credential cache to validate it's usable
+	cc, err := credentials.LoadCCache(ccachePath)
+	if err != nil {
+		return errors.New("failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
+	}
+
+	// Try to create Kerberos client to validate tickets are valid
+	krb5cfg, err := config.Load(krb5ConfPath)
+	if err != nil {
+		return errors.New("failed to reload Kerberos configuration")
+	}
+
+	_, err = client.NewClientFromCCache(cc, krb5cfg)
+	if err != nil {
+		return errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
+	}
+
+	return nil
+}
+
 // GetDefaultKrb5ConfPath returns the default krb5.conf path for the current platform
 func GetDefaultKrb5ConfPath() string {
 	switch runtime.GOOS {
