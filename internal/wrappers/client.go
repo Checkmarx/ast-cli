@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/kerberos"
 	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 )
 
@@ -30,6 +31,7 @@ const (
 	expiryGraceSeconds      = 10
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
+	kerberosProxyToken      = "kerberos"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
 	invalidCredentialsError = "Provided credentials are invalid"
 	APIKeyDecodeErrorFormat = "Token decoding error: %s"
@@ -139,6 +141,8 @@ func GetClient(timeout uint) *http.Client {
 		client = basicProxyClient(timeout, "")
 	} else if proxyTypeStr == ntlmProxyToken {
 		client = ntmlProxyClient(timeout, proxyStr)
+	} else if proxyTypeStr == kerberosProxyToken {
+		client = kerberosProxyClient(timeout, proxyStr)
 	} else {
 		client = basicProxyClient(timeout, proxyStr)
 	}
@@ -195,6 +199,41 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 		Transport: &http.Transport{
 			Proxy:       nil,
 			DialContext: ntlmDialContext,
+		},
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+}
+
+func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
+	dialer := &net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+	u, _ := url.Parse(proxyStr)
+
+	// Get Kerberos configuration from viper
+	proxySPN := viper.GetString(commonParams.ProxyKerberosSPNKey)
+	krb5ConfPath := viper.GetString(commonParams.ProxyKerberosKrb5ConfKey)
+	if krb5ConfPath == "" {
+		krb5ConfPath = kerberos.GetDefaultKrb5ConfPath()
+	}
+	ccachePath := viper.GetString(commonParams.ProxyKerberosCcacheKey)
+
+	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
+	logger.PrintIfVerbose("Kerberos SPN: " + proxySPN)
+	logger.PrintIfVerbose("Kerberos krb5.conf: " + krb5ConfPath)
+
+	kerberosConfig := kerberos.KerberosConfig{
+		ProxySPN:     proxySPN,
+		Krb5ConfPath: krb5ConfPath,
+		CcachePath:   ccachePath,
+	}
+
+	kerberosDialContext := kerberos.NewKerberosProxyDialContext(dialer, u, kerberosConfig, nil)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: kerberosDialContext,
 		},
 		Timeout: time.Duration(timeout) * time.Second,
 	}
@@ -540,7 +579,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	if req.Body != nil {
 		body, err = io.ReadAll(req.Body)
 		if err != nil {
-			fmt.Errorf("failed to read request body: %w", err)
+			return "", fmt.Errorf("failed to read request body: %w", err)
 		}
 		if req.Body != nil {
 			req.Body.Close()
