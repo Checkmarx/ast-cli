@@ -233,10 +233,10 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 	// Early validation: Check Kerberos setup before creating client
 	// This ensures errors are caught immediately during client creation, not during HTTP requests
 	if err := kerberos.ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN); err != nil {
-		logger.PrintIfVerbose("ERROR: Kerberos proxy authentication setup failed: " + err.Error())
+		logger.PrintIfVerbose("Error: Kerberos proxy authentication setup failed: " + err.Error())
 		// logger.PrintIfVerbose("Falling back to basic proxy authentication")
 		// This allows the CLI to continue working even with Kerberos misconfiguration
-		fmt.Println(fmt.Sprintf("ERROR: Kerberos proxy authentication setup failed: %v", err.Error()))
+		fmt.Println(fmt.Sprintf("Error: Kerberos proxy authentication setup failed: %v", err.Error()))
 		os.Exit(0)
 		// return basicProxyClient(timeout, proxyStr)
 	}
