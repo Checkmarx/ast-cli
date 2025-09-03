@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -236,9 +235,9 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 		logger.PrintIfVerbose("ERROR: Kerberos proxy authentication setup failed: " + err.Error())
 		logger.PrintIfVerbose("Falling back to basic proxy authentication")
 		// This allows the CLI to continue working even with Kerberos misconfiguration
-		logger.Print("ERROR: Kerberos proxy authentication setup failed: " + err.Error())
-		os.Exit(1)
-		// return basicProxyClient(timeout, proxyStr)
+		logger.Printf("ERROR: Kerberos proxy authentication setup failed %v", err.Error())
+		// Instead of os.Exit(1), return nil to avoid printing "exit status 1"
+		return nil
 	}
 
 	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
