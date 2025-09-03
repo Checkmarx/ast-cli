@@ -30,6 +30,7 @@ require (
 	golang.org/x/text v0.27.0
 	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
+	gopkg.in/jcmturner/gokrb5.v7 v7.5.0
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
 )
@@ -40,7 +41,6 @@ require (
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect
 	gopkg.in/jcmturner/dnsutils.v1 v1.0.1 // indirect
 	gopkg.in/jcmturner/goidentity.v3 v3.0.0 // indirect
-	gopkg.in/jcmturner/gokrb5.v7 v7.5.0 // indirect
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
 )
 

@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"gopkg.in/jcmturner/gokrb5.v7/client"
 	"gopkg.in/jcmturner/gokrb5.v7/config"
@@ -52,6 +50,11 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 }
 
 func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func() (net.Conn, error)) (net.Conn, error) {
+	// Validate required SPN parameter early
+	if kerberosConfig.ProxySPN == "" {
+		return nil, fmt.Errorf("Kerberos SPN is required but not provided. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
+	}
+
 	conn, err := baseDial()
 	if err != nil {
 		log.Printf("Could not call dial context with proxy: %s", err)
@@ -64,11 +67,15 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 		krb5ConfPath = GetDefaultKrb5ConfPath()
 	}
 
+	// Check if krb5.conf exists before trying to load it
+	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
+		return conn, fmt.Errorf("Kerberos configuration file not found at %s. Please ensure krb5.conf is properly configured", krb5ConfPath)
+	}
+
 	// Load krb5.conf
 	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		log.Printf("Failed to load krb5.conf from %s: %s", krb5ConfPath, err)
-		return conn, err
+		return conn, fmt.Errorf("failed to load krb5.conf from %s: %w. Please check the Kerberos configuration file", krb5ConfPath, err)
 	}
 
 	// Load credential cache
@@ -77,21 +84,26 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 		ccPath = getDefaultCCachePath()
 	}
 
+	// Check if credential cache exists before trying to load it
+	if ccPath != "" {
+		if _, err := os.Stat(ccPath); os.IsNotExist(err) {
+			return conn, fmt.Errorf("Kerberos credential cache not found at %s. Please run 'kinit' to obtain Kerberos tickets first", ccPath)
+		}
+	}
+
 	cc, err := credentials.LoadCCache(ccPath)
 	if err != nil {
-		log.Printf("Failed to load ccache %s: %s", ccPath, err)
-		return conn, err
+		return conn, fmt.Errorf("failed to load Kerberos credential cache from %s: %w. Please run 'kinit' to obtain valid Kerberos tickets", ccPath, err)
 	}
 
 	// Create Kerberos client from cache
 	krbClient, err := client.NewClientFromCCache(cc, krb5cfg)
 	if err != nil {
-		log.Printf("Failed to create Kerberos client: %s", err)
-		return conn, err
+		return conn, fmt.Errorf("failed to create Kerberos client: %w. Please check your Kerberos tickets with 'klist'", err)
 	}
 
-	// Step 1: Try plain request first (like curl does)
-	header := make(http.Header)
+	// Kerberos Step 1: Send CONNECT with SPNEGO token directly (like NTLM does)
+	header := make(http.Header) //nolint:gosec
 	header.Set("Proxy-Connection", "Keep-Alive")
 	connect := &http.Request{
 		Method: "CONNECT",
@@ -100,13 +112,29 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 		Header: header,
 	}
 
+	// Build SPNEGO token for the proxy SPN
+	if err := spnego.SetSPNEGOHeader(krbClient, connect, kerberosConfig.ProxySPN); err != nil {
+		return conn, fmt.Errorf("failed to generate SPNEGO token for SPN '%s': %w. Please check if the SPN is correct", kerberosConfig.ProxySPN, err)
+	}
+
+	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
+	authVal := connect.Header.Get("Authorization")
+	if authVal == "" {
+		return conn, fmt.Errorf("SPNEGO failed to generate Authorization header for SPN '%s'. Please check Kerberos configuration", kerberosConfig.ProxySPN)
+	}
+
+	// Move Authorization -> Proxy-Authorization (proxy level)
+	connect.Header.Set("Proxy-Authorization", authVal)
+	connect.Header.Del("Authorization") // don't forward to origin
+
+	log.Printf("Sending CONNECT with Kerberos SPNEGO token")
 	err = connect.Write(conn)
 	if err != nil {
-		log.Printf("Could not write initial request to proxy: %s", err)
+		log.Printf("Could not write Kerberos auth request to proxy: %s", err)
 		return conn, err
 	}
 
-	// Read response
+	// Kerberos Step 2: Read response
 	br := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(br, connect)
 	if err != nil {
@@ -114,86 +142,21 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 		return conn, err
 	}
 
-	_, err = io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Could not read response body from proxy: %s", err)
-		return conn, err
-	}
-	_ = resp.Body.Close()
-
-	// If proxy did NOT require auth, return connection
-	if resp.StatusCode != http.StatusProxyAuthRequired {
-		log.Printf("Proxy did not require authentication, connection established")
-		return conn, nil
-	}
-
-	// Step 2: Proxy asked for auth. Check it includes Negotiate
-	hasNegotiate := false
-	for _, v := range resp.Header.Values("Proxy-Authenticate") {
-		if strings.HasPrefix(strings.TrimSpace(v), "Negotiate") {
-			hasNegotiate = true
-			break
-		}
-	}
-	if !hasNegotiate {
-		log.Printf("Proxy requires auth but did not advertise Negotiate, got: '%s'",
-			resp.Header.Get("Proxy-Authenticate"))
-		return conn, fmt.Errorf("no Negotiate authentication method available")
-	}
-
-	// Step 3: Build SPNEGO token for the proxy SPN and attach as Proxy-Authorization
-	header2 := make(http.Header) //nolint:gosec
-	header2.Set("Proxy-Connection", "Keep-Alive")
-	req2 := &http.Request{
-		Method: "CONNECT",
-		URL:    &url.URL{Opaque: addr},
-		Host:   addr,
-		Header: header2,
-	}
-
-	if err := spnego.SetSPNEGOHeader(krbClient, req2, kerberosConfig.ProxySPN); err != nil {
-		log.Printf("Failed to set SPNEGO header: %s", err)
-		return conn, err
-	}
-
-	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
-	authVal := req2.Header.Get("Authorization")
-	if authVal == "" {
-		log.Printf("SPNEGO did not generate an Authorization header")
-		return conn, fmt.Errorf("failed to generate SPNEGO token")
-	}
-
-	// Move Authorization -> Proxy-Authorization (proxy level)
-	req2.Header.Set("Proxy-Authorization", authVal)
-	req2.Header.Del("Authorization") // don't forward to origin
-
-	// Step 4: Retry with Proxy-Authorization
-	if err = req2.Write(conn); err != nil {
-		log.Printf("Could not write authorization to proxy: %s", err)
-		return conn, err
-	}
-
-	resp2, err := http.ReadResponse(br, req2)
-	if err != nil {
-		log.Printf("Could not read response from proxy: %s", err)
-		return conn, err
-	}
-
-	if resp2.StatusCode != http.StatusOK {
-		log.Printf("Expected %d as return status, got: %d", http.StatusOK, resp2.StatusCode)
-		if resp2.StatusCode == http.StatusProxyAuthRequired {
-			log.Printf("Proxy still returned 407 after sending Negotiate token. Check SPN and proxy keytab/KDC.")
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Expected %d as return status, got: %d", http.StatusOK, resp.StatusCode)
+		if resp.StatusCode == http.StatusProxyAuthRequired {
+			log.Printf("Proxy returned 407 after sending Negotiate token. Check SPN and proxy keytab/KDC.")
 			// Print Proxy-Authenticate for diagnostics
-			for _, v := range resp2.Header.Values("Proxy-Authenticate") {
+			for _, v := range resp.Header.Values("Proxy-Authenticate") {
 				log.Printf("Proxy-Authenticate: %s", v)
 			}
 		}
-		_ = resp2.Body.Close()
-		return conn, fmt.Errorf("proxy authentication failed: %s", resp2.Status)
+		_ = resp.Body.Close()
+		return conn, fmt.Errorf("proxy authentication failed: %s", resp.Status)
 	}
 
 	// Successfully authorized with Kerberos
-	_ = resp2.Body.Close()
+	_ = resp.Body.Close()
 	log.Printf("Successfully authenticated with proxy using Kerberos")
 	return conn, nil
 }
