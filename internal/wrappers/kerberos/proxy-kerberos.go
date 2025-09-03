@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/pkg/errors"
 	"gopkg.in/jcmturner/gokrb5.v7/client"
 	"gopkg.in/jcmturner/gokrb5.v7/config"
 	"gopkg.in/jcmturner/gokrb5.v7/credentials"
@@ -52,7 +53,8 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func() (net.Conn, error)) (net.Conn, error) {
 	// Validate required SPN parameter early
 	if kerberosConfig.ProxySPN == "" {
-		return nil, fmt.Errorf("Kerberos SPN is required but not provided. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
+		log.Printf("Kerberos SPN is required but not provided")
+		return nil, errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
 	}
 
 	conn, err := baseDial()
@@ -69,13 +71,15 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 
 	// Check if krb5.conf exists before trying to load it
 	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		return conn, fmt.Errorf("Kerberos configuration file not found at %s. Please ensure krb5.conf is properly configured", krb5ConfPath)
+		log.Printf("Kerberos configuration file not found at %s", krb5ConfPath)
+		return conn, errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
 	}
 
 	// Load krb5.conf
 	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		return conn, fmt.Errorf("failed to load krb5.conf from %s: %w. Please check the Kerberos configuration file", krb5ConfPath, err)
+		log.Printf("Failed to load krb5.conf from %s: %s", krb5ConfPath, err)
+		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
 	}
 
 	// Load credential cache
@@ -87,19 +91,22 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	// Check if credential cache exists before trying to load it
 	if ccPath != "" {
 		if _, err := os.Stat(ccPath); os.IsNotExist(err) {
-			return conn, fmt.Errorf("Kerberos credential cache not found at %s. Please run 'kinit' to obtain Kerberos tickets first", ccPath)
+			log.Printf("Kerberos credential cache not found at %s", ccPath)
+			return conn, errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
 		}
 	}
 
 	cc, err := credentials.LoadCCache(ccPath)
 	if err != nil {
-		return conn, fmt.Errorf("failed to load Kerberos credential cache from %s: %w. Please run 'kinit' to obtain valid Kerberos tickets", ccPath, err)
+		log.Printf("Failed to load Kerberos credential cache from %s: %s", ccPath, err)
+		return conn, errors.New("failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
 	}
 
 	// Create Kerberos client from cache
 	krbClient, err := client.NewClientFromCCache(cc, krb5cfg)
 	if err != nil {
-		return conn, fmt.Errorf("failed to create Kerberos client: %w. Please check your Kerberos tickets with 'klist'", err)
+		log.Printf("Failed to create Kerberos client: %s", err)
+		return conn, errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
 	}
 
 	// Kerberos Step 1: Send CONNECT with SPNEGO token directly (like NTLM does)
@@ -114,13 +121,15 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 
 	// Build SPNEGO token for the proxy SPN
 	if err := spnego.SetSPNEGOHeader(krbClient, connect, kerberosConfig.ProxySPN); err != nil {
-		return conn, fmt.Errorf("failed to generate SPNEGO token for SPN '%s': %w. Please check if the SPN is correct", kerberosConfig.ProxySPN, err)
+		log.Printf("Failed to generate SPNEGO token for SPN '%s': %s", kerberosConfig.ProxySPN, err)
+		return conn, errors.New("failed to generate SPNEGO token. Please check if the SPN is correct")
 	}
 
 	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
 	authVal := connect.Header.Get("Authorization")
 	if authVal == "" {
-		return conn, fmt.Errorf("SPNEGO failed to generate Authorization header for SPN '%s'. Please check Kerberos configuration", kerberosConfig.ProxySPN)
+		log.Printf("SPNEGO did not generate an Authorization header")
+		return conn, errors.New("failed to generate SPNEGO token. Please check Kerberos configuration")
 	}
 
 	// Move Authorization -> Proxy-Authorization (proxy level)
@@ -150,9 +159,11 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 			for _, v := range resp.Header.Values("Proxy-Authenticate") {
 				log.Printf("Proxy-Authenticate: %s", v)
 			}
+			_ = resp.Body.Close()
+			return conn, errors.New("proxy authentication failed. Check SPN and proxy keytab/KDC configuration")
 		}
 		_ = resp.Body.Close()
-		return conn, fmt.Errorf("proxy authentication failed: %s", resp.Status)
+		return conn, errors.New(http.StatusText(resp.StatusCode))
 	}
 
 	// Successfully authorized with Kerberos
