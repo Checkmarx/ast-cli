@@ -13,11 +13,11 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/jcmturner/gokrb5/v8/client"      //nolint
+	"github.com/jcmturner/gokrb5/v8/config"      //nolint
+	"github.com/jcmturner/gokrb5/v8/credentials" //nolint
+	"github.com/jcmturner/gokrb5/v8/spnego"      //nolint
 	"github.com/pkg/errors"
-	"gopkg.in/jcmturner/gokrb5.v7/client"
-	"gopkg.in/jcmturner/gokrb5.v7/config"
-	"gopkg.in/jcmturner/gokrb5.v7/credentials"
-	"gopkg.in/jcmturner/gokrb5.v7/spnego"
 )
 
 // DialContext is the DialContext function that should be wrapped with a
@@ -103,7 +103,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	}
 
 	// Create Kerberos client from cache
-	krbClient, err := client.NewClientFromCCache(cc, krb5cfg)
+	krbClient, err := client.NewFromCCache(cc, krb5cfg)
 	if err != nil {
 		log.Printf("Failed to create Kerberos client: %s", err)
 		return conn, errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
@@ -221,7 +221,7 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 		return errors.New("failed to reload Kerberos configuration")
 	}
 
-	_, err = client.NewClientFromCCache(cc, krb5cfg)
+	_, err = client.NewFromCCache(cc, krb5cfg)
 	if err != nil {
 		return errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
 	}
