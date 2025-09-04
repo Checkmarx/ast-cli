@@ -75,12 +75,6 @@ cx scan create \
 
 ## 🎫 Kerberos Proxy Authentication
 
-### When to Use Kerberos
-- Enterprise environments with MIT Kerberos infrastructure
-- Single Sign-On (SSO) requirements
-- Enhanced security with ticket-based authentication
-- Cross-platform Kerberos deployments
-
 ### Prerequisites
 1. **Kerberos tickets**: Obtain valid Kerberos tickets using `kinit`
 2. **SPN configuration**: Know the Service Principal Name for your proxy
@@ -306,7 +300,7 @@ cx scan create --verbose \
 #### Test Kerberos
 ```bash
 # Enable verbose logging for Kerberos
-cx scan create --verbose \
+cx project list create --verbose \
   --proxy http://proxy.com:8080 \
   --proxy-auth-type kerberos \
   --proxy-kerberos-spn HTTP/proxy.com \
@@ -386,4 +380,4 @@ CX_PROXY_KERBEROS_CCACHE   Kerberos credential cache path
 KRB5CCNAME                 Standard Kerberos cache environment variable
 ```
 
-For more information, refer to the AST CLI documentation or contact your system administrator.
+
