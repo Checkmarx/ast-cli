@@ -176,23 +176,27 @@ func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) er
 	return nil
 }
 
-func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error) {
+func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*ScaPackageCollectionExport, error) {
+
 	const bomPrefix = "\xef\xbb\xbf"
-
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get access token")
-	}
-
 	start := time.Now()
 	var resp *http.Response
+	var err error
 
 	for {
 		if time.Since(start) > timeout {
 			return nil, errors.New(errorTimeoutMsg)
 		}
-
-		resp, err = SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
+		if !auth {
+			customUrl := fmt.Sprintf("%s/requests/%s/download", e.path, fileURL)
+			resp, err = SendHTTPRequest(http.MethodGet, customUrl, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey))
+		} else {
+			accessToken, err := GetAccessToken()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get access token")
+			}
+			resp, err = SendHTTPRequestByFullURL(http.MethodGet, fileURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey), accessToken, true)
+		}
 		if err == nil && resp.StatusCode == http.StatusOK {
 			break
 		}
