@@ -175,8 +175,8 @@ func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) er
 	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
 	return nil
 }
-func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*ScaPackageCollectionExport, error) {
 
+func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*ScaPackageCollectionExport, error) {
 	const bomPrefix = "\xef\xbb\xbf"
 	start := time.Now()
 	var resp *http.Response
