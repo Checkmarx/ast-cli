@@ -175,23 +175,23 @@ func (e *ExportHTTPWrapper) DownloadExportReport(reportID, targetFile string) er
 	log.Printf("Downloaded file: %s - %d bytes\n", targetFile, size)
 	return nil
 }
-
 func (e *ExportHTTPWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*ScaPackageCollectionExport, error) {
 
 	const bomPrefix = "\xef\xbb\xbf"
 	start := time.Now()
 	var resp *http.Response
 	var err error
+	var accessToken string
 
 	for {
 		if time.Since(start) > timeout {
 			return nil, errors.New(errorTimeoutMsg)
 		}
 		if !auth {
-			customUrl := fmt.Sprintf("%s/requests/%s/download", e.path, fileURL)
-			resp, err = SendHTTPRequest(http.MethodGet, customUrl, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey))
+			customURL := fmt.Sprintf("%s/requests/%s/download", e.path, fileURL)
+			resp, err = SendHTTPRequest(http.MethodGet, customURL, http.NoBody, true, viper.GetUint(commonParams.ClientTimeoutKey))
 		} else {
-			accessToken, err := GetAccessToken()
+			accessToken, err = GetAccessToken()
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get access token")
 			}
