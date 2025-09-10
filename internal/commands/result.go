@@ -602,11 +602,10 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		*containersIssues = 0
 		enginesStatusCode[commonParams.ContainersType] = 0
 	}
-	if wrappers.IsSCSEnabled {
-		scsIssues = new(int)
-		*scsIssues = 0
-		enginesStatusCode[commonParams.ScsType] = 0
-	}
+
+	scsIssues = new(int)
+	*scsIssues = 0
+	enginesStatusCode[commonParams.ScsType] = 0
 
 	if len(scanInfo.StatusDetails) > 0 {
 		for _, statusDetailItem := range scanInfo.StatusDetails {
@@ -617,7 +616,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScsType && wrappers.IsSCSEnabled {
+				} else if statusDetailItem.Name == commonParams.ScsType {
 					*scsIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
 					*containersIssues = notAvailableNumber
@@ -663,9 +662,9 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	if wrappers.IsContainersEnabled {
 		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
 	}
-	if wrappers.IsSCSEnabled {
-		summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
-	}
+
+	summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
+
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
@@ -702,7 +701,7 @@ func summaryReport(
 		summary.APISecurity = *apiSecRisks
 	}
 
-	if summary.HasSCS() && wrappers.IsSCSEnabled {
+	if summary.HasSCS() {
 		// Getting the base SCS overview. Results counts are overwritten in enhanceWithScanSummary->countResult
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -720,12 +719,12 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
+	setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
+
 	if wrappers.IsContainersEnabled {
 		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
 	}
-	if wrappers.IsSCSEnabled {
-		setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
-	}
+
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -782,7 +781,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 
-	if summary.HasSCS() && wrappers.IsSCSEnabled {
+	if summary.HasSCS() {
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
@@ -875,7 +874,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			printAPIsSecuritySummary(summary)
 		}
 
-		if summary.HasSCS() && wrappers.IsSCSEnabled {
+		if summary.HasSCS() {
 			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
@@ -990,9 +989,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
-	if wrappers.IsSCSEnabled {
-		printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
-	}
+	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
+
 	if wrappers.IsContainersEnabled {
 		printTableRow("CONTAINERS", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	}
@@ -1132,11 +1130,6 @@ func runGetCodeBashingCommand(
 	}
 }
 
-func setIsSCSEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	scsEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SCSEngineCLIEnabled)
-	wrappers.IsSCSEnabled = scsEngineCLIEnabled.Status
-}
-
 func setIsContainersEnabled(agent string) {
 	wrappers.IsContainersEnabled = !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
 }
@@ -1198,7 +1191,6 @@ func CreateScanReport(
 ) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-	setIsSCSEnabled(featureFlagsWrapper)
 	setIsContainersEnabled(agent)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
@@ -1254,14 +1246,10 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 				return
 			}
 		} else if strings.HasPrefix(engineType, commonParams.SscsType) {
-			if wrappers.IsSCSEnabled {
-				addResultToSCSOverview(summary, result)
-				engineType = commonParams.ScsType
-				*summary.ScsIssues++
-				summary.TotalIssues++
-			} else {
-				return
-			}
+			addResultToSCSOverview(summary, result)
+			engineType = commonParams.ScsType
+			*summary.ScsIssues++
+			summary.TotalIssues++
 		} else {
 			return
 		}
@@ -1528,11 +1516,7 @@ func ReadResults(
 		}
 
 		if slices.Contains(scan.Engines, commonParams.ScsType) {
-			if !wrappers.IsSCSEnabled {
-				resultsModel = removeResultsByType(resultsModel, commonParams.SscsType)
-			} else {
-				resultsModel = filterScsResultsByAgent(resultsModel, agent)
-			}
+			resultsModel = filterScsResultsByAgent(resultsModel, agent)
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -2265,7 +2249,7 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
-			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+			} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 				sscsSonarIssue := parseSscsSonar(result, &auxIssue)
 				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
@@ -2310,7 +2294,7 @@ func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 		sonarIssue.RuleID = result.ID
 	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 		sonarIssue.RuleID = result.ID
-	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+	} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarIssue.RuleID = result.ID
 	}
 
@@ -2347,7 +2331,7 @@ func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
 		sonarRules.Name = result.ScanResultData.ImageTag
 		sonarRules.Description = html.UnescapeString(result.Description)
 		sonarRules.ID = result.ID
-	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+	} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarRules.Name = result.ScanResultData.RuleName
 		sonarRules.Description = html.UnescapeString(result.ScanResultData.RuleDescription)
 		sonarRules.ID = result.ID
@@ -2585,7 +2569,7 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultsSca(result, scanResults)
 	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
 		scanResults = parseSarifResultsContainers(result, scanResults)
-	} else if strings.HasPrefix(result.Type, commonParams.SscsType) && wrappers.IsSCSEnabled {
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
 		scanResults = parseSarifResultsSscs(result, scanResults)
 	}
 
