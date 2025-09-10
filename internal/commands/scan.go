@@ -1030,6 +1030,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 
 	if len(allScansModel.Scans) > 0 {
 		scanModelResponse := allScansModel.Scans[0]
+		scanModelResponse.ReplaceMicroEnginesWithSCS()
 		config = scanModelResponse.Metadata.Configs
 		engines := scanModelResponse.Engines
 		// Check if there are no scan types sent using the flags, and use the latest scan engine types
