@@ -1861,7 +1861,7 @@ func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSe
 		commonParams.SastType:       "SAST",
 		commonParams.KicsType:       "KICS",
 		commonParams.IacType:        "KICS",
-		commonParams.ContainersType: "Containers",
+		commonParams.ContainersType: "Container Security",
 		commonParams.ScsType:        "Microengines",
 	}
 	if jsonOptionsEngines == nil {
