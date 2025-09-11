@@ -197,7 +197,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 	mock.SetScsMockVarsToDefault()
 }
 
-func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+func TestRunScsResultsShow_Jetbrains_AgentShouldShowScsResults(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
