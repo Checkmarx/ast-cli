@@ -210,7 +210,7 @@ func TestSastUpdateAndGetPredicatesForNotFoundSimilarityId(t *testing.T) {
 	_, readingError := io.ReadAll(outputBufferForStep1)
 	assert.NilError(t, readingError, "Reading result should pass")
 
-	assert.ErrorContains(t, err, "does not exist for project")
+	assert.ErrorContains(t, err, "Predicate not found")
 }
 
 func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
