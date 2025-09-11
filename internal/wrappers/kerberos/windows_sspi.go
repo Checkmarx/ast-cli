@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package kerberos
 
 import (
@@ -10,22 +13,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 
 	"github.com/pkg/errors"
 
-	// Import SSPI package - will only be used on Windows
+	// Import SSPI package - only compiled on Windows
 	"github.com/alexbrainman/sspi/kerberos"
 )
 
 // WindowsSSPIDialContext creates a DialContext using Windows SSPI
 func WindowsSSPIDialContext(dialer *net.Dialer, proxyURL *url.URL, proxySPN string, tlsConfig *tls.Config) func(ctx context.Context, network, addr string) (net.Conn, error) {
-	if runtime.GOOS != "windows" {
-		return func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return nil, errors.New("Windows SSPI only available on Windows")
-		}
-	}
-
 	if dialer == nil {
 		dialer = &net.Dialer{}
 	}
@@ -107,10 +103,6 @@ func sendNegotiateConnect(conn net.Conn, addr string, token []byte) error {
 
 // ValidateSSPISetup validates that Windows SSPI is available
 func ValidateSSPISetup(proxySPN string) error {
-	if runtime.GOOS != "windows" {
-		return errors.New("Windows SSPI only available on Windows")
-	}
-
 	if proxySPN == "" {
 		return errors.New("Kerberos SPN is required")
 	}
@@ -124,32 +116,8 @@ func ValidateSSPISetup(proxySPN string) error {
 	return nil
 }
 
-// getSSPIToken gets a Kerberos SPNEGO token using Windows SSPI without build tags
+// getSSPIToken gets a Kerberos SPNEGO token using Windows SSPI
 func getSSPIToken(spn string) ([]byte, error) {
-	if runtime.GOOS != "windows" {
-		return nil, errors.New("Windows SSPI not available on this platform")
-	}
-
-	// Try to use SSPI package with runtime safety
-	defer func() {
-		if r := recover(); r != nil {
-			// If there are any issues with SSPI package, recover gracefully
-			log.Printf("SSPI package error (will use fallback): %v", r)
-		}
-	}()
-
-	// For maximum pipeline safety, let's implement a simple approach first
-	// that validates Windows Kerberos is available but doesn't break builds
-	return getSSPITokenSafe(spn)
-}
-
-// getSSPITokenSafe provides actual SSPI implementation using alexbrainman/sspi
-func getSSPITokenSafe(spn string) ([]byte, error) {
-	// Only proceed on Windows
-	if runtime.GOOS != "windows" {
-		return nil, errors.New("SSPI only available on Windows")
-	}
-
 	// Acquire current user credentials using SSPI
 	cred, err := kerberos.AcquireCurrentUserCredentials()
 	if err != nil {
