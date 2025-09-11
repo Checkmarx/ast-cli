@@ -64,7 +64,7 @@ const (
 	IgnoreProxyFlag                = "ignore-proxy"
 	IgnoreProxyFlagUsage           = "Ignore proxy configuration"
 	ProxyTypeFlag                  = "proxy-auth-type"
-	ProxyTypeFlagUsage             = "Proxy authentication type, (basic, ntlm, or kerberos)"
+	ProxyTypeFlagUsage             = "Proxy authentication type, (basic, ntlm, kerberos, or kerberos-native)"
 	TimeoutFlag                    = "timeout"
 	TimeoutFlagUsage               = "Timeout for network activity, (default 5 seconds)"
 	NtlmProxyDomainFlag            = "proxy-ntlm-domain"

@@ -19,6 +19,7 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jsumners/go-getport v1.0.0
+	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.9.1

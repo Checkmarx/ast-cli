@@ -20,9 +20,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DialContext is the DialContext function that should be wrapped with a
-// Kerberos Authentication.
-type DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
+// Gokrb5DialContext is the DialContext function that should be wrapped with a
+// Kerberos Authentication using gokrb5.
+type Gokrb5DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
 
 // KerberosConfig holds the configuration for Kerberos authentication
 type KerberosConfig struct {
@@ -35,7 +35,7 @@ type KerberosConfig struct {
 // for proxy connections. Unlike NTLM, it describes the proxy location with a full URL,
 // whose scheme can be HTTP or HTTPS.
 func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
-	kerberosConfig KerberosConfig, tlsConfig *tls.Config) DialContext {
+	kerberosConfig KerberosConfig, tlsConfig *tls.Config) Gokrb5DialContext {
 	if dialer == nil {
 		dialer = &net.Dialer{}
 	}
