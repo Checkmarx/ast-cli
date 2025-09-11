@@ -150,6 +150,69 @@ func TestPredicateWithInvalidValues(t *testing.T) {
 	assert.Assert(t, kicsPredicate.TotalCount == 0, "Predicate with invalid values should have 0 as the result.")
 }
 
+func TestSastUpdateAndGetPredicatesForNotFoundSimilarityId(t *testing.T) {
+	scanID, projectID := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
+	)
+
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	index := 0
+	for i := range result.Results {
+		if strings.EqualFold(result.Results[i].Type, params.SastType) {
+			index = i
+			break
+		}
+	}
+
+	similarityID := "1"
+
+	state := "CONFIRMED"
+	if !strings.EqualFold(result.Results[index].State, "Urgent") {
+		state = "URGENT"
+	}
+	severity := "HIGH"
+	if !strings.EqualFold(result.Results[index].Severity, "Medium") {
+		severity = "MEDIUM"
+	}
+	comment := "Testing CLI Command for triage."
+	scanType := result.Results[index].Type
+
+	args := []string{
+		"triage", "update",
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.SimilarityIDFlag), similarityID,
+		flag(params.StateFlag), state,
+		flag(params.SeverityFlag), severity,
+		flag(params.CommentFlag), comment,
+		flag(params.ScanTypeFlag), scanType,
+	}
+
+	err, outputBufferForStep1 := executeCommand(t, args...)
+	_, readingError := io.ReadAll(outputBufferForStep1)
+	assert.NilError(t, readingError, "Reading result should pass")
+
+	assert.ErrorContains(t, err, "does not exist for project")
+}
+
 func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
 	t.Skip("Skipping this test temporarily until the API becomes available in the DEU environment.")
 	fmt.Println("Step 1: Testing the command 'triage show' with predefined values.")
