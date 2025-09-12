@@ -146,7 +146,7 @@ jobs:
       product_name: CLI
       release_version: ${{ inputs.tag }}
       cli_release_version: ""
-      release_author: "Phoenix Team"
+      release_author: "Sypher Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
       jira_product_name: ASTCLI
     secrets: inherit
