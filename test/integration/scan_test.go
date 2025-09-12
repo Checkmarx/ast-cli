@@ -27,6 +27,7 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -2136,7 +2137,8 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false, wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath))
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
