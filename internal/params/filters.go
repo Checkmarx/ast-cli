@@ -141,6 +141,10 @@ var BaseIncludeFilters = []string{
 	"*.bicepparam",
 	"*.bicep",
 	"Gemfile",
+	"*.cjs",
+	"*.mjs",
+	"*.mts",
+	"*.cts",
 }
 
 var BaseExcludeFilters = []string{
