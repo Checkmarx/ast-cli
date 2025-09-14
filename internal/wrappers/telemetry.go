@@ -7,6 +7,9 @@ type DataForAITelemetry struct {
 	SubType         string `json:"subType"`
 	Agent           string `json:"agent"`
 	Engine          string `json:"engine"`
+	ScanType        string `json:"scanType"`
+	Status          string `json:"status"`
+	TotalCount      int    `json:"totalCount"`
 }
 
 type TelemetryWrapper interface {
