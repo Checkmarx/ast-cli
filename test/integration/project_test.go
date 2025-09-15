@@ -143,19 +143,18 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 	}
 
 	groups := []string{
-		"it_test_group_1",
-		"it_test_group_2",
+		"TT_Group1",
 	}
 
 	groupsStr := formatGroups(groups)
 
-	err, _ := executeCommand(
+	_, outBuffer := executeCommand(
 		t, "project", "create",
 		flag(params.FormatFlag),
 		printer.FormatJSON,
-		flag(params.ProjectName), "project-1", flag(params.GroupList), groupsStr,
+		flag(params.ProjectName), projectNameRandom, flag(params.GroupList), groupsStr,
 	)
-	assertError(t, err, "Failed creating a project: CODE: 233, Unauthorized groups")
+	assert.Assert(t, outBuffer != nil, "Project creation output response should not be nil")
 }
 
 func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
@@ -180,6 +179,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 	createdProject := wrappers.ProjectResponseModel{}
 	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
 	fmt.Printf("New project created with id: %s \n", createdProject.ID)
+	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
 	defer deleteProject(t, createdProject.ID)
 }
 

@@ -197,7 +197,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 	mock.SetScsMockVarsToDefault()
 }
 
-func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+func TestRunScsResultsShow_Jetbrains_AgentShouldShowScsResults(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
@@ -206,8 +206,8 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.JetbrainsAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
-	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
-	assertTotalCountJSON(t, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 2)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
