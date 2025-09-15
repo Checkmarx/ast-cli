@@ -1,4 +1,4 @@
-name: PR Automation
+name: PR add reviewers
 on:
   pull_request_target:
     types: [ready_for_review, opened, reopened]
@@ -19,4 +19,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRNUM: ${{ github.event.pull_request.number }}
           PRAUTHOR: ${{ github.event.pull_request.user.login }}
-        run: gh pr edit $PRNUM --add-reviewer cx-anurag-dalke
+        run: gh pr edit $PRNUM --add-reviewer cx-plugins-releases

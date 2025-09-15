@@ -1158,7 +1158,7 @@ func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes 
 func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
 	unsupportedTypesByAgent := map[string][]string{
 		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
-		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType},
 		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
 	}
@@ -1211,7 +1211,7 @@ func CreateScanReport(
 		return nil, err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent, featureFlagsWrapper)
 		if err != nil {
 			return nil, err
 		}
@@ -1498,8 +1498,7 @@ func ReadResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsParams map[string]string,
-	agent string,
-) (results *wrappers.ScanResultsCollection, err error) {
+	agent string, featureflagsWrappers wrappers.FeatureFlagsWrapper) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
 
@@ -1522,7 +1521,7 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep, featureflagsWrappers)
 		if err != nil {
 			return nil, err
 		}
@@ -1545,10 +1544,9 @@ func enrichScaResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsModel *wrappers.ScanResultsCollection,
-	scaHideDevAndTestDep bool,
-) (*wrappers.ScanResultsCollection, error) {
+	scaHideDevAndTestDep bool, featureflagWrapper wrappers.FeatureFlagsWrapper) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep)
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep, featureflagWrapper)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
