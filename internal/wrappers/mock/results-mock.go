@@ -306,15 +306,9 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 					Nodes: []*wrappers.ScanResultNode{
 						{
 							FileName: "dummy-file-name-4",
-							Line:     10,
-							Column:   10,
-							Length:   20,
 						},
 						{
 							FileName: "dummy-file-name-4",
-							Line:     11,
-							Column:   3,
-							Length:   10,
 						},
 					},
 				},

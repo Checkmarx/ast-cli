@@ -895,7 +895,7 @@ func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeC
 		fmt.Sprintf("Expected %s result count to be %d, but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
 }
 
-func assertUriNonEmpty(t *testing.T) {
+func assertURINonEmpty(t *testing.T) {
 	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
 	var scanResults *wrappers.SarifResultsCollection
 	err = json.Unmarshal(reportBytes, &scanResults)
@@ -1401,7 +1401,7 @@ func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSNonEmpty_URI_Present
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	assertTypePresentSarif(t, params.SCSScorecardType, 1)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 2)
-	assertUriNonEmpty(t)
+	assertURINonEmpty(t)
 	removeFileBySuffix(t, printer.FormatSarif)
 	mock.SetScsMockVarsToDefault()
 }
