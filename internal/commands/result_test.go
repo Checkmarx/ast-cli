@@ -18,6 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	assertion "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gotest.tools/assert"
@@ -894,6 +895,14 @@ func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeC
 		fmt.Sprintf("Expected %s result count to be %d, but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
 }
 
+func assertUriNonEmpty(t *testing.T) {
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	var scanResults *wrappers.SarifResultsCollection
+	err = json.Unmarshal(reportBytes, &scanResults)
+	assert.NilError(t, err, "Error unmarshalling SARIF results")
+	assertion.Contains(t, scanResults.Runs[0].Results[10].Locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file")
+}
+
 func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {
 	for i := range scanResultsCollection.Runs[0].Tool.Driver.Rules {
 		rule := scanResultsCollection.Runs[0].Tool.Driver.Rules[i]
@@ -1383,7 +1392,7 @@ func TestRunGetResultsByScanIdSonarFormat_SCSFlagEnabled_SCSPresentInReport(t *t
 	mock.SetScsMockVarsToDefault()
 }
 
-func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSNonEmpty_URI_PresentInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
@@ -1392,7 +1401,7 @@ func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *t
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	assertTypePresentSarif(t, params.SCSScorecardType, 1)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 2)
-
+	assertUriNonEmpty(t)
 	removeFileBySuffix(t, printer.FormatSarif)
 	mock.SetScsMockVarsToDefault()
 }
