@@ -897,6 +897,7 @@ func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeC
 
 func assertURINonEmpty(t *testing.T) {
 	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	assert.NilError(t, err, "Error reading SARIF file")
 	var scanResults *wrappers.SarifResultsCollection
 	err = json.Unmarshal(reportBytes, &scanResults)
 	assert.NilError(t, err, "Error unmarshalling SARIF results")
