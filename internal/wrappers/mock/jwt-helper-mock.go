@@ -9,12 +9,16 @@ import (
 
 type JWTMockWrapper struct {
 	AIEnabled                 int
+	EnterpriseSecretsEnabled  int
+	SecretDetectionEnabled    int
 	CheckmarxOneAssistEnabled int
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
 }
 
 const AIProtectionDisabled = 1
 const CheckmarxOneAssistDisabled = 1
+const EnterpriseSecretsDisabled = 1
+const SecretDetectionDisabled = 1
 
 var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
@@ -38,8 +42,22 @@ func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
 
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
-	if engine == params.AiProviderFlag || engine == params.EnterpriseSecretsLabel {
+	if engine == params.AiProviderFlag {
 		if j.AIEnabled == AIProtectionDisabled {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if engine == params.EnterpriseSecretsLabel {
+		if j.EnterpriseSecretsEnabled == EnterpriseSecretsDisabled {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if engine == params.SecretDetectionLabel {
+		if j.SecretDetectionEnabled == SecretDetectionDisabled {
 			return false, nil
 		}
 		return true, nil
