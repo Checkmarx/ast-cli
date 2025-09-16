@@ -1942,7 +1942,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
 				}
-				// Clean up .checkmarx directory on container scan error
+				// Clean up .checkmarx/containers directory on container scan error
 				_ = cleanCheckmarxContainersDirectory(directoryPath)
 				return "", "", containerResolverError
 			}
@@ -1953,7 +1953,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
 
-			// Clean up .checkmarx directory after successful container scan compression
+			// Clean up .checkmarx/containers directory after successful container scan compression
 			if dirPathErr == nil {
 				_ = cleanCheckmarxContainersDirectory(directoryPath)
 			}
@@ -1962,13 +1962,13 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 			}
 
-			// Clean up .checkmarx directory after successful mixed scan (including containers) compression
+			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
 			if dirPathErr == nil && containerScanTriggered && containerResolveLocally {
 				_ = cleanCheckmarxContainersDirectory(directoryPath)
 			}
 		}
 		if dirPathErr != nil {
-			// Clean up .checkmarx directory on compression error if container scan was involved
+			// Clean up .checkmarx/containers directory on compression error if container scan was involved
 			if containerScanTriggered && containerResolveLocally {
 				_ = cleanCheckmarxContainersDirectory(directoryPath)
 			}
@@ -1991,21 +1991,21 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-// cleanCheckmarxContainersDirectory removes the .checkmarx/containers directory after container scan completion
+// cleanCheckmarxContainersDirectory removes only the .checkmarx/containers directory after container scan completion
 func cleanCheckmarxContainersDirectory(directoryPath string) error {
-	checkmarxPath := filepath.Join(directoryPath, ".checkmarx")
-	if _, err := os.Stat(checkmarxPath); os.IsNotExist(err) {
-		logger.PrintIfVerbose("No .checkmarx directory found to clean up")
+	containersPath := filepath.Join(directoryPath, ".checkmarx", "containers")
+	if _, err := os.Stat(containersPath); os.IsNotExist(err) {
+		logger.PrintIfVerbose("No .checkmarx/containers directory found to clean up")
 		return nil
 	}
 
-	logger.PrintIfVerbose("Cleaning up .checkmarx directory after container scan")
-	err := os.RemoveAll(checkmarxPath)
+	logger.PrintIfVerbose("Cleaning up .checkmarx/containers directory after container scan")
+	err := os.RemoveAll(containersPath)
 	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to clean up .checkmarx directory: %s", err.Error()))
-		return errors.Wrapf(err, "Failed to clean up .checkmarx directory")
+		logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to clean up .checkmarx/containers directory: %s", err.Error()))
+		return errors.Wrapf(err, "Failed to clean up .checkmarx/containers directory")
 	}
-	logger.PrintIfVerbose("Successfully cleaned up .checkmarx directory")
+	logger.PrintIfVerbose("Successfully cleaned up .checkmarx/containers directory")
 	return nil
 }
 
