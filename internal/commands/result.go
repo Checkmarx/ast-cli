@@ -113,6 +113,7 @@ const (
 	ScaExcludeResultTypesParam              = "exclude-result-types"
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
 	CliType                                 = "cli"
+	artifactLocationURIString               = "This alert has no associated file"
 )
 
 var (
@@ -2684,7 +2685,7 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	trimOsSeparatorFromFileName(result)
 	if result.Type == commonParams.SCSScorecardType && result.ScanResultData.Filename == noFileForScorecardResultString {
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = artifactLocationURIString
 		scanLocation.PhysicalLocation.ArtifactLocation.Description = &wrappers.SarifMessage{}
 		scanLocation.PhysicalLocation.ArtifactLocation.Description.Text = result.ScanResultData.Filename
 	} else {
