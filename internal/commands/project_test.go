@@ -3,13 +3,13 @@
 package commands
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"testing"
 	"time"
 
 	asserts "github.com/stretchr/testify/assert"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 

@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	asserts "github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -375,11 +376,11 @@ func TestProjectShow_MainBranch_Exist(t *testing.T) {
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), "data/insecure.zip",
 		flag(params.BranchFlag), "dummy_branch",
-		flag(params.BranchPrimaryFlag), "dummy_branch",
+		flag(params.BranchPrimaryFlag),
 	}
-	err, _ = executeCommand(t, args...)
+	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 
-	project := showProject(t, createdProject.ID)
+	project := showProject(t, projectID)
 	asserts.Contains(t, project.MainBranch, "dummy_branch", "Project main branch should be 'dummy_branch'")
 }
