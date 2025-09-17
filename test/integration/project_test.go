@@ -370,6 +370,7 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 func TestProjectShow_MainBranch_Exist(t *testing.T) {
 
 	projectID, projectName := createProject(t, Tags, Groups)
+	defer deleteProject(t, projectID)
 
 	args := []string{
 		"scan", "create",
