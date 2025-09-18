@@ -610,6 +610,7 @@ func toProjectView(model wrappers.ProjectResponseModel) projectView { //nolint:g
 		Tags:           model.Tags,
 		Groups:         model.Groups,
 		ApplicationIds: model.ApplicationIds,
+		MainBranch:     model.MainBranch,
 	}
 }
 
@@ -618,6 +619,7 @@ type projectView struct {
 	Name           string
 	CreatedAt      time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 	UpdatedAt      time.Time `format:"name:Updated at;time:01-02-06 15:04:05"`
+	MainBranch     string
 	Tags           map[string]string
 	Groups         []string
 	ApplicationIds []string
