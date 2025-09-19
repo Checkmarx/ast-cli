@@ -2722,5 +2722,5 @@ func TestCreateScanWithExistingProjectAnd_ApplicationNotFoundFailed(t *testing.T
 		flag(params.ApplicationName), "mock",
 	}
 	err, _ := executeCommand(t, args...)
-	assert.ErrorContains(t, err, "Application mock not found")
+	assert.ErrorContains(t, err, "Application not found: mock")
 }
