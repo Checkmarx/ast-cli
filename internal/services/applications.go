@@ -87,8 +87,8 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	applicationModel.Tags = applicationResp.Tags
 	newApplicationRule.Type = ApplicationRuleType
 	newApplicationRule.Value = projectName
-	combinedRules := append(applicationResp.Rules, newApplicationRule)
-	applicationModel.Rules = combinedRules
+	applicationModel.Rules = append(applicationModel.Rules, applicationResp.Rules...)
+	applicationModel.Rules = append(applicationModel.Rules, newApplicationRule)
 	applicationID = applicationResp.ID
 
 	err = updateApplication(&applicationModel, applicationsWrapper, applicationID)
