@@ -40,9 +40,14 @@ func FindProject(
 	}
 	branchName := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 	isBranchPrimary, _ = cmd.Flags().GetBool(commonParams.BranchPrimaryFlag)
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
+			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName)
+			if err != nil {
+				return "", err
+			}
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage, isBranchPrimary, branchName)
@@ -51,8 +56,6 @@ func FindProject(
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	applicationID, appErr := getApplicationID(applicationName, applicationWrapper)
 	if appErr != nil {
 		return "", appErr

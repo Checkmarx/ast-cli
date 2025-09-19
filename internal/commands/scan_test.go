@@ -3623,3 +3623,46 @@ func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
 		"scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy",
 	)
 }
+
+func Test_CreateScanWithExistingProjectAndAssign_Application(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--application-name", mock.ExistingApplication, "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvided(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "No Application Name provided. Skipping application update"), true, "Expected output: %s", "No Application Name provided. Skipping application update")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", "NoPermissionApp"}
+	err := execCmdNotNilAssertion(
+		t,
+		baseArgs...,
+	)
+	assert.Error(t, err, "Failed to get Application NoPermissionApp: provided application does not exist or user has no permission to the application", err.Error())
+}

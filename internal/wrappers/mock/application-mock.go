@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"fmt"
 	"time"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -51,4 +52,16 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 	}
 
 	return response, nil
+}
+
+func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
+	fmt.Println("called Update project")
+	if applicationID == FakeForbidden403 {
+		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
+	}
+	if applicationID == FakeUnauthorized401 {
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
+	}
+
+	return nil, nil
 }

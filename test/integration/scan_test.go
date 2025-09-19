@@ -2706,3 +2706,31 @@ func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Scan creation with gitignore filter should pass without error")
 }
+
+func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ApplicationName), "cli-application",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Project should be assigned to application")
+}
+
+func TestCreateScanWithExistingProjectAnd_ApplicationNotFoundFailed(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ApplicationName), "mock",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, "Application mock not found")
+}

@@ -29,9 +29,10 @@ const (
 	FileExtensionIsRequired = "file must have an extension"
 
 	// Realtime
-	RealtimeEngineErrFormat        = "realtime engine error: %s"
-	RealtimeEngineNotAvailable     = "Realtime engine is not available for this tenant"
-	RealtimeEngineFilePathRequired = "file path is required for realtime scan"
+	RealtimeEngineErrFormat         = "realtime engine error: %s"
+	RealtimeEngineNotAvailable      = "Realtime engine is not available for this tenant"
+	RealtimeEngineFilePathRequired  = "file path is required for realtime scan"
+	NoPermissionToUpdateApplication = "you do not have permission to update the application"
 )
 
 type RealtimeEngineError struct {

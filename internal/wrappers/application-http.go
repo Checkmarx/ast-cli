@@ -1,7 +1,9 @@
 package wrappers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -17,6 +19,40 @@ type ApplicationsHTTPWrapper struct {
 func NewApplicationsHTTPWrapper(path string) ApplicationsWrapper {
 	return &ApplicationsHTTPWrapper{
 		path: path,
+	}
+}
+
+func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody ApplicationConfiguration) (*ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(applicationBody)
+	updatePath := fmt.Sprintf("%s/%s", a.path, applicationID)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := SendHTTPRequest(http.MethodPut, updatePath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	decoder := json.NewDecoder(resp.Body)
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		errorModel := ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, errors.Errorf("failed to parse application response: %s ", err)
+		}
+		return &errorModel, nil
+
+	case http.StatusNoContent:
+		return nil, nil
+
+	case http.StatusForbidden:
+		return nil, errors.New(errorConstants.NoPermissionToUpdateApplication)
+
+	case http.StatusUnauthorized:
+		return nil, errors.New(errorConstants.StatusUnauthorized)
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
 
