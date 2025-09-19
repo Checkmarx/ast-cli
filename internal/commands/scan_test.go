@@ -3643,7 +3643,7 @@ func Test_CreateScanWithExistingProjectAndAssign_Application(t *testing.T) {
 
 func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvided(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
+	//defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug"}
@@ -3655,7 +3655,7 @@ func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvide
 	if err != nil {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
-	assert.Equal(t, strings.Contains(stdoutString, "No Application Name provided. Skipping application update"), true, "Expected output: %s", "No Application Name provided. Skipping application update")
+	assert.Equal(t, strings.Contains(stdoutString, "No application name provided. Skipping application update"), true, "Expected output: %s", "No application name provided. Skipping application update")
 }
 
 func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist(t *testing.T) {
