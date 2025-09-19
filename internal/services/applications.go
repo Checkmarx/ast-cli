@@ -87,17 +87,18 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	applicationModel.Tags = applicationResp.Tags
 	newApplicationRule.Type = ApplicationRuleType
 	newApplicationRule.Value = projectName
-	applicationModel.Rules = append(applicationResp.Rules, newApplicationRule)
+	combinedRules := append(applicationResp.Rules, newApplicationRule)
+	applicationModel.Rules = combinedRules
 	applicationID = applicationResp.ID
 
-	err = updateApplication(applicationModel, applicationsWrapper, applicationID)
+	err = updateApplication(&applicationModel, applicationsWrapper, applicationID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func updateApplication(applicationModel wrappers.ApplicationConfiguration, applicationWrapper wrappers.ApplicationsWrapper, applicationID string) error {
+func updateApplication(applicationModel *wrappers.ApplicationConfiguration, applicationWrapper wrappers.ApplicationsWrapper, applicationID string) error {
 	errorModel, err := applicationWrapper.Update(applicationID, applicationModel)
 	if errorModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, "failed to update application", errorModel.Code, errorModel.Message)

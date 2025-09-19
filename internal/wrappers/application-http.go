@@ -22,7 +22,7 @@ func NewApplicationsHTTPWrapper(path string) ApplicationsWrapper {
 	}
 }
 
-func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody ApplicationConfiguration) (*ErrorModel, error) {
+func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(applicationBody)
 	updatePath := fmt.Sprintf("%s/%s", a.path, applicationID)
@@ -34,6 +34,10 @@ func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody A
 		return nil, err
 	}
 	decoder := json.NewDecoder(resp.Body)
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
 	switch resp.StatusCode {
 	case http.StatusBadRequest:
 		errorModel := ErrorModel{}

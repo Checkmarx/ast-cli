@@ -50,11 +50,10 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		response.TotalCount = 0
 		response.Applications = []wrappers.Application{}
 	}
-
 	return response, nil
 }
 
-func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
+func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
 	fmt.Println("called Update project")
 	if applicationID == FakeForbidden403 {
 		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
@@ -62,6 +61,5 @@ func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody wr
 	if applicationID == FakeUnauthorized401 {
 		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
 	}
-
 	return nil, nil
 }

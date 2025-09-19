@@ -38,5 +38,5 @@ type Rule struct {
 
 type ApplicationsWrapper interface {
 	Get(params map[string]string) (*ApplicationsResponseModel, error)
-	Update(applicationID string, applicationBody ApplicationConfiguration) (*ErrorModel, error)
+	Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error)
 }
