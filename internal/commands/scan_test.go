@@ -3643,7 +3643,7 @@ func Test_CreateScanWithExistingProjectAndAssign_Application(t *testing.T) {
 
 func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvided(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	//defer deleteOutputFile(file)
+	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug"}
