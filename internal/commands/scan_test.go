@@ -3661,5 +3661,4 @@ func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist
 		baseArgs...,
 	)
 	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
-
 }
