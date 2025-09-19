@@ -71,10 +71,10 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	}
 	applicationResp, err := GetApplication(applicationName, applicationsWrapper)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to get Application:%s", applicationName)
+		return errors.Wrapf(err, "%s:%s", errorConstants.FailedToGetApplication, applicationName)
 	}
 	if applicationResp == nil {
-		return errors.Errorf("Application %s not found", applicationName)
+		return errors.Errorf("Application not found: %s", applicationName)
 	}
 	var applicationModel wrappers.ApplicationConfiguration
 	var newApplicationRule wrappers.Rule
