@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	asserts "github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -364,4 +365,23 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 	fmt.Println("Response after project is created : ", string(createdProjectJSON))
 	fmt.Printf("New project created with id: %s \n", createdProject.ID)
 	deleteProject(t, createdProject.ID)
+}
+
+func TestProjectShow_MainBranch_Exist(t *testing.T) {
+
+	projectID, projectName := createProject(t, Tags, Groups)
+	defer deleteProject(t, projectID)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.BranchPrimaryFlag),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+
+	project := showProject(t, projectID)
+	asserts.Contains(t, project.MainBranch, "dummy_branch", "Project main branch should be 'dummy_branch'")
 }
