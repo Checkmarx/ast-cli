@@ -1,7 +1,12 @@
 package services
 
 import (
+	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"gotest.tools/assert"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -33,6 +38,52 @@ func Test_createApplicationIds(t *testing.T) {
 			if got := createApplicationIds(ttt.args.applicationID, ttt.args.existingApplicationIds); !reflect.DeepEqual(got, ttt.want) {
 				t.Errorf("createApplicationIds() = %v, want %v", got, ttt.want)
 			}
+		})
+	}
+}
+func Test_ProjectAssociation_ToApplicationDirectly(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+
+	tests := []struct {
+		description     string
+		applicationName string
+		projectName     string
+		error           string
+	}{
+		{"Project association to  Application  should  fail with 403 forbidden permission error", mock.FakeForbidden403, "random-project", errorConstants.NoPermissionToUpdateApplication},
+		{"Project association to  Application should  fail with 401 unauthorized  error", mock.FakeUnauthorized401, "random-project", errorConstants.StatusUnauthorized},
+		{"Project association to  Application should  fail with 400  BadRequest  error", mock.FakeBadRequest400, "random-project", errorConstants.FailedToUpdateApplication},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.description, func(t *testing.T) {
+			err := associateProjectToApplication(tt.applicationName, tt.projectName, []string{}, applicationWrapper)
+			assert.Assert(t, strings.Contains(err.Error(), tt.error), err.Error())
+		})
+	}
+}
+
+func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T) {
+	applicationModel := wrappers.ApplicationConfiguration{}
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+
+	tests := []struct {
+		description   string
+		applicationId string
+		projectName   string
+		error         string
+	}{
+		{"Application update should  fail with 403 forbidden permission error", mock.FakeForbidden403, "random-project", errorConstants.NoPermissionToUpdateApplication},
+		{"Application update  should  fail with 401 unauthorized  error", mock.FakeUnauthorized401, "random-project", errorConstants.StatusUnauthorized},
+		{"Application update should  fail with 400  BadRequest  error", mock.FakeBadRequest400, "random-project", errorConstants.FailedToUpdateApplication},
+	}
+
+	for _, test := range tests {
+		tt := test
+		t.Run(tt.description, func(t *testing.T) {
+			err := updateApplication(&applicationModel, applicationWrapper, tt.applicationId)
+			assert.Assert(t, strings.Contains(err.Error(), tt.error), err.Error())
 		})
 	}
 }

@@ -299,7 +299,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
-		flag(params.ApplicationName), "my-application",
+		flag(params.ApplicationName), "test-app",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,

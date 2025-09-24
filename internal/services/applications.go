@@ -64,7 +64,7 @@ func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.Appl
 	return application
 }
 
-func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName string, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if applicationName == "" {
 		logger.PrintfIfVerbose("No application name provided. Skipping application update")
 		return nil
@@ -112,7 +112,7 @@ func updateApplication(applicationModel *wrappers.ApplicationConfiguration, appl
 	return handleApplicationUpdateResponse(errorModel, err)
 }
 
-func associateProjectToApplication(applicationID string, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+func associateProjectToApplication(applicationID, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
 	associatedProjectIds = append(associatedProjectIds, projectID)
 	associateProjectsModel := &wrappers.AssociateProjectModel{
 		ProjectIds: associatedProjectIds,

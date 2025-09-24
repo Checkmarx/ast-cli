@@ -61,6 +61,13 @@ func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *w
 	if applicationID == FakeUnauthorized401 {
 		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
 	}
+	if applicationID == FakeBadRequest400 {
+		return &wrappers.ErrorModel{
+			Message: "invalid applicationBody",
+			Code:    355,
+			Type:    "validation",
+		}, nil
+	}
 	return nil, nil
 }
 
@@ -72,5 +79,14 @@ func (a ApplicationsMockWrapper) CreateProjectAssociation(applicationID string, 
 	if applicationID == FakeUnauthorized401 {
 		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
 	}
+
+	if applicationID == FakeBadRequest400 {
+		return &wrappers.ErrorModel{
+			Message: "invalid applicationBody",
+			Code:    355,
+			Type:    "validation",
+		}, nil
+	}
+
 	return nil, nil
 }
