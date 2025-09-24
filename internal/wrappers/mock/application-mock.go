@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const code = 355
+
 type ApplicationsMockWrapper struct{}
 
 func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.ApplicationsResponseModel, error) {
@@ -55,6 +57,7 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 
 func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
 	fmt.Println("called Update application")
+
 	if applicationID == FakeForbidden403 {
 		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
 	}
@@ -64,7 +67,7 @@ func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *w
 	if applicationID == FakeBadRequest400 {
 		return &wrappers.ErrorModel{
 			Message: "invalid applicationBody",
-			Code:    355,
+			Code:    code,
 			Type:    "validation",
 		}, nil
 	}
@@ -83,7 +86,7 @@ func (a ApplicationsMockWrapper) CreateProjectAssociation(applicationID string, 
 	if applicationID == FakeBadRequest400 {
 		return &wrappers.ErrorModel{
 			Message: "invalid applicationBody",
-			Code:    355,
+			Code:    code,
 			Type:    "validation",
 		}, nil
 	}

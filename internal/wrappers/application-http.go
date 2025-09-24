@@ -57,7 +57,6 @@ func (a *ApplicationsHTTPWrapper) CreateProjectAssociation(applicationID string,
 	default:
 		return nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
-
 }
 
 func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error) {

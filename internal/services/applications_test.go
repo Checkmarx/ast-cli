@@ -70,7 +70,7 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 
 	tests := []struct {
 		description   string
-		applicationId string
+		applicationID string
 		projectName   string
 		error         string
 	}{
@@ -82,7 +82,7 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.description, func(t *testing.T) {
-			err := updateApplication(&applicationModel, applicationWrapper, tt.applicationId)
+			err := updateApplication(&applicationModel, applicationWrapper, tt.applicationID)
 			assert.Assert(t, strings.Contains(err.Error(), tt.error), err.Error())
 		})
 	}
