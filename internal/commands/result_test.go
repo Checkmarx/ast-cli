@@ -242,6 +242,54 @@ func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
 	removeFileBySuffix(t, printer.FormatJSON)
 }
 
+func TestRunScsResultsShow_Other_AgentShouldShowSCSResults(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.VisualStudioAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 2)
+
+	removeFileBySuffix(t, printer.FormatJSON)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestFilterScsResultsByAgent_ShouldIncludeSCSAndSAST(t *testing.T) {
+	results := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{Type: params.SCSScorecardType},
+			{Type: params.ScsType},
+			{Type: params.SastType},
+		},
+	}
+
+	filteredResults := filterScsResultsByAgent(results, params.VisualStudioAgent)
+
+	hasSCS := false
+	hasSCSScorecard := false
+	hasSAST := false
+
+	for _, result := range filteredResults.Results {
+		switch result.Type {
+		case params.ScsType:
+			hasSCS = true
+		case params.SCSScorecardType:
+			hasSCSScorecard = true
+		case params.SastType:
+			hasSAST = true
+		}
+	}
+
+	assert.Assert(t, hasSCS, "Expected SCS type to be included for Visual Studio agent")
+	assert.Assert(t, !hasSCSScorecard, "Expected SCSScorecard type to be excluded for Visual Studio agent")
+	assert.Assert(t, hasSAST, "Expected SAST type to be excluded for Visual Studio agent")
+	assert.Equal(t, len(filteredResults.Results), 2, "Expected 2 results (SCS and SAST) after filtering for Visual Studio agent")
+}
+
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
 	model := wrappers.ScanResponseModel{
 		ID:     "fake-scan-id-kics-fail-sast-canceled-id",
