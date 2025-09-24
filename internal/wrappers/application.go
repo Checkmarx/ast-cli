@@ -30,6 +30,10 @@ type ApplicationConfiguration struct {
 	Tags        map[string]string `json:"tags"`
 }
 
+type AssociateProjectModel struct {
+	ProjectIds []string `json:"projectIds"`
+}
+
 type Rule struct {
 	ID    string `json:"id"`
 	Type  string `json:"type"`
@@ -39,4 +43,5 @@ type Rule struct {
 type ApplicationsWrapper interface {
 	Get(params map[string]string) (*ApplicationsResponseModel, error)
 	Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error)
+	CreateProjectAssociation(applicationID string, requestModel *AssociateProjectModel) (*ErrorModel, error)
 }

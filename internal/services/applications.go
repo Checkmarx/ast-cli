@@ -64,7 +64,7 @@ func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.Appl
 	return application
 }
 
-func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName string) error {
+func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName string, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if applicationName == "" {
 		logger.PrintfIfVerbose("No application name provided. Skipping application update")
 		return nil
@@ -75,6 +75,15 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	}
 	if applicationResp == nil {
 		return errors.Errorf("%s: %s", errorConstants.ApplicationNotFound, applicationName)
+	}
+
+	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
+	if directAssociationEnabled.Status {
+		err = associateProjectToApplication(applicationResp.ID, projectID, applicationResp.ProjectIds, applicationsWrapper)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 	var applicationModel wrappers.ApplicationConfiguration
 	var newApplicationRule wrappers.Rule
@@ -100,6 +109,19 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 
 func updateApplication(applicationModel *wrappers.ApplicationConfiguration, applicationWrapper wrappers.ApplicationsWrapper, applicationID string) error {
 	errorModel, err := applicationWrapper.Update(applicationID, applicationModel)
+	return handleApplicationUpdateResponse(errorModel, err)
+}
+
+func associateProjectToApplication(applicationID string, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+	associatedProjectIds = append(associatedProjectIds, projectID)
+	associateProjectsModel := &wrappers.AssociateProjectModel{
+		ProjectIds: associatedProjectIds,
+	}
+	errorModel, err := applicationsWrapper.CreateProjectAssociation(applicationID, associateProjectsModel)
+	return handleApplicationUpdateResponse(errorModel, err)
+}
+
+func handleApplicationUpdateResponse(errorModel *wrappers.ErrorModel, err error) error {
 	if errorModel != nil {
 		err = errors.Errorf(ErrorCodeFormat, errorConstants.FailedToUpdateApplication, errorModel.Code, errorModel.Message)
 	}

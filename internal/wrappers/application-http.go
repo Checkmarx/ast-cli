@@ -22,6 +22,44 @@ func NewApplicationsHTTPWrapper(path string) ApplicationsWrapper {
 	}
 }
 
+func (a *ApplicationsHTTPWrapper) CreateProjectAssociation(applicationID string, projectAssociationModel *AssociateProjectModel) (*ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	jsonBytes, err := json.Marshal(*projectAssociationModel)
+	if err != nil {
+		return nil, err
+	}
+	associationPath := fmt.Sprintf("%s/%s/%s", a.path, applicationID, "projects")
+	resp, err := SendHTTPRequest(http.MethodPost, associationPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return nil, err
+	}
+	decoder := json.NewDecoder(resp.Body)
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	switch resp.StatusCode {
+	case http.StatusBadRequest:
+		errorModel := ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, errors.Errorf("failed to parse application response for project updation: %s ", err)
+		}
+		return &errorModel, nil
+
+	case http.StatusCreated:
+		return nil, nil
+
+	case http.StatusForbidden:
+		return nil, errors.New(errorConstants.NoPermissionToUpdateApplication)
+
+	case http.StatusUnauthorized:
+		return nil, errors.New(errorConstants.StatusUnauthorized)
+	default:
+		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
+
+}
+
 func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(applicationBody)

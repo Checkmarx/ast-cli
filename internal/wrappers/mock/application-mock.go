@@ -54,7 +54,18 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 }
 
 func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
-	fmt.Println("called Update project")
+	fmt.Println("called Update application")
+	if applicationID == FakeForbidden403 {
+		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
+	}
+	if applicationID == FakeUnauthorized401 {
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
+	}
+	return nil, nil
+}
+
+func (a ApplicationsMockWrapper) CreateProjectAssociation(applicationID string, requestModel *wrappers.AssociateProjectModel) (*wrappers.ErrorModel, error) {
+	fmt.Println("called Create project association to application")
 	if applicationID == FakeForbidden403 {
 		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
 	}

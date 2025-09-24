@@ -44,7 +44,7 @@ func FindProject(
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
-			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName)
+			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName, project.ID, featureFlagsWrapper)
 			if err != nil {
 				return "", err
 			}

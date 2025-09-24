@@ -3662,3 +3662,21 @@ func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist
 	)
 	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
 }
+
+func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociationEnabledShouldPass(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
