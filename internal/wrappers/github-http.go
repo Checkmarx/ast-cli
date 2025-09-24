@@ -250,9 +250,11 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	if err != nil {
 		return nil, err
 	}
-	resp, err = handleRateLimit(resp, client, req, url, token, queryParams)
-	if err != nil {
-		return nil, err
+	if resp.StatusCode == http.StatusForbidden {
+		resp, err = HandleRateLimit(resp, client, req, url, token, queryParams)
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer func() {
 		if err == nil {
@@ -283,22 +285,18 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	return resp, nil
 }
 
-func handleRateLimit(resp *http.Response, client *http.Client, req *http.Request, url, token string, queryParams map[string]string) (*http.Response, error) {
-	if resp.StatusCode == http.StatusForbidden {
-		remaining := resp.Header.Get("X-RateLimit-Remaining")
-		reset := resp.Header.Get("X-RateLimit-Reset")
-		if remaining == "0" && reset != "" {
-			resetUnix, err := strconv.ParseInt(reset, 10, 64)
-			if err == nil {
-				waitDuration := time.Until(time.Unix(resetUnix, 0))
-				if waitDuration > 0 {
-					time.Sleep(waitDuration)
-					return GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams) // Indicate to retry
-				}
-			} else {
-				return resp, err
+func HandleRateLimit(resp *http.Response, client *http.Client, req *http.Request, url, token string, queryParams map[string]string) (*http.Response, error) {
+	remaining := resp.Header.Get("X-RateLimit-Remaining")
+	reset := resp.Header.Get("X-RateLimit-Reset")
+	if remaining == "0" && reset != "" {
+		resetUnix, err := strconv.ParseInt(reset, 10, 64)
+		if err == nil {
+			waitDuration := time.Until(time.Unix(resetUnix, 0))
+			if waitDuration > 0 {
+				time.Sleep(waitDuration)
+				return GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams) // Indicate to retry
 			}
 		}
 	}
-	return resp, nil // Not rate limited
+	return resp, nil
 }
