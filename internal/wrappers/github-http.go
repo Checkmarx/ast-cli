@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -248,6 +250,10 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	if err != nil {
 		return nil, err
 	}
+	resp, err = handleRateLimit(resp, client, req, url, token, tokenFormat, queryParams)
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
 		if err == nil {
 			_ = resp.Body.Close()
@@ -275,4 +281,24 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 		return nil, errors.New(message)
 	}
 	return resp, nil
+}
+
+func handleRateLimit(resp *http.Response, client *http.Client, req *http.Request, url, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+	if resp.StatusCode == http.StatusForbidden {
+		remaining := resp.Header.Get("X-RateLimit-Remaining")
+		reset := resp.Header.Get("X-RateLimit-Reset")
+		if remaining == "0" && reset != "" {
+			resetUnix, err := strconv.ParseInt(reset, 10, 64)
+			if err == nil {
+				waitDuration := time.Until(time.Unix(resetUnix, 0))
+				if waitDuration > 0 {
+					time.Sleep(waitDuration)
+					return GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams) // Indicate to retry
+				}
+			} else {
+				return resp, err
+			}
+		}
+	}
+	return resp, nil //Not rate limited
 }
