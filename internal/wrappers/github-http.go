@@ -250,7 +250,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	if err != nil {
 		return nil, err
 	}
-	resp, err = handleRateLimit(resp, client, req, url, token, tokenFormat, queryParams)
+	resp, err = handleRateLimit(resp, client, req, url, token, queryParams)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	return resp, nil
 }
 
-func handleRateLimit(resp *http.Response, client *http.Client, req *http.Request, url, token, authFormat string, queryParams map[string]string) (*http.Response, error) {
+func handleRateLimit(resp *http.Response, client *http.Client, req *http.Request, url, token string, queryParams map[string]string) (*http.Response, error) {
 	if resp.StatusCode == http.StatusForbidden {
 		remaining := resp.Header.Get("X-RateLimit-Remaining")
 		reset := resp.Header.Get("X-RateLimit-Reset")
@@ -300,5 +300,5 @@ func handleRateLimit(resp *http.Response, client *http.Client, req *http.Request
 			}
 		}
 	}
-	return resp, nil //Not rate limited
+	return resp, nil // Not rate limited
 }
