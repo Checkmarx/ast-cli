@@ -7,6 +7,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	asserts "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -109,13 +110,18 @@ func TestHandleRateLimit_WaitsAndRetries(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusForbidden,
 		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader("")),
 	}
 	resp.Header.Set("X-RateLimit-Remaining", "0")
 	resetTime := time.Now().Add(50 * time.Second).Unix()
 	resp.Header.Set("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	client := &http.Client{}
-	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 
 	start := time.Now()
 	_, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
@@ -129,9 +135,15 @@ func TestHandleRateLimit_NoRateLimit(t *testing.T) {
 	resp := &http.Response{
 		StatusCode: http.StatusForbidden,
 		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader("")),
 	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	client := &http.Client{}
-	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	outResp, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
 	asserts.NoError(t, err)
 	assert.Equal(t, resp, outResp)
