@@ -114,7 +114,13 @@ func collectFromGitLabProjects(gitLabWrapper wrappers.GitLabWrapper) (
 		if strings.TrimSpace(gitLabProjectName) == "" {
 			log.Println("Ignoring the blank value for project name.")
 		} else {
-			commits, err := gitLabWrapper.GetCommits(gitLabProjectName, map[string]string{sinceParam: ninetyDaysDate})
+			var commits []wrappers.GitLabCommit
+			var err error
+			err = WithSCMRateLimitRetry(GitLabRateLimitConfig, func() error {
+				var innerErr error
+				commits, innerErr = gitLabWrapper.GetCommits(gitLabProjectName, map[string]string{sinceParam: ninetyDaysDate})
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
@@ -138,9 +144,15 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 		if strings.TrimSpace(gitLabGroupName) == "" {
 			log.Println("Ignoring the blank value for group name.")
 		} else {
-			gitLabProjects, err := gitLabWrapper.GetGitLabProjects(
-				strings.TrimSpace(gitLabGroupName),
-				map[string]string{})
+			var gitLabProjects []wrappers.GitLabProject
+			var err error
+			err = WithSCMRateLimitRetry(GitLabRateLimitConfig, func() error {
+				var innerErr error
+				gitLabProjects, innerErr = gitLabWrapper.GetGitLabProjects(
+					strings.TrimSpace(gitLabGroupName),
+					map[string]string{})
+				return innerErr
+			})
 
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
@@ -157,9 +169,15 @@ func collectFromGitLabGroups(gitLabWrapper wrappers.GitLabWrapper) (
 							"Skipping the project %s because of empty repository.",
 							gitLabProject.PathWithNameSpace))
 				} else {
-					commits, err := gitLabWrapper.GetCommits(
-						gitLabProject.PathWithNameSpace,
-						map[string]string{sinceParam: ninetyDaysDate})
+					var commits []wrappers.GitLabCommit
+					var err error
+					err = WithSCMRateLimitRetry(GitLabRateLimitConfig, func() error {
+						var innerErr error
+						commits, innerErr = gitLabWrapper.GetCommits(
+							gitLabProject.PathWithNameSpace,
+							map[string]string{sinceParam: ninetyDaysDate})
+						return innerErr
+					})
 					if err != nil {
 						return totalCommits, views, viewsUsers, err
 					}
@@ -183,7 +201,13 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 	var views []RepositoryView
 	var viewsUsers []UserView
 
-	gitLabProjects, err := gitLabWrapper.GetGitLabProjectsForUser()
+	var gitLabProjects []wrappers.GitLabProject
+	var err error
+	err = WithSCMRateLimitRetry(GitLabRateLimitConfig, func() error {
+		var innerErr error
+		gitLabProjects, innerErr = gitLabWrapper.GetGitLabProjectsForUser()
+		return innerErr
+	})
 	if err != nil {
 		return totalCommits, views, viewsUsers, err
 	}
@@ -196,9 +220,15 @@ func collectFromUser(gitLabWrapper wrappers.GitLabWrapper) (
 				fmt.Sprintf(
 					"Skipping the project %s because of empty repository.", gitLabProject.PathWithNameSpace))
 		} else {
-			commits, err := gitLabWrapper.GetCommits(
-				gitLabProject.PathWithNameSpace,
-				map[string]string{sinceParam: ninetyDaysDate})
+			var commits []wrappers.GitLabCommit
+			var err error
+			err = WithSCMRateLimitRetry(GitLabRateLimitConfig, func() error {
+				var innerErr error
+				commits, innerErr = gitLabWrapper.GetCommits(
+					gitLabProject.PathWithNameSpace,
+					map[string]string{sinceParam: ninetyDaysDate})
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}

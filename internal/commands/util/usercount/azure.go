@@ -125,7 +125,13 @@ func collectFromAzureRepos(azureWrapper wrappers.AzureWrapper) (
 	for _, org := range AzureOrgs {
 		for _, project := range AzureProject {
 			for _, repo := range AzureRepos {
-				commits, err := azureWrapper.GetCommits(*AzureURL, org, project, repo, *AzureToken)
+				var commits wrappers.AzureRootCommit
+				var err error
+				err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+					var innerErr error
+					commits, innerErr = azureWrapper.GetCommits(*AzureURL, org, project, repo, *AzureToken)
+					return innerErr
+				})
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
@@ -170,13 +176,25 @@ func collectFromAzureProject(azureWrapper wrappers.AzureWrapper) (
 	for _, org := range AzureOrgs {
 		for _, project := range AzureProject {
 			// Fetch all the repos within the project
-			repos, err := azureWrapper.GetRepositories(*AzureURL, org, project, *AzureToken)
+			var repos wrappers.AzureRootRepo
+			var err error
+			err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+				var innerErr error
+				repos, innerErr = azureWrapper.GetRepositories(*AzureURL, org, project, *AzureToken)
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
 			// For each repo within the project fetch the commits
 			for _, repo := range repos.Repos {
-				commits, err := azureWrapper.GetCommits(*AzureURL, org, project, repo.Name, *AzureToken)
+				var commits wrappers.AzureRootCommit
+				var err error
+				err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+					var innerErr error
+					commits, innerErr = azureWrapper.GetCommits(*AzureURL, org, project, repo.Name, *AzureToken)
+					return innerErr
+				})
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}
@@ -216,19 +234,35 @@ func collectFromAzureOrg(azureWrapper wrappers.AzureWrapper) (
 	var viewsUsers []UserView
 	// Fetch all the projects within the organization
 	for _, org := range AzureOrgs {
-		projects, err := azureWrapper.GetProjects(*AzureURL, org, *AzureToken)
+		var projects wrappers.AzureRootProject
+		var err error
+		err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+			var innerErr error
+			projects, innerErr = azureWrapper.GetProjects(*AzureURL, org, *AzureToken)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 		for _, project := range projects.Projects {
 			// Fetch all the repos within the project
-			repos, err := azureWrapper.GetRepositories(*AzureURL, org, project.Name, *AzureToken)
+			var repos wrappers.AzureRootRepo
+			err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+				var innerErr error
+				repos, innerErr = azureWrapper.GetRepositories(*AzureURL, org, project.Name, *AzureToken)
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
 			// For each repo within the project fetch the commits
 			for _, repo := range repos.Repos {
-				commits, err := azureWrapper.GetCommits(*AzureURL, org, project.Name, repo.Name, *AzureToken)
+				var commits wrappers.AzureRootCommit
+				err = WithSCMRateLimitRetry(AzureRateLimitConfig, func() error {
+					var innerErr error
+					commits, innerErr = azureWrapper.GetCommits(*AzureURL, org, project.Name, repo.Name, *AzureToken)
+					return innerErr
+				})
 				if err != nil {
 					return totalCommits, views, viewsUsers, err
 				}

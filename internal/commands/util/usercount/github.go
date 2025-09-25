@@ -122,12 +122,23 @@ func collectFromRepos(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRo
 	var views []RepositoryView
 	var viewsUsers []UserView
 	for _, repo := range repos {
-		repository, err := gitHubWrapper.GetRepository(orgs[0], repo)
+		var repository wrappers.Repository
+		var err error
+		err = WithSCMRateLimitRetry(GitHubRateLimitConfig, func() error {
+			var innerErr error
+			repository, innerErr = gitHubWrapper.GetRepository(orgs[0], repo)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 
-		commits, err := gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
+		var commits []wrappers.CommitRoot
+		err = WithSCMRateLimitRetry(GitHubRateLimitConfig, func() error {
+			var innerErr error
+			commits, innerErr = gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
@@ -165,18 +176,34 @@ func collectFromOrgs(gitHubWrapper wrappers.GitHubWrapper) ([]wrappers.CommitRoo
 	var viewsUsers []UserView
 
 	for _, org := range orgs {
-		organization, err := gitHubWrapper.GetOrganization(org)
+		var organization wrappers.Organization
+		var err error
+		err = WithSCMRateLimitRetry(GitHubRateLimitConfig, func() error {
+			var innerErr error
+			organization, innerErr = gitHubWrapper.GetOrganization(org)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 
-		repositories, err := gitHubWrapper.GetRepositories(organization)
+		var repositories []wrappers.Repository
+		err = WithSCMRateLimitRetry(GitHubRateLimitConfig, func() error {
+			var innerErr error
+			repositories, innerErr = gitHubWrapper.GetRepositories(organization)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 
 		for _, repository := range repositories {
-			commits, err := gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
+			var commits []wrappers.CommitRoot
+			err = WithSCMRateLimitRetry(GitHubRateLimitConfig, func() error {
+				var innerErr error
+				commits, innerErr = gitHubWrapper.GetCommits(repository, map[string]string{sinceParam: ninetyDaysDate})
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}

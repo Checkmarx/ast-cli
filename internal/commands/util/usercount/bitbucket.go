@@ -113,17 +113,35 @@ func collectFromBitBucketRepos(bitBucketWrapper wrappers.BitBucketWrapper) ([]wr
 	var viewsUsers []UserView
 	for _, workspace := range BitBucketWorkspaces {
 		// Get the workspace uuid
-		workspaceUUID, err := bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		var workspaceUUID wrappers.BitBucketRootWorkspace
+		var err error
+		err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+			var innerErr error
+			workspaceUUID, innerErr = bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 		for _, repo := range BitBucketRepos {
 			// Get the repo uuid
-			repoObject, err := bitBucketWrapper.GetRepoUUID(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
+			var repoObject wrappers.BitBucketRootRepo
+			var err error
+			err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+				var innerErr error
+				repoObject, innerErr = bitBucketWrapper.GetRepoUUID(*BitBucketURL, workspace, repo, *BitBucketUsername, *BitBucketPassword)
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
-			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoObject.UUID, *BitBucketUsername, *BitBucketPassword)
+
+			var commits wrappers.BitBucketRootCommit
+			err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+				var innerErr error
+				commits, innerErr = bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repoObject.UUID, *BitBucketUsername, *BitBucketPassword)
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
@@ -162,19 +180,35 @@ func collectFromBitBucketWorkspace(bitBucketWrapper wrappers.BitBucketWrapper) (
 	var viewsUsers []UserView
 	for _, workspace := range BitBucketWorkspaces {
 		// Get the workspace uuid
-		workspaceUUID, err := bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		var workspaceUUID wrappers.BitBucketRootWorkspace
+		var err error
+		err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+			var innerErr error
+			workspaceUUID, innerErr = bitBucketWrapper.GetworkspaceUUID(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 		// Get repos from workspace
 		var reposList wrappers.BitBucketRootRepoList
-		reposList, err = bitBucketWrapper.GetRepositories(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+		err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+			var innerErr error
+			reposList, innerErr = bitBucketWrapper.GetRepositories(*BitBucketURL, workspace, *BitBucketUsername, *BitBucketPassword)
+			return innerErr
+		})
 		if err != nil {
 			return totalCommits, views, viewsUsers, err
 		}
 		for _, repo := range reposList.Values {
 			// Get commits for a specific repo
-			commits, err := bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repo.UUID, *BitBucketUsername, *BitBucketPassword)
+			var commits wrappers.BitBucketRootCommit
+			var err error
+			err = WithSCMRateLimitRetry(BitbucketRateLimitConfig, func() error {
+				var innerErr error
+				commits, innerErr = bitBucketWrapper.GetCommits(*BitBucketURL, workspaceUUID.UUID, repo.UUID, *BitBucketUsername, *BitBucketPassword)
+				return innerErr
+			})
 			if err != nil {
 				return totalCommits, views, viewsUsers, err
 			}
