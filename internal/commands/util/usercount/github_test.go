@@ -1,13 +1,17 @@
 package usercount
 
 import (
-	"strings"
-	"testing"
-
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	asserts "github.com/stretchr/testify/assert"
 	"gotest.tools/assert"
+	"net/http"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
 )
 
 func TestGitHubUserCountOrgs(t *testing.T) {
@@ -99,4 +103,36 @@ func TestGitHubUserCountManyOrgs(t *testing.T) {
 
 	err := cmd.Execute()
 	assert.Error(t, err, tooManyOrgs)
+}
+
+func TestHandleRateLimit_WaitsAndRetries(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header:     http.Header{},
+	}
+	resp.Header.Set("X-RateLimit-Remaining", "0")
+	resetTime := time.Now().Add(50 * time.Second).Unix()
+	resp.Header.Set("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
+
+	client := &http.Client{}
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+
+	start := time.Now()
+	_, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
+	elapsed := time.Since(start)
+
+	asserts.NoError(t, err)
+	asserts.GreaterOrEqual(t, elapsed, 20*time.Second)
+}
+
+func TestHandleRateLimit_NoRateLimit(t *testing.T) {
+	resp := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header:     http.Header{},
+	}
+	client := &http.Client{}
+	req, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	outResp, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
+	asserts.NoError(t, err)
+	assert.Equal(t, resp, outResp)
 }
