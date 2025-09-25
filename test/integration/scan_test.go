@@ -2710,3 +2710,18 @@ func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Project should be assigned to application")
 }
+
+func TestCreateScanWithNewProjectName_Assign_Groups(t *testing.T) {
+
+	defer deleteProjectByName(t, getProjectNameForTest())
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ProjectGroupList), formatGroups(Groups),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Groups should be assigned to newly created projects")
+
+}
