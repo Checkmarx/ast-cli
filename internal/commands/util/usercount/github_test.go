@@ -1,18 +1,20 @@
 package usercount
 
 import (
-	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
-	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	asserts "github.com/stretchr/testify/assert"
-	"gotest.tools/assert"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	asserts "github.com/stretchr/testify/assert"
+	"gotest.tools/assert"
+
+	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
 func TestGitHubUserCountOrgs(t *testing.T) {
