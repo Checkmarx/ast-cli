@@ -124,7 +124,12 @@ func TestHandleRateLimit_WaitsAndRetries(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 
 	start := time.Now()
-	_, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
+	outResp, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
+	defer func() {
+		if err := outResp.Body.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	elapsed := time.Since(start)
 
 	asserts.NoError(t, err)
@@ -145,6 +150,11 @@ func TestHandleRateLimit_NoRateLimit(t *testing.T) {
 	client := &http.Client{}
 	req, _ := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	outResp, err := wrappers.HandleRateLimit(resp, client, req, "http://example.com", "token", map[string]string{})
+	defer func() {
+		if err := outResp.Body.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 	asserts.NoError(t, err)
 	assert.Equal(t, resp, outResp)
 }
