@@ -1,12 +1,15 @@
 package mock
 
 import (
+	"fmt"
 	"time"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 )
+
+const code = 355
 
 type ApplicationsMockWrapper struct{}
 
@@ -49,6 +52,44 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		response.TotalCount = 0
 		response.Applications = []wrappers.Application{}
 	}
-
 	return response, nil
+}
+
+func (a ApplicationsMockWrapper) Update(applicationID string, applicationBody *wrappers.ApplicationConfiguration) (*wrappers.ErrorModel, error) {
+	fmt.Println("called Update application")
+
+	if applicationID == FakeForbidden403 {
+		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
+	}
+	if applicationID == FakeUnauthorized401 {
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
+	}
+	if applicationID == FakeBadRequest400 {
+		return &wrappers.ErrorModel{
+			Message: "invalid applicationBody",
+			Code:    code,
+			Type:    "validation",
+		}, nil
+	}
+	return nil, nil
+}
+
+func (a ApplicationsMockWrapper) CreateProjectAssociation(applicationID string, requestModel *wrappers.AssociateProjectModel) (*wrappers.ErrorModel, error) {
+	fmt.Println("called Create project association to application")
+	if applicationID == FakeForbidden403 {
+		return nil, errors.Errorf(errorConstants.NoPermissionToUpdateApplication)
+	}
+	if applicationID == FakeUnauthorized401 {
+		return nil, errors.Errorf(errorConstants.StatusUnauthorized)
+	}
+
+	if applicationID == FakeBadRequest400 {
+		return &wrappers.ErrorModel{
+			Message: "invalid applicationBody",
+			Code:    code,
+			Type:    "validation",
+		}, nil
+	}
+
+	return nil, nil
 }
