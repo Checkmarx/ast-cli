@@ -20,7 +20,7 @@ const (
 	pollingTimeout      = 15 // minutes
 )
 
-func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string, scaHideDevAndTestDep bool) (*wrappers.ScaPackageCollectionExport, error) {
+func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string, scaHideDevAndTestDep bool, featureflagWrappers wrappers.FeatureFlagsWrapper) (*wrappers.ScaPackageCollectionExport, error) {
 	var scaPackageCollection = &wrappers.ScaPackageCollectionExport{
 		Packages: []wrappers.ScaPackage{},
 		ScaTypes: []wrappers.ScaType{},
@@ -44,9 +44,16 @@ func GetExportPackage(exportWrapper wrappers.ExportWrapper, scanID string, scaHi
 	if err != nil {
 		return nil, err
 	}
+	minioEnabled, _ := wrappers.GetSpecificFeatureFlag(featureflagWrappers, wrappers.MinioEnabled)
 
 	if exportResponse != nil && strings.EqualFold(exportResponse.ExportStatus, completedStatus) && exportResponse.FileURL != "" {
-		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(exportResponse.FileURL)
+		filePath := ""
+		if minioEnabled.Status {
+			filePath = exportResponse.FileURL
+		} else {
+			filePath = exportID.ExportID
+		}
+		scaPackageCollection, err = exportWrapper.GetScaPackageCollectionExport(filePath, minioEnabled.Status)
 		if err != nil {
 			return nil, err
 		}

@@ -18,6 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	assertion "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gotest.tools/assert"
@@ -194,7 +195,7 @@ func TestRunScsResultsShow_VSCode_AgentShouldNotShowScorecardResults(t *testing.
 	mock.SetScsMockVarsToDefault()
 }
 
-func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
+func TestRunScsResultsShow_Jetbrains_AgentShouldShowScsResults(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
@@ -202,8 +203,8 @@ func TestRunScsResultsShow_Other_AgentsShouldNotShowScsResults(t *testing.T) {
 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.JetbrainsAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
-	assertTypePresentJSON(t, params.SCSSecretDetectionType, 0)
-	assertTotalCountJSON(t, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 2)
 
 	removeFileBySuffix(t, printer.FormatJSON)
 	mock.SetScsMockVarsToDefault()
@@ -233,6 +234,54 @@ func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
 	assertTotalCountJSON(t, 0)
 
 	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunScsResultsShow_Other_AgentShouldShowSCSResults(t *testing.T) {
+	clearFlags()
+	mock.HasScs = true
+	mock.ScsScanPartial = false
+	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.VisualStudioAgent)
+	assertTypePresentJSON(t, params.SCSScorecardType, 0)
+	assertTypePresentJSON(t, params.SCSSecretDetectionType, 2)
+	assertTotalCountJSON(t, 2)
+
+	removeFileBySuffix(t, printer.FormatJSON)
+	mock.SetScsMockVarsToDefault()
+}
+
+func TestFilterScsResultsByAgent_ShouldIncludeSCSAndSAST(t *testing.T) {
+	results := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{Type: params.SCSScorecardType},
+			{Type: params.ScsType},
+			{Type: params.SastType},
+		},
+	}
+
+	filteredResults := filterScsResultsByAgent(results, params.VisualStudioAgent)
+
+	hasSCS := false
+	hasSCSScorecard := false
+	hasSAST := false
+
+	for _, result := range filteredResults.Results {
+		switch result.Type {
+		case params.ScsType:
+			hasSCS = true
+		case params.SCSScorecardType:
+			hasSCSScorecard = true
+		case params.SastType:
+			hasSAST = true
+		}
+	}
+
+	assert.Assert(t, hasSCS, "Expected SCS type to be included for Visual Studio agent")
+	assert.Assert(t, !hasSCSScorecard, "Expected SCSScorecard type to be excluded for Visual Studio agent")
+	assert.Assert(t, hasSAST, "Expected SAST type to be excluded for Visual Studio agent")
+	assert.Equal(t, len(filteredResults.Results), 2, "Expected 2 results (SCS and SAST) after filtering for Visual Studio agent")
 }
 
 func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
@@ -888,6 +937,15 @@ func assertTypePresentSarif(t *testing.T, resultType string, expectedResultTypeC
 		fmt.Sprintf("Expected %s result count to be %d, but found %d results", resultType, expectedResultTypeCount, actualResultTypeCount))
 }
 
+func assertURINonEmpty(t *testing.T) {
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatSarif)
+	assert.NilError(t, err, "Error reading SARIF file")
+	var scanResults *wrappers.SarifResultsCollection
+	err = json.Unmarshal(reportBytes, &scanResults)
+	assert.NilError(t, err, "Error unmarshalling SARIF results")
+	assertion.Contains(t, scanResults.Runs[0].Results[10].Locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file")
+}
+
 func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {
 	for i := range scanResultsCollection.Runs[0].Tool.Driver.Rules {
 		rule := scanResultsCollection.Runs[0].Tool.Driver.Rules[i]
@@ -1319,7 +1377,7 @@ func TestRunGetResultsByScanIdSonarFormat_SCSFlagEnabled_SCSPresentInReport(t *t
 	mock.SetScsMockVarsToDefault()
 }
 
-func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
+func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSNonEmpty_URI_PresentInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true
 	mock.ScsScanPartial = false
@@ -1328,7 +1386,7 @@ func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSPresentInReport(t *t
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
 	assertTypePresentSarif(t, params.SCSScorecardType, 1)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 2)
-
+	assertURINonEmpty(t)
 	removeFileBySuffix(t, printer.FormatSarif)
 	mock.SetScsMockVarsToDefault()
 }

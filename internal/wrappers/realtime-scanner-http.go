@@ -34,7 +34,7 @@ func (r RealtimeScannerHTTPWrapper) ScanPackages(packages *RealtimeScannerPackag
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPost, fmt.Sprint(r.path, "/analyze-manifest"), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequest(http.MethodPost, fmt.Sprint(r.path, "/scan/packages"), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
