@@ -241,7 +241,6 @@ func TestRunScsResultsShow_Other_AgentShouldShowSCSResults(t *testing.T) {
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.SCSEngineCLIEnabled, Status: true}
 
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "SCS_ONLY", "--report-format", "json", "--agent", params.VisualStudioAgent)
 	assertTypePresentJSON(t, params.SCSScorecardType, 0)
