@@ -3318,18 +3318,147 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateContainerImageFormat(containerImage string) error {
-	if strings.HasSuffix(containerImage, ".tar") {
-		_, err := osinstaller.FileExists(containerImage)
+	// Define supported prefixes for container image references
+	// Note: 'dir:' prefix is intentionally excluded to prevent scanning entire directories
+	supportedPrefixes := []string{
+		"docker:",
+		"podman:",
+		"containerd:",
+		"registry:",
+		"docker-archive:",
+		"oci-archive:",
+		"oci-dir:",
+		"file:",
+	}
+
+	// Check for explicitly forbidden prefixes first
+	if strings.HasPrefix(containerImage, "dir:") {
+		return errors.Errorf("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
+	}
+
+	// Check if the input uses a supported prefix
+	for _, prefix := range supportedPrefixes {
+		if strings.HasPrefix(containerImage, prefix) {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+	}
+
+	// If no prefix is used, validate as traditional format
+	return validateTraditionalContainerImage(containerImage)
+}
+
+func validatePrefixedContainerImage(containerImage, prefix string) error {
+	// Remove the prefix to get the actual image reference
+	imageRef := strings.TrimPrefix(containerImage, prefix)
+
+	if imageRef == "" {
+		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
+	}
+
+	// Handle archive-based prefixes that expect existing files
+	if prefix == "docker-archive:" || prefix == "oci-archive:" {
+		// These should point to existing archive files (typically .tar files)
+		exists, err := osinstaller.FileExists(imageRef)
 		if err != nil {
 			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file does not exist")
+		}
+		return nil
+	}
+
+	// Handle oci-dir prefix - can be directories OR files (like .tar files)
+	if prefix == "oci-dir:" {
+		// oci-dir can handle:
+		// 1. Directories (OCI layout directories)
+		// 2. Files (like .tar files)
+		// 3. Can have optional :tag suffix
+
+		pathToCheck := imageRef
+		if strings.Contains(imageRef, ":") {
+			// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+			pathParts := strings.Split(imageRef, ":")
+			if len(pathParts) > 0 && pathParts[0] != "" {
+				pathToCheck = pathParts[0]
+			}
+		}
+
+		exists, err := osinstaller.FileExists(pathToCheck)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+		}
+		return nil
+	}
+
+	// Handle file prefix - can be any single file
+	if prefix == "file:" {
+		exists, err := osinstaller.FileExists(imageRef)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file does not exist")
+		}
+		return nil
+	}
+
+	// Handle registry prefix - RESTRICTION: must specify a single image, not just registry
+	if prefix == "registry:" {
+		// Registry must specify a single image, not just a registry URL
+		// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
+		// Invalid: registry:registry.example.com (just registry without image)
+
+		// Basic validation - should not be empty and should not be obviously just a registry URL
+		if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
+			strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
+			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+		}
+
+		// Check for registry:host:port format (just registry URL with port)
+		if strings.Contains(imageRef, ":") {
+			parts := strings.Split(imageRef, ":")
+			if len(parts) == 2 && len(parts[1]) <= 5 && !strings.Contains(imageRef, "/") {
+				// This looks like registry:port format without image
+				return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
+			}
 		}
 
 		return nil
 	}
 
+	// For daemon-based prefixes (docker:, podman:, containerd:)
+	// Validate they follow the image:tag format, but be flexible with complex registry URLs
+	if prefix == "docker:" || prefix == "podman:" || prefix == "containerd:" {
+		imageParts := strings.Split(imageRef, ":")
+		if len(imageParts) < 2 || imageParts[0] == "" || imageParts[1] == "" {
+			return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
+		}
+	}
+
+	return nil
+}
+
+func validateTraditionalContainerImage(containerImage string) error {
+	// Handle legacy .tar file format
+	if strings.HasSuffix(containerImage, ".tar") {
+		exists, err := osinstaller.FileExists(containerImage)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file does not exist")
+		}
+		return nil
+	}
+
+	// Handle traditional image:tag format
 	imageParts := strings.Split(containerImage, ":")
 	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
-		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
+		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)")
 	}
 	return nil
 }
