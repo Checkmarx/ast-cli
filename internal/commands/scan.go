@@ -2022,10 +2022,10 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 		
-		// Transform container images for syft compatibility
-		transformedImages := transformContainerImagesForSyft(containerImagesList)
-		logger.PrintIfVerbose(fmt.Sprintf("Transformed container images for syft: %v", strings.Join(transformedImages, ", ")))
-		containerImagesList = transformedImages
+		// Process container images for syft compatibility (extract schemes like syft does)
+		processedImages := processContainerImagesForSyft(containerImagesList)
+		logger.PrintIfVerbose(fmt.Sprintf("Processed container images for syft: %v", strings.Join(processedImages, ", ")))
+		containerImagesList = processedImages
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -2036,25 +2036,50 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 	return nil
 }
 
-// transformContainerImagesForSyft transforms container image references to be compatible with syft's source providers
-func transformContainerImagesForSyft(images []string) []string {
-	var transformedImages []string
+// processContainerImagesForSyft processes container image references using syft's scheme extraction logic
+func processContainerImagesForSyft(images []string) []string {
+	var processedImages []string
 	
-	for _, image := range images {
-		transformedImage := image
-		
-		// Handle file: prefix - syft expects just the file path without the prefix
-		if strings.HasPrefix(image, "file:") {
-			// Strip the "file:" prefix for syft compatibility
-			transformedImage = strings.TrimPrefix(image, "file:")
-		}
-		// Other prefixes (docker:, podman:, registry:, etc.) should be passed as-is
-		// since syft's stereoscope providers handle them correctly
-		
-		transformedImages = append(transformedImages, transformedImage)
+	// Define known source provider tags (based on syft/stereoscope providers)
+	knownSources := []string{
+		"file", "dir", "docker", "podman", "containerd", "registry",
+		"docker-archive", "oci-archive", "oci-dir", "singularity",
 	}
 	
-	return transformedImages
+	for _, image := range images {
+		// Use the same scheme extraction logic as syft/stereoscope
+		source, strippedInput := extractSchemeSource(image, knownSources)
+		
+		if source != "" {
+			// Valid scheme found - use the stripped input (like syft does)
+			processedImages = append(processedImages, strippedInput)
+		} else {
+			// No valid scheme - pass the original input unchanged
+			processedImages = append(processedImages, image)
+		}
+	}
+	
+	return processedImages
+}
+
+// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior
+func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
+	const SchemeSeparator = ":"
+	parts := strings.SplitN(userInput, SchemeSeparator, 2)
+	if len(parts) < 2 {
+		return "", userInput
+	}
+	
+	// Check if the first part is a valid source hint
+	sourceHint := strings.TrimSpace(strings.ToLower(parts[0]))
+	for _, validSource := range sources {
+		if sourceHint == validSource {
+			return sourceHint, parts[1]
+		}
+	}
+	
+	// No valid scheme found
+	return "", userInput
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
