@@ -3363,7 +3363,7 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 			return errors.Errorf("--container-images flag error: %v", err)
 		}
 		if !exists {
-			return errors.Errorf("--container-images flag error: file does not exist")
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
 		}
 		return nil
 	}
@@ -3401,7 +3401,7 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 			return errors.Errorf("--container-images flag error: %v", err)
 		}
 		if !exists {
-			return errors.Errorf("--container-images flag error: file does not exist")
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
 		}
 		return nil
 	}
@@ -3445,12 +3445,17 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 func validateTraditionalContainerImage(containerImage string) error {
 	// Handle legacy .tar file format
 	if strings.HasSuffix(containerImage, ".tar") {
+		// Check if this looks like a file path that should use a prefix
+		if strings.Contains(containerImage, "/") || strings.Contains(containerImage, "\\") {
+			return errors.Errorf("Invalid value for --container-images flag. The value '%s' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:%s'", containerImage, containerImage)
+		}
+		
 		exists, err := osinstaller.FileExists(containerImage)
 		if err != nil {
 			return errors.Errorf("--container-images flag error: %v", err)
 		}
 		if !exists {
-			return errors.Errorf("--container-images flag error: file does not exist")
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", containerImage)
 		}
 		return nil
 	}
