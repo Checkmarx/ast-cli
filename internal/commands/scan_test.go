@@ -181,7 +181,14 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 	clearFlags()
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag", "--scan-types", "containers", "--containers-local-resolution"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)")
+}
+
+func TestCreateScanFromFolder_CommaSeparatedContainerImages_SingleBadEntry_FailCreatingScan(t *testing.T) {
+	clearFlags()
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "docker:nginx:latest,dir:/bad/directory,registry:ubuntu:20.04", "--scan-types", "containers"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -2171,13 +2178,16 @@ func Test_validateThresholds(t *testing.T) {
 }
 
 func TestValidateContainerImageFormat(t *testing.T) {
-	var errMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar"
+	var traditionalErrorMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)"
 
 	testCases := []struct {
 		name           string
 		containerImage string
 		expectedError  error
+		setupFiles     []string // Files to create for testing
+		setupDirs      []string // Directories to create for testing
 	}{
+		// Traditional format tests
 		{
 			name:           "Valid container image format",
 			containerImage: "nginx:latest",
@@ -2187,45 +2197,289 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			name:           "Valid compressed container image format",
 			containerImage: "nginx.tar",
 			expectedError:  nil,
+			setupFiles:     []string{"nginx.tar"},
 		},
 		{
 			name:           "Missing image name",
 			containerImage: ":latest",
-			expectedError:  errors.New(errMessage),
+			expectedError:  errors.New(traditionalErrorMessage),
 		},
 		{
 			name:           "Missing image tag",
 			containerImage: "nginx:",
-			expectedError:  errors.New(errMessage),
+			expectedError:  errors.New(traditionalErrorMessage),
 		},
 		{
 			name:           "Empty image name and tag",
 			containerImage: ":",
-			expectedError:  errors.New(errMessage),
+			expectedError:  errors.New(traditionalErrorMessage),
 		},
 		{
-			name:           "Extra colon",
+			name:           "Extra colon in traditional format",
 			containerImage: "nginx:latest:extra",
-			expectedError:  errors.New(errMessage),
+			expectedError:  errors.New(traditionalErrorMessage),
 		},
+
+		// Docker daemon prefix tests
+		{
+			name:           "Valid docker daemon format",
+			containerImage: "docker:nginx:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Valid docker daemon format with registry",
+			containerImage: "docker:registry.example.com/namespace/image:tag",
+			expectedError:  nil,
+		},
+		{
+			name:           "Invalid docker daemon format - missing tag",
+			containerImage: "docker:nginx:",
+			expectedError:  errors.New("Invalid value for --container-images flag. Prefix 'docker:' expects format <image-name>:<image-tag>"),
+		},
+		{
+			name:           "Invalid docker daemon format - empty image ref",
+			containerImage: "docker:",
+			expectedError:  errors.New("Invalid value for --container-images flag. After prefix 'docker:', the image reference cannot be empty"),
+		},
+
+		// Podman daemon prefix tests
+		{
+			name:           "Valid podman daemon format",
+			containerImage: "podman:test:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Invalid podman daemon format - missing image name",
+			containerImage: "podman::latest",
+			expectedError:  errors.New("Invalid value for --container-images flag. Prefix 'podman:' expects format <image-name>:<image-tag>"),
+		},
+
+		// Containerd daemon prefix tests
+		{
+			name:           "Valid containerd daemon format",
+			containerImage: "containerd:test:latest",
+			expectedError:  nil,
+		},
+
+		// Registry prefix tests
+		{
+			name:           "Valid registry format",
+			containerImage: "registry:test:latest",
+			expectedError:  nil,
+		},
+
+		// Docker archive prefix tests
+		{
+			name:           "Valid docker archive format",
+			containerImage: "docker-archive:test.tar",
+			expectedError:  nil,
+			setupFiles:     []string{"test.tar"},
+		},
+		{
+			name:           "Valid docker archive format with different extension",
+			containerImage: "docker-archive:image.tar.gz",
+			expectedError:  nil,
+			setupFiles:     []string{"image.tar.gz"},
+		},
+		{
+			name:           "Invalid docker archive format - non-existent file",
+			containerImage: "docker-archive:nonexistent.tar",
+			expectedError:  errors.New("--container-images flag error: file does not exist"),
+		},
+
+		// OCI archive prefix tests
+		{
+			name:           "Valid oci archive format",
+			containerImage: "oci-archive:test.tar",
+			expectedError:  nil,
+			setupFiles:     []string{"test.tar"},
+		},
+		{
+			name:           "Valid oci archive with any file extension",
+			containerImage: "oci-archive:archive.tgz",
+			expectedError:  nil,
+			setupFiles:     []string{"archive.tgz"},
+		},
+		{
+			name:           "Invalid oci archive format - non-existent file",
+			containerImage: "oci-archive:nonexistent.tar",
+			expectedError:  errors.New("--container-images flag error: file does not exist"),
+		},
+
+		// OCI directory prefix tests (matches Syft behavior)
+		{
+			name:           "Valid oci-dir with directory",
+			containerImage: "oci-dir:test-dir",
+			expectedError:  nil,
+			setupDirs:      []string{"test-dir"},
+		},
+		{
+			name:           "Valid oci-dir with directory and tag",
+			containerImage: "oci-dir:test-dir:latest",
+			expectedError:  nil,
+			setupDirs:      []string{"test-dir"},
+		},
+		{
+			name:           "Valid oci-dir with file (like .tar)",
+			containerImage: "oci-dir:image.tar",
+			expectedError:  nil,
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Valid oci-dir with file and tag",
+			containerImage: "oci-dir:image.tar:v1.0",
+			expectedError:  nil,
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Invalid oci-dir format - non-existent path",
+			containerImage: "oci-dir:nonexistent-path",
+			expectedError:  errors.New("--container-images flag error: path nonexistent-path does not exist"),
+		},
+
+		// Directory prefix tests - RESTRICTED (not allowed for single image scanning)
+		{
+			name:           "Invalid directory format - dir prefix not supported",
+			containerImage: "dir:myproject",
+			expectedError:  errors.New("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image"),
+		},
+
+		// File prefix tests (matches Syft - any single file)
+		{
+			name:           "Valid file format with tar",
+			containerImage: "file:test.tar",
+			expectedError:  nil,
+			setupFiles:     []string{"test.tar"},
+		},
+		{
+			name:           "Valid file format with any extension",
+			containerImage: "file:test.txt",
+			expectedError:  nil,
+			setupFiles:     []string{"test.txt"},
+		},
+		{
+			name:           "Valid file format with no extension",
+			containerImage: "file:myfile",
+			expectedError:  nil,
+			setupFiles:     []string{"myfile"},
+		},
+		{
+			name:           "Invalid file format - non-existent file",
+			containerImage: "file:nonexistent.file",
+			expectedError:  errors.New("--container-images flag error: file does not exist"),
+		},
+
+		// Registry prefix tests (restricted to single images only)
+		{
+			name:           "Valid registry format simple",
+			containerImage: "registry:ubuntu:latest",
+			expectedError:  nil,
+		},
+		{
+			name:           "Valid registry format with port",
+			containerImage: "registry:localhost:5000/image:tag",
+			expectedError:  nil,
+		},
+		{
+			name:           "Valid registry format complex",
+			containerImage: "registry:registry.example.com/namespace/image:tag",
+			expectedError:  nil,
+		},
+		{
+			name:           "Valid registry format no tag",
+			containerImage: "registry:myimage",
+			expectedError:  nil,
+		},
+		{
+			name:           "Invalid registry format - just registry URL",
+			containerImage: "registry:registry.example.com",
+			expectedError:  errors.New("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>"),
+		},
+		{
+			name:           "Invalid registry format - registry with port only",
+			containerImage: "registry:localhost:5000",
+			expectedError:  errors.New("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>"),
+		},
+
+		// Edge cases
+		{
+			name:           "Complex registry with multiple colons using docker prefix",
+			containerImage: "docker:registry.example.com:5000/namespace/image:v1.2.3",
+			expectedError:  nil,
+		},
+		{
+			name:           "Complex registry with multiple colons using registry prefix",
+			containerImage: "registry:registry.example.com:5000/namespace/image:v1.2.3",
+			expectedError:  nil,
+		},
+
+		// Note: Comma-separated validation is tested at the integration level
+		// since validateContainerImageFormat() only validates single entries.
+		// The comma splitting and individual validation happens in addContainersScan().
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			// Setup test files and directories
+			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, tc.setupDirs)
+			defer func() {
+				for _, cleanup := range cleanupFuncs {
+					cleanup()
+				}
+			}()
+
 			err := validateContainerImageFormat(tc.containerImage)
 			if err != nil && tc.expectedError == nil {
 				t.Errorf("Unexpected error: %v", err)
 				return
 			}
 			if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
-				t.Errorf("Expected error %v, but got %v", tc.expectedError, err)
+				t.Errorf("Expected error '%v', but got '%v'", tc.expectedError, err)
 			}
 			if err == nil && tc.expectedError != nil {
 				t.Errorf("Expected error %v, but got nil", tc.expectedError)
 			}
 		})
 	}
+}
+
+// setupTestFilesAndDirs creates temporary files and directories for testing
+func setupTestFilesAndDirs(t *testing.T, files []string, dirs []string) []func() {
+	var cleanupFuncs []func()
+
+	for _, file := range files {
+		// Create temporary file
+		tempFile, err := os.CreateTemp("", filepath.Base(file))
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		tempFile.Close()
+
+		// Always use relative paths for testing to avoid filesystem permission issues
+		targetFile := filepath.Base(file)
+		err = os.Rename(tempFile.Name(), targetFile)
+		if err != nil {
+			t.Fatalf("Failed to rename temp file to %s: %v", targetFile, err)
+		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			os.Remove(targetFile)
+		})
+	}
+
+	for _, dir := range dirs {
+		// Always use relative paths for testing to avoid filesystem permission issues
+		targetDir := filepath.Base(dir)
+		err := os.MkdirAll(targetDir, 0755)
+		if err != nil {
+			t.Fatalf("Failed to create directory %s: %v", targetDir, err)
+		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			os.RemoveAll(targetDir)
+		})
+	}
+
+	return cleanupFuncs
 }
 
 func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing.T) {
