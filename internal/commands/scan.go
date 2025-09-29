@@ -2021,6 +2021,11 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 			}
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+		
+		// Transform container images for syft compatibility
+		transformedImages := transformContainerImagesForSyft(containerImagesList)
+		logger.PrintIfVerbose(fmt.Sprintf("Transformed container images for syft: %v", strings.Join(transformedImages, ", ")))
+		containerImagesList = transformedImages
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -2029,6 +2034,27 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		}
 	}
 	return nil
+}
+
+// transformContainerImagesForSyft transforms container image references to be compatible with syft's source providers
+func transformContainerImagesForSyft(images []string) []string {
+	var transformedImages []string
+	
+	for _, image := range images {
+		transformedImage := image
+		
+		// Handle file: prefix - syft expects just the file path without the prefix
+		if strings.HasPrefix(image, "file:") {
+			// Strip the "file:" prefix for syft compatibility
+			transformedImage = strings.TrimPrefix(image, "file:")
+		}
+		// Other prefixes (docker:, podman:, registry:, etc.) should be passed as-is
+		// since syft's stereoscope providers handle them correctly
+		
+		transformedImages = append(transformedImages, transformedImage)
+	}
+	
+	return transformedImages
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
