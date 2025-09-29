@@ -2059,11 +2059,8 @@ func processContainerImagesForSyft(images []string) []string {
 			processedImage = image
 		}
 		
-		// WORKAROUND: Add default tag for file paths to prevent vendor library panic
-		// The containers-syft-packages-extractor expects image:tag format but files don't have tags
-		if isFilePath(processedImage) && !strings.Contains(processedImage, ":") {
-			processedImage = processedImage + ":latest"
-		}
+		// TODO: The vendor library panic needs to be fixed at the vendor library level
+		// For now, leave file paths unchanged so syft can find the files
 		
 		processedImages = append(processedImages, processedImage)
 	}
@@ -2071,14 +2068,13 @@ func processContainerImagesForSyft(images []string) []string {
 	return processedImages
 }
 
-// isFilePath determines if a string looks like a file path rather than an image reference
-func isFilePath(input string) bool {
-	// Check for common file indicators
+// isFilePathForVendorLibrary determines if a string looks like a file path that needs a tag for vendor library
+func isFilePathForVendorLibrary(input string) bool {
+	// Only add tags to actual file paths, not image references
+	// Be more conservative - only add tags to obvious file extensions
 	return strings.HasSuffix(input, ".tar") || 
 		   strings.HasSuffix(input, ".tar.gz") || 
-		   strings.HasSuffix(input, ".tgz") ||
-		   strings.Contains(input, "/") ||
-		   strings.Contains(input, "\\")
+		   strings.HasSuffix(input, ".tgz")
 }
 
 // extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior
