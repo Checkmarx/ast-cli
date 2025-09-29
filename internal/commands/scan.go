@@ -2050,16 +2050,35 @@ func processContainerImagesForSyft(images []string) []string {
 		// Use the same scheme extraction logic as syft/stereoscope
 		source, strippedInput := extractSchemeSource(image, knownSources)
 		
+		var processedImage string
 		if source != "" {
 			// Valid scheme found - use the stripped input (like syft does)
-			processedImages = append(processedImages, strippedInput)
+			processedImage = strippedInput
 		} else {
 			// No valid scheme - pass the original input unchanged
-			processedImages = append(processedImages, image)
+			processedImage = image
 		}
+		
+		// WORKAROUND: Add default tag for file paths to prevent vendor library panic
+		// The containers-syft-packages-extractor expects image:tag format but files don't have tags
+		if isFilePath(processedImage) && !strings.Contains(processedImage, ":") {
+			processedImage = processedImage + ":latest"
+		}
+		
+		processedImages = append(processedImages, processedImage)
 	}
 	
 	return processedImages
+}
+
+// isFilePath determines if a string looks like a file path rather than an image reference
+func isFilePath(input string) bool {
+	// Check for common file indicators
+	return strings.HasSuffix(input, ".tar") || 
+		   strings.HasSuffix(input, ".tar.gz") || 
+		   strings.HasSuffix(input, ".tgz") ||
+		   strings.Contains(input, "/") ||
+		   strings.Contains(input, "\\")
 }
 
 // extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior
@@ -3494,13 +3513,9 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 }
 
 func validateTraditionalContainerImage(containerImage string) error {
-	// Handle legacy .tar file format
+	// Handle .tar file format (both with and without paths, like syft)
 	if strings.HasSuffix(containerImage, ".tar") {
-		// Check if this looks like a file path that should use a prefix
-		if strings.Contains(containerImage, "/") || strings.Contains(containerImage, "\\") {
-			return errors.Errorf("Invalid value for --container-images flag. The value '%s' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:%s'", containerImage, containerImage)
-		}
-		
+		// Accept any .tar file path, with or without directories (like syft does)
 		exists, err := osinstaller.FileExists(containerImage)
 		if err != nil {
 			return errors.Errorf("--container-images flag error: %v", err)
