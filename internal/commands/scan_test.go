@@ -2200,6 +2200,16 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			setupFiles:     []string{"nginx.tar"},
 		},
 		{
+			name:           "Invalid tar file with path - suggests file prefix",
+			containerImage: "empty/alpine.tar",
+			expectedError:  errors.New("Invalid value for --container-images flag. The value 'empty/alpine.tar' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:empty/alpine.tar'"),
+		},
+		{
+			name:           "Invalid tar file with absolute path - suggests file prefix",
+			containerImage: "/path/to/image.tar",
+			expectedError:  errors.New("Invalid value for --container-images flag. The value '/path/to/image.tar' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:/path/to/image.tar'"),
+		},
+		{
 			name:           "Missing image name",
 			containerImage: ":latest",
 			expectedError:  errors.New(traditionalErrorMessage),
@@ -2284,7 +2294,7 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Invalid docker archive format - non-existent file",
 			containerImage: "docker-archive:nonexistent.tar",
-			expectedError:  errors.New("--container-images flag error: file does not exist"),
+			expectedError:  errors.New("--container-images flag error: file 'nonexistent.tar' does not exist"),
 		},
 
 		// OCI archive prefix tests
@@ -2303,7 +2313,7 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Invalid oci archive format - non-existent file",
 			containerImage: "oci-archive:nonexistent.tar",
-			expectedError:  errors.New("--container-images flag error: file does not exist"),
+			expectedError:  errors.New("--container-images flag error: file 'nonexistent.tar' does not exist"),
 		},
 
 		// OCI directory prefix tests (matches Syft behavior)
@@ -2366,7 +2376,7 @@ func TestValidateContainerImageFormat(t *testing.T) {
 		{
 			name:           "Invalid file format - non-existent file",
 			containerImage: "file:nonexistent.file",
-			expectedError:  errors.New("--container-images flag error: file does not exist"),
+			expectedError:  errors.New("--container-images flag error: file 'nonexistent.file' does not exist"),
 		},
 
 		// Registry prefix tests (restricted to single images only)
