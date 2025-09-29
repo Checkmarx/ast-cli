@@ -2200,14 +2200,15 @@ func TestValidateContainerImageFormat(t *testing.T) {
 			setupFiles:     []string{"nginx.tar"},
 		},
 		{
-			name:           "Invalid tar file with path - suggests file prefix",
+			name:           "Valid tar file with path (like syft)",
 			containerImage: "empty/alpine.tar",
-			expectedError:  errors.New("Invalid value for --container-images flag. The value 'empty/alpine.tar' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:empty/alpine.tar'"),
+			expectedError:  nil,
+			setupFiles:     []string{"empty/alpine.tar"},
 		},
 		{
-			name:           "Invalid tar file with absolute path - suggests file prefix",
-			containerImage: "/path/to/image.tar",
-			expectedError:  errors.New("Invalid value for --container-images flag. The value '/path/to/image.tar' appears to be a file path. For file-based scanning, use the 'file:' prefix: 'file:/path/to/image.tar'"),
+			name:           "Invalid tar file with path - file does not exist",
+			containerImage: "nonexistent/alpine.tar",
+			expectedError:  errors.New("--container-images flag error: file 'nonexistent/alpine.tar' does not exist"),
 		},
 		{
 			name:           "Missing image name",
