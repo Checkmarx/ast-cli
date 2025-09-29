@@ -2021,6 +2021,11 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 			}
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+		
+		// Process container images for syft compatibility (extract schemes like syft does)
+		processedImages := processContainerImagesForSyft(containerImagesList)
+		logger.PrintIfVerbose(fmt.Sprintf("Processed container images for syft: %v", strings.Join(processedImages, ", ")))
+		containerImagesList = processedImages
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -2029,6 +2034,71 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		}
 	}
 	return nil
+}
+
+// processContainerImagesForSyft processes container image references using syft's scheme extraction logic
+func processContainerImagesForSyft(images []string) []string {
+	var processedImages []string
+	
+	// Define known source provider tags (based on syft/stereoscope providers)
+	knownSources := []string{
+		"file", "dir", "docker", "podman", "containerd", "registry",
+		"docker-archive", "oci-archive", "oci-dir", "singularity",
+	}
+	
+	for _, image := range images {
+		// Use the same scheme extraction logic as syft/stereoscope
+		source, strippedInput := extractSchemeSource(image, knownSources)
+		
+		var processedImage string
+		if source != "" {
+			// Valid scheme found - use the stripped input (like syft does)
+			processedImage = strippedInput
+		} else {
+			// No valid scheme - pass the original input unchanged
+			processedImage = image
+		}
+		
+		// WORKAROUND: Add default tag for file paths to prevent vendor library panic
+		// The containers-syft-packages-extractor expects image:tag format but files don't have tags
+		if isFilePath(processedImage) && !strings.Contains(processedImage, ":") {
+			processedImage = processedImage + ":latest"
+		}
+		
+		processedImages = append(processedImages, processedImage)
+	}
+	
+	return processedImages
+}
+
+// isFilePath determines if a string looks like a file path rather than an image reference
+func isFilePath(input string) bool {
+	// Check for common file indicators
+	return strings.HasSuffix(input, ".tar") || 
+		   strings.HasSuffix(input, ".tar.gz") || 
+		   strings.HasSuffix(input, ".tgz") ||
+		   strings.Contains(input, "/") ||
+		   strings.Contains(input, "\\")
+}
+
+// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior
+func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
+	const SchemeSeparator = ":"
+	parts := strings.SplitN(userInput, SchemeSeparator, 2)
+	if len(parts) < 2 {
+		return "", userInput
+	}
+	
+	// Check if the first part is a valid source hint
+	sourceHint := strings.TrimSpace(strings.ToLower(parts[0]))
+	for _, validSource := range sources {
+		if sourceHint == validSource {
+			return sourceHint, parts[1]
+		}
+	}
+	
+	// No valid scheme found
+	return "", userInput
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
@@ -3318,18 +3388,148 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 }
 
 func validateContainerImageFormat(containerImage string) error {
-	if strings.HasSuffix(containerImage, ".tar") {
-		_, err := osinstaller.FileExists(containerImage)
+	// Define supported prefixes for container image references
+	// Note: 'dir:' prefix is intentionally excluded to prevent scanning entire directories
+	supportedPrefixes := []string{
+		"docker:",
+		"podman:",
+		"containerd:",
+		"registry:",
+		"docker-archive:",
+		"oci-archive:",
+		"oci-dir:",
+		"file:",
+	}
+
+	// Check for explicitly forbidden prefixes first
+	if strings.HasPrefix(containerImage, "dir:") {
+		return errors.Errorf("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
+	}
+
+	// Check if the input uses a supported prefix
+	for _, prefix := range supportedPrefixes {
+		if strings.HasPrefix(containerImage, prefix) {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+	}
+
+	// If no prefix is used, validate as traditional format
+	return validateTraditionalContainerImage(containerImage)
+}
+
+func validatePrefixedContainerImage(containerImage, prefix string) error {
+	// Remove the prefix to get the actual image reference
+	imageRef := strings.TrimPrefix(containerImage, prefix)
+
+	if imageRef == "" {
+		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
+	}
+
+	// Handle archive-based prefixes that expect existing files
+	if prefix == "docker-archive:" || prefix == "oci-archive:" {
+		// These should point to existing archive files (typically .tar files)
+		exists, err := osinstaller.FileExists(imageRef)
 		if err != nil {
 			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+		}
+		return nil
+	}
+
+	// Handle oci-dir prefix - can be directories OR files (like .tar files)
+	if prefix == "oci-dir:" {
+		// oci-dir can handle:
+		// 1. Directories (OCI layout directories)
+		// 2. Files (like .tar files)
+		// 3. Can have optional :tag suffix
+
+		pathToCheck := imageRef
+		if strings.Contains(imageRef, ":") {
+			// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+			pathParts := strings.Split(imageRef, ":")
+			if len(pathParts) > 0 && pathParts[0] != "" {
+				pathToCheck = pathParts[0]
+			}
+		}
+
+		exists, err := osinstaller.FileExists(pathToCheck)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+		}
+		return nil
+	}
+
+	// Handle file prefix - can be any single file
+	if prefix == "file:" {
+		exists, err := osinstaller.FileExists(imageRef)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+		}
+		return nil
+	}
+
+	// Handle registry prefix - RESTRICTION: must specify a single image, not just registry
+	if prefix == "registry:" {
+		// Registry must specify a single image, not just a registry URL
+		// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
+		// Invalid: registry:registry.example.com (just registry without image)
+
+		// Basic validation - should not be empty and should not be obviously just a registry URL
+		if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
+			strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
+			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+		}
+
+		// Check for registry:host:port format (just registry URL with port)
+		if strings.Contains(imageRef, ":") {
+			parts := strings.Split(imageRef, ":")
+			if len(parts) == 2 && len(parts[1]) <= 5 && !strings.Contains(imageRef, "/") {
+				// This looks like registry:port format without image
+				return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
+			}
 		}
 
 		return nil
 	}
 
+	// For daemon-based prefixes (docker:, podman:, containerd:)
+	// Validate they follow the image:tag format, but be flexible with complex registry URLs
+	if prefix == "docker:" || prefix == "podman:" || prefix == "containerd:" {
+		imageParts := strings.Split(imageRef, ":")
+		if len(imageParts) < 2 || imageParts[0] == "" || imageParts[1] == "" {
+			return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
+		}
+	}
+
+	return nil
+}
+
+func validateTraditionalContainerImage(containerImage string) error {
+	// Handle .tar file format (both with and without paths, like syft)
+	if strings.HasSuffix(containerImage, ".tar") {
+		// Accept any .tar file path, with or without directories (like syft does)
+		exists, err := osinstaller.FileExists(containerImage)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", containerImage)
+		}
+		return nil
+	}
+
+	// Handle traditional image:tag format
 	imageParts := strings.Split(containerImage, ":")
 	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
-		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
+		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)")
 	}
 	return nil
 }
