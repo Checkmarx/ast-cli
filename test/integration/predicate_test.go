@@ -214,32 +214,49 @@ func TestSastUpdateAndGetPredicatesForNotFoundSimilarityId(t *testing.T) {
 }
 
 func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
-	t.Skip("Skipping this test temporarily until the API becomes available in the DEU environment.")
 	fmt.Println("Step 1: Testing the command 'triage show' with predefined values.")
 	// After the api/custom-states becomes available in the DEU environment, replace the hardcoded value with getRootScan(t) and create "state2" as a custom state in DEU.
-	projectID := "a2d52ac9-d007-4d95-a65e-bbe61c3451a4"
-	similarityID := "-1213859962"
-	scanType := "sast"
-
-	outputBuffer := executeCmdNilAssertion(
-		t, "Fetching predicates should work.", "triage", "show",
-		flag(params.FormatFlag), printer.FormatJSON,
-		flag(params.ProjectIDFlag), projectID,
-		flag(params.SimilarityIDFlag), similarityID,
-		flag(params.ScanTypeFlag), scanType,
+	scanID, projectID := getRootScan(t)
+	_ = executeCmdNilAssertion(
+		t, "Results show generating JSON report with options should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID, flag(params.TargetFormatFlag), printer.FormatJSON,
+		flag(params.TargetPathFlag), resultsDirectory,
+		flag(params.TargetFlag), fileName,
 	)
 
-	predicateResult := []wrappers.Predicate{}
-	fmt.Println(outputBuffer)
-	_ = unmarshall(t, outputBuffer, &predicateResult, "Reading results should pass")
-	assert.Assert(t, len(predicateResult) >= 1, "Should have at least 1 predicate as the result.")
+	defer func() {
+		_ = os.RemoveAll(fmt.Sprintf(resultsDirectory))
+	}()
+
+	result := wrappers.ScanResultsCollection{}
+
+	_, err := os.Stat(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "Report file should exist for extension "+printer.FormatJSON)
+
+	file, err := os.ReadFile(fmt.Sprintf("%s%s.%s", resultsDirectory, fileName, printer.FormatJSON))
+	assert.NilError(t, err, "error reading file")
+
+	err = json.Unmarshal(file, &result)
+	assert.NilError(t, err, "error unmarshalling file")
+
+	index := 0
+	for i := range result.Results {
+		if strings.EqualFold(result.Results[i].Type, params.SastType) {
+			index = i
+			break
+		}
+	}
+
+	similarityID := result.Results[index].SimilarityID
+	scanType := result.Results[index].Type
 
 	fmt.Println("Step 2: Updating the predicate state.")
-	newState := "state2"
+	newState := "Custom1"
 	newSeverity := "HIGH"
-	comment := ""
+	comment := "Updating State test"
 
-	err, _ := executeCommand(
+	err, _ = executeCommand(
 		t, "triage", "update",
 		flag(params.ProjectIDFlag), projectID,
 		flag(params.SimilarityIDFlag), similarityID,

@@ -193,8 +193,9 @@ func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing
 	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldCreateScan(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
+func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldFailScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, strings.Contains(err.Error(), errorConstants.FailedToGetApplication), err.Error())
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
@@ -712,18 +713,13 @@ func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
 	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
 }
 
-func TestCreateScan_WhenProjectExists_ShouldIgnoreApplication(t *testing.T) {
-	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
-	defer logger.SetOutput(os.Stdout)
+// Now as we give the ability to assign existing projects to applications , there is validation if application exists
+
+func TestCreateScan_WhenProjectExists_GetApplication_Fails500Err_Failed(t *testing.T) {
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
-		"--debug", "--application-name", "anyApplication"}
-	execCmdNilAssertion(t, baseArgs...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
+		"--debug", "--application-name", mock.FakeInternalServerError500}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
 }
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "notaniteger"}
@@ -3622,4 +3618,65 @@ func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
 		t,
 		"scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy",
 	)
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_Application(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--application-name", mock.ExistingApplication, "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvided(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "No application name provided. Skipping application update"), true, "Expected output: %s", "No application name provided. Skipping application update")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", "NoPermissionApp"}
+	err := execCmdNotNilAssertion(
+		t,
+		baseArgs...,
+	)
+	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
+}
+
+func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociationEnabledShouldPass(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
 }
