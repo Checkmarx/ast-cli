@@ -723,6 +723,11 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		Domains = AppendIfNotExists(Domains, req.URL.Host)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
+			// Check if this is a non-retryable error (e.g., wrong Kerberos SPN)
+			if kerberos.IsNonRetryable(err) {
+				logger.PrintIfVerbose("Non-retryable error detected, skipping retries")
+				return nil, err
+			}
 		}
 		if resp != nil && err == nil {
 			if hasRedirectStatusCode(resp) {

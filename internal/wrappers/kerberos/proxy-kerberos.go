@@ -20,6 +20,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NonRetryableError represents an error that should not trigger HTTP request retries
+type NonRetryableError struct {
+	Message string
+}
+
+func (e *NonRetryableError) Error() string {
+	return e.Message
+}
+
+// IsNonRetryable returns true if the error should not trigger retries
+func IsNonRetryable(err error) bool {
+	_, ok := err.(*NonRetryableError)
+	return ok
+}
+
 // DialContext is the DialContext function that should be wrapped with a
 // Kerberos Authentication.
 type DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
@@ -122,7 +137,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	// Build SPNEGO token for the proxy SPN
 	if err := spnego.SetSPNEGOHeader(krbClient, connect, kerberosConfig.ProxySPN); err != nil {
 		log.Printf("Failed to generate SPNEGO token for SPN '%s': %s", kerberosConfig.ProxySPN, err)
-		return conn, errors.New("failed to generate SPNEGO token. Please check if the SPN is correct")
+		return conn, &NonRetryableError{Message: "failed to generate SPNEGO token. Please check if the SPN is correct"}
 	}
 
 	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
@@ -160,7 +175,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 				log.Printf("Proxy-Authenticate: %s", v)
 			}
 			_ = resp.Body.Close()
-			return conn, errors.New("proxy authentication failed. Check SPN and proxy keytab/KDC configuration")
+			return conn, &NonRetryableError{Message: "proxy authentication failed. Check SPN and proxy keytab/KDC configuration"}
 		}
 		_ = resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))
