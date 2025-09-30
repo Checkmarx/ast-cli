@@ -218,6 +218,7 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 	// Validate required SPN parameter
 	if proxySPN == "" {
 		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.Print("ERROR: Kerberos SPN is required for Kerberos proxy authentication.")
 		logger.PrintIfVerbose("Please provide SPN using: --proxy-kerberos-spn 'HTTP/proxy.example.com' or set CX_PROXY_KERBEROS_SPN environment variable")
 		logger.PrintIfVerbose("Falling back to basic proxy authentication")
 		// Return a basic client that will fail gracefully
