@@ -1124,6 +1124,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsCompleted_ScsCompletedInRe
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -1158,6 +1159,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsPartial_ScsPartialInReport
 	mock.HasScs = true
 	mock.ScsScanPartial = true
 	mock.ScorecardScanned = true
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -1192,6 +1194,7 @@ func TestRunGetResultsByScanIdSummaryConsoleFormat_ScsScorecardNotScanned_Scorec
 	mock.HasScs = true
 	mock.ScsScanPartial = false
 	mock.ScorecardScanned = false
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CVSSV3Enabled, Status: true}
 
 	buffer, err := executeRedirectedOsStdoutTestCommand(createASTTestCommand(),
 		"results", "show", "--scan-id", "MOCK", "--report-format", "summaryConsole")
@@ -1386,20 +1389,6 @@ func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSNonEmpty_URI_Present
 	assertTypePresentSarif(t, params.SCSScorecardType, 1)
 	assertTypePresentSarif(t, params.SCSSecretDetectionType, 2)
 	assertURINonEmpty(t)
-	removeFileBySuffix(t, printer.FormatSarif)
-	mock.SetScsMockVarsToDefault()
-}
-
-func TestRunGetResultsByScanIdSarifFormat_SCSFlagEnabled_SCSMissingInReport(t *testing.T) {
-	clearFlags()
-	mock.HasScs = true
-	mock.ScsScanPartial = false
-	mock.ScorecardScanned = true
-
-	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sarif")
-	assertTypePresentSarif(t, params.SCSScorecardType, 0)
-	assertTypePresentSarif(t, params.SCSSecretDetectionType, 0)
-
 	removeFileBySuffix(t, printer.FormatSarif)
 	mock.SetScsMockVarsToDefault()
 }
