@@ -783,7 +783,7 @@ const nonAsyncSummary = `<div class="top-row">
                     </div>{{end}}
 					<div class="legend"><span class="engines-legend-dot">SCS</span>
                         <div class="severity-engines-text bg-scs"></div>
-                    </div>{{end}}
+                    </div>
                 </div>
                 <div class="chart">
                     <div class="single-stacked-bar-chart bar-chart">
@@ -792,7 +792,7 @@ const nonAsyncSummary = `<div class="top-row">
                             <div class="progress-bar bg-kicks value">{{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}}</div>
 							<div class="progress-bar bg-sca value">{{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}}</div>
 							{{if .ContainersEnabled}}<div class="progress-bar bg-containers value">{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}}</div>{{end}}
-							<div class="progress-bar bg-scs value">{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}}</div>{{end}}
+							<div class="progress-bar bg-scs value">{{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}}</div>
                         </div>
                     </div>
                 </div>
@@ -866,9 +866,9 @@ const SummaryMarkdownCompletedTemplate = `
 
 ### Vulnerabilities per Scan Type
 
-| SAST | IaC Security | SCA | SCS |{{end}}{{if .ContainersEnabled}} Containers |{{end}}
-|:----------:|:----------:|:---------:| :----------:|{{end}}{{if .ContainersEnabled}} :----------:|{{end}}
-| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{end}} {{if .ContainersEnabled}}{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
+| SAST | IaC Security | SCA | SCS |{{if .ContainersEnabled}} Containers |{{end}}
+|:----------:|:----------:|:---------:|:----------:|{{if .ContainersEnabled}} :----------:|{{end}}
+| {{if lt .SastIssues 0}}N/A{{else}}{{.SastIssues}}{{end}} | {{if lt .KicsIssues 0}}N/A{{else}}{{.KicsIssues}}{{end}} | {{if lt .ScaIssues 0}}N/A{{else}}{{.ScaIssues}}{{end}} | {{if lt .SCSIssuesValue 0}}N/A{{else}}{{.SCSIssuesValue}}{{end}} | {{if .ContainersEnabled}}{{if lt .ContainersIssuesValue 0}}N/A{{else}}{{.ContainersIssuesValue}}{{end}} | {{end}}
 
 {{if .HasAPISecurity}}
 ### API Security 
