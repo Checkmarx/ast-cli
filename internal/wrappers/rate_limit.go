@@ -33,27 +33,27 @@ var (
 
 	GitLabRateLimitConfig = SCMRateLimitConfig{
 		Provider:             "GitLab",
-		ResetHeaderName:      "Retry-After",
-		RemainingHeaderName:  "", // GitLab does not provide remaining limit in headers
-		LimitHeaderName:      "", // GitLab does not provide limit in headers
+		ResetHeaderName:      "RateLimit-Reset",
+		RemainingHeaderName:  "RateLimit-Remaining",
+		LimitHeaderName:      "RateLimit-Limit",
 		RateLimitStatusCodes: []int{429},
 		DefaultWaitTime:      60 * time.Second,
 	}
 
 	BitbucketRateLimitConfig = SCMRateLimitConfig{
 		Provider:             "Bitbucket",
-		ResetHeaderName:      "Retry-After",
-		RemainingHeaderName:  "", // Bitbucket does not provide remaining limit in headers
-		LimitHeaderName:      "", // Bitbucket does not provide limit in headers
+		ResetHeaderName:      "X-RateLimit-Reset",
+		RemainingHeaderName:  "X-RateLimit-Remaining",
+		LimitHeaderName:      "X-RateLimit-Limit",
 		RateLimitStatusCodes: []int{429},
 		DefaultWaitTime:      60 * time.Second,
 	}
 
 	AzureRateLimitConfig = SCMRateLimitConfig{
 		Provider:             "Azure",
-		ResetHeaderName:      "Retry-After",
-		RemainingHeaderName:  "", // Azure does not provide remaining limit in headers
-		LimitHeaderName:      "", // Azure does not provide limit in headers
+		ResetHeaderName:      "X-Ratelimit-Reset",
+		RemainingHeaderName:  "X-Ratelimit-Remaining",
+		LimitHeaderName:      "X-Ratelimit-Limit",
 		RateLimitStatusCodes: []int{429},
 		DefaultWaitTime:      60 * time.Second,
 	}
@@ -74,24 +74,14 @@ func (e *SCMRateLimitError) Error() string {
 }
 
 func (e *SCMRateLimitError) RetryAfter() time.Duration {
-	switch e.Provider {
-	case "GitHub":
-		if e.ResetTime > 0 {
-			reset := time.Unix(e.ResetTime, 0)
-			now := time.Now()
-			if reset.After(now) {
-				return reset.Sub(now) + time.Second
-			}
+	if e.ResetTime > 0 {
+		reset := time.Unix(e.ResetTime, 0)
+		now := time.Now()
+		if reset.After(now) {
+			return reset.Sub(now) + (60 * time.Second)
 		}
-		return 60 * time.Second
-	case "GitLab", "Bitbucket", "Azure":
-		if e.ResetTime > 0 {
-			return (time.Duration(e.ResetTime) * time.Second) + time.Second
-		}
-		return 60 * time.Second
-	default:
-		return 60 * time.Second
 	}
+	return 60 * time.Second
 }
 
 // WithSCMRateLimitRetry wraps any SCM API call with rate limit retry logic
