@@ -61,6 +61,7 @@ func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(429, 2, "X-RateLimit-Reset", reset)
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
@@ -83,6 +84,7 @@ func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
 
 func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(403, 3, "X-RateLimit-Reset", reset)
 
 	start := time.Now()
@@ -106,6 +108,7 @@ func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
 
 func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(429, 1, "RateLimit-Reset", reset)
 
 	start := time.Now()
@@ -129,6 +132,7 @@ func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(429, 1, "X-RateLimit-Reset", reset)
 
 	start := time.Now()
@@ -152,6 +156,7 @@ func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(429, 1, "X-Ratelimit-Reset", reset)
 
 	start := time.Now()
