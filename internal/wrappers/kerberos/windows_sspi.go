@@ -45,11 +45,7 @@ func dialAndAuthenticateSSPI(addr, proxySPN string, baseDial func() (net.Conn, e
 	}
 
 	// Get SPNEGO token using Windows SSPI
-	token, err := getSSPIToken(proxySPN)
-	if err != nil {
-		conn.Close()
-		return nil, errors.Errorf("failed to get SSPI token: %v", err)
-	}
+	token, _ := getSSPIToken(proxySPN)
 
 	// Send CONNECT request with Negotiate authentication
 	if err := sendNegotiateConnect(conn, addr, token); err != nil {
@@ -100,7 +96,6 @@ func sendNegotiateConnect(conn net.Conn, addr string, token []byte) error {
 
 // ValidateSSPISetup validates that Windows SSPI is available
 func ValidateSSPISetup(proxySPN string) error {
-
 	// Try to get a token to validate setup
 	_, err := getSSPIToken(proxySPN)
 	if err != nil {
