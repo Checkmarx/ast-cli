@@ -24,6 +24,9 @@ const (
 	NoASCALicense                          = "User doesn't have \"AI Protection\" or \"Checkmarx One Assist\" license"
 	FailedUploadFileMsgWithDomain          = "Unable to upload the file to the pre-signed URL. Try adding the domain: %s to your allow list."
 	FailedUploadFileMsgWithURL             = "Unable to upload the file to the pre-signed URL. Try adding the URL: %s to your allow list."
+	NoPermissionToUpdateApplication        = "you do not have permission to update the application"
+	FailedToUpdateApplication              = "failed to update application"
+	ApplicationNotFound                    = "Application not found"
 
 	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"

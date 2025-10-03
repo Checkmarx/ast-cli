@@ -40,6 +40,9 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.SubTypeFlag, "", "Sub Type")
 	telemetryAICmd.PersistentFlags().String(params.EngineFlag, "", "Engine")
 	telemetryAICmd.PersistentFlags().String(params.AgentFlag, "", "Agent")
+	telemetryAICmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
+	telemetryAICmd.PersistentFlags().String(params.StatusFlag, "", "Status")
+	telemetryAICmd.PersistentFlags().Int(params.TotalCountFlag, 0, "Total Count")
 
 	return telemetryAICmd
 }
@@ -52,6 +55,9 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		subType, _ := cmd.Flags().GetString("sub-type")
 		agent, _ := cmd.Flags().GetString("agent")
 		engine, _ := cmd.Flags().GetString("engine")
+		scanType, _ := cmd.Flags().GetString("scan-type")
+		status, _ := cmd.Flags().GetString("status")
+		totalCount, _ := cmd.Flags().GetInt("total-count")
 
 		err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
@@ -60,6 +66,9 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			SubType:         subType,
 			Agent:           agent,
 			Engine:          engine,
+			ScanType:        scanType,
+			Status:          status,
+			TotalCount:      totalCount,
 		})
 
 		if err != nil {

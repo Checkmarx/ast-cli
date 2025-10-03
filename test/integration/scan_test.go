@@ -27,6 +27,7 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -298,7 +299,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
-		flag(params.ApplicationName), "my-application",
+		flag(params.ApplicationName), "test-app",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
@@ -1666,10 +1667,8 @@ func TestScanCreate_WhenProjectExists_ShouldNotUpdateGroups(t *testing.T) {
 
 }
 
-func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
-	projectID, projectName := getRootProject(t)
-	project := showProject(t, projectID)
-	applicationsBeforeScanCreate := project.ApplicationIds
+func TestScanCreate_WhenProjectExists_ShouldThrow_Error_ApplicationNotFound(t *testing.T) {
+	_, projectName := getRootProject(t)
 
 	args := []string{
 		scanCommand, "create",
@@ -1683,15 +1682,7 @@ func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	if err != nil {
-		assertError(t, err, "running a scan should pass")
-	}
-
-	project = showProject(t, projectID)
-	applicationsAfterScanCreate := project.ApplicationIds
-	if !reflect.DeepEqual(applicationsBeforeScanCreate, applicationsAfterScanCreate) {
-		t.Errorf("When project exists, applications before and after scan creation should be equal. Got %v, want %v", applicationsAfterScanCreate, applicationsBeforeScanCreate)
-	}
+	assert.Error(t, err, "Application not found: wrong_application")
 
 }
 func TestScanCreateExploitablePath(t *testing.T) {
@@ -2136,7 +2127,8 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false, wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath))
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
@@ -2703,4 +2695,33 @@ func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Scan creation with gitignore filter should pass without error")
+}
+
+func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ApplicationName), "cli-application",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Project should be assigned to application")
+}
+
+func TestCreateScanWithNewProjectName_Assign_Groups(t *testing.T) {
+
+	defer deleteProjectByName(t, getProjectNameForTest())
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ProjectGroupList), formatGroups(Groups),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Groups should be assigned to newly created projects")
+
 }
