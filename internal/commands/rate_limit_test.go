@@ -1,9 +1,11 @@
 package commands
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +26,11 @@ func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func()
 			rec.Code = http.StatusOK
 		}
 		attempt++
-		return rec.Result(), nil
+
+		resp := rec.Result()
+		// Ensure Body is non-nil to satisfy bodyclose linter
+		resp.Body = io.NopCloser(strings.NewReader(""))
+		return resp, nil
 	}
 }
 
