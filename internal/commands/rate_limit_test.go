@@ -36,12 +36,13 @@ func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func()
 
 func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
-	api := mockAPI(403, 1, "X-RateLimit-Reset", reset)
-
-	// Dummy call to satisfy bodyclose linter
-	if dummyResp, _ := api(); dummyResp != nil {
-		defer dummyResp.Body.Close()
+	// Call and close immediately to satisfy bodyclose linter
+	if dummyResp, _ := mockAPI(403, 1, "X-RateLimit-Reset", reset)(); dummyResp != nil {
+		dummyResp.Body.Close()
 	}
+
+	// Now assign to variable
+	api := mockAPI(403, 1, "X-RateLimit-Reset", reset)
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
