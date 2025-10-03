@@ -46,6 +46,7 @@ const (
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
+	defaultDialerDuration   = 30 * time.Second
 )
 
 var (
@@ -187,8 +188,8 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 
 func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 	domainStr := viper.GetString(commonParams.ProxyDomainKey)
@@ -207,8 +208,8 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 
 func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 
