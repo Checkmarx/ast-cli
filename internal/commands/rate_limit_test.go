@@ -40,20 +40,15 @@ func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		asserts := assert.New(t)
-		asserts.NoError(err)
-		return
-	}
-	elapsed := time.Since(start)
-
 	asserts := assert.New(t)
 	asserts.NoError(err)
-	asserts.Equal(http.StatusOK, resp.StatusCode)
-	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+
+	if resp != nil {
+		defer resp.Body.Close()
+		asserts.Equal(http.StatusOK, resp.StatusCode)
+		elapsed := time.Since(start)
+		asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	}
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
