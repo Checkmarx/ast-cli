@@ -12,7 +12,6 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"os"
-	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
@@ -48,6 +47,7 @@ const (
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
+	defaultDialerDuration   = 30 * time.Second
 )
 
 var (
@@ -191,8 +191,8 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 
 func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 	domainStr := viper.GetString(commonParams.ProxyDomainKey)
@@ -211,8 +211,8 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 
 func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 
@@ -221,65 +221,45 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 
 	// Validate required SPN parameter
 	if proxySPN == "" {
-		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for Kerberos proxy authentication.")
-		fmt.Printf("Error: Kerberos SPN is required for --proxy-auth-type kerberos\n")
-		fmt.Printf("Please provide: --proxy-kerberos-spn 'HTTP/proxy.example.com'\n")
-		fmt.Printf("Or set environment variable: CX_PROXY_KERBEROS_SPN=HTTP/proxy.example.com\n")
-		os.Exit(1)
+		logger.PrintIfVerbose("Error: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.Print("Error: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.PrintIfVerbose("Please provide SPN using: --proxy-kerberos-spn 'HTTP/proxy.example.com' or set CX_PROXY_KERBEROS_SPN environment variable")
+
+		os.Exit(0)
 	}
 
 	// Use gokrb5 for all platforms (standard Kerberos)
 	return kerberosGokrb5ProxyClient(timeout, proxyStr, u, dialer, proxySPN)
 }
 
-// isWindowsKerberosAvailable checks if Windows has Kerberos available (simple check)
-func isWindowsKerberosAvailable() bool {
-	if runtime.GOOS != "windows" {
-		return false
-	}
-
-	// Simple check: can we run klist?
-	cmd := exec.Command("klist")
-	err := cmd.Run()
-	return err == nil
-}
-
 // kerberosNativeProxyClient creates an HTTP client using Windows native Kerberos (SSPI)
 func kerberosNativeProxyClient(timeout uint, proxyStr string) *http.Client {
-	// IMMEDIATE platform validation - fail fast with clear message
 	if runtime.GOOS != "windows" {
-		logger.PrintIfVerbose("ERROR: --proxy-auth-type kerberos-native is only supported on Windows")
-		fmt.Printf("Error: --proxy-auth-type kerberos-native is only supported on Windows.\n")
-		fmt.Printf("Current platform: %s\n", runtime.GOOS)
-		fmt.Printf("Use --proxy-auth-type kerberos for cross-platform MIT Kerberos support.\n")
-		os.Exit(1)
+		logger.PrintIfVerbose("Error: --proxy-auth-type kerberos-native is only supported on Windows")
+		logger.Print("Error: --proxy-auth-type kerberos-native is only supported on Windows")
+
+		os.Exit(0)
 	}
 
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 
 	// Get Kerberos configuration
 	proxySPN := viper.GetString(commonParams.ProxyKerberosSPNKey)
 	if proxySPN == "" {
-		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for Windows native authentication")
-		fmt.Println("Error: Kerberos SPN is required. Use --proxy-kerberos-spn flag")
-		fmt.Println("Example: --proxy-kerberos-spn 'HTTP/proxy.example.com'")
-		os.Exit(1)
+		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for windows native kerberos authentication")
+		logger.Print("Error: Kerberos SPN is required for windows native kerberos authentication")
+		os.Exit(0)
 	}
 
 	// Validate SSPI setup
 	if err := kerberos.ValidateSSPISetup(proxySPN); err != nil {
-		logger.PrintIfVerbose("ERROR: Windows SSPI validation failed: " + err.Error())
-		fmt.Printf("Error: Windows native Kerberos setup failed: %v\n", err)
-		fmt.Printf("\nTroubleshooting:\n")
-		fmt.Printf("1. Ensure you are logged into a Windows domain\n")
-		fmt.Printf("2. Check if Kerberos tickets exist: run 'klist'\n")
-		fmt.Printf("3. Verify the SPN is correct: --proxy-kerberos-spn 'HTTP/proxy.example.com'\n")
-		fmt.Printf("4. Alternative: Use --proxy-auth-type kerberos for MIT Kerberos\n")
-		os.Exit(1)
+		logger.PrintIfVerbose("Error: Failed to generate a token for the specified SPN." + err.Error())
+		logger.Print("Error: Failed to generate a token for the specified SPN.")
+		os.Exit(0)
 	}
 
 	logger.PrintIfVerbose("Creating HTTP client using Windows native Kerberos (SSPI)")
@@ -303,18 +283,19 @@ func kerberosGokrb5ProxyClient(timeout uint, proxyStr string, u *url.URL, dialer
 	if krb5ConfPath == "" {
 		krb5ConfPath = kerberos.GetDefaultKrb5ConfPath()
 	}
+
 	ccachePath := viper.GetString(commonParams.ProxyKerberosCcacheKey)
 
 	// Early validation: Check gokrb5 Kerberos setup before creating client
 	if err := kerberos.ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN); err != nil {
-		logger.PrintIfVerbose("Error: gokrb5 Kerberos proxy authentication setup failed: " + err.Error())
-		fmt.Println(fmt.Sprintf("Error: gokrb5 Kerberos proxy authentication setup failed: %v", err.Error()))
+		logger.PrintIfVerbose("Error: Kerberos proxy authentication setup failed: " + err.Error())
+		logger.Printf("Error: %v", err.Error())
 		os.Exit(0)
 	}
 
-	logger.PrintIfVerbose("Creating HTTP client using gokrb5 Kerberos Proxy using: " + proxyStr)
-	logger.PrintIfVerbose("gokrb5 Kerberos SPN: " + proxySPN)
-	logger.PrintIfVerbose("gokrb5 Kerberos krb5.conf: " + krb5ConfPath)
+	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
+	logger.PrintIfVerbose("Kerberos SPN: " + proxySPN)
+	logger.PrintIfVerbose("Kerberos krb5 configuration file: " + krb5ConfPath)
 
 	kerberosConfig := kerberos.KerberosConfig{
 		ProxySPN:     proxySPN,
@@ -797,6 +778,11 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		Domains = AppendIfNotExists(Domains, req.URL.Host)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
+			// Check if this is a non-retryable error (e.g., wrong Kerberos SPN)
+			if kerberos.IsNonRetryable(err) {
+				logger.PrintIfVerbose("Non-retryable error detected, skipping retries")
+				return nil, err
+			}
 		}
 		if resp != nil && err == nil {
 			if hasRedirectStatusCode(resp) {

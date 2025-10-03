@@ -20,6 +20,26 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	osWindows   = "windows"
+	httpsScheme = "https"
+)
+
+// NonRetryableError represents an error that should not trigger HTTP request retries
+type NonRetryableError struct {
+	Message string
+}
+
+func (e *NonRetryableError) Error() string {
+	return e.Message
+}
+
+// IsNonRetryable returns true if the error should not trigger retries
+func IsNonRetryable(err error) bool {
+	_, ok := err.(*NonRetryableError)
+	return ok
+}
+
 // Gokrb5DialContext is the DialContext function that should be wrapped with a
 // Kerberos Authentication using gokrb5.
 type Gokrb5DialContext func(ctx context.Context, network, addr string) (net.Conn, error)
@@ -41,7 +61,7 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 	}
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		dialProxy := func() (net.Conn, error) {
-			if proxyURL.Scheme == "https" {
+			if proxyURL.Scheme == httpsScheme {
 				return tls.DialWithDialer(dialer, "tcp", proxyURL.Host, tlsConfig)
 			}
 			return dialer.DialContext(ctx, network, proxyURL.Host)
@@ -51,12 +71,6 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 }
 
 func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func() (net.Conn, error)) (net.Conn, error) {
-	// Validate required SPN parameter early
-	if kerberosConfig.ProxySPN == "" {
-		log.Printf("Kerberos SPN is required but not provided")
-		return nil, errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
-	}
-
 	conn, err := baseDial()
 	if err != nil {
 		log.Printf("Could not call dial context with proxy: %s", err)
@@ -65,36 +79,16 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 
 	// Use default krb5.conf path if not specified
 	krb5ConfPath := kerberosConfig.Krb5ConfPath
-	if krb5ConfPath == "" {
-		krb5ConfPath = GetDefaultKrb5ConfPath()
-	}
-
-	// Check if krb5.conf exists before trying to load it
-	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		log.Printf("Kerberos configuration file not found at %s", krb5ConfPath)
-		return conn, errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
-	}
 
 	// Load krb5.conf
 	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		log.Printf("Failed to load krb5.conf from %s: %s", krb5ConfPath, err)
-		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
+		log.Printf("Failed to load krb5 configuration file from %s: %s", krb5ConfPath, err)
+		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5 configuration file")
 	}
 
 	// Load credential cache
 	ccPath := kerberosConfig.CcachePath
-	if ccPath == "" {
-		ccPath = getDefaultCCachePath()
-	}
-
-	// Check if credential cache exists before trying to load it
-	if ccPath != "" {
-		if _, err := os.Stat(ccPath); os.IsNotExist(err) {
-			log.Printf("Kerberos credential cache not found at %s", ccPath)
-			return conn, errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
-		}
-	}
 
 	cc, err := credentials.LoadCCache(ccPath)
 	if err != nil {
@@ -122,7 +116,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	// Build SPNEGO token for the proxy SPN
 	if err := spnego.SetSPNEGOHeader(krbClient, connect, kerberosConfig.ProxySPN); err != nil {
 		log.Printf("Failed to generate SPNEGO token for SPN '%s': %s", kerberosConfig.ProxySPN, err)
-		return conn, errors.New("failed to generate SPNEGO token. Please check if the SPN is correct")
+		return conn, &NonRetryableError{Message: "failed to generate SPNEGO token. Please check if the SPN is correct"}
 	}
 
 	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
@@ -160,7 +154,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 				log.Printf("Proxy-Authenticate: %s", v)
 			}
 			_ = resp.Body.Close()
-			return conn, errors.New("proxy authentication failed. Check SPN and proxy keytab/KDC configuration")
+			return conn, &NonRetryableError{Message: "proxy authentication failed. Check SPN and proxy keytab/KDC configuration"}
 		}
 		_ = resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))
@@ -176,25 +170,19 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 // This function performs all the same checks as dialAndNegotiate but without actually
 // making network connections, allowing early detection of configuration problems
 func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
-	// Validate SPN
-	if proxySPN == "" {
-		return errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
-	}
-
-	// Use default krb5.conf path if not specified
 	if krb5ConfPath == "" {
-		krb5ConfPath = GetDefaultKrb5ConfPath()
+		krb5ConfPath = GetDefaultKrb5ConfPath() // Use default krb5.conf path if not specified
 	}
 
 	// Check if krb5.conf exists
 	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		return errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
+		return errors.New("Kerberos proxy authentication setup failed because no valid Kerberos config file was found. Please ensure that a properly configured krb5.conf/krb5.ini file is available at the specified location.")
 	}
 
 	// Load krb5.conf to validate it's readable
-	_, err := config.Load(krb5ConfPath)
+	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		return errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
+		return errors.New("Kerberos proxy authentication setup failed because no valid Kerberos config file was found. Please ensure that a properly configured krb5.conf/krb5.ini file is available at the specified location.")
 	}
 
 	// Get default credential cache path if not specified
@@ -205,25 +193,19 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 	// Check if credential cache exists
 	if ccachePath != "" {
 		if _, err := os.Stat(ccachePath); os.IsNotExist(err) {
-			return errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
+			return errors.New("Kerberos proxy authentication setup failed because no Kerberos credential cache was found. Make sure to run 'kinit' to populate the cache before running this command.")
 		}
 	}
 
 	// Try to load credential cache to validate it's usable
 	cc, err := credentials.LoadCCache(ccachePath)
 	if err != nil {
-		return errors.New("failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
-	}
-
-	// Try to create Kerberos client to validate tickets are valid
-	krb5cfg, err := config.Load(krb5ConfPath)
-	if err != nil {
-		return errors.New("failed to reload Kerberos configuration")
+		return errors.New("Kerberos proxy authentication setup failed because no Kerberos credential cache was found. Make sure to run 'kinit' to populate the cache before running this command.")
 	}
 
 	_, err = client.NewFromCCache(cc, krb5cfg)
 	if err != nil {
-		return errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
+		return errors.New("Failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
 	}
 
 	return nil
@@ -232,7 +214,7 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 // GetDefaultKrb5ConfPath returns the default krb5.conf path for the current platform
 func GetDefaultKrb5ConfPath() string {
 	switch runtime.GOOS {
-	case "windows":
+	case osWindows:
 		// Windows typically uses krb5.ini
 		if windir := os.Getenv("WINDIR"); windir != "" {
 			return filepath.Join(windir, "krb5.ini")
@@ -262,9 +244,7 @@ func getDefaultCCachePath() string {
 	}
 
 	switch runtime.GOOS {
-	case "windows":
-		// On Windows, use the default credential cache managed by the system
-		// The gokrb5 library should handle this automatically with empty string
+	case osWindows:
 		return ""
 	default:
 		// Linux, macOS, and other Unix-like systems

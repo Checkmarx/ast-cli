@@ -8,16 +8,16 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"net/url"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 
 	// Import SSPI package - only compiled on Windows
-	"github.com/alexbrainman/sspi/kerberos"
+	"github.com/alexbrainman/sspi/kerberos" //nolint
 )
 
 // WindowsSSPIDialContext creates a DialContext using Windows SSPI
@@ -39,29 +39,25 @@ func WindowsSSPIDialContext(dialer *net.Dialer, proxyURL *url.URL, proxySPN stri
 
 // dialAndAuthenticateSSPI handles the SSPI authentication flow
 func dialAndAuthenticateSSPI(addr, proxySPN string, baseDial func() (net.Conn, error)) (net.Conn, error) {
-	if proxySPN == "" {
-		return nil, errors.New("Kerberos SPN is required for Windows native authentication")
-	}
-
 	conn, err := baseDial()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to proxy: %w", err)
+		return nil, errors.Errorf("Failed to connect to proxy: %v", err)
 	}
 
 	// Get SPNEGO token using Windows SSPI
 	token, err := getSSPIToken(proxySPN)
 	if err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("failed to get SSPI token: %w", err)
+		return nil, errors.Errorf("failed to get SSPI token: %v", err)
 	}
 
 	// Send CONNECT request with Negotiate authentication
 	if err := sendNegotiateConnect(conn, addr, token); err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("proxy authentication failed: %w", err)
+		return nil, errors.Errorf("proxy authentication failed: %v", err)
 	}
 
-	log.Printf("Successfully authenticated with proxy using Windows SSPI")
+	logger.PrintIfVerbose("Successfully authenticated with proxy using Windows SSPI")
 	return conn, nil
 }
 
@@ -84,33 +80,31 @@ func sendNegotiateConnect(conn net.Conn, addr string, token []byte) error {
 
 	// Send request
 	if err := connect.Write(conn); err != nil {
-		return fmt.Errorf("failed to write CONNECT request: %w", err)
+		return errors.Errorf("failed to write CONNECT request: %w", err)
 	}
 
 	// Read response
 	br := bufio.NewReader(conn)
 	resp, err := http.ReadResponse(br, connect)
 	if err != nil {
-		return fmt.Errorf("failed to read CONNECT response: %w", err)
+		return errors.Errorf("failed to read CONNECT response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("proxy returned status: %s", resp.Status)
+		return errors.Errorf("proxy returned status: %s", resp.Status)
 	}
 
+	defer resp.Body.Close()
 	return nil
 }
 
 // ValidateSSPISetup validates that Windows SSPI is available
 func ValidateSSPISetup(proxySPN string) error {
-	if proxySPN == "" {
-		return errors.New("Kerberos SPN is required")
-	}
 
 	// Try to get a token to validate setup
 	_, err := getSSPIToken(proxySPN)
 	if err != nil {
-		return fmt.Errorf("SSPI validation failed: %w", err)
+		return errors.Errorf("SSPI validation failed: %v", err)
 	}
 
 	return nil
@@ -121,16 +115,20 @@ func getSSPIToken(spn string) ([]byte, error) {
 	// Acquire current user credentials using SSPI
 	cred, err := kerberos.AcquireCurrentUserCredentials()
 	if err != nil {
-		return nil, fmt.Errorf("failed to acquire Windows credentials: %w", err)
+		return nil, errors.Errorf("failed to acquire Windows credentials: %w", err)
 	}
-	defer cred.Release()
+	defer func() {
+		_ = cred.Release()
+	}()
 
 	// Create security context for the SPN
 	secCtx, _, token, err := kerberos.NewClientContext(cred, spn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create security context for SPN '%s': %w", spn, err)
+		return nil, errors.Errorf("failed to create security context for SPN '%s': %w", spn, err)
 	}
-	defer secCtx.Release()
+	defer func() {
+		_ = secCtx.Release()
+	}()
 
 	if len(token) == 0 {
 		return nil, errors.New("empty SPNEGO token received from SSPI")
