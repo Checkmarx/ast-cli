@@ -34,16 +34,13 @@ func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
@@ -52,16 +49,13 @@ func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
@@ -70,16 +64,13 @@ func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
 
 func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
@@ -88,16 +79,13 @@ func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitLabRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
 
 func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
@@ -106,16 +94,13 @@ func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.BitbucketRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
 
 func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
@@ -124,14 +109,11 @@ func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.AzureRateLimitConfig, api)
+	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
 	asserts := assert.New(t)
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
-	err = resp.Body.Close()
-	if err != nil {
-		return
-	}
 }
