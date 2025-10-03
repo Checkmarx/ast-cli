@@ -20,6 +20,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const osWindows = "windows"
+
 // NonRetryableError represents an error that should not trigger HTTP request retries
 type NonRetryableError struct {
 	Message string
@@ -66,7 +68,6 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 }
 
 func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func() (net.Conn, error)) (net.Conn, error) {
-
 	conn, err := baseDial()
 	if err != nil {
 		log.Printf("Could not call dial context with proxy: %s", err)
@@ -166,21 +167,19 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 // This function performs all the same checks as dialAndNegotiate but without actually
 // making network connections, allowing early detection of configuration problems
 func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
-
-	// Use default krb5.conf path if not specified
 	if krb5ConfPath == "" {
-		krb5ConfPath = GetDefaultKrb5ConfPath()
+		krb5ConfPath = GetDefaultKrb5ConfPath() // Use default krb5.conf path if not specified
 	}
 
 	// Check if krb5.conf exists
 	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		return errors.New("Kerberos configuration file not found. Please ensure krb5 configuration file is properly configured")
+		return errors.New("Kerberos proxy authentication setup failed because no valid Kerberos config file was found. Please ensure that a properly configured krb5.conf/krb5.ini file is available at the specified location.")
 	}
 
 	// Load krb5.conf to validate it's readable
-	_, err := config.Load(krb5ConfPath)
+	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		return errors.New("failed to load Kerberos configuration. Please check the krb5 configuration file")
+		return errors.New("Kerberos proxy authentication setup failed because no valid Kerberos config file was found. Please ensure that a properly configured krb5.conf/krb5.ini file is available at the specified location.")
 	}
 
 	// Get default credential cache path if not specified
@@ -191,25 +190,19 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 	// Check if credential cache exists
 	if ccachePath != "" {
 		if _, err := os.Stat(ccachePath); os.IsNotExist(err) {
-			return errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
+			return errors.New("Kerberos proxy authentication setup failed because no Kerberos credential cache was found. Make sure to run 'kinit' to populate the cache before running this command.")
 		}
 	}
 
 	// Try to load credential cache to validate it's usable
 	cc, err := credentials.LoadCCache(ccachePath)
 	if err != nil {
-		return errors.New("failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
-	}
-
-	// Try to create Kerberos client to validate tickets are valid
-	krb5cfg, err := config.Load(krb5ConfPath)
-	if err != nil {
-		return errors.New("failed to reload Kerberos configuration")
+		return errors.New("Kerberos proxy authentication setup failed because no Kerberos credential cache was found. Make sure to run 'kinit' to populate the cache before running this command.")
 	}
 
 	_, err = client.NewFromCCache(cc, krb5cfg)
 	if err != nil {
-		return errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
+		return errors.New("Failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
 	}
 
 	return nil
@@ -218,7 +211,7 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 // GetDefaultKrb5ConfPath returns the default krb5.conf path for the current platform
 func GetDefaultKrb5ConfPath() string {
 	switch runtime.GOOS {
-	case "windows":
+	case osWindows:
 		// Windows typically uses krb5.ini
 		if windir := os.Getenv("WINDIR"); windir != "" {
 			return filepath.Join(windir, "krb5.ini")
@@ -248,9 +241,7 @@ func getDefaultCCachePath() string {
 	}
 
 	switch runtime.GOOS {
-	case "windows":
-		// On Windows, use the default credential cache managed by the system
-		// The gokrb5 library should handle this automatically with empty string
+	case osWindows:
 		return ""
 	default:
 		// Linux, macOS, and other Unix-like systems
