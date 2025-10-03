@@ -1,16 +1,17 @@
 package commands
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/stretchr/testify/assert"
 )
 
-func mockAPI(repeatCode int, repeatCount int, headerName, headerValue string) func() (*http.Response, error) {
+func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func() (*http.Response, error) {
 	attempt := 0
 	return func() (*http.Response, error) {
 		rec := httptest.NewRecorder()
@@ -26,6 +27,7 @@ func mockAPI(repeatCode int, repeatCount int, headerName, headerValue string) fu
 		return rec.Result(), nil
 	}
 }
+
 func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
 	api := mockAPI(403, 1, "X-RateLimit-Reset", reset)
@@ -38,6 +40,10 @@ func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
@@ -52,6 +58,10 @@ func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
@@ -66,11 +76,15 @@ func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
 
 func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
-	api := mockAPI(429, 1, "Retry-After", reset)
+	api := mockAPI(429, 1, "RateLimit-Reset", reset)
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitLabRateLimitConfig, api)
@@ -80,11 +94,15 @@ func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
 
 func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
-	api := mockAPI(429, 1, "Retry-After", reset)
+	api := mockAPI(429, 1, "X-RateLimit-Reset", reset)
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.BitbucketRateLimitConfig, api)
@@ -94,6 +112,10 @@ func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
 
 func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
@@ -108,4 +130,8 @@ func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	asserts.NoError(err)
 	asserts.Equal(http.StatusOK, resp.StatusCode)
 	asserts.GreaterOrEqual(elapsed, 20*time.Second)
+	err = resp.Body.Close()
+	if err != nil {
+		return
+	}
 }
