@@ -150,7 +150,12 @@ func (g *BitBucketHTTPWrapper) getFromBitBucket(
 
 	logger.PrintIfVerbose(fmt.Sprintf("Request to %s", url))
 
-	resp, err := GetWithQueryParams(g.client, url, token, basicFormat, queryParams)
+	resp, err := WithSCMRateLimitRetry(
+		BitbucketRateLimitConfig,
+		func() (*http.Response, error) {
+			return GetWithQueryParams(g.client, url, token, basicFormat, queryParams)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -264,7 +269,12 @@ func collectPageBitBucket(
 }
 
 func getBitBucket(client *http.Client, token, url string, target interface{}, queryParams map[string]string) error {
-	resp, err := GetWithQueryParams(client, url, token, basicFormat, queryParams)
+	resp, err := WithSCMRateLimitRetry(
+		BitbucketRateLimitConfig,
+		func() (*http.Response, error) {
+			return GetWithQueryParams(client, url, token, basicFormat, queryParams)
+		},
+	)
 	if err != nil {
 		return err
 	}
