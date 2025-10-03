@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,18 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/stretchr/testify/assert"
 )
+
+func mockResponses(responses []*http.Response) func() (*http.Response, error) {
+	index := 0
+	return func() (*http.Response, error) {
+		if index >= len(responses) {
+			return nil, fmt.Errorf("no more responses")
+		}
+		resp := responses[index]
+		index++
+		return resp, nil
+	}
+}
 
 func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func() (*http.Response, error) {
 	attempt := 0
@@ -36,10 +49,22 @@ func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func()
 
 func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 	reset := strconv.FormatInt(time.Now().Unix()+20, 10) // simulate 20-second wait
-	mockAPI(403, 1, "X-RateLimit-Reset", reset)
+
+	// Prepare responses manually
+	resp1 := &http.Response{
+		StatusCode: 403,
+		Header:     http.Header{"X-RateLimit-Reset": []string{reset}},
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+
+	api := mockResponses([]*http.Response{resp1, resp2})
 
 	start := time.Now()
-	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, mockAPI(403, 1, "X-RateLimit-Reset", reset))
+	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
 	if err != nil {
 		if resp != nil {
 			resp.Body.Close()
