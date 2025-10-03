@@ -217,8 +217,8 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 
 	// Validate required SPN parameter
 	if proxySPN == "" {
-		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for Kerberos proxy authentication.")
-		logger.Print("ERROR: Kerberos SPN is required for the Kerberos proxy authentication.")
+		logger.PrintIfVerbose("Error: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.Print("Error: Kerberos SPN is required for the Kerberos proxy authentication.")
 		logger.PrintIfVerbose("Please provide SPN using: --proxy-kerberos-spn 'HTTP/proxy.example.com' or set CX_PROXY_KERBEROS_SPN environment variable")
 		logger.PrintIfVerbose("Falling back to basic proxy authentication")
 		// Return a basic client that will fail gracefully
@@ -229,19 +229,20 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 	if krb5ConfPath == "" {
 		krb5ConfPath = kerberos.GetDefaultKrb5ConfPath()
 	}
+
 	ccachePath := viper.GetString(commonParams.ProxyKerberosCcacheKey)
 
 	// Early validation: Check Kerberos setup before creating client
 	// This ensures errors are caught immediately during client creation, not during HTTP requests
 	if err := kerberos.ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN); err != nil {
 		logger.PrintIfVerbose("Error: Kerberos proxy authentication setup failed: " + err.Error())
-		fmt.Println(fmt.Sprintf("Error: Kerberos proxy authentication setup failed: %v", err.Error()))
+		logger.Printf("Error: Kerberos proxy authentication setup failed: %v", err.Error())
 		os.Exit(0)
 	}
 
 	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
 	logger.PrintIfVerbose("Kerberos SPN: " + proxySPN)
-	logger.PrintIfVerbose("Kerberos krb5.conf: " + krb5ConfPath)
+	logger.PrintIfVerbose("Kerberos krb5 configuration file: " + krb5ConfPath)
 
 	kerberosConfig := kerberos.KerberosConfig{
 		ProxySPN:     proxySPN,

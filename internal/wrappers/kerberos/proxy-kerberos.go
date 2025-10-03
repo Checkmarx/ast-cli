@@ -66,11 +66,6 @@ func NewKerberosProxyDialContext(dialer *net.Dialer, proxyURL *url.URL,
 }
 
 func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func() (net.Conn, error)) (net.Conn, error) {
-	// Validate required SPN parameter early
-	if kerberosConfig.ProxySPN == "" {
-		log.Printf("Kerberos SPN is required but not provided")
-		return nil, errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
-	}
 
 	conn, err := baseDial()
 	if err != nil {
@@ -80,36 +75,16 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 
 	// Use default krb5.conf path if not specified
 	krb5ConfPath := kerberosConfig.Krb5ConfPath
-	if krb5ConfPath == "" {
-		krb5ConfPath = GetDefaultKrb5ConfPath()
-	}
-
-	// Check if krb5.conf exists before trying to load it
-	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		log.Printf("Kerberos configuration file not found at %s", krb5ConfPath)
-		return conn, errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
-	}
 
 	// Load krb5.conf
 	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
-		log.Printf("Failed to load krb5.conf from %s: %s", krb5ConfPath, err)
-		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
+		log.Printf("Failed to load krb5 configuration file from %s: %s", krb5ConfPath, err)
+		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5 configuration file")
 	}
 
 	// Load credential cache
 	ccPath := kerberosConfig.CcachePath
-	if ccPath == "" {
-		ccPath = getDefaultCCachePath()
-	}
-
-	// Check if credential cache exists before trying to load it
-	if ccPath != "" {
-		if _, err := os.Stat(ccPath); os.IsNotExist(err) {
-			log.Printf("Kerberos credential cache not found at %s", ccPath)
-			return conn, errors.New("Kerberos credential cache not found. Please run 'kinit' to obtain Kerberos tickets first")
-		}
-	}
 
 	cc, err := credentials.LoadCCache(ccPath)
 	if err != nil {
@@ -191,10 +166,6 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 // This function performs all the same checks as dialAndNegotiate but without actually
 // making network connections, allowing early detection of configuration problems
 func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
-	// Validate SPN
-	if proxySPN == "" {
-		return errors.New("Kerberos SPN is required. Use --proxy-kerberos-spn flag or CX_PROXY_KERBEROS_SPN env var")
-	}
 
 	// Use default krb5.conf path if not specified
 	if krb5ConfPath == "" {
@@ -203,13 +174,13 @@ func ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN string) error {
 
 	// Check if krb5.conf exists
 	if _, err := os.Stat(krb5ConfPath); os.IsNotExist(err) {
-		return errors.New("Kerberos configuration file not found. Please ensure krb5.conf is properly configured")
+		return errors.New("Kerberos configuration file not found. Please ensure krb5 configuration file is properly configured")
 	}
 
 	// Load krb5.conf to validate it's readable
 	_, err := config.Load(krb5ConfPath)
 	if err != nil {
-		return errors.New("failed to load Kerberos configuration. Please check the krb5.conf file")
+		return errors.New("failed to load Kerberos configuration. Please check the krb5 configuration file")
 	}
 
 	// Get default credential cache path if not specified

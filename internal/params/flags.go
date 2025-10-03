@@ -80,7 +80,7 @@ const (
 	SastRecommendedExclusionsFlags = "sast-recommended-exclusions"
 	NtlmProxyDomainFlagUsage       = "Window domain when using NTLM proxy"
 	KerberosProxySPNFlagUsage      = "Service Principal Name (SPN) for Kerberos proxy authentication"
-	KerberosKrb5ConfFlagUsage      = "Path to krb5.conf file for Kerberos (default: /etc/krb5.conf)"
+	KerberosKrb5ConfFlagUsage      = "Path to krb5 configuration file for Kerberos (default: /etc/krb5.conf)"
 	KerberosCcacheFlagUsage        = "Path to Kerberos credential cache (optional, uses KRB5CCNAME env or default)"
 	BaseURIFlagUsage               = "The base system URI"
 	BaseAuthURIFlag                = "base-auth-uri"
