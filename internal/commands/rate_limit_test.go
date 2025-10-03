@@ -34,6 +34,11 @@ func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
@@ -49,6 +54,11 @@ func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
@@ -64,6 +74,11 @@ func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitHubRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
@@ -79,6 +94,11 @@ func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.GitLabRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
@@ -94,6 +114,11 @@ func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.BitbucketRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
@@ -109,6 +134,11 @@ func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
 
 	start := time.Now()
 	resp, err := wrappers.WithSCMRateLimitRetry(wrappers.AzureRateLimitConfig, api)
+	if err != nil {
+		asserts := assert.New(t)
+		asserts.NoError(err)
+		return
+	}
 	defer resp.Body.Close()
 	elapsed := time.Since(start)
 
