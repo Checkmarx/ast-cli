@@ -1187,6 +1187,10 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
+// addContainersScan creates the container security scan configuration with validation.
+// Container-security scan-type related function.
+// This function validates all --container-images inputs including tar files, image:tag formats,
+// and various prefixed formats (docker:, podman:, file:, etc.) before creating the scan config.
 func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
 	if !scanTypeEnabled(commonParams.ContainersType) {
 		return nil, nil
@@ -1255,6 +1259,8 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	return containerMapConfig, nil
 }
 
+// initializeContainersConfigWithResubmitValues populates container config from previous scan settings.
+// Container-security scan-type related function.
 func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally, isGitScan bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
@@ -2015,7 +2021,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
-// cleanCheckmarxContainersDirectory removes only the .checkmarx/containers directory after container scan completion
+// cleanCheckmarxContainersDirectory removes only the .checkmarx/containers directory after container scan completion.
+// Container-security scan-type related function.
+// This function performs cleanup of temporary container scan artifacts.
 func cleanCheckmarxContainersDirectory(directoryPath string) error {
 	containersPath := filepath.Join(directoryPath, ".checkmarx", "containers")
 	if _, err := os.Stat(containersPath); os.IsNotExist(err) {
@@ -2033,6 +2041,9 @@ func cleanCheckmarxContainersDirectory(directoryPath string) error {
 	return nil
 }
 
+// runContainerResolver executes the container resolver to analyze container images locally.
+// Container-security scan-type related function.
+// This function processes and normalizes container image inputs before passing them to the resolver.
 func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
@@ -2065,7 +2076,10 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 	return nil
 }
 
-// processContainerImagesForSyft processes container image references using syft's scheme extraction logic
+// processContainerImagesForSyft processes container image references using syft's scheme extraction logic.
+// Container-security scan-type related function.
+// This function strips known prefixes (docker:, podman:, file:, etc.) from image references
+// to match syft/stereoscope's expected input format.
 func processContainerImagesForSyft(images []string) []string {
 	var processedImages []string
 
@@ -2094,7 +2108,9 @@ func processContainerImagesForSyft(images []string) []string {
 	return processedImages
 }
 
-// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior
+// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior.
+// Container-security scan-type related function.
+// This function extracts and validates source prefixes from container image references.
 func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
 	const SchemeSeparator = ":"
 	parts := strings.SplitN(userInput, SchemeSeparator, 2)
@@ -3400,6 +3416,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+// validateContainerImageFormat validates container image references for the --container-images flag.
+// Container-security scan-type related function.
+// This function implements comprehensive validation logic for all supported container image formats:
+// - Standard image:tag format
+// - Tar files (.tar)
+// - Prefixed formats (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)
+// It provides helpful error messages and hints for common user mistakes.
 func validateContainerImageFormat(containerImage string) error {
 	// Define known sources (prefixes) for container image references
 	knownSources := []string{
@@ -3487,7 +3510,9 @@ func validateContainerImageFormat(containerImage string) error {
 	return errors.Errorf("--container-images flag error: image does not have a tag")
 }
 
-// Helper function to get the prefix from input
+// getPrefixFromInput extracts the prefix from a container image reference.
+// Container-security scan-type related function.
+// Helper function to identify which known prefix is used in the input.
 func getPrefixFromInput(input string, prefixes []string) string {
 	for _, prefix := range prefixes {
 		if strings.HasPrefix(input, prefix) {
@@ -3497,6 +3522,10 @@ func getPrefixFromInput(input string, prefixes []string) string {
 	return ""
 }
 
+// validatePrefixedContainerImage validates container image references with specific prefixes.
+// Container-security scan-type related function.
+// This function handles prefix-specific validation for archive types (file:, docker-archive:, oci-archive:),
+// daemon types (docker:, podman:, containerd:), registry types, and oci-dir types.
 func validatePrefixedContainerImage(containerImage, prefix string) error {
 	// Remove the prefix to get the actual image reference
 	imageRef := strings.TrimPrefix(containerImage, prefix)
