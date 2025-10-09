@@ -1,13 +1,14 @@
 # Proxy Authentication Guide
 
-This guide explains how to configure proxy authentication using NTLM and Kerberos protocols with the AST CLI tool.
+This guide explains how to configure proxy authentication using NTLM, Kerberos (gokrb5), and Windows native Kerberos (SSPI) with the AST CLI tool.
 
 ## Overview
 
-The AST CLI supports three types of proxy authentication:
+The AST CLI supports the following proxy authentication types:
 - **Basic**: Standard username/password authentication
 - **NTLM**: Windows NT LAN Manager authentication
-- **Kerberos**: MIT Kerberos authentication protocol
+- **Kerberos**: MIT Kerberos authentication via gokrb5 (cross-platform)
+- **Kerberos (Windows native/SSPI)**: Uses Windows SSPI APIs (Windows only)
 
 ## Configuration Methods
 
@@ -73,7 +74,7 @@ cx scan create \
 
 ---
 
-## 🎫 Kerberos Proxy Authentication
+## 🎫 Kerberos Proxy Authentication (gokrb5)
 
 ### Prerequisites
 1. **Kerberos tickets**: Obtain valid Kerberos tickets using `kinit`
@@ -104,6 +105,8 @@ export CX_PROXY_KERBEROS_SPN=HTTP/proxy.company.com
 | `--proxy-kerberos-spn` | `CX_PROXY_KERBEROS_SPN` | Service Principal Name for proxy | ✅ Yes |
 | `--proxy-kerberos-krb5-conf` | `CX_PROXY_KERBEROS_KRB5_CONF` | Path to krb5.conf file | ❌ Optional |
 | `--proxy-kerberos-ccache` | `CX_PROXY_KERBEROS_CCACHE` | Path to credential cache | ❌ Optional |
+
+For SSPI (`kerberos-native`), `krb5.conf` and `ccache` flags/envs are not used.
 
 ### Kerberos Setup Steps
 
@@ -156,6 +159,53 @@ cx scan create \
 
 ---
 
+## 🪟 Kerberos Proxy Authentication (Windows native - SSPI)
+
+### When to Use SSPI
+- You are on Windows and want to use the logged-in user's ticket and Windows credential manager
+- Your organization prefers native SSPI for Kerberos/Negotiate
+
+### Prerequisites
+1. Valid Kerberos context for the Windows user (SSPI uses current logon session)
+2. SPN of the proxy, for example `HTTP/proxy.company.com`
+3. Windows-only; not available on Linux/macOS
+
+### Command Line Flags
+```bash
+cx scan create \
+  --proxy http://proxy.company.com:8080 \
+  --proxy-auth-type kerberos-native \
+  --proxy-kerberos-spn HTTP/proxy.company.com
+```
+
+### Environment Variables
+```bash
+export CX_HTTP_PROXY=http://proxy.company.com:8080
+export CX_PROXY_AUTH_TYPE=kerberos-native
+export CX_PROXY_KERBEROS_SPN=HTTP/proxy.company.com
+```
+
+### SSPI Configuration Details
+
+| Flag | Environment Variable | Description | Required |
+|------|----------------------|-------------|----------|
+| `--proxy` | `CX_HTTP_PROXY` | Proxy URL (no credentials needed) | ✅ Yes |
+| `--proxy-auth-type kerberos-native` | `CX_PROXY_AUTH_TYPE=kerberos-native` | Enable Windows SSPI Kerberos | ✅ Yes |
+| `--proxy-kerberos-spn` | `CX_PROXY_KERBEROS_SPN` | Service Principal Name for proxy | ✅ Yes |
+
+Notes:
+- SSPI does not use `krb5.conf` or explicit ccache paths; it relies on Windows.
+- If SPN is missing or token cannot be generated, the CLI will exit with an error.
+
+### SSPI Example
+```bash
+cx scan create \
+  --proxy http://proxy.company.com:8080 \
+  --proxy-auth-type kerberos-native \
+  --proxy-kerberos-spn HTTP/proxy.company.com \
+  --source-dir /path/to/source
+```
+
 ## 🌍 Default Locations
 
 ### Kerberos Configuration Files
@@ -165,8 +215,8 @@ cx scan create \
 - Credential cache: `/tmp/krb5cc_$(id -u)`
 
 **Windows:**
-- krb5.conf: `C:\Windows\krb5.ini`
-- Credential cache: Managed by Windows credential manager
+- krb5.conf: `C:\Windows\krb5.ini` (for `kerberos`/gokrb5 flow)
+- Credential cache: Managed by Windows credential manager for SSPI; for `kerberos`/gokrb5 you may rely on `KRB5CCNAME` or default
 
 ### Environment Variables for Kerberos
 ```bash
@@ -196,7 +246,7 @@ cx scan create \
   --branch main
 ```
 
-### Kerberos Enterprise Environment
+### Kerberos Enterprise Environment (gokrb5)
 ```bash
 #!/bin/bash
 # Kerberos proxy authentication example
@@ -210,6 +260,21 @@ export CX_PROXY_AUTH_TYPE=kerberos
 export CX_PROXY_KERBEROS_SPN=HTTP/proxy.corp.com
 
 # 3. Run scan
+cx scan create \
+  --project-name "MyProject" \
+  --source-dir /workspace/myapp \
+  --branch main
+```
+
+### Kerberos Windows native (SSPI) Environment
+```bash
+#!/bin/bash
+# Kerberos (Windows native - SSPI) proxy authentication example
+
+export CX_HTTP_PROXY=http://proxy.corp.com:8080
+export CX_PROXY_AUTH_TYPE=kerberos-native
+export CX_PROXY_KERBEROS_SPN=HTTP/proxy.corp.com
+
 cx scan create \
   --project-name "MyProject" \
   --source-dir /workspace/myapp \
@@ -297,12 +362,21 @@ cx scan create --verbose \
   --project-name test
 ```
 
-#### Test Kerberos
+#### Test Kerberos (gokrb5)
 ```bash
 # Enable verbose logging for Kerberos
 cx project list create --verbose \
   --proxy http://proxy.com:8080 \
   --proxy-auth-type kerberos \
+  --proxy-kerberos-spn HTTP/proxy.com \
+  --project-name test
+```
+
+#### Test Kerberos (Windows native - SSPI)
+```bash
+cx project list create --verbose \
+  --proxy http://proxy.com:8080 \
+  --proxy-auth-type kerberos-native \
   --proxy-kerberos-spn HTTP/proxy.com \
   --project-name test
 ```
@@ -360,7 +434,7 @@ For Kerberos:
 ### All Available Flags
 ```
 --proxy                     Proxy server URL
---proxy-auth-type          Authentication type (basic|ntlm|kerberos)
+--proxy-auth-type          Authentication type (basic|ntlm|kerberos|kerberos-native)
 --proxy-ntlm-domain        Windows domain for NTLM
 --proxy-kerberos-spn       Service Principal Name for Kerberos
 --proxy-kerberos-krb5-conf Path to krb5.conf file

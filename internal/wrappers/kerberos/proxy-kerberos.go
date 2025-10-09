@@ -84,7 +84,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	krb5cfg, err := config.Load(krb5ConfPath)
 	if err != nil {
 		log.Printf("Failed to load krb5 configuration file from %s: %s", krb5ConfPath, err)
-		return conn, errors.New("failed to load Kerberos configuration. Please check the krb5 configuration file")
+		return conn, errors.New("Failed to load Kerberos configuration. Please check the krb5 configuration file")
 	}
 
 	// Load credential cache
@@ -93,14 +93,14 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	cc, err := credentials.LoadCCache(ccPath)
 	if err != nil {
 		log.Printf("Failed to load Kerberos credential cache from %s: %s", ccPath, err)
-		return conn, errors.New("failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
+		return conn, errors.New("Failed to load Kerberos credential cache. Please run 'kinit' to obtain valid Kerberos tickets")
 	}
 
 	// Create Kerberos client from cache
 	krbClient, err := client.NewFromCCache(cc, krb5cfg)
 	if err != nil {
 		log.Printf("Failed to create Kerberos client: %s", err)
-		return conn, errors.New("failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
+		return conn, errors.New("Failed to create Kerberos client. Please check your Kerberos tickets with 'klist'")
 	}
 
 	// Kerberos Step 1: Send CONNECT with SPNEGO token directly (like NTLM does)
@@ -116,14 +116,14 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 	// Build SPNEGO token for the proxy SPN
 	if err := spnego.SetSPNEGOHeader(krbClient, connect, kerberosConfig.ProxySPN); err != nil {
 		log.Printf("Failed to generate SPNEGO token for SPN '%s': %s", kerberosConfig.ProxySPN, err)
-		return conn, &NonRetryableError{Message: "failed to generate SPNEGO token. Please check if the SPN is correct"}
+		return conn, &NonRetryableError{Message: "Failed to generate SPNEGO token. Please check if the SPN is correct"}
 	}
 
 	// spnego.SetSPNEGOHeader sets Authorization: Negotiate <token>
 	authVal := connect.Header.Get("Authorization")
 	if authVal == "" {
 		log.Printf("SPNEGO did not generate an Authorization header")
-		return conn, errors.New("failed to generate SPNEGO token. Please check Kerberos configuration")
+		return conn, errors.New("Failed to generate SPNEGO token. Please check Kerberos configuration")
 	}
 
 	// Move Authorization -> Proxy-Authorization (proxy level)
@@ -154,7 +154,7 @@ func dialAndNegotiate(addr string, kerberosConfig KerberosConfig, baseDial func(
 				log.Printf("Proxy-Authenticate: %s", v)
 			}
 			_ = resp.Body.Close()
-			return conn, &NonRetryableError{Message: "proxy authentication failed. Check SPN and proxy keytab/KDC configuration"}
+			return conn, &NonRetryableError{Message: "Proxy authentication failed. Check SPN and proxy keytab/KDC configuration"}
 		}
 		_ = resp.Body.Close()
 		return conn, errors.New(http.StatusText(resp.StatusCode))

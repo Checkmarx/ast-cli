@@ -8,7 +8,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -54,6 +53,7 @@ func dialAndAuthenticateSSPI(addr, proxySPN string, baseDial func() (net.Conn, e
 	}
 
 	logger.PrintIfVerbose("Successfully authenticated with proxy using Windows SSPI")
+	//logger.Print()
 	return conn, nil
 }
 
@@ -110,7 +110,7 @@ func getSSPIToken(spn string) ([]byte, error) {
 	// Acquire current user credentials using SSPI
 	cred, err := kerberos.AcquireCurrentUserCredentials()
 	if err != nil {
-		return nil, errors.Errorf("failed to acquire Windows credentials: %w", err)
+		return nil, errors.Errorf("Failed to acquire Windows credentials: %w", err)
 	}
 	defer func() {
 		_ = cred.Release()
@@ -119,16 +119,16 @@ func getSSPIToken(spn string) ([]byte, error) {
 	// Create security context for the SPN
 	secCtx, _, token, err := kerberos.NewClientContext(cred, spn)
 	if err != nil {
-		return nil, errors.Errorf("failed to create security context for SPN '%s': %w", spn, err)
+		return nil, errors.Errorf("Failed to create security context for SPN '%s': %w", spn, err)
 	}
 	defer func() {
 		_ = secCtx.Release()
 	}()
 
 	if len(token) == 0 {
-		return nil, errors.New("empty SPNEGO token received from SSPI")
+		return nil, errors.New("Wmpty SPNEGO token received from SSPI")
 	}
 
-	log.Printf("Successfully generated SSPI token for SPN: %s", spn)
+	logger.PrintIfVerbose("Successfully generated SSPI token for SPN: " + spn)
 	return token, nil
 }
