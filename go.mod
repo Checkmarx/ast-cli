@@ -314,5 +314,3 @@ require (
 )
 
 replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.27
-
-replace github.com/Checkmarx/containers-resolver => ../containers-resolver
