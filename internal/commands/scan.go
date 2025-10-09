@@ -2113,16 +2113,20 @@ func processContainerImagesForSyft(images []string) []string {
 // This function extracts and validates source prefixes from container image references.
 func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
 	const SchemeSeparator = ":"
-	parts := strings.SplitN(userInput, SchemeSeparator, 2)
-	if len(parts) < 2 {
+	const minPartsForScheme = 2
+	const schemePartIndex = 0
+	const inputPartIndex = 1
+
+	parts := strings.SplitN(userInput, SchemeSeparator, minPartsForScheme)
+	if len(parts) < minPartsForScheme {
 		return "", userInput
 	}
 
 	// Check if the first part is a valid source hint
-	sourceHint := strings.TrimSpace(strings.ToLower(parts[0]))
+	sourceHint := strings.TrimSpace(strings.ToLower(parts[schemePartIndex]))
 	for _, validSource := range sources {
 		if sourceHint == validSource {
-			return sourceHint, parts[1]
+			return sourceHint, parts[inputPartIndex]
 		}
 	}
 
