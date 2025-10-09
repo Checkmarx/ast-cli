@@ -3537,82 +3537,102 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
 	}
 
-	// Handle archive-based prefixes that expect existing .tar files
-	// Treat docker-archive:, oci-archive: exactly the same as file: prefix
-	if prefix == "docker-archive:" || prefix == "oci-archive:" || prefix == "file:" {
-		exists, err := osinstaller.FileExists(imageRef)
-		if err != nil {
-			return errors.Errorf("--container-images flag error: %v", err)
-		}
-		if !exists {
-			// Check if user mistakenly used archive prefix with an image name:tag format
-			if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
-				return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
-			}
-			return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
-		}
+	// Delegate to specific validators based on prefix type
+	switch prefix {
+	case "docker-archive:", "oci-archive:", "file:":
+		return validateArchivePrefix(imageRef)
+	case "oci-dir:":
+		return validateOCIDirPrefix(imageRef)
+	case "registry:":
+		return validateRegistryPrefix(imageRef)
+	case "docker:", "podman:", "containerd:":
+		return validateDaemonPrefix(imageRef, prefix)
+	default:
 		return nil
 	}
+}
 
-	// Handle oci-dir prefix - can be directories OR files (like .tar files)
-	if prefix == "oci-dir:" {
-		// oci-dir can handle:
-		// 1. Directories (OCI layout directories)
-		// 2. Files (like .tar files)
-		// 3. Can have optional :tag suffix
-
-		pathToCheck := imageRef
-		if strings.Contains(imageRef, ":") {
-			// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
-			pathParts := strings.Split(imageRef, ":")
-			if len(pathParts) > 0 && pathParts[0] != "" {
-				pathToCheck = pathParts[0]
-			}
-		}
-
-		exists, err := osinstaller.FileExists(pathToCheck)
-		if err != nil {
-			return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
-		}
-		if !exists {
-			return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
-		}
-		return nil
+// validateArchivePrefix validates archive-based prefixes (file:, docker-archive:, oci-archive:).
+// Container-security scan-type related function.
+func validateArchivePrefix(imageRef string) error {
+	exists, err := osinstaller.FileExists(imageRef)
+	if err != nil {
+		return errors.Errorf("--container-images flag error: %v", err)
 	}
-
-	// Handle registry prefix - RESTRICTION: must specify a single image, not just registry
-	if prefix == "registry:" {
-		// Registry must specify a single image, not just a registry URL
-		// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
-		// Invalid: registry:registry.example.com (just registry without image)
-
-		// Basic validation - should not be empty and should not be obviously just a registry URL
-		if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
-			strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
-			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+	if !exists {
+		// Check if user mistakenly used archive prefix with an image name:tag format
+		if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
 		}
-
-		// Check for registry:host:port format (just registry URL with port)
-		if strings.Contains(imageRef, ":") {
-			parts := strings.Split(imageRef, ":")
-			if len(parts) == 2 && len(parts[1]) <= 5 && !strings.Contains(imageRef, "/") {
-				// This looks like registry:port format without image
-				return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
-			}
-		}
-
-		return nil
+		return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
 	}
+	return nil
+}
 
-	// For daemon-based prefixes (docker:, podman:, containerd:)
-	// Validate they follow the image:tag format, but be flexible with complex registry URLs
-	if prefix == "docker:" || prefix == "podman:" || prefix == "containerd:" {
-		imageParts := strings.Split(imageRef, ":")
-		if len(imageParts) < 2 || imageParts[0] == "" || imageParts[1] == "" {
-			return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
+// validateOCIDirPrefix validates oci-dir prefix which can reference directories or files.
+// Container-security scan-type related function.
+func validateOCIDirPrefix(imageRef string) error {
+	// oci-dir can handle:
+	// 1. Directories (OCI layout directories)
+	// 2. Files (like .tar files)
+	// 3. Can have optional :tag suffix
+
+	pathToCheck := imageRef
+	if strings.Contains(imageRef, ":") {
+		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+		pathParts := strings.Split(imageRef, ":")
+		if len(pathParts) > 0 && pathParts[0] != "" {
+			pathToCheck = pathParts[0]
 		}
 	}
 
+	exists, err := osinstaller.FileExists(pathToCheck)
+	if err != nil {
+		return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+	}
+	if !exists {
+		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+	}
+	return nil
+}
+
+// validateRegistryPrefix validates registry prefix which must specify a single image.
+// Container-security scan-type related function.
+func validateRegistryPrefix(imageRef string) error {
+	const maxPortLength = 5
+	const minImagePartsWithTag = 2
+
+	// Registry must specify a single image, not just a registry URL
+	// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
+	// Invalid: registry:registry.example.com (just registry without image)
+
+	// Basic validation - should not be empty and should not be obviously just a registry URL
+	if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
+		strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
+		return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+	}
+
+	// Check for registry:host:port format (just registry URL with port)
+	if strings.Contains(imageRef, ":") {
+		parts := strings.Split(imageRef, ":")
+		if len(parts) == minImagePartsWithTag && len(parts[1]) <= maxPortLength && !strings.Contains(imageRef, "/") {
+			// This looks like registry:port format without image
+			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
+		}
+	}
+
+	return nil
+}
+
+// validateDaemonPrefix validates daemon-based prefixes (docker:, podman:, containerd:).
+// Container-security scan-type related function.
+func validateDaemonPrefix(imageRef, prefix string) error {
+	const minImagePartsWithTag = 2
+
+	imageParts := strings.Split(imageRef, ":")
+	if len(imageParts) < minImagePartsWithTag || imageParts[0] == "" || imageParts[1] == "" {
+		return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
+	}
 	return nil
 }
 
