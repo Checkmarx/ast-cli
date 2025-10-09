@@ -3401,7 +3401,7 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 
 	if kicsPresetID, _ := cmd.Flags().GetString(commonParams.IacsPresetIDFlag); kicsPresetID != "" {
 		if _, err := uuid.Parse(kicsPresetID); err != nil {
-			return fmt.Errorf("Invalid value for --%s flag. Must be a valid UUID.", commonParams.IacsPresetIDFlag)
+			return fmt.Errorf("invalid value for --%s flag, must be a valid UUID", commonParams.IacsPresetIDFlag)
 		}
 	}
 	// check if flag was passed as arg
@@ -3601,6 +3601,7 @@ func validateOCIDirPrefix(imageRef string) error {
 func validateRegistryPrefix(imageRef string) error {
 	const maxPortLength = 5
 	const minImagePartsWithTag = 2
+	const portPartIndex = 1
 
 	// Registry must specify a single image, not just a registry URL
 	// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
@@ -3615,7 +3616,7 @@ func validateRegistryPrefix(imageRef string) error {
 	// Check for registry:host:port format (just registry URL with port)
 	if strings.Contains(imageRef, ":") {
 		parts := strings.Split(imageRef, ":")
-		if len(parts) == minImagePartsWithTag && len(parts[1]) <= maxPortLength && !strings.Contains(imageRef, "/") {
+		if len(parts) == minImagePartsWithTag && len(parts[portPartIndex]) <= maxPortLength && !strings.Contains(imageRef, "/") {
 			// This looks like registry:port format without image
 			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
 		}
@@ -3628,9 +3629,11 @@ func validateRegistryPrefix(imageRef string) error {
 // Container-security scan-type related function.
 func validateDaemonPrefix(imageRef, prefix string) error {
 	const minImagePartsWithTag = 2
+	const imageNameIndex = 0
+	const imageTagIndex = 1
 
 	imageParts := strings.Split(imageRef, ":")
-	if len(imageParts) < minImagePartsWithTag || imageParts[0] == "" || imageParts[1] == "" {
+	if len(imageParts) < minImagePartsWithTag || imageParts[imageNameIndex] == "" || imageParts[imageTagIndex] == "" {
 		return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
 	}
 	return nil
