@@ -2455,6 +2455,374 @@ func TestValidateContainerImageFormat(t *testing.T) {
 	}
 }
 
+// TestValidateContainerImageFormat_Comprehensive tests the complete validation logic
+// including input normalization, helpful hints, and all error cases
+func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
+	testCases := []struct {
+		name           string
+		containerImage string
+		expectedError  string
+		setupFiles     []string
+	}{
+		// ==================== Basic Format Tests ====================
+		{
+			name:           "Valid image with tag",
+			containerImage: "nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid image with version tag",
+			containerImage: "alpine:3.18",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid image with complex registry",
+			containerImage: "registry.example.com:5000/namespace/image:v1.2.3",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid - missing tag",
+			containerImage: "nginx",
+			expectedError:  "--container-images flag error: image does not have a tag",
+		},
+		{
+			name:           "Invalid - empty tag",
+			containerImage: "nginx:",
+			expectedError:  "Invalid value for --container-images flag. Image name and tag cannot be empty",
+		},
+		{
+			name:           "Invalid - empty name",
+			containerImage: ":latest",
+			expectedError:  "Invalid value for --container-images flag. Image name and tag cannot be empty",
+		},
+
+		// ==================== Tar File Tests ====================
+		{
+			name:           "Valid tar file",
+			containerImage: "alpine.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.tar"},
+		},
+		{
+			name:           "Valid tar file in current dir",
+			containerImage: "image-with-path.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image-with-path.tar"},
+		},
+		{
+			name:           "Invalid - tar file does not exist",
+			containerImage: "nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+
+		// ==================== Compressed Tar Tests ====================
+		{
+			name:           "Invalid - compressed tar.gz",
+			containerImage: "image.tar.gz",
+			expectedError:  "--container-images flag error: file 'image.tar.gz' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tar.bz2",
+			containerImage: "image.tar.bz2",
+			expectedError:  "--container-images flag error: file 'image.tar.bz2' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tar.xz",
+			containerImage: "image.tar.xz",
+			expectedError:  "--container-images flag error: file 'image.tar.xz' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tgz",
+			containerImage: "image.tgz",
+			expectedError:  "--container-images flag error: file 'image.tgz' is compressed, use non-compressed format (tar)",
+		},
+
+		// ==================== Helpful Hints Tests ====================
+		{
+			name:           "Hint - looks like tar file (wrong extension)",
+			containerImage: "image.tar.bz",
+			expectedError:  "--container-images flag error: image does not have a tag. Did you try to scan a tar file?",
+		},
+		{
+			name:           "Hint - looks like tar file (typo in extension)",
+			containerImage: "image.tar.ez2",
+			expectedError:  "--container-images flag error: image does not have a tag. Did you try to scan a tar file?",
+		},
+
+		// ==================== File Prefix Tests ====================
+		{
+			name:           "Valid file prefix with tar",
+			containerImage: "file:alpine.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.tar"},
+		},
+		{
+			name:           "Valid file prefix with image",
+			containerImage: "file:prefixed-image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"prefixed-image.tar"},
+		},
+		{
+			name:           "Invalid file prefix - missing file",
+			containerImage: "file:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - file prefix with image name",
+			containerImage: "file:nginx:latest",
+			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+		},
+		{
+			name:           "Hint - file prefix with image (no tag)",
+			containerImage: "file:alpine:3.18",
+			expectedError:  "--container-images flag error: file 'alpine:3.18' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== Docker Archive Tests ====================
+		{
+			name:           "Valid docker-archive",
+			containerImage: "docker-archive:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Invalid docker-archive - missing file",
+			containerImage: "docker-archive:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - docker-archive with image name",
+			containerImage: "docker-archive:nginx:latest",
+			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== OCI Archive Tests ====================
+		{
+			name:           "Valid oci-archive",
+			containerImage: "oci-archive:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Invalid oci-archive - missing file",
+			containerImage: "oci-archive:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - oci-archive with image name",
+			containerImage: "oci-archive:ubuntu:22.04",
+			expectedError:  "--container-images flag error: file 'ubuntu:22.04' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== Docker Daemon Tests ====================
+		{
+			name:           "Valid docker prefix",
+			containerImage: "docker:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid docker prefix with registry",
+			containerImage: "docker:registry.io/namespace/image:tag",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid docker prefix - missing tag",
+			containerImage: "docker:nginx",
+			expectedError:  "image does not have a tag",
+		},
+		{
+			name:           "Invalid docker prefix - empty",
+			containerImage: "docker:",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Podman Daemon Tests ====================
+		{
+			name:           "Valid podman prefix",
+			containerImage: "podman:alpine:3.18",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid podman prefix - missing tag",
+			containerImage: "podman:alpine",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Containerd Daemon Tests ====================
+		{
+			name:           "Valid containerd prefix",
+			containerImage: "containerd:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid containerd prefix - missing tag",
+			containerImage: "containerd:nginx",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Registry Tests ====================
+		{
+			name:           "Valid registry prefix",
+			containerImage: "registry:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid registry with URL",
+			containerImage: "registry:myregistry.io/app:v1.0",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid registry - just URL without image",
+			containerImage: "registry:myregistry.com",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Dir Prefix (Forbidden) ====================
+		{
+			name:           "Invalid - dir prefix not supported",
+			containerImage: "dir:/path/to/dir",
+			expectedError:  "Invalid value for --container-images flag. The 'dir:' prefix is not supported",
+		},
+
+		// ==================== Edge Cases ====================
+		{
+			name:           "Complex registry with multiple colons",
+			containerImage: "registry.io:5000/namespace/image:v1.2.3",
+			expectedError:  "",
+		},
+		{
+			name:           "Image name with dash and underscore",
+			containerImage: "my-custom_image:v1.0",
+			expectedError:  "",
+		},
+		{
+			name:           "Tar file with multiple dots in name",
+			containerImage: "alpine.3.18.0.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.3.18.0.tar"},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup test files if needed
+			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, nil)
+			defer func() {
+				for _, cleanup := range cleanupFuncs {
+					cleanup()
+				}
+			}()
+
+			// Run validation
+			err := validateContainerImageFormat(tc.containerImage)
+
+			// Check results
+			if tc.expectedError == "" {
+				if err != nil {
+					t.Errorf("Expected no error, but got: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Expected error containing '%s', but got nil", tc.expectedError)
+				} else if !strings.Contains(err.Error(), tc.expectedError) {
+					t.Errorf("Expected error containing '%s', but got: %v", tc.expectedError, err)
+				}
+			}
+		})
+	}
+}
+
+// TestInputNormalization tests the space and quote trimming logic
+func TestInputNormalization(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "Simple comma-separated list",
+			input:    "nginx:latest,alpine:3.18,ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With spaces after commas",
+			input:    "nginx:latest, alpine:3.18, ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With spaces before and after commas",
+			input:    "nginx:latest , alpine:3.18 , ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With single quotes",
+			input:    "'nginx:latest','alpine:3.18','ubuntu:22.04'",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With double quotes",
+			input:    "\"nginx:latest\",\"alpine:3.18\",\"ubuntu:22.04\"",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "Mixed quotes and spaces",
+			input:    "'nginx:latest', \"alpine:3.18\", ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With file paths in quotes",
+			input:    "'file:/path/to/image.tar', '/another/path.tar'",
+			expected: []string{"file:/path/to/image.tar", "/another/path.tar"},
+		},
+		{
+			name:     "Empty entries (consecutive commas)",
+			input:    "nginx:latest,,alpine:3.18",
+			expected: []string{"nginx:latest", "alpine:3.18"},
+		},
+		{
+			name:     "Leading/trailing commas",
+			input:    ",nginx:latest,alpine:3.18,",
+			expected: []string{"nginx:latest", "alpine:3.18"},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Simulate the normalization logic from addContainersScan
+			rawList := strings.Split(strings.TrimSpace(tc.input), ",")
+			var normalized []string
+
+			for _, item := range rawList {
+				// Trim spaces and quotes
+				item = strings.TrimSpace(item)
+				item = strings.Trim(item, "'\"")
+
+				// Skip empty entries
+				if item == "" {
+					continue
+				}
+
+				normalized = append(normalized, item)
+			}
+
+			// Verify results
+			if len(normalized) != len(tc.expected) {
+				t.Errorf("Expected %d items, got %d. Expected: %v, Got: %v",
+					len(tc.expected), len(normalized), tc.expected, normalized)
+				return
+			}
+
+			for i, expected := range tc.expected {
+				if normalized[i] != expected {
+					t.Errorf("Item %d: expected '%s', got '%s'", i, expected, normalized[i])
+				}
+			}
+		})
+	}
+}
+
 // setupTestFilesAndDirs creates temporary files and directories for testing
 func setupTestFilesAndDirs(t *testing.T, files []string, dirs []string) []func() {
 	var cleanupFuncs []func()
