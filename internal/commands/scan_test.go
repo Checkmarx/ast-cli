@@ -2177,6 +2177,9 @@ func Test_validateThresholds(t *testing.T) {
 	}
 }
 
+// TestValidateContainerImageFormat tests the basic validation logic for container image formats.
+// Container-security scan-type related test function.
+// This test covers traditional image:tag formats, tar files, and various error cases.
 func TestValidateContainerImageFormat(t *testing.T) {
 	var traditionalErrorMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)"
 
@@ -2456,7 +2459,10 @@ func TestValidateContainerImageFormat(t *testing.T) {
 }
 
 // TestValidateContainerImageFormat_Comprehensive tests the complete validation logic
-// including input normalization, helpful hints, and all error cases
+// including input normalization, helpful hints, and all error cases.
+// Container-security scan-type related test function.
+// This test validates all supported container image formats, prefixes, tar files,
+// error messages, and helpful hints for the --container-images flag.
 func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -2733,7 +2739,10 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 	}
 }
 
-// TestInputNormalization tests the space and quote trimming logic
+// TestInputNormalization tests the space and quote trimming logic.
+// Container-security scan-type related test function.
+// This test validates input normalization for comma-separated container image lists,
+// including space trimming, quote handling, and empty entry filtering.
 func TestInputNormalization(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -2823,7 +2832,9 @@ func TestInputNormalization(t *testing.T) {
 	}
 }
 
-// setupTestFilesAndDirs creates temporary files and directories for testing
+// setupTestFilesAndDirs creates temporary files and directories for testing.
+// Container-security scan-type related test helper function.
+// This helper creates test files (like .tar files) and directories needed for container image validation tests.
 func setupTestFilesAndDirs(t *testing.T, files []string, dirs []string) []func() {
 	var cleanupFuncs []func()
 
