@@ -64,15 +64,5 @@ override.tf.json
 # Ignore pkgs directory
 vendor/*
 
-# Test files and temporary data
-*.tar
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-
-# Test configuration files
-internal/commands/config.yaml
-internal/services/test.txt
-
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
