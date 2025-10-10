@@ -181,14 +181,19 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 	clearFlags()
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag", "--scan-types", "containers", "--containers-local-resolution"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>, <image-name>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)")
+	// The updated format returns a consolidated error message with header and bullet points
+	assert.Assert(t, strings.Contains(err.Error(), "User input error for --container-images flag"))
+	assert.Assert(t, strings.Contains(err.Error(), "User input: 'image1' error: image does not have a tag"))
 }
 
 func TestCreateScanFromFolder_CommaSeparatedContainerImages_SingleBadEntry_FailCreatingScan(t *testing.T) {
 	clearFlags()
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "docker:nginx:latest,dir:/bad/directory,registry:ubuntu:20.04", "--scan-types", "containers"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
+	// The updated format returns a consolidated error message with all validation errors
+	assert.Assert(t, strings.Contains(err.Error(), "User input error for --container-images flag"))
+	assert.Assert(t, strings.Contains(err.Error(), "dir:/bad/directory"))
+	assert.Assert(t, strings.Contains(err.Error(), "'dir:' prefix is not supported"))
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
