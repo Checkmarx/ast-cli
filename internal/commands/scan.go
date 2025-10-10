@@ -2255,6 +2255,108 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
+// enforceLocalResolutionForTarFiles checks if any container image is a tar file
+// and enforces local resolution by setting the --containers-local-resolution flag.
+// Container-security scan-type related function.
+func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
+	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+
+	// If no container images specified, nothing to check
+	if containerImagesFlag == "" {
+		return nil
+	}
+
+	// Check if --containers-local-resolution is already set
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+
+	// If already set to true, we're good
+	if containerResolveLocally {
+		return nil
+	}
+
+	// Parse container images list
+	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
+	hasTarFile := false
+
+	for _, containerImageName := range containerImagesList {
+		// Normalize input: trim spaces and quotes
+		containerImageName = strings.TrimSpace(containerImageName)
+		containerImageName = strings.Trim(containerImageName, "'\"")
+
+		// Skip empty entries
+		if containerImageName == "" {
+			continue
+		}
+
+		// Check if this is a tar file by checking if it contains a tar file reference
+		if isTarFileReference(containerImageName) {
+			hasTarFile = true
+			break
+		}
+	}
+
+	// If at least one tar file is found, enforce local resolution
+	if hasTarFile {
+		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
+		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+
+		// Set the flag to true
+		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+		if err != nil {
+			return errors.Wrapf(err, "Failed to set --containers-local-resolution flag")
+		}
+	}
+
+	return nil
+}
+
+// isTarFileReference checks if a container image reference points to a tar file.
+// Container-security scan-type related function.
+func isTarFileReference(imageRef string) bool {
+	// Known prefixes that might precede the actual file path
+	knownPrefixes := []string{
+		"docker-archive:",
+		"oci-archive:",
+		"file:",
+		"oci-dir:",
+	}
+
+	// First, trim quotes from the entire input
+	actualRef := strings.Trim(imageRef, "'\"")
+
+	// Strip known prefixes to get the actual reference
+	for _, prefix := range knownPrefixes {
+		if strings.HasPrefix(actualRef, prefix) {
+			actualRef = strings.TrimPrefix(actualRef, prefix)
+			actualRef = strings.Trim(actualRef, "'\"")
+			break
+		}
+	}
+
+	// Check if the reference ends with .tar (case-insensitive)
+	lowerRef := strings.ToLower(actualRef)
+
+	// If it ends with .tar, it's a tar file (no tag suffix allowed)
+	if strings.HasSuffix(lowerRef, ".tar") {
+		return true
+	}
+
+	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
+	// A tar file cannot have a tag suffix like file.tar:tag
+	if strings.Contains(actualRef, ":") {
+		parts := strings.Split(actualRef, ":")
+		if len(parts) >= 2 {
+			firstPart := strings.ToLower(parts[0])
+			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
+			if strings.HasSuffix(firstPart, ".tar") {
+				return false
+			}
+		}
+	}
+
+	return false
+}
+
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
@@ -2278,6 +2380,11 @@ func runCreateScanCommand(
 			return err
 		}
 		err = validateCreateScanFlags(cmd)
+		if err != nil {
+			return err
+		}
+		// Check if tar files are used in --container-images and enforce local resolution
+		err = enforceLocalResolutionForTarFiles(cmd)
 		if err != nil {
 			return err
 		}
