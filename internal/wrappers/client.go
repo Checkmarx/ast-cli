@@ -214,6 +214,14 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 		Timeout:   defaultDialerDuration,
 		KeepAlive: defaultDialerDuration,
 	}
+
+	if proxyStr == "" {
+		logger.PrintIfVerbose("Error: Proxy string is required for Kerberos proxy authentication.")
+		logger.Print("Error: Proxy string is required for Kerberos proxy authentication.")
+		logger.PrintIfVerbose("Please provide Proxy string using: --proxy 'http://proxy.example.com' or set CX_PROXY environment variable")
+		os.Exit(1)
+	}
+
 	u, _ := url.Parse(proxyStr)
 
 	// Get Kerberos configuration from viper
@@ -224,8 +232,7 @@ func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
 		logger.PrintIfVerbose("Error: Kerberos SPN is required for Kerberos proxy authentication.")
 		logger.Print("Error: Kerberos SPN is required for Kerberos proxy authentication.")
 		logger.PrintIfVerbose("Please provide SPN using: --proxy-kerberos-spn 'HTTP/proxy.example.com' or set CX_PROXY_KERBEROS_SPN environment variable")
-
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Use gokrb5 for all platforms (standard Kerberos)
@@ -237,8 +244,7 @@ func kerberosNativeProxyClient(timeout uint, proxyStr string) *http.Client {
 	if runtime.GOOS != "windows" {
 		logger.PrintIfVerbose("Error: --proxy-auth-type kerberos-native is only supported on Windows")
 		logger.Print("Error: --proxy-auth-type kerberos-native is only supported on Windows")
-
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	dialer := &net.Dialer{
@@ -252,14 +258,14 @@ func kerberosNativeProxyClient(timeout uint, proxyStr string) *http.Client {
 	if proxySPN == "" {
 		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for windows native kerberos authentication")
 		logger.Print("Error: Kerberos SPN is required for windows native kerberos authentication")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	// Validate SSPI setup
 	if err := kerberos.ValidateSSPISetup(proxySPN); err != nil {
 		logger.PrintIfVerbose("Error: Failed to generate a token for the specified SPN." + err.Error())
 		logger.Print("Error: Failed to generate a token for the specified SPN.")
-		os.Exit(0)
+		os.Exit(1)
 	}
 
 	logger.PrintIfVerbose("Creating HTTP client using Windows native Kerberos (SSPI)")
