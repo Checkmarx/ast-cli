@@ -2345,7 +2345,8 @@ func isTarFileReference(imageRef string) bool {
 	// A tar file cannot have a tag suffix like file.tar:tag
 	if strings.Contains(actualRef, ":") {
 		parts := strings.Split(actualRef, ":")
-		if len(parts) >= 2 {
+		const minPartsForTaggedImage = 2
+		if len(parts) >= minPartsForTaggedImage {
 			firstPart := strings.ToLower(parts[0])
 			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
 			if strings.HasSuffix(firstPart, ".tar") {
