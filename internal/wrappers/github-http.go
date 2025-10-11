@@ -244,7 +244,12 @@ func get(client *http.Client, url string, target interface{}, queryParams map[st
 	req.Header.Add(acceptHeader, apiVersion)
 	token := viper.GetString(params.SCMTokenFlag)
 	logger.PrintRequest(req)
-	resp, err := GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams)
+	resp, err := WithSCMRateLimitRetry(
+		GitHubRateLimitConfig,
+		func() (*http.Response, error) {
+			return GetWithQueryParamsAndCustomRequest(client, req, url, token, tokenFormat, queryParams)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
