@@ -34,6 +34,8 @@ func mockAPI(repeatCode, repeatCount int, headerName, headerValue string) func()
 
 func runRateLimitTest(t *testing.T, config *wrappers.SCMRateLimitConfig, repeatCode, repeatCount int, headerName string) {
 	reset := strconv.FormatInt(time.Now().Unix(), 10) // simulate immediate retry
+
+	//nolint:bodyclose // safe in test, body closed later
 	api := mockAPI(repeatCode, repeatCount, headerName, reset)
 
 	start := time.Now()
