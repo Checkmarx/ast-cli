@@ -2062,10 +2062,9 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 
-		// Process container images for syft compatibility (strip prefixes as syft does)
-		processedImages := processContainerImagesForSyft(containerImagesList)
-		logger.PrintIfVerbose(fmt.Sprintf("Processed container images for syft: %v", strings.Join(processedImages, ", ")))
-		containerImagesList = processedImages
+		// Pass images as-is to syft - it needs the prefixes to determine the image source
+		// Examples: "oci-dir:my-alpine-image", "docker:nginx:latest", "file:alpine.tar"
+		logger.PrintIfVerbose(fmt.Sprintf("Container images will be passed to syft: %v", strings.Join(containerImagesList, ", ")))
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -2074,64 +2073,6 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		}
 	}
 	return nil
-}
-
-// processContainerImagesForSyft processes container image references using syft's scheme extraction logic.
-// Container-security scan-type related function.
-// This function strips known prefixes (docker:, podman:, file:, etc.) from image references
-// to match syft/stereoscope's expected input format.
-func processContainerImagesForSyft(images []string) []string {
-	var processedImages []string
-
-	// Define known source provider tags (based on syft/stereoscope providers)
-	knownSources := []string{
-		"file", "dir", "docker", "podman", "containerd", "registry",
-		"docker-archive", "oci-archive", "oci-dir", "singularity",
-	}
-
-	for _, image := range images {
-		// Use the same scheme extraction logic as syft/stereoscope
-		source, strippedInput := extractSchemeSource(image, knownSources)
-
-		var processedImage string
-		if source != "" {
-			// Valid scheme found - use the stripped input (like syft does)
-			processedImage = strippedInput
-		} else {
-			// No valid scheme - pass the original input unchanged
-			processedImage = image
-		}
-
-		processedImages = append(processedImages, processedImage)
-	}
-
-	return processedImages
-}
-
-// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior.
-// Container-security scan-type related function.
-// This function extracts and validates source prefixes from container image references.
-func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
-	const SchemeSeparator = ":"
-	const minPartsForScheme = 2
-	const schemePartIndex = 0
-	const inputPartIndex = 1
-
-	parts := strings.SplitN(userInput, SchemeSeparator, minPartsForScheme)
-	if len(parts) < minPartsForScheme {
-		return "", userInput
-	}
-
-	// Check if the first part is a valid source hint
-	sourceHint := strings.TrimSpace(strings.ToLower(parts[schemePartIndex]))
-	for _, validSource := range sources {
-		if sourceHint == validSource {
-			return sourceHint, parts[inputPartIndex]
-		}
-	}
-
-	// No valid scheme found
-	return "", userInput
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
@@ -2315,10 +2256,10 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 func isTarFileReference(imageRef string) bool {
 	// Known prefixes that might precede the actual file path
 	knownPrefixes := []string{
-		"docker-archive:",
-		"oci-archive:",
-		"file:",
-		"oci-dir:",
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		filePrefix,
+		ociDirPrefix,
 	}
 
 	// First, trim quotes from the entire input
@@ -3528,6 +3469,19 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+// Container image prefix constants for validation
+const (
+	dockerPrefix        = "docker:"
+	podmanPrefix        = "podman:"
+	containerdPrefix    = "containerd:"
+	registryPrefix      = "registry:"
+	dockerArchivePrefix = "docker-archive:"
+	ociArchivePrefix    = "oci-archive:"
+	ociDirPrefix        = "oci-dir:"
+	filePrefix          = "file:"
+	dirPrefix           = "dir:"
+)
+
 // validateContainerImageFormat validates container image references for the --container-images flag.
 // Container-security scan-type related function.
 // This function implements comprehensive validation logic for all supported container image formats:
@@ -3538,18 +3492,18 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 func validateContainerImageFormat(containerImage string) error {
 	// Define known sources (prefixes) for container image references
 	knownSources := []string{
-		"docker:",
-		"podman:",
-		"containerd:",
-		"registry:",
-		"docker-archive:",
-		"oci-archive:",
-		"oci-dir:",
-		"file:",
+		dockerPrefix,
+		podmanPrefix,
+		containerdPrefix,
+		registryPrefix,
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		ociDirPrefix,
+		filePrefix,
 	}
 
 	// Check for explicitly forbidden prefixes first
-	if strings.HasPrefix(containerImage, "dir:") {
+	if strings.HasPrefix(containerImage, dirPrefix) {
 		return errors.Errorf("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
 	}
 
@@ -3622,11 +3576,11 @@ func validateContainerImageFormat(containerImage string) error {
 	if hasKnownSource {
 		prefix := getPrefixFromInput(containerImage, knownSources)
 		// oci-dir can reference directories without tags, validate it
-		if prefix == "oci-dir:" {
+		if prefix == ociDirPrefix {
 			return validatePrefixedContainerImage(containerImage, prefix)
 		}
 		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
-		if prefix == "file:" || prefix == "docker-archive:" || prefix == "oci-archive:" {
+		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
 			return validatePrefixedContainerImage(containerImage, prefix)
 		}
 	}
@@ -3664,13 +3618,13 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 
 	// Delegate to specific validators based on prefix type
 	switch prefix {
-	case "docker-archive:", "oci-archive:", "file:":
+	case dockerArchivePrefix, ociArchivePrefix, filePrefix:
 		return validateArchivePrefix(imageRef)
-	case "oci-dir:":
+	case ociDirPrefix:
 		return validateOCIDirPrefix(imageRef)
-	case "registry:":
+	case registryPrefix:
 		return validateRegistryPrefix(imageRef)
-	case "docker:", "podman:", "containerd:":
+	case dockerPrefix, podmanPrefix, containerdPrefix:
 		return validateDaemonPrefix(imageRef, prefix)
 	default:
 		return nil
