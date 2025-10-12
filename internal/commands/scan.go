@@ -3593,7 +3593,7 @@ func validateContainerImageFormat(containerImage string) error {
 		return nil // Valid image:tag format
 	}
 
-	// Step 3: No colon found - check if it's a tar file
+	// Step 3: No colon found - check if it's a tar file or special prefix that doesn't require tags
 	lowerInput := strings.ToLower(sanitizedInput)
 	if strings.HasSuffix(lowerInput, ".tar") {
 		// It's a tar file - check if it exists locally
@@ -3618,7 +3618,20 @@ func validateContainerImageFormat(containerImage string) error {
 		return errors.Errorf("--container-images flag error: image does not have a tag. Did you try to scan a tar file?")
 	}
 
-	// Step 4: Not a tar file and no colon - assume user tries to use image with tag (error)
+	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
+	if hasKnownSource {
+		prefix := getPrefixFromInput(containerImage, knownSources)
+		// oci-dir can reference directories without tags, validate it
+		if prefix == "oci-dir:" {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
+		if prefix == "file:" || prefix == "docker-archive:" || prefix == "oci-archive:" {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+	}
+
+	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
 	return errors.Errorf("--container-images flag error: image does not have a tag")
 }
 

@@ -2195,6 +2195,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		containerImage string
 		expectedError  string
 		setupFiles     []string
+		setupDirs      []string
 	}{
 		// ==================== Basic Format Tests ====================
 		{
@@ -2409,6 +2410,37 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			expectedError:  "image does not have a tag",
 		},
 
+		// ==================== OCI-Dir Tests ====================
+		{
+			name:           "Valid oci-dir without tag",
+			containerImage: "oci-dir:my-alpine-image",
+			expectedError:  "",
+			setupDirs:      []string{"my-alpine-image"},
+		},
+		{
+			name:           "Valid oci-dir with tag",
+			containerImage: "oci-dir:my-image:latest",
+			expectedError:  "",
+			setupDirs:      []string{"my-image"},
+		},
+		{
+			name:           "Valid oci-dir with directory name",
+			containerImage: "oci-dir:oci-image-dir",
+			expectedError:  "",
+			setupDirs:      []string{"oci-image-dir"},
+		},
+		{
+			name:           "Invalid oci-dir - directory does not exist",
+			containerImage: "oci-dir:nonexistent-dir",
+			expectedError:  "--container-images flag error: path nonexistent-dir does not exist",
+		},
+		{
+			name:           "Valid oci-dir with tar file",
+			containerImage: "oci-dir:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+
 		// ==================== Dir Prefix (Forbidden) ====================
 		{
 			name:           "Invalid - dir prefix not supported",
@@ -2438,8 +2470,8 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Setup test files if needed
-			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, nil)
+			// Setup test files and directories if needed
+			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, tc.setupDirs)
 			defer func() {
 				for _, cleanup := range cleanupFuncs {
 					cleanup()
