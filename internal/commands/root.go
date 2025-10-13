@@ -248,6 +248,8 @@ func NewAstCLI(
 	)
 
 	rootCmd.SilenceUsage = true
+	// Avoid Cobra printing the error in addition to our own handling in main
+	rootCmd.SilenceErrors = true
 	return rootCmd
 }
 

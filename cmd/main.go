@@ -146,10 +146,10 @@ func exitIfError(err error) {
 	if err != nil {
 		switch e := err.(type) {
 		case *wrappers.AstError:
-			fmt.Println(e.Err)
+			fmt.Fprintln(os.Stderr, e.Err)
 			os.Exit(e.Code)
 		default:
-			fmt.Println(e)
+			fmt.Fprintln(os.Stderr, e)
 			os.Exit(failureExitCode)
 		}
 	}
