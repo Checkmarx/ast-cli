@@ -59,7 +59,7 @@ const (
 	additionalParamsError                  = "flag needs an argument: --additional-params"
 	scanCommand                            = "scan"
 	kicsRealtimeCommand                    = "kics-realtime"
-	kicsPresetIDIncorrectValueError        = "Invalid value for --iac-security-preset-id flag. Must be a valid UUID."
+	kicsPresetIDIncorrectValueError        = "invalid value for --iac-security-preset-id flag, must be a valid UUID"
 	InvalidEngineMessage                   = "Please verify if engine is installed"
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
