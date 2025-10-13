@@ -108,7 +108,12 @@ func (g *AzureHTTPWrapper) get(
 	queryParams map[string]string,
 	authFormat string,
 ) (bool, error) {
-	resp, err := GetWithQueryParams(g.client, url, token, authFormat, queryParams)
+	resp, err := WithSCMRateLimitRetry(
+		AzureRateLimitConfig,
+		func() (*http.Response, error) {
+			return GetWithQueryParams(g.client, url, token, authFormat, queryParams)
+		},
+	)
 	if err != nil {
 		return false, err
 	}
