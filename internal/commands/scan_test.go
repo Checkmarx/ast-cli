@@ -2195,6 +2195,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		containerImage string
 		expectedError  string
 		setupFiles     []string
+		setupDirs      []string
 	}{
 		// ==================== Basic Format Tests ====================
 		{
@@ -2409,6 +2410,37 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			expectedError:  "image does not have a tag",
 		},
 
+		// ==================== OCI-Dir Tests ====================
+		{
+			name:           "Valid oci-dir without tag",
+			containerImage: "oci-dir:my-alpine-image",
+			expectedError:  "",
+			setupDirs:      []string{"my-alpine-image"},
+		},
+		{
+			name:           "Valid oci-dir with tag",
+			containerImage: "oci-dir:my-image:latest",
+			expectedError:  "",
+			setupDirs:      []string{"my-image"},
+		},
+		{
+			name:           "Valid oci-dir with directory name",
+			containerImage: "oci-dir:oci-image-dir",
+			expectedError:  "",
+			setupDirs:      []string{"oci-image-dir"},
+		},
+		{
+			name:           "Invalid oci-dir - directory does not exist",
+			containerImage: "oci-dir:nonexistent-dir",
+			expectedError:  "--container-images flag error: path nonexistent-dir does not exist",
+		},
+		{
+			name:           "Valid oci-dir with tar file",
+			containerImage: "oci-dir:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+
 		// ==================== Dir Prefix (Forbidden) ====================
 		{
 			name:           "Invalid - dir prefix not supported",
@@ -2438,8 +2470,8 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			// Setup test files if needed
-			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, nil)
+			// Setup test files and directories if needed
+			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, tc.setupDirs)
 			defer func() {
 				for _, cleanup := range cleanupFuncs {
 					cleanup()
@@ -4049,4 +4081,171 @@ func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociatio
 		t.Fatalf("Failed to read log file: %v", err)
 	}
 	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+// TestIsTarFileReference tests the tar file detection logic.
+// Container-security scan-type related test function.
+func TestIsTarFileReference(t *testing.T) {
+	testCases := []struct {
+		name     string
+		imageRef string
+		expected bool
+	}{
+		// Tar files (various formats)
+		{"Simple tar", "alpine.tar", true},
+		{"Tar with path", "/path/to/image.tar", true},
+		{"Tar case insensitive", "image.TAR", true},
+		{"Tar with quotes", "'alpine.tar'", true},
+		{"Tar multiple dots", "alpine.3.18.0.tar", true},
+
+		// Prefixed tar files
+		{"docker-archive tar", "docker-archive:alpine.tar", true},
+		{"oci-archive tar", "oci-archive:image.tar", true},
+		{"file prefix tar", "file:myimage.tar", true},
+		{"oci-dir tar", "oci-dir:image.tar", true},
+
+		// Non-tar images
+		{"Image with tag", "nginx:latest", false},
+		{"Image with registry", "registry.io/namespace/image:v1.0", false},
+		{"Compressed tar.gz", "image.tar.gz", false},
+
+		// Prefixed non-tar images
+		{"docker-archive image", "docker-archive:nginx:latest", false},
+		{"docker daemon image", "docker:nginx:latest", false},
+		{"registry image", "registry:ubuntu:20.04", false},
+		{"oci-dir with directory:tag", "oci-dir:/path/to/dir:latest", false},
+
+		// Invalid: tar file cannot have tag
+		{"Invalid tar with tag", "oci-dir:image.tar:latest", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if result := isTarFileReference(tc.imageRef); result != tc.expected {
+				t.Errorf("Expected %v for '%s', got %v", tc.expected, tc.imageRef, result)
+			}
+		})
+	}
+}
+
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// Container-security scan-type related test function.
+func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		containerImages         string
+		initialLocalResolution  bool
+		expectedLocalResolution bool
+		expectWarning           bool
+	}{
+		// No action needed
+		{"Empty images", "", false, false, false},
+		{"Already enabled", "alpine.tar", true, true, false},
+		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
+		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
+		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
+
+		// Should enable local resolution
+		{"Single tar", "alpine.tar", false, true, true},
+		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
+		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
+		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
+		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
+		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock command
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.ContainerImagesFlag, "", "")
+			cmd.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "")
+
+			// Set the initial flag values
+			_ = cmd.Flags().Set(commonParams.ContainerImagesFlag, tc.containerImages)
+			_ = cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, fmt.Sprintf("%v", tc.initialLocalResolution))
+
+			// Capture output to check for warning message
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			// Run the function
+			err := enforceLocalResolutionForTarFiles(cmd)
+
+			// Restore stdout
+			w.Close()
+			os.Stdout = oldStdout
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			output := buf.String()
+
+			// Validate results
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+
+			actualLocalResolution, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+			if actualLocalResolution != tc.expectedLocalResolution {
+				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
+			}
+
+			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			if tc.expectWarning && !hasWarning {
+				t.Errorf("Expected warning but got: %s", output)
+			} else if !tc.expectWarning && hasWarning {
+				t.Errorf("Unexpected warning: %s", output)
+			}
+		})
+	}
+}
+
+// TestEnforceLocalResolutionForTarFiles_Integration tests the integration with scan create command.
+// Container-security scan-type related test function.
+func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
+	tempDir := t.TempDir()
+	tarFile := filepath.Join(tempDir, "test.tar")
+	if file, err := os.Create(tarFile); err != nil {
+		t.Fatalf("Failed to create test tar: %v", err)
+	} else {
+		file.Close()
+	}
+
+	testCases := []struct {
+		name       string
+		images     string
+		addFlag    bool
+		expectWarn bool
+	}{
+		{"Tar without flag", tarFile, false, true},
+		{"Tar with flag", tarFile, true, false},
+		{"Image without flag", "nginx:latest", false, false},
+		{"Mixed without flag", tarFile + ",nginx:latest", false, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{"scan", "create", "--project-name", "MOCK", "-s", ".",
+				"-b", "test-branch", "--scan-types", "containers", "--container-images", tc.images}
+			if tc.addFlag {
+				args = append(args, "--containers-local-resolution")
+			}
+
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			execCmdNilAssertion(t, args...)
+			w.Close()
+			os.Stdout = oldStdout
+
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			hasWarning := strings.Contains(buf.String(), "Warning:") && strings.Contains(buf.String(), "Tar file")
+
+			if tc.expectWarn != hasWarning {
+				t.Errorf("Expected warning=%v, got=%v", tc.expectWarn, hasWarning)
+			}
+		})
+	}
 }

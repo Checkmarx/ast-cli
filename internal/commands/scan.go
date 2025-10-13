@@ -2062,10 +2062,9 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
 
-		// Process container images for syft compatibility (strip prefixes as syft does)
-		processedImages := processContainerImagesForSyft(containerImagesList)
-		logger.PrintIfVerbose(fmt.Sprintf("Processed container images for syft: %v", strings.Join(processedImages, ", ")))
-		containerImagesList = processedImages
+		// Pass images as-is to syft - it needs the prefixes to determine the image source
+		// Examples: "oci-dir:my-alpine-image", "docker:nginx:latest", "file:alpine.tar"
+		logger.PrintIfVerbose(fmt.Sprintf("Container images will be passed to syft: %v", strings.Join(containerImagesList, ", ")))
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -2074,64 +2073,6 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		}
 	}
 	return nil
-}
-
-// processContainerImagesForSyft processes container image references using syft's scheme extraction logic.
-// Container-security scan-type related function.
-// This function strips known prefixes (docker:, podman:, file:, etc.) from image references
-// to match syft/stereoscope's expected input format.
-func processContainerImagesForSyft(images []string) []string {
-	var processedImages []string
-
-	// Define known source provider tags (based on syft/stereoscope providers)
-	knownSources := []string{
-		"file", "dir", "docker", "podman", "containerd", "registry",
-		"docker-archive", "oci-archive", "oci-dir", "singularity",
-	}
-
-	for _, image := range images {
-		// Use the same scheme extraction logic as syft/stereoscope
-		source, strippedInput := extractSchemeSource(image, knownSources)
-
-		var processedImage string
-		if source != "" {
-			// Valid scheme found - use the stripped input (like syft does)
-			processedImage = strippedInput
-		} else {
-			// No valid scheme - pass the original input unchanged
-			processedImage = image
-		}
-
-		processedImages = append(processedImages, processedImage)
-	}
-
-	return processedImages
-}
-
-// extractSchemeSource mimics stereoscope.ExtractSchemeSource behavior.
-// Container-security scan-type related function.
-// This function extracts and validates source prefixes from container image references.
-func extractSchemeSource(userInput string, sources []string) (source, newInput string) {
-	const SchemeSeparator = ":"
-	const minPartsForScheme = 2
-	const schemePartIndex = 0
-	const inputPartIndex = 1
-
-	parts := strings.SplitN(userInput, SchemeSeparator, minPartsForScheme)
-	if len(parts) < minPartsForScheme {
-		return "", userInput
-	}
-
-	// Check if the first part is a valid source hint
-	sourceHint := strings.TrimSpace(strings.ToLower(parts[schemePartIndex]))
-	for _, validSource := range sources {
-		if sourceHint == validSource {
-			return sourceHint, parts[inputPartIndex]
-		}
-	}
-
-	// No valid scheme found
-	return "", userInput
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
@@ -2255,6 +2196,109 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
+// enforceLocalResolutionForTarFiles checks if any container image is a tar file
+// and enforces local resolution by setting the --containers-local-resolution flag.
+// Container-security scan-type related function.
+func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
+	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+
+	// If no container images specified, nothing to check
+	if containerImagesFlag == "" {
+		return nil
+	}
+
+	// Check if --containers-local-resolution is already set
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+
+	// If already set to true, we're good
+	if containerResolveLocally {
+		return nil
+	}
+
+	// Parse container images list
+	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
+	hasTarFile := false
+
+	for _, containerImageName := range containerImagesList {
+		// Normalize input: trim spaces and quotes
+		containerImageName = strings.TrimSpace(containerImageName)
+		containerImageName = strings.Trim(containerImageName, "'\"")
+
+		// Skip empty entries
+		if containerImageName == "" {
+			continue
+		}
+
+		// Check if this is a tar file by checking if it contains a tar file reference
+		if isTarFileReference(containerImageName) {
+			hasTarFile = true
+			break
+		}
+	}
+
+	// If at least one tar file is found, enforce local resolution
+	if hasTarFile {
+		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
+		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+
+		// Set the flag to true
+		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+		if err != nil {
+			return errors.Wrapf(err, "Failed to set --containers-local-resolution flag")
+		}
+	}
+
+	return nil
+}
+
+// isTarFileReference checks if a container image reference points to a tar file.
+// Container-security scan-type related function.
+func isTarFileReference(imageRef string) bool {
+	// Known prefixes that might precede the actual file path
+	knownPrefixes := []string{
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		filePrefix,
+		ociDirPrefix,
+	}
+
+	// First, trim quotes from the entire input
+	actualRef := strings.Trim(imageRef, "'\"")
+
+	// Strip known prefixes to get the actual reference
+	for _, prefix := range knownPrefixes {
+		if strings.HasPrefix(actualRef, prefix) {
+			actualRef = strings.TrimPrefix(actualRef, prefix)
+			actualRef = strings.Trim(actualRef, "'\"")
+			break
+		}
+	}
+
+	// Check if the reference ends with .tar (case-insensitive)
+	lowerRef := strings.ToLower(actualRef)
+
+	// If it ends with .tar, it's a tar file (no tag suffix allowed)
+	if strings.HasSuffix(lowerRef, ".tar") {
+		return true
+	}
+
+	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
+	// A tar file cannot have a tag suffix like file.tar:tag
+	if strings.Contains(actualRef, ":") {
+		parts := strings.Split(actualRef, ":")
+		const minPartsForTaggedImage = 2
+		if len(parts) >= minPartsForTaggedImage {
+			firstPart := strings.ToLower(parts[0])
+			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
+			if strings.HasSuffix(firstPart, ".tar") {
+				return false
+			}
+		}
+	}
+
+	return false
+}
+
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
@@ -2278,6 +2322,11 @@ func runCreateScanCommand(
 			return err
 		}
 		err = validateCreateScanFlags(cmd)
+		if err != nil {
+			return err
+		}
+		// Check if tar files are used in --container-images and enforce local resolution
+		err = enforceLocalResolutionForTarFiles(cmd)
 		if err != nil {
 			return err
 		}
@@ -3420,6 +3469,19 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+// Container image prefix constants for validation
+const (
+	dockerPrefix        = "docker:"
+	podmanPrefix        = "podman:"
+	containerdPrefix    = "containerd:"
+	registryPrefix      = "registry:"
+	dockerArchivePrefix = "docker-archive:"
+	ociArchivePrefix    = "oci-archive:"
+	ociDirPrefix        = "oci-dir:"
+	filePrefix          = "file:"
+	dirPrefix           = "dir:"
+)
+
 // validateContainerImageFormat validates container image references for the --container-images flag.
 // Container-security scan-type related function.
 // This function implements comprehensive validation logic for all supported container image formats:
@@ -3430,18 +3492,18 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 func validateContainerImageFormat(containerImage string) error {
 	// Define known sources (prefixes) for container image references
 	knownSources := []string{
-		"docker:",
-		"podman:",
-		"containerd:",
-		"registry:",
-		"docker-archive:",
-		"oci-archive:",
-		"oci-dir:",
-		"file:",
+		dockerPrefix,
+		podmanPrefix,
+		containerdPrefix,
+		registryPrefix,
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		ociDirPrefix,
+		filePrefix,
 	}
 
 	// Check for explicitly forbidden prefixes first
-	if strings.HasPrefix(containerImage, "dir:") {
+	if strings.HasPrefix(containerImage, dirPrefix) {
 		return errors.Errorf("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
 	}
 
@@ -3485,7 +3547,7 @@ func validateContainerImageFormat(containerImage string) error {
 		return nil // Valid image:tag format
 	}
 
-	// Step 3: No colon found - check if it's a tar file
+	// Step 3: No colon found - check if it's a tar file or special prefix that doesn't require tags
 	lowerInput := strings.ToLower(sanitizedInput)
 	if strings.HasSuffix(lowerInput, ".tar") {
 		// It's a tar file - check if it exists locally
@@ -3510,7 +3572,20 @@ func validateContainerImageFormat(containerImage string) error {
 		return errors.Errorf("--container-images flag error: image does not have a tag. Did you try to scan a tar file?")
 	}
 
-	// Step 4: Not a tar file and no colon - assume user tries to use image with tag (error)
+	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
+	if hasKnownSource {
+		prefix := getPrefixFromInput(containerImage, knownSources)
+		// oci-dir can reference directories without tags, validate it
+		if prefix == ociDirPrefix {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
+		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+	}
+
+	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
 	return errors.Errorf("--container-images flag error: image does not have a tag")
 }
 
@@ -3543,13 +3618,13 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 
 	// Delegate to specific validators based on prefix type
 	switch prefix {
-	case "docker-archive:", "oci-archive:", "file:":
+	case dockerArchivePrefix, ociArchivePrefix, filePrefix:
 		return validateArchivePrefix(imageRef)
-	case "oci-dir:":
+	case ociDirPrefix:
 		return validateOCIDirPrefix(imageRef)
-	case "registry:":
+	case registryPrefix:
 		return validateRegistryPrefix(imageRef)
-	case "docker:", "podman:", "containerd:":
+	case dockerPrefix, podmanPrefix, containerdPrefix:
 		return validateDaemonPrefix(imageRef, prefix)
 	default:
 		return nil

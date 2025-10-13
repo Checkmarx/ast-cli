@@ -137,7 +137,12 @@ func getFromGitLab(
 
 	logger.PrintRequest(req)
 
-	resp, err := GetWithQueryParamsAndCustomRequest(client, req, requestURL, token, bearerFormat, queryParams)
+	resp, err := WithSCMRateLimitRetry(
+		GitLabRateLimitConfig,
+		func() (*http.Response, error) {
+			return GetWithQueryParamsAndCustomRequest(client, req, requestURL, token, bearerFormat, queryParams)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -92,6 +92,9 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().Bool(params.IgnoreProxyFlag, false, params.IgnoreProxyFlagUsage)
 	rootCmd.PersistentFlags().String(params.ProxyTypeFlag, "", params.ProxyTypeFlagUsage)
 	rootCmd.PersistentFlags().String(params.NtlmProxyDomainFlag, "", params.NtlmProxyDomainFlagUsage)
+	rootCmd.PersistentFlags().String(params.KerberosProxySPNFlag, "", params.KerberosProxySPNFlagUsage)
+	rootCmd.PersistentFlags().String(params.KerberosKrb5ConfFlag, "", params.KerberosKrb5ConfFlagUsage)
+	rootCmd.PersistentFlags().String(params.KerberosCcacheFlag, "", params.KerberosCcacheFlagUsage)
 	rootCmd.PersistentFlags().String(params.TimeoutFlag, "", params.TimeoutFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseURIFlag, params.BaseURI, params.BaseURIFlagUsage)
 	rootCmd.PersistentFlags().String(params.BaseAuthURIFlag, params.BaseIAMURI, params.BaseAuthURIFlagUsage)
@@ -135,6 +138,9 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(params.ProxyFlag))
 	_ = viper.BindPFlag(params.ProxyTypeKey, rootCmd.PersistentFlags().Lookup(params.ProxyTypeFlag))
 	_ = viper.BindPFlag(params.ProxyDomainKey, rootCmd.PersistentFlags().Lookup(params.NtlmProxyDomainFlag))
+	_ = viper.BindPFlag(params.ProxyKerberosSPNKey, rootCmd.PersistentFlags().Lookup(params.KerberosProxySPNFlag))
+	_ = viper.BindPFlag(params.ProxyKerberosKrb5ConfKey, rootCmd.PersistentFlags().Lookup(params.KerberosKrb5ConfFlag))
+	_ = viper.BindPFlag(params.ProxyKerberosCcacheKey, rootCmd.PersistentFlags().Lookup(params.KerberosCcacheFlag))
 	_ = viper.BindPFlag(params.ClientTimeoutKey, rootCmd.PersistentFlags().Lookup(params.TimeoutFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(params.BaseAuthURIFlag))
 	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(params.AstAPIKeyFlag))
@@ -242,6 +248,8 @@ func NewAstCLI(
 	)
 
 	rootCmd.SilenceUsage = true
+	// Avoid Cobra printing the error in addition to our own handling in main
+	rootCmd.SilenceErrors = true
 	return rootCmd
 }
 
