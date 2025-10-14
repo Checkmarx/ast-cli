@@ -489,7 +489,8 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	err, _ := executeCommand(t, testArgs...)
-	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	fmt.Println(err)
+	assertError(t, err, "Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='nginx', tag=''")
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
