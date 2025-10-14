@@ -1,0 +1,99 @@
+The create command enables the ability to create and run a new scan in Checkmarx One
+
+[1mUSAGE[0m
+  cx scan create [flags]
+
+[1mFLAGS[0m
+      --apisec-swagger-filter string           Swagger folder/file filter for API-Security scan. Example: ./swagger.json
+      --application-name string                Name of the application to assign with the project
+      --async                                  Do not wait for scan completion
+  -b, --branch string                          Branch to scan
+      --branch-primary                         This flag sets the branch specified in --branch as the PRIMARY branch for the project
+      --container-images string                List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10
+      --containers-exclude-non-final-stages    Scan only the final deployable image
+      --containers-file-folder-filter string   Specify files and folders to be included or excluded from scans, ex: "!*.log"
+      --containers-image-tag-filter string     Exclude images by image name and/or tag, ex: "*dev"
+      --containers-local-resolution            Execute container resolver locally.
+      --containers-package-filter string       Exclude packages by package name or file path using regex, ex: "^internal-.*"
+  -f, --file-filter string                     Source file filtering pattern
+  -i, --file-include string                    Only files scannable by AST are included by default. Add a comma separated list of extra inclusions, ex: *zip,file.txt
+  -s, --file-source string                     Sources like: directory, zip file or git URL
+      --filter strings                         Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: scan-id,limit,offset,sort,include-nodes,node-ids,query,group,status,severity,state
+  -h, --help                                   help for create
+      --iac-security-filter string             IaC Security filter
+      --iac-security-platforms strings         IaC Security Platform Flag
+      --iac-security-preset-id string          The ID of the IaC Security Preset to use (must be a valid UUID)
+      --ignore-policy                          Skip policy evaluation. Requires override-policy-management permission.
+      --output-name string                     Output file (default "cx_result")
+      --output-path string                     Output Path (default ".")
+      --policy-timeout int                     Cancel the policy evaluation and fail after the timeout in minutes (default 4)
+      --project-groups string                  List of groups to associate to project
+      --project-name string                    Name of the project
+      --project-private-package string         Enable or disable project private package. Available options: true,false
+      --project-tags string                    List of tags to associate to project
+      --report-format string                   Format for the output. One of [json json-v2 summaryHTML sarif sbom pdf markdown gl-sast gl-sca summaryConsole] (default "summaryConsole")
+      --report-pdf-email string                Send the PDF report to the specified email address. Use "," as the delimiter for multiple emails
+      --report-pdf-options string              Sections to generate PDF report. Available options: Iac-Security,Sast,Sca,ScanSummary,ExecutiveSummary,ScanResults (default "ScanSummary,ExecutiveSummary,ScanResults")
+      --report-sbom-format string              Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson (default "CycloneDxJson")
+      --resubmit                               Create a scan with the configurations used in the most recent scan in the project
+      --sast-fast-scan                         Enable SAST Fast Scan configuration
+      --sast-filter string                     SAST filter
+      --sast-incremental                       Incremental SAST scan should be performed.
+      --sast-light-queries                     Enable SAST scan using light query configuration
+      --sast-preset-name string                The name of the Checkmarx preset to use.
+      --sast-recommended-exclusions            Enable recommended exclusions configuration for SAST scan
+      --sast-redundancy                        Populate SAST results 'data.redundancy' with values 'fix' (to fix) or 'redundant' (no need to fix)
+      --sbom-only                              Scan only the specified SBOM file (supported formats xml or json)
+      --sca-exploitable-path string            Enable or disable exploitable path in scan. Available options: true,false
+      --sca-filter string                      SCA filter
+      --sca-hide-dev-test-dependencies         Filter SCA results to exclude dev and test dependencies
+      --sca-last-sast-scan-time string         SCA last scan time. Available options: integer above 1
+      --sca-private-package-version string     SCA project private package version. Example: 0.1.1
+      --sca-resolver string                    Resolve SCA project dependencies (path to SCA Resolver executable)
+      --sca-resolver-params string             Parameters to use in SCA resolver (requires --sca-resolver)
+      --scan-info-format string                Format for the output. One of [table json list] (default "list")
+      --scan-timeout int                       Cancel the scan and fail after the timeout in minutes
+      --scan-types string                      Scan types, ex: (sast,iac-security,sca,api-security)
+      --scs-engines string                     Specify which scs engines will run (default: all licensed engines)
+      --scs-repo-token string                  Provide a token with read permission for the repo that you are scanning (for scorecard scans)
+      --scs-repo-url string                    The URL of the repo that you are scanning with scs (for scorecard scans)
+      --ssh-key string                         Path to ssh private key
+      --tags string                            List of tags, ex: (tagA,tagB:val,etc)
+      --threshold string                       Local build threshold. Format <engine>-<severity>=<limit>. Example: scan --threshold "sast-high=10;sca-high=5;iac-security-low=10"
+      --use-gitignore                          Exclude files and directories from the scan based on the patterns defined in the directory's .gitignore file
+      --wait-delay int                         Polling wait time in seconds (default 5)
+
+[1mGLOBAL FLAGS[0m
+  --agent string               Scan origin name (default "ASTCLI")
+  --apikey string              The API Key to login to Checkmarx One
+  --base-auth-uri string       The base system IAM URI
+  --base-uri string            The base system URI
+  --client-id string           The OAuth2 client ID
+  --client-secret string       The OAuth2 client secret
+  --config-file-path string    Path to the configuration file
+  --debug                      Debug mode with detailed logs
+  --ignore-proxy               Ignore proxy configuration
+  --insecure                   Ignore TLS certificate validations
+  --log-file string            Saves logs to the specified file path only
+  --log-file-console string    Saves logs to the specified file path as well as to the console
+  --proxy string               Proxy server to send communication through
+  --proxy-auth-type string     Proxy authentication type, (basic or ntlm)
+  --proxy-ntlm-domain string   Window domain when using NTLM proxy
+  --retry uint                 Retry requests to Checkmarx One on connection failure (default 3)
+  --retry-delay uint           Time between retries in seconds, use with --retry (default 20)
+  --tenant string              Checkmarx tenant
+  --timeout string             Timeout for network activity, (default 5 seconds)
+
+[1mEXAMPLES[0m
+  $ cx scan create --project-name <Project Name> -s <path or repository url>
+
+[1mDOCUMENTATION[0m
+  https://checkmarx.com/resource/documents/en/34965-68643-scan.html#UUID-a0bb20d5-5182-3fb4-3da0-0e263344ffe7
+
+[1mQUICK START GUIDE[0m
+  https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html
+
+[1mLEARN MORE[0m
+  Use 'cx <command> <subcommand> --help' for more information about a command.
+  Read the manual at https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
+
