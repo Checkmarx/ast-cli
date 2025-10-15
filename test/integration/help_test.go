@@ -3,11 +3,13 @@
 package integration
 
 import (
-	"gotest.tools/assert"
 	"strings"
 	"testing"
+
+	"gotest.tools/assert"
 )
 
+// Help
 /*
 This function helps to validate all the cx --help command content.
 Expected help content value is stored in the "integration/data/cxHelpText.txt"
@@ -23,7 +25,6 @@ func TestHelpFlag_Validate_CxHelpOutput(t *testing.T) {
 }
 
 // Auth
-
 // Validate cx auth register --help command
 func TestHelpFlag_Validate_AuthRegisterHelpMessage(t *testing.T) {
 
@@ -35,7 +36,7 @@ func TestHelpFlag_Validate_AuthRegisterHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Register new OAuth2 client and outputs its generated credentials in the format <key>=<value>", textCapturedForValidation, "Incorrect help text found")
@@ -52,7 +53,7 @@ func TestHelpFlag_Validate_AuthValidateHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Validates if CLI is able to communicate with Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -70,7 +71,7 @@ func TestHelpFlag_Validate_ConfigureHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The configure command is the fastest way to set up your AST CLI", textCapturedForValidation, "Incorrect help text found")
@@ -87,7 +88,7 @@ func TestHelpFlag_Validate_ConfigureSetHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Set configuration properties", textCapturedForValidation, "Incorrect help text found")
@@ -104,7 +105,7 @@ func TestHelpFlag_Validate_ConfigureShowHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Shows effective profile configuration", textCapturedForValidation, "Incorrect help text found")
@@ -123,7 +124,7 @@ func TestHelpFlag_Validate_HooksPreCommitHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The pre-commit command enables the ability to manage Git pre-commit hooks for secret detection.", textCapturedForValidation, "Incorrect help text found")
@@ -142,7 +143,7 @@ func TestHelpFlag_ValidateProjectListHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "List all projects in the system", textCapturedForValidation, "Incorrect help text found")
@@ -175,7 +176,7 @@ func TestHelpFlag_ValidateProjectDeleteHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Delete a project", textCapturedForValidation, "Incorrect help text found")
@@ -192,7 +193,7 @@ func TestHelpFlag_ValidateProjectShowHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Show information about a project", textCapturedForValidation, "Incorrect help text found")
@@ -209,7 +210,7 @@ func TestHelpFlag_ValidateProjectTagsHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Get a list of all available tags", textCapturedForValidation, "Incorrect help text found")
@@ -226,7 +227,7 @@ func TestHelpFlag_ValidateProjectBranchHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Show list of branches from a project", textCapturedForValidation, "Incorrect help text found")
@@ -244,7 +245,7 @@ func TestHelpFlag_Validate_ResultsHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Retrieve results", textCapturedForValidation, "Incorrect help text found")
@@ -275,7 +276,7 @@ func TestHelpFlag_Validate_ResultsCodeBashingHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The codebashing command enables the ability to retrieve the link about a specific vulnerability", textCapturedForValidation, "Incorrect help text found")
@@ -292,7 +293,7 @@ func TestHelpFlag_Validate_ResultsExitCodeHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The exit-code command enables you to get the exit code and failure details of a requested scan in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -308,7 +309,7 @@ func TestHelpFlag_Validate_TriageHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The 'triage' command enables the ability to manage results in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -325,7 +326,7 @@ func TestHelpFlag_Validate_TriageGetStatesHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The get-states command shows information about each of the custom states that have been configured in your tenant account", textCapturedForValidation, "Incorrect help text found")
@@ -341,7 +342,7 @@ func TestHelpFlag_Validate_TriageUpdateHelpMessage(t *testing.T) {
 	}
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The update command enables the ability to triage the results in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -357,7 +358,7 @@ func TestHelpFlag_Validate_TriageShowHelpMessage(t *testing.T) {
 	}
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The show command provides a list of all the predicates in the issue", textCapturedForValidation, "Incorrect help text found")
@@ -376,13 +377,13 @@ func TestHelpFlag_Validate_ScanCancelHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The cancel command enables the ability to cancel one or more running scans in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
 }
 
-// Validate cx scan cancel --help command
+// Validate cx scan create --help command
 func TestHelpFlag_Validate_CxScanCreateHelpOutput(t *testing.T) {
 	referenceFile := "data/console-help-text-log/scanCreateHelpLog.txt"
 
@@ -407,7 +408,7 @@ func TestHelpFlag_Validate_ScanDeleteHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Deletes one or more scans", textCapturedForValidation, "Incorrect help text found")
@@ -424,7 +425,7 @@ func TestHelpFlag_Validate_ScanListHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The list command provides a list of all the scans in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -441,7 +442,7 @@ func TestHelpFlag_Validate_ScanShowHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The show command enables the ability to show information about a requested scan in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -458,7 +459,7 @@ func TestHelpFlag_Validate_ScanTagsHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The tags command enables the ability to provide a list of all the available tags in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -475,7 +476,7 @@ func TestHelpFlag_Validate_ScanWorkflowHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The workflow command enables the ability to provide information about a requested scan workflow in Checkmarx One", textCapturedForValidation, "Incorrect help text found")
@@ -492,7 +493,7 @@ func TestHelpFlag_Validate_ScanLogsHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "Accepts a scan-id and scan type (sast, iac-security) and downloads the related scan log", textCapturedForValidation, "Incorrect help text found")
@@ -509,7 +510,7 @@ func TestHelpFlag_Validate_ScanScaRealtimeHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The sca-realtime command enables the ability to create, run and retrieve results from a sca scan using sca resolver", textCapturedForValidation, "Incorrect help text found")
@@ -526,7 +527,7 @@ func TestHelpFlag_Validate_ScanKicsRealtimeHelpMessage(t *testing.T) {
 
 	_, outputText := executeCommand(t, args...)
 
-	normalizedOut := Strip_ANSI(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
+	normalizedOut := StripAnsi(strings.ReplaceAll(outputText.String(), "\r\n", "\n"))
 	textCapturedForValidation := GetFlagHelpText(normalizedOut)
 
 	assert.Equal(t, "The kics-realtime command enables the ability to create, run and retrieve results from a kics scan using a docker image", textCapturedForValidation, "Incorrect help text found")
