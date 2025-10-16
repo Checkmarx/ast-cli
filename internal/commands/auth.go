@@ -121,9 +121,9 @@ func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		defer func() {
 			logger.PrintIfVerbose("Calling GetUniqueId func")
-			uniqueId := wrappers.GetUniqueId()
-			if uniqueId != "" {
-				logger.PrintIfVerbose("Set unique id: " + uniqueId)
+			uniqueID := wrappers.GetUniqueID()
+			if uniqueID != "" {
+				logger.PrintIfVerbose("Set unique id: " + uniqueID)
 			}
 		}()
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)

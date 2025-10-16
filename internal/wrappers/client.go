@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/kerberos"
 	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 )
@@ -137,10 +138,10 @@ func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 	logger.PrintIfVerbose("getting unique id")
 
 	if !isAuth {
-		uniqueId := GetUniqueId()
-		if uniqueId != "" {
-			req.Header.Set("UniqueId", uniqueId)
-			logger.PrintIfVerbose("unique id: " + uniqueId)
+		uniqueID := GetUniqueID()
+		if uniqueID != "" {
+			req.Header.Set("UniqueId", uniqueID)
+			logger.PrintIfVerbose("unique id: " + uniqueID)
 		}
 	}
 }
@@ -984,7 +985,7 @@ func extractAZPFromToken(astToken string) (string, error) {
 	return azp, nil
 }
 
-func GetUniqueId() string {
+func GetUniqueID() string {
 	isAllowed := false
 	accessToken, err := GetAccessToken()
 	if err != nil {
@@ -1013,9 +1014,9 @@ func GetUniqueId() string {
 		logger.PrintIfVerbose("User does not not have permission to standalone dev asists feature")
 		return ""
 	}
-	uniqueId := viper.GetString(commonParams.UniqueIdConfigKey)
-	if uniqueId != "" {
-		return uniqueId
+	uniqueID := viper.GetString(commonParams.UniqueIDConfigKey)
+	if uniqueID != "" {
+		return uniqueID
 	}
 	logger.PrintIfVerbose("Generating new unique id")
 	currentUser, err := user.Current()
@@ -1023,13 +1024,14 @@ func GetUniqueId() string {
 		logger.PrintIfVerbose("Failed to get user: " + err.Error())
 		return ""
 	}
-	uniqueId = uuid.New().String() + currentUser.Username
-	logger.PrintIfVerbose("Unique id: " + uniqueId)
-	viper.Set(commonParams.UniqueIdConfigKey, uniqueId)
-	err = viper.WriteConfig()
+	uniqueID = uuid.New().String() + "_" + currentUser.Username
+	logger.PrintIfVerbose("Unique id: " + uniqueID)
+	viper.Set(commonParams.UniqueIDConfigKey, uniqueID)
+	configFilePath, _ := configuration.GetConfigFilePath()
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.UniqueIDConfigKey, uniqueID)
 	if err != nil {
 		logger.PrintIfVerbose("Failed to write config: " + err.Error())
 		return ""
 	}
-	return uniqueId
+	return uniqueID
 }
