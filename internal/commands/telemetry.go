@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -58,7 +59,8 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		scanType, _ := cmd.Flags().GetString("scan-type")
 		status, _ := cmd.Flags().GetString("status")
 		totalCount, _ := cmd.Flags().GetInt("total-count")
-
+		uniqueId := wrappers.GetUniqueId()
+		logger.PrintIfVerbose("unique id: " + uniqueId)
 		err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
 			ProblemSeverity: problemSeverity,
@@ -69,6 +71,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			ScanType:        scanType,
 			Status:          status,
 			TotalCount:      totalCount,
+			UniqueId:        uniqueId,
 		})
 
 		if err != nil {

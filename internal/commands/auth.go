@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
@@ -118,6 +119,13 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 
 func validLogin() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		defer func() {
+			logger.PrintIfVerbose("Calling GetUniqueId func")
+			uniqueId := wrappers.GetUniqueId()
+			if uniqueId != "" {
+				logger.PrintIfVerbose("Set unique id: " + uniqueId)
+			}
+		}()
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
 		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
 		apiKey := viper.GetString(params.AstAPIKey)

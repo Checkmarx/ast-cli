@@ -79,4 +79,5 @@ var (
 	RiskManagementPathKey               = strings.ToLower(RiskManagementPathEnv)
 	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 	RealtimeScannerPathKey              = strings.ToLower(RealtimeScannerPathEnv)
+	UniqueIdConfigKey                   = strings.ToLower(UniqueIdEnv)
 )

@@ -12,6 +12,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"os"
+	"os/user"
 	"runtime"
 	"strings"
 	"sync"
@@ -20,6 +21,7 @@ import (
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -126,12 +128,21 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 	return nil, err
 }
 
-func setAgentNameAndOrigin(req *http.Request) {
+func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
 
 	originStr := viper.GetString(commonParams.OriginKey)
 	req.Header.Set("Cx-Origin", originStr)
+	logger.PrintIfVerbose("getting unique id")
+
+	if !isAuth {
+		uniqueId := GetUniqueId()
+		if uniqueId != "" {
+			req.Header.Set("UniqueId", uniqueId)
+			logger.PrintIfVerbose("unique id: " + uniqueId)
+		}
+	}
 }
 
 func GetClient(timeout uint) *http.Client {
@@ -375,7 +386,7 @@ func SendHTTPRequestByFullURLContentLength(
 		req.ContentLength = contentLength
 	}
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	}
@@ -427,7 +438,7 @@ func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, us
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +475,7 @@ func HTTPRequestWithQueryParams(
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +523,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	}
 	req, err := http.NewRequest(method, fullURL, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	req.Header.Add("Content-Type", jsonContentType)
 	if err != nil {
 		return nil, err
@@ -645,7 +656,7 @@ func writeCredentialsToCache(accessToken string) {
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, true)
 	if err != nil {
 		return "", err
 	}
@@ -971,4 +982,54 @@ func extractAZPFromToken(astToken string) (string, error) {
 		return "ast-app", nil // default value in case of error
 	}
 	return azp, nil
+}
+
+func GetUniqueId() string {
+	isAllowed := false
+	accessToken, err := GetAccessToken()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get access token")
+		return ""
+	}
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+	token, _, err := parser.ParseUnverified(accessToken, jwt.MapClaims{})
+	if err != nil {
+		logger.PrintIfVerbose("Failed to parse JWT token " + err.Error())
+		return ""
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		logger.PrintIfVerbose("Failed to get JWT claims")
+		return ""
+	}
+	for _, engine := range claims["ast-license"].(map[string]interface{})["LicenseData"].(map[string]interface{})["allowedEngines"].([]interface{}) {
+		if strings.EqualFold(engine.(string), "Checkmarx One Assist") {
+			isAllowed = true
+			break
+		}
+	}
+
+	if !isAllowed {
+		logger.PrintIfVerbose("User does not not have permission to standalone dev asists feature")
+		return ""
+	}
+	uniqueId := viper.GetString(commonParams.UniqueIdConfigKey)
+	if uniqueId != "" {
+		return uniqueId
+	}
+	logger.PrintIfVerbose("Generating new unique id")
+	currentUser, err := user.Current()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get user: " + err.Error())
+		return ""
+	}
+	uniqueId = uuid.New().String() + currentUser.Username
+	logger.PrintIfVerbose("Unique id: " + uniqueId)
+	viper.Set(commonParams.UniqueIdConfigKey, uniqueId)
+	err = viper.WriteConfig()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to write config: " + err.Error())
+		return ""
+	}
+	return uniqueId
 }
