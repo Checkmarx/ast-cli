@@ -1004,7 +1004,7 @@ func GetUniqueID() string {
 		return ""
 	}
 	for _, engine := range claims["ast-license"].(map[string]interface{})["LicenseData"].(map[string]interface{})["allowedEngines"].([]interface{}) {
-		if strings.EqualFold(engine.(string), "Checkmarx One Assist") {
+		if strings.EqualFold(engine.(string), "Checkmarx Developer Assist") {
 			isAllowed = true
 			break
 		}
