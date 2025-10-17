@@ -59,8 +59,8 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		scanType, _ := cmd.Flags().GetString("scan-type")
 		status, _ := cmd.Flags().GetString("status")
 		totalCount, _ := cmd.Flags().GetInt("total-count")
-		uniqueId := wrappers.GetUniqueID()
-		logger.PrintIfVerbose("unique id: " + uniqueId)
+		uniqueID := wrappers.GetUniqueID()
+		logger.PrintIfVerbose("unique id: " + uniqueID)
 		err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
 			ProblemSeverity: problemSeverity,
@@ -71,7 +71,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			ScanType:        scanType,
 			Status:          status,
 			TotalCount:      totalCount,
-			UniqueID:        uniqueId,
+			UniqueID:        uniqueID,
 		})
 
 		if err != nil {
