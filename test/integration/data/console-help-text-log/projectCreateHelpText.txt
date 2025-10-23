@@ -1,0 +1,53 @@
+The project create command enables the ability to create a new project in Checkmarx One
+
+USAGE
+  cx project create [flags]
+
+FLAGS
+      --application-name string   Name of the application to assign with the project
+      --branch string             Main branch
+      --format string             Format for the output. One of [json list table] (default "table")
+      --groups string             List of groups, ex: (PowerUsers,etc)
+  -h, --help                      help for create
+      --project-name string       Name of project
+      --repo-url string           Repository URL
+      --ssh-key string            Path to ssh private key
+      --tags string               List of tags, ex: (tagA,tagB:val,etc)
+
+GLOBAL FLAGS
+  --agent string                      Scan origin name (default "ASTCLI")
+  --apikey string                     The API Key to login to Checkmarx One
+  --base-auth-uri string              The base system IAM URI
+  --base-uri string                   The base system URI
+  --client-id string                  The OAuth2 client ID
+  --client-secret string              The OAuth2 client secret
+  --config-file-path string           Path to the configuration file
+  --debug                             Debug mode with detailed logs
+  --ignore-proxy                      Ignore proxy configuration
+  --insecure                          Ignore TLS certificate validations
+  --log-file string                   Saves logs to the specified file path only
+  --log-file-console string           Saves logs to the specified file path as well as to the console
+  --proxy string                      Proxy server to send communication through
+  --proxy-auth-type string            Proxy authentication type (supported types: basic, ntlm, kerberos or kerberos-native)
+  --proxy-kerberos-ccache string      Path to Kerberos credential cache (optional, default uses KRB5CCNAME env or OS default)
+  --proxy-kerberos-krb5-conf string   Path to Kerberos configuration file(default: /etc/krb5.conf on linux and C:\Windows\krb5.ini on windows)
+  --proxy-kerberos-spn string         Service Principal Name (SPN) for Kerberos proxy authentication
+  --proxy-ntlm-domain string          Window domain when using NTLM proxy
+  --retry uint                        Retry requests to Checkmarx One on connection failure (default 3)
+  --retry-delay uint                  Time between retries in seconds, use with --retry (default 20)
+  --tenant string                     Checkmarx tenant
+  --timeout string                    Timeout for network activity, (default 5 seconds)
+
+EXAMPLES
+  $ cx project create --project-name <Project Name>
+
+DOCUMENTATION
+  https://checkmarx.com/resource/documents/en/34965-68634-project.html#UUID-44ecd672-8f1f-32de-6c2e-838b680a0bf4
+
+QUICK START GUIDE
+  https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html
+
+LEARN MORE
+  Use 'cx <command> <subcommand> --help' for more information about a command.
+  Read the manual at https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
+
