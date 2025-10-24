@@ -80,4 +80,5 @@ const (
 	RiskManagementPathEnv               = "CX_RISK_MANAGEMENT_PATH"
 	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 	RealtimeScannerPathEnv              = "CX_REALTIME_SCANNER_PATH"
+	UniqueIDEnv                         = "CX_UNIQUE_ID"
 )
