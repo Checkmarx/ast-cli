@@ -986,6 +986,7 @@ func extractAZPFromToken(astToken string) (string, error) {
 }
 
 func GetUniqueID() string {
+	var uniqueID string
 	isAllowed := false
 	accessToken, err := GetAccessToken()
 	if err != nil {
@@ -1003,8 +1004,31 @@ func GetUniqueID() string {
 		logger.PrintIfVerbose("Failed to get JWT claims")
 		return ""
 	}
-	for _, engine := range claims["ast-license"].(map[string]interface{})["LicenseData"].(map[string]interface{})["allowedEngines"].([]interface{}) {
-		if strings.EqualFold(engine.(string), "Checkmarx Developer Assist") {
+
+	astLicense, ok := claims["ast-license"].(map[string]interface{})
+	if !ok {
+		logger.PrintIfVerbose("Failed to get ast-license from claims")
+		return ""
+	}
+
+	licenseData, ok := astLicense["LicenseData"].(map[string]interface{})
+	if !ok {
+		logger.PrintIfVerbose("Failed to get LicenseData from ast-license")
+		return ""
+	}
+
+	allowedEngines, ok := licenseData["allowedEngines"].([]interface{})
+	if !ok {
+		logger.PrintIfVerbose("Failed to get allowedEngines from LicenseData")
+		return ""
+	}
+
+	for _, engine := range allowedEngines {
+		engineStr, ok := engine.(string)
+		if !ok {
+			continue
+		}
+		if strings.EqualFold(engineStr, "Checkmarx Developer Assist") {
 			isAllowed = true
 			break
 		}
@@ -1014,7 +1038,7 @@ func GetUniqueID() string {
 		logger.PrintIfVerbose("User does not not have permission to standalone dev asists feature")
 		return ""
 	}
-	uniqueID := viper.GetString(commonParams.UniqueIDConfigKey)
+	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
 	if uniqueID != "" {
 		return uniqueID
 	}
