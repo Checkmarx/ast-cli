@@ -55,7 +55,7 @@ flask==1.1.2
 
 # Range: greater than or equal and less than
 
-Django>=3.0,<4.0
+Django>=3.0,<6.0
 
 # Less than or equal
 
@@ -79,7 +79,7 @@ package\_with\_extras\[security,docs]==0.1.0
 
 # Environment marker (skip on Python>=3.8)
 
-scipy==1.5.2; python\_version < "3.8"
+scipy==1.5.2; python_version < "3.8"
 
 # Combined ranges with comma
 
