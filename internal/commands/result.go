@@ -1085,16 +1085,8 @@ func runGetCodeBashingCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		//cmd.Flags().GetString(commonParams.LanguageFlag)
-		//1089818565155602739
-		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
-		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
-		_, err := codeBashingWrapper.BuildCodeBashingParams(
-			wrappers.CodeBashingParamsCollection{
-				QueryId: queryId,
-			},
-		)
 
+		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
