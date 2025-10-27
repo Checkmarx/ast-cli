@@ -1028,7 +1028,7 @@ func GetUniqueID() string {
 		if !ok {
 			continue
 		}
-		if strings.EqualFold(engineStr, "Checkmarx One Assist") {
+		if strings.EqualFold(engineStr, "Checkmarx Developer Assist") {
 			isAllowed = true
 			break
 		}
