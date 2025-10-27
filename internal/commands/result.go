@@ -1089,6 +1089,12 @@ func runGetCodeBashingCommand(
 		//1089818565155602739
 		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
+		_, err := codeBashingWrapper.BuildCodeBashingParams(
+			wrappers.CodeBashingParamsCollection{
+				QueryId: queryId,
+			},
+		)
+
 		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
@@ -1102,6 +1108,12 @@ func runGetCodeBashingCommand(
 			return errors.New(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
+		if CodeBashingModel != nil {
+			model := *CodeBashingModel
+			if len(model) > 0 && model[0].Path != "" {
+				logger.Printf("CodeBashing lesson available at: %s", model[0].Path)
+			}
+		}
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}

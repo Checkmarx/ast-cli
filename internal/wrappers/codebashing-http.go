@@ -33,7 +33,7 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashingURL string) (
-	*CodeBashingCollection,
+	*[]CodeBashingCollection,
 	*WebError,
 	error,
 ) {
@@ -57,30 +57,36 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashing
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		var decoded *CodeBashingCollection
+		var decoded []CodeBashingCollection
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
 		err = json.Unmarshal(body, &decoded)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+			// Try unmarshaling as wrapped response with "data" field
+			var wrappedResponse CodeBashingResponse
+			if err2 := json.Unmarshal(body, &wrappedResponse); err2 == nil {
+				decoded = []CodeBashingCollection{wrappedResponse.Data}
+			} else {
+				return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+			}
 		}
 		/* Only check for position 0 because at the time we are only sending
 		   one queryName and getting as output one codebashing link. But it is
 		   possible to easily change it and be able to get multiple codebashing
 		   links
 		*/
-		if decoded.Path == "" {
+		if len(decoded) == 0 || decoded[0].Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
 
-		decoded.Path = fmt.Sprintf("%s%s", codeBashingURL, decoded.Path)
-		decoded.Path, err = utils.CleanURL(decoded.Path)
+		decoded[0].Path = fmt.Sprintf("%s%s", codeBashingURL, decoded[0].Path)
+		decoded[0].Path, err = utils.CleanURL(decoded[0].Path)
 		if err != nil {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
-		return decoded, nil, nil
+		return &decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
@@ -111,7 +117,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	return url, nil
 }
 
-func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
+func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams CodeBashingParamsCollection) (map[string]string, error) {
 	// Marshall entire object to string
 	params := make(map[string]string)
 	viewJSON, err := json.Marshal(apiParams)

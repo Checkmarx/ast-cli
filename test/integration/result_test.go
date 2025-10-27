@@ -205,7 +205,7 @@ func TestCodeBashingList(t *testing.T) {
 		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
 		flag(params.CweIDFlag), "79")
 
-	codebashing := wrappers.CodeBashingCollection{}
+	codebashing := []wrappers.CodeBashingCollection{}
 
 	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
 
@@ -223,7 +223,7 @@ func TestCodeBashingListJson(t *testing.T) {
 		flag(params.CweIDFlag), "79",
 		flag(params.FormatFlag), "json")
 
-	codebashing := wrappers.CodeBashingCollection{}
+	codebashing := []wrappers.CodeBashingCollection{}
 
 	_ = unmarshall(t, outputBuffer, &codebashing, "Reading results should pass")
 
