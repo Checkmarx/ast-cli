@@ -3,7 +3,7 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -32,14 +32,13 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL string) (
-	*[]CodeBashingCollection,
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashingURL string) (
+	*CodeBashingCollection,
 	*WebError,
 	error,
 ) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params[limit] = limitValue
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	resp, err := SendHTTPRequestNoBaseCBURL(http.MethodGet, r.path+"/"+queryId, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -58,8 +57,8 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		var decoded []CodeBashingCollection
-		body, err := ioutil.ReadAll(resp.Body)
+		var decoded *CodeBashingCollection
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
@@ -72,16 +71,16 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		   possible to easily change it and be able to get multiple codebashing
 		   links
 		*/
-		if decoded[0].Path == "" {
+		if decoded.Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
 
-		decoded[0].Path = fmt.Sprintf("%s%s", codeBashingURL, decoded[0].Path)
-		decoded[0].Path, err = utils.CleanURL(decoded[0].Path)
+		decoded.Path = fmt.Sprintf("%s%s", codeBashingURL, decoded.Path)
+		decoded.Path, err = utils.CleanURL(decoded.Path)
 		if err != nil {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
-		return &decoded, nil, nil
+		return decoded, nil, nil
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}

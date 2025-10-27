@@ -559,18 +559,8 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 		),
 		RunE: runGetCodeBashingCommand(codeBashingWrapper),
 	}
-	resultCmd.PersistentFlags().String(commonParams.LanguageFlag, "", "Language of the vulnerability")
-	err := resultCmd.MarkPersistentFlagRequired(commonParams.LanguageFlag)
-	if err != nil {
-		log.Fatal(err)
-	}
-	resultCmd.PersistentFlags().String(commonParams.VulnerabilityTypeFlag, "", "Vulnerability type")
-	err = resultCmd.MarkPersistentFlagRequired(commonParams.VulnerabilityTypeFlag)
-	if err != nil {
-		log.Fatal(err)
-	}
-	resultCmd.PersistentFlags().String(commonParams.CweIDFlag, "", "CWE ID for the vulnerability")
-	err = resultCmd.MarkPersistentFlagRequired(commonParams.CweIDFlag)
+	resultCmd.PersistentFlags().String(commonParams.QueryIDFlag, "", "QueryId of vulnerability")
+	err := resultCmd.MarkPersistentFlagRequired(commonParams.QueryIDFlag)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -1095,28 +1085,16 @@ func runGetCodeBashingCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		language, _ := cmd.Flags().GetString(commonParams.LanguageFlag)
-		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
-		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
-		params, err := codeBashingWrapper.BuildCodeBashingParams(
-			[]wrappers.CodeBashingParamsCollection{
-				{
-					CweID:       "CWE-" + cwe,
-					Language:    language,
-					CxQueryName: strings.ReplaceAll(vulType, " ", "_"),
-				},
-			},
-		)
-		if err != nil {
-			return err
-		}
+		//cmd.Flags().GetString(commonParams.LanguageFlag)
+		//1089818565155602739
+		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 		// Fetch the cached token or a new one to obtain the codebashing URL incoded in the jwt token
 		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
 		}
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
-		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(params, codeBashingURL)
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(queryId, codeBashingURL)
 		if err != nil {
 			return err
 		}

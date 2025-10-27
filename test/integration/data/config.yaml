@@ -17,7 +17,7 @@ cx_branch: ""
 cx_byor_path: api/byor
 cx_client_id: example_client_id
 cx_client_secret: example_client_secret
-cx_codebashing_path: api/codebashing/lessons
+cx_codebashing_path: https://core-service.codebashing.com/lessons/mapping
 cx_config_file_path: data/config.yaml
 cx_create_oath2_client_path: auth/realms/organization/pip/clients
 cx_custom_states_path: api/custom-states

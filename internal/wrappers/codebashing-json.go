@@ -1,14 +1,20 @@
 package wrappers
 
 type CodeBashingCollection struct {
-	Path        string `json:"path,omitempty"`
-	CweID       string `json:"cwe_id,omitempty"`
-	Language    string `json:"lang,omitempty"`
-	CxQueryName string `json:"cxQueryName,omitempty"`
+	LessonDisplayName string            `json:"lessonDisplayName,omitempty"`
+	CourseDisplayName string            `json:"courseDisplayName,omitempty"`
+	Duration          string            `json:"duration,omitempty"`
+	ImageUrl          string            `json:"imageUrl,omitempty"`
+	TagsResult        map[string]string `json:"tagsResult,omitempty"`
+	Path              string            `json:"lessonUrl,omitempty"`
+	PotentialPoints   string            `json:"potentialPoints,omitempty"`
+}
+
+// Wrapper struct to handle API responses with "data" field
+type CodeBashingResponse struct {
+	Data CodeBashingCollection `json:"data"`
 }
 
 type CodeBashingParamsCollection struct {
-	CweID       string `json:"cwe_id,omitempty"`
-	Language    string `json:"lang,omitempty"`
-	CxQueryName string `json:"cxQueryName,omitempty"`
+	QueryId string `json:"queryId,omitempty"`
 }
