@@ -126,6 +126,8 @@ func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Comm
 				logger.PrintIfVerbose("Set unique id: " + uniqueID)
 				err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 					UniqueID: uniqueID,
+					Type:     "authentication",
+					SubType:  "authentication",
 				})
 				if err != nil {
 					logger.PrintIfVerbose("Failed to send telemetry data: " + err.Error())
