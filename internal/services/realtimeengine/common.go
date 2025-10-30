@@ -37,7 +37,7 @@ func EnsureLicense(jwtWrapper wrappers.JWTWrapper) error {
 	if aiAllowed || assistAllowed {
 		return nil
 	}
-	return errors.Wrap(err, errorconstants.NoASCALicense)
+	return errors.New(errorconstants.ErrMissingAIFeatureLicense)
 }
 
 // ValidateFilePath validates that the file path exists and is accessible.
