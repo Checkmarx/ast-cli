@@ -6,7 +6,7 @@ import (
 
 type CodeBashingMockWrapper struct{}
 
-func (r CodeBashingMockWrapper) GetCodeBashingLinks(queryID string, _ string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
+func (r CodeBashingMockWrapper) GetCodeBashingLinks(queryID, _ string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
 	if queryID == "" {
 		return nil, &wrappers.WebError{Message: "Cannot GET /lessons/mapping/"}, nil
 	}
@@ -26,12 +26,10 @@ func (r CodeBashingMockWrapper) GetCodeBashingLinks(queryID string, _ string) (*
 	return &ret, nil, nil
 }
 
-func (r CodeBashingMockWrapper) GetCodeBashingURL(field string) (
-	string, error,
-) {
+func (r CodeBashingMockWrapper) GetCodeBashingURL(_ string) (string, error) {
 	return "MOCK", nil
 }
 
-func (r CodeBashingMockWrapper) BuildCodeBashingParams(wrappers.CodeBashingParamsCollection) (map[string]string, error) {
+func (r CodeBashingMockWrapper) BuildCodeBashingParams(_ wrappers.CodeBashingParamsCollection) (map[string]string, error) {
 	return nil, nil
 }
