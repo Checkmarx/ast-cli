@@ -1,17 +1,15 @@
 package mock
 
 import (
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 type CodeBashingMockWrapper struct{}
 
-func (r CodeBashingMockWrapper) GetCodeBashingLinks(queryID, codeBashingURL string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
+func (r CodeBashingMockWrapper) GetCodeBashingLinks(queryID string, _ string) (*[]wrappers.CodeBashingCollection, *wrappers.WebError, error) {
 	if queryID == "" {
 		return nil, &wrappers.WebError{Message: "Cannot GET /lessons/mapping/"}, nil
 	}
-	codeBashingURL = commonParams.CodeBashingPathEnv
 
 	if queryID == "11666704984804998184" {
 		collection := &wrappers.CodeBashingCollection{
