@@ -3,8 +3,11 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"io"
 	"net/http"
+	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
@@ -20,6 +23,7 @@ const (
 	noCodebashingLinkAvailable  = "No codebashing link available"
 	licenseNotFoundExitCode     = 3
 	lessonNotFoundExitCode      = 4
+	codeBashingDefaultPath      = "https://core-service.codebashing.com/lessons/mapping"
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -37,6 +41,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashing
 	*WebError,
 	error,
 ) {
+	r.path = setCodeBashingDefaultPath(r.path)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	resp, err := SendHTTPRequestNoBaseCBURL(http.MethodGet, r.path+"/"+queryId, http.NoBody, true, clientTimeout)
 	if err != nil {
@@ -90,6 +95,20 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashing
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+func setCodeBashingDefaultPath(path string) string {
+	if path != codeBashingDefaultPath {
+		configFilePath, err := configuration.GetConfigFilePath()
+		if err != nil {
+			logger.PrintfIfVerbose("Error getting config file path: %v", err)
+		}
+		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, strings.ToLower(commonParams.CodeBashingPathEnv), codeBashingDefaultPath)
+		if err != nil {
+			logger.PrintfIfVerbose("Error writing Risk Management path to config file: %v", err)
+		}
+	}
+	return codeBashingDefaultPath
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error) {

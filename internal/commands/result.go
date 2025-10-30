@@ -1100,11 +1100,9 @@ func runGetCodeBashingCommand(
 			return errors.New(webError.Message)
 		}
 		err = printByFormat(cmd, *CodeBashingModel)
-		if CodeBashingModel != nil {
-			model := *CodeBashingModel
-			if len(model) > 0 && model[0].Path != "" {
-				logger.Printf("CodeBashing lesson available at: %s", model[0].Path)
-			}
+		model := *CodeBashingModel
+		if len(model) > 0 && model[0].Path != "" {
+			logger.Printf("CodeBashing lesson available at: %s", model[0].Path)
 		}
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
