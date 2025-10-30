@@ -110,6 +110,8 @@ var BaseIncludeFilters = []string{
 	"*.inc",
 	"*.jar",
 	"*.js",
+	"*.xsjs",
+	"*.xsjslib",
 	"*.dll",
 	"*.tf",
 	"*.yaml",
