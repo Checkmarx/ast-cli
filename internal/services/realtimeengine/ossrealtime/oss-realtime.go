@@ -61,7 +61,7 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	}
 
 	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
