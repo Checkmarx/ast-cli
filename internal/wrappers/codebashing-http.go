@@ -3,17 +3,18 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/logger"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"io"
 	"net/http"
 	"strings"
 
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 )
 
 const (
@@ -36,7 +37,7 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID string, codeBashingURL string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID, codeBashingURL string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
