@@ -11,7 +11,7 @@ type CodeBashingCollection struct {
 	LessonDisplayName string           `json:"lessonDisplayName,omitempty"`
 	CourseDisplayName string           `json:"courseDisplayName,omitempty"`
 	Duration          string           `json:"duration,omitempty"`
-	ImageUrl          string           `json:"imageUrl,omitempty"`
+	ImageURL          string           `json:"imageUrl,omitempty"`
 	TagsResult        []CodeBashingTag `json:"tagsResult,omitempty"`
 	Path              string           `json:"lessonUrl,omitempty"`
 	PotentialPoints   int              `json:"potentialPoints,omitempty"`
@@ -23,5 +23,5 @@ type CodeBashingResponse struct {
 }
 
 type CodeBashingParamsCollection struct {
-	QueryId string `json:"queryId,omitempty"`
+	QueryID string `json:"queryId,omitempty"`
 }

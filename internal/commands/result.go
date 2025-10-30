@@ -1086,13 +1086,13 @@ func runGetCodeBashingCommand(
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 
-		queryId, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
+		queryID, _ := cmd.Flags().GetString(commonParams.QueryIDFlag)
 		codeBashingURL, err := codeBashingWrapper.GetCodeBashingURL(codeBashingKey)
 		if err != nil {
 			return err
 		}
 		// Make the request to the api to obtain the codebashing link and send the codebashing url to enrich the path
-		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(queryId, codeBashingURL)
+		CodeBashingModel, webError, err := codeBashingWrapper.GetCodeBashingLinks(queryID, codeBashingURL)
 		if err != nil {
 			return err
 		}

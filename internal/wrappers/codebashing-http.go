@@ -36,14 +36,14 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryId string, codeBashingURL string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID string, codeBashingURL string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
 ) {
 	r.path = setCodeBashingDefaultPath(r.path)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	resp, err := SendHTTPRequestNoBaseCBURL(http.MethodGet, r.path+"/"+queryId, http.NoBody, true, clientTimeout)
+	resp, err := SendHTTPRequestNoBaseCBURL(http.MethodGet, r.path+"/"+queryID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
