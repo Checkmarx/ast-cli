@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/google/uuid"
@@ -38,7 +39,7 @@ type ClientCreated struct {
 	Secret string `json:"secret"`
 }
 
-func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
+func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	authCmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Validate authentication and create OAuth2 credentials",
@@ -110,14 +111,29 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: validLogin(),
+		RunE: validLogin(telemetryWrapper),
 	}
 	authCmd.AddCommand(createClientCmd, validLoginCmd)
 	return authCmd
 }
 
-func validLogin() func(cmd *cobra.Command, args []string) error {
+func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		defer func() {
+			logger.PrintIfVerbose("Calling GetUniqueId func")
+			uniqueID := wrappers.GetUniqueID()
+			if uniqueID != "" {
+				logger.PrintIfVerbose("Set unique id: " + uniqueID)
+				err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
+					UniqueID: uniqueID,
+					Type:     "authentication",
+					SubType:  "authentication",
+				})
+				if err != nil {
+					logger.PrintIfVerbose("Failed to send telemetry data: " + err.Error())
+				}
+			}
+		}()
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
 		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
 		apiKey := viper.GetString(params.AstAPIKey)
