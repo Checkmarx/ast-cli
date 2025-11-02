@@ -63,7 +63,7 @@ func TestRunContainersRealtimeScan_InvalidLicense_Fails(t *testing.T) {
 	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "realtime engine error: failed to ensure license")
+	assert.Contains(t, err.Error(), "User does not have the required license for AI-assisted functionality.")
 }
 
 func TestRunContainersRealtimeScan_FeatureFlagDisabled_Fails(t *testing.T) {
