@@ -81,7 +81,7 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredF
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 	if err := realtimeengine.EnsureLicense(c.JwtWrapper); err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
