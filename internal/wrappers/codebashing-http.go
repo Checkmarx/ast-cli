@@ -70,7 +70,6 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID, codeBashingURL str
 		}
 		err = json.Unmarshal(body, &decoded)
 		if err != nil {
-			// Try unmarshaling as wrapped response with "data" field
 			var wrappedResponse CodeBashingResponse
 			if err2 := json.Unmarshal(body, &wrappedResponse); err2 == nil {
 				decoded = []CodeBashingCollection{wrappedResponse.Data}
@@ -98,6 +97,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID, codeBashingURL str
 	}
 }
 
+// Added this function to update the cx_code_bashing field in the existing config file.
 func setCodeBashingDefaultPath(path string) string {
 	if path != codeBashingDefaultPath {
 		configFilePath, err := configuration.GetConfigFilePath()
