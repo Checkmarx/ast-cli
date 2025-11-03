@@ -202,6 +202,7 @@ func TestCodeBashingList(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
+		"--debug",
 		flag(params.QueryIDFlag), queryIDValue)
 
 	codebashing := []wrappers.CodeBashingCollection{}
@@ -217,6 +218,7 @@ func TestCodeBashingListJson(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
+		"--debug",
 		flag(params.QueryIDFlag), queryIDValue,
 		flag(params.FormatFlag), "json")
 
@@ -233,6 +235,7 @@ func TestCodeBashingListTable(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
+		"--debug",
 		flag(params.QueryIDFlag), queryIDValue,
 		flag(params.FormatFlag), "table")
 
@@ -245,6 +248,7 @@ func TestCodeBashingListEmpty(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
+		"--debug",
 		flag(params.QueryIDFlag), queryIDWrongValueValue)
 
 	assert.Assert(t, outputBuffer != nil, "Output buffer should not be nil")
