@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-13
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
@@ -66,6 +66,11 @@ jobs:
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      # New: detect architecture and expose as step output
+      - name: Detect runner architecture
+        id: arch
+        run: |
+          echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Setup Docker on macOS
         if: inputs.dev == false
         uses: douglascamata/setup-docker-macos-action@v1.0.1
