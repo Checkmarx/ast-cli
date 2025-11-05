@@ -79,31 +79,11 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 
 // GetLicenseDetails will return all license information from AstLicense.LicenseData.AllowedEngines
 func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
-	//flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
 
 	licenseDetails = make(map[string]string)
 
 	// Add scan.config.plugins.standalone as true
 	licenseDetails["scan.config.plugins.standalone"] = "true"
-
-	// if flagResponse.Status {
-	// 	jwtStruct, err := getJwtStruct()
-	// 	if err != nil {
-	// 		return licenseDetails, nil // Return what we have so far if JWT validation fails
-	// 	}
-
-	// 	// Return all engines from license data as true (they are allowed engines)
-	// 	if jwtStruct.AstLicense.LicenseData.AllowedEngines != nil {
-	// 		for _, engine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
-	// 			if engine != "" {
-	// 				licenseDetails[engine] = "true"
-	// 			}
-	// 		}
-	// 	}
-
-	// 	return licenseDetails, nil
-	// }
-
 	return licenseDetails, nil
 }
 
