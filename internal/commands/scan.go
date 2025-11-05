@@ -129,6 +129,8 @@ const (
 	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
 	BranchPrimaryPrefix      = "--branch-primary="
 	OverridePolicyManagement = "override-policy-management"
+	maxSizeGB                = 5                              // 5 GB
+	maxSizeBytes             = maxSizeGB * 1024 * 1024 * 1024 // 5 GB in bytes
 )
 
 var (
@@ -2082,7 +2084,26 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	var zipFilePathErr error
 	// Send a request to uploads service
 	var preSignedURL *string
-	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
+
+	// calculate file size and compare with 5GB limit
+	fileInfo, err := os.Stat(zipFilePath)
+	if err != nil {
+		return "", zipFilePath, errors.Wrapf(err, "Failed to stat %s", zipFilePath)
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
+
+	// check for INCREASE_FILE_UPLOAD_LIMIT feature flag
+	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.IncreaseFileUploadLimit)
+
+	if flagResponse.Status && fileInfo.Size() > maxSizeBytes {
+		// File size >5GB, proceed with multipart upload
+		logger.PrintIfVerbose("File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts...")
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)
+	} else {
+		// File size is within <=5GB, proceed with upload in single part
+		logger.PrintIfVerbose("File size is within the limit and uploading file in a single part...")
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
+	}
 	if zipFilePathErr != nil {
 		if unzip || !userProvidedZip {
 			return "", zipFilePath, errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
