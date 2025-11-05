@@ -79,7 +79,6 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 
 // GetLicenseDetails will return all license information from AstLicense.LicenseData.AllowedEngines
 func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
-
 	licenseDetails = make(map[string]string)
 
 	// Add scan.config.plugins.standalone as true
