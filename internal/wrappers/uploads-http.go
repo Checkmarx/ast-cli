@@ -33,7 +33,7 @@ type StartMultipartUploadResponse struct {
 type StartMultipartUploadRequest struct {
 	FileSize int64 `json:"fileSize"`
 }
-type MultipartPresignedURl struct {
+type MultipartPresignedURL struct {
 	ObjectName string `json:"objectName"`
 	UploadID   string `json:"UploadID"`
 	PartNumber int    `json:"partNumber"`
@@ -225,6 +225,9 @@ func (u *UploadsHTTPWrapper) UploadFileInMultipart(sourcesFile string, featureFl
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := viper.GetString(commonParams.CompleteMultipartUploadPathEnv)
 	jsonBytes, err := json.Marshal(completeMultipartUpload)
+	if err != nil {
+		return nil, errors.Errorf("Failed to marshal complete multipart upload request body - %s", err.Error())
+	}
 	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return nil, err
@@ -252,6 +255,9 @@ func startMultipartUpload(startMultipartUploadRequest StartMultipartUploadReques
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := viper.GetString(commonParams.StartMultiPartUploadPathEnv)
 	jsonBytes, err := json.Marshal(startMultipartUploadRequest)
+	if err != nil {
+		return StartMultipartUploadResponse{}, errors.Errorf("Failed to marshal start multipart upload request body - %s", err.Error())
+	}
 	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return StartMultipartUploadResponse{}, err
@@ -286,12 +292,12 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	path := viper.GetString(commonParams.MultipartPresignedPathEnv)
 
-	multipartPresignedURl := MultipartPresignedURl{
+	multipartPresignedURL := MultipartPresignedURL{
 		ObjectName: response.ObjectName,
 		UploadID:   response.UploadID,
 		PartNumber: partNumber,
 	}
-	jsonBytes, err := json.Marshal(multipartPresignedURl)
+	jsonBytes, err := json.Marshal(multipartPresignedURL)
 	if err != nil {
 		return "", errors.Errorf("Failed to marshal multipart upload presigned URL request body - %s", err.Error())
 	}
@@ -329,7 +335,7 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 	}
 }
 
-func uploadPart(preSignedURL string, sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (string, error) {
+func uploadPart(preSignedURL, sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (string, error) {
 	if preSignedURL == "" {
 		return "", errors.New("preSignedURL is empty or nil")
 	}
@@ -383,41 +389,16 @@ func uploadPart(preSignedURL string, sourcesFile string, featureFlagsWrapper Fea
 }
 
 func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
-
-	// Get part size in GB from config if config is not provided, default to 2 GB
-	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSize)
-	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
+	partSizeBytes, err := getPartSizeBytes()
 	if err != nil {
-		return nil, fmt.Errorf("invalid part size value: %w", err)
+		return nil, err
 	}
-	// Truncate to integer
-	truncatedSize := int64(partChunkSizeFloat)
-	if truncatedSize < 1 || truncatedSize > 5 {
-		// Enforce part size to be between 1 GB and 5 GB.
-		// If the configured part size is outside this range, default to 2 GB.
-		logger.PrintIfVerbose(fmt.Sprintf("Configured part size %d GB is outside the allowed range (1 – 5 GB). Defaulting to 2 GB.", truncatedSize))
-		truncatedSize = 2 // default to 2 GB if out of range
-	}
-	partSizeGB := float64(truncatedSize)
-
-	logger.PrintIfVerbose("Splitting zip file into parts of size: " + fmt.Sprintf("%.0f", partSizeGB) + " GB")
-
-	if partSizeGB <= 0 {
-		return nil, fmt.Errorf("part size must be greater than 0 GB")
-	}
-
-	const bytesPerGB = 1024 * 1024 * 1024
-	partSizeBytes := int64(partSizeGB * float64(bytesPerGB))
 
 	f, err := os.Open(zipFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("open input - %w", err)
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			logger.PrintfIfVerbose("warning: failed to close input file - %v", err)
-		}
-	}()
+	defer closeFileVerbose(f)
 
 	stat, err := f.Stat()
 	if err != nil {
@@ -427,12 +408,40 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 		return nil, fmt.Errorf("input file is empty")
 	}
 
-	totalSize := stat.Size()
+	partSizes := calculatePartSizes(stat.Size(), partSizeBytes)
+	partNames, err := createParts(f, partSizes)
+	if err != nil {
+		cleanUpTempParts(partNames)
+		return nil, err
+	}
+
+	return partNames, nil
+}
+
+func getPartSizeBytes() (int64, error) {
+	// Get part size in GB from config if config is not provided, default to 2 GB
+	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSize)
+	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid part size value: %w", err)
+	}
+	// Truncate to integer
+	truncatedSize := int64(partChunkSizeFloat)
+	if truncatedSize < 1 || truncatedSize > 5 {
+		// Enforce part size to be between 1 GB and 5 GB.
+		// If the configured part size is outside this range, default to 2 GB.
+		logger.PrintIfVerbose(fmt.Sprintf("Configured part size %d GB is outside the allowed range (1 – 5 GB). Defaulting to 2 GB.", truncatedSize))
+		truncatedSize = 2
+	}
+	const bytesPerGB = 1024 * 1024 * 1024
+	return int64(float64(truncatedSize) * float64(bytesPerGB)), nil
+}
+
+func calculatePartSizes(totalSize, partSizeBytes int64) []int64 {
 	numParts := int(totalSize / partSizeBytes)
 	if totalSize%partSizeBytes != 0 {
 		numParts++
 	}
-
 	partSizes := make([]int64, numParts)
 	for i := 0; i < numParts; i++ {
 		remaining := totalSize - int64(i)*partSizeBytes
@@ -442,21 +451,16 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 			partSizes[i] = remaining
 		}
 	}
+	return partSizes
+}
 
-	partNames := make([]string, numParts)
-	for i := 0; i < numParts; i++ {
+func createParts(f *os.File, partSizes []int64) ([]string, error) {
+	partNames := make([]string, len(partSizes))
+	for i, size := range partSizes {
 		partFile, err := os.CreateTemp("", fmt.Sprintf("cx-part%d-*", i+1))
 		if err != nil {
-			for j := 0; j < i; j++ {
-				if partNames[j] != "" {
-					if err := os.Remove(partNames[j]); err != nil && !os.IsNotExist(err) {
-						logger.PrintfIfVerbose("warning: failed to remove part%d - %v", j+1, err)
-					}
-				}
-			}
-			return nil, fmt.Errorf("create part%d - %w", i+1, err)
+			return partNames, fmt.Errorf("create part%d - %w", i+1, err)
 		}
-
 		offset := int64(0)
 		for j := 0; j < i; j++ {
 			offset += partSizes[j]
@@ -470,10 +474,9 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			return nil, fmt.Errorf("seek to part%d - %w", i+1, err)
+			return partNames, fmt.Errorf("seek to part%d - %w", i+1, err)
 		}
-
-		if _, err := io.CopyN(partFile, f, partSizes[i]); err != nil && err != io.EOF {
+		if _, err := io.CopyN(partFile, f, size); err != nil && err != io.EOF {
 			err := partFile.Close()
 			if err != nil {
 				return nil, err
@@ -482,20 +485,23 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			return nil, fmt.Errorf("copy to part%d - %w", i+1, err)
+			return partNames, fmt.Errorf("copy to part%d - %w", i+1, err)
 		}
-
 		if err := partFile.Sync(); err != nil {
 			logger.PrintfIfVerbose("warning: failed to sync part%d - %v", i+1, err)
 		}
 		if err := partFile.Close(); err != nil {
 			logger.PrintfIfVerbose("warning: failed to close part%d - %v", i+1, err)
 		}
-
 		partNames[i] = partFile.Name()
 	}
-
 	return partNames, nil
+}
+
+func closeFileVerbose(f *os.File) {
+	if err := f.Close(); err != nil {
+		logger.PrintfIfVerbose("warning: failed to close input file - %v", err)
+	}
 }
 
 // cleanUpTempParts removes the temporary part files created during multipart upload.
