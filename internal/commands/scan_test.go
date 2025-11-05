@@ -2972,15 +2972,31 @@ func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
 func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInSuccessCase(t *testing.T) {
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, true, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
 	assert.NilError(t, err)
 	assert.Equal(t, zipPath, "")
 }
 
 func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(t *testing.T) {
+	// Create a temporary zip file
+	dir := t.TempDir()
+	zipPathTemp := filepath.Join(dir, "failureCase.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPathTemp)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, true, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, true, featureFlagsWrapper)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
 	assert.Equal(t, zipPath, "")
@@ -2989,18 +3005,33 @@ func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(
 func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInSuccessCase(t *testing.T) {
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, false, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, false, featureFlagsWrapper)
 	assert.NilError(t, err)
-	assert.Equal(t, zipPath, "test.zip")
+	assert.Equal(t, zipPath, "data/sources.zip")
 }
 
 func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t *testing.T) {
+	// Create a temporary zip file
+	dir := t.TempDir()
+	zipPathTemp := filepath.Join(dir, "failureCase.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPathTemp)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, false, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, false, featureFlagsWrapper)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
-	assert.Equal(t, zipPath, "failureCase.zip")
+	assert.Equal(t, zipPath, zipPathTemp)
 }
 
 func TestAddSastScan_ScanFlags(t *testing.T) {
