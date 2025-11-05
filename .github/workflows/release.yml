@@ -62,7 +62,6 @@ jobs:
           git checkout 4.4.15
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew --version
-
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
@@ -88,9 +87,7 @@ jobs:
 
       - name: Install Cosign
         if: inputs.dev == false
-        run: |
-          brew install sigstore/tap/cosign
-          brew postinstall openssl@3 || true
+        uses: sigstore/cosign-installer@v3.2.0
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
