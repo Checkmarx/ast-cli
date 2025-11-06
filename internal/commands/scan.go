@@ -2092,7 +2092,7 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
 
 	// check for INCREASE_FILE_UPLOAD_LIMIT feature flag
-	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.IncreaseFileUploadLimit)
+	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
 
 	fmt.Println("flagResponse.Status: ", flagResponse.Status)
 	fmt.Println("fileInfo.Size(): ", fileInfo.Size())
