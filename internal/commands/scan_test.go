@@ -4282,12 +4282,8 @@ func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
 }
 
 func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB(t *testing.T) {
-	fileInfo, err := os.Stat("data/sources.zip")
-	if err != nil {
-		t.Fatalf("Failed to close zip file: %v", err)
-	}
 	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
-	MaxSizeBytes = fileInfo.Size() - 1
+	MaxSizeBytes = 1
 	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
 
 	uploadWrapper := mock.UploadsMockWrapper{}
@@ -4366,13 +4362,8 @@ func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB_Error(t *tes
 		panic("Failed to write to zip file: " + err.Error())
 	}
 
-	fileInfo, err := os.Stat(zipPathTemp)
-	if err != nil {
-		t.Fatalf("Failed to close zip file: %v", err)
-	}
-
 	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
-	MaxSizeBytes = fileInfo.Size() - 1
+	MaxSizeBytes = 1
 	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() //
 
 	uploadWrapper := mock.UploadsMockWrapper{}
