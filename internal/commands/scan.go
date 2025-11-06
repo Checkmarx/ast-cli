@@ -129,8 +129,6 @@ const (
 	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
 	BranchPrimaryPrefix      = "--branch-primary="
 	OverridePolicyManagement = "override-policy-management"
-	maxSizeGB                = 5                              // 5 GB
-	maxSizeBytes             = maxSizeGB * 1024 * 1024 * 1024 // 5 GB in bytes
 )
 
 var (
@@ -155,6 +153,7 @@ var (
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"60", "50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
+	MaxSizeBytes        int64 = 5 * 1024 * 1024 * 1024 // 5 GB in bytes
 )
 
 func NewScanCommand(
@@ -2095,7 +2094,7 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	// check for INCREASE_FILE_UPLOAD_LIMIT feature flag
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.IncreaseFileUploadLimit)
 
-	if flagResponse.Status && fileInfo.Size() > maxSizeBytes {
+	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
 		// File size >5GB, proceed with multipart upload
 		logger.PrintIfVerbose("File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts...")
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)

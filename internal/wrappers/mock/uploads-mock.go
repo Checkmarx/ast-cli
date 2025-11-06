@@ -14,10 +14,10 @@ type UploadsMockWrapper struct {
 
 func (u *UploadsMockWrapper) UploadFileInMultipart(filePath string, wrapper wrappers.FeatureFlagsWrapper) (*string, error) {
 	fmt.Println("UploadFileInMultipart called Create in UploadsMockWrapper")
-	if filePath == "failureCase2.zip" {
+	if strings.Contains(filePath, "failureCaseLarge.zip") {
 		return nil, errors.New("error from UploadFileInMultipart")
 	}
-	url := "/path/to/largeZipFile"
+	url := "multiPart/path/to/nowhere"
 	return &url, nil
 }
 
@@ -26,6 +26,6 @@ func (u *UploadsMockWrapper) UploadFile(filePath string, featureFlagsWrapper wra
 	if strings.Contains(filePath, "failureCase.zip") {
 		return nil, errors.New("error from UploadFile")
 	}
-	url := "/path/to/nowhere"
+	url := "singlePart/path/to/nowhere"
 	return &url, nil
 }
