@@ -433,6 +433,7 @@ func getPartSizeBytes() (int64, error) {
 		logger.PrintIfVerbose(fmt.Sprintf("Configured part size %d GB is outside the allowed range (1 – 5 GB). Defaulting to 2 GB.", truncatedSize))
 		truncatedSize = 2
 	}
+	logger.PrintIfVerbose("Splitting zip file into parts of size: " + fmt.Sprintf("%.0f", float64(truncatedSize)) + " GB")
 	const bytesPerGB = 1024 * 1024 * 1024
 	return int64(float64(truncatedSize) * float64(bytesPerGB)), nil
 }
