@@ -2743,5 +2743,5 @@ func TestCreateScan_AsMultipartUpload_Success(t *testing.T) {
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 	log.SetOutput(os.Stderr)
-	assert.Assert(t, strings.Contains(buf.String(), "File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts"), "uploading file in multiple parts")
+	assert.Assert(t, strings.Contains(buf.String(), "File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts"), "Test for uploading file in multiple parts failed.")
 }

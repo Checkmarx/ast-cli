@@ -422,8 +422,10 @@ func getPartSizeBytes() (int64, error) {
 	// Get part size in GB from config if config is not provided, default to 2 GB
 	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSize)
 	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
+	// If parsing fails or value is empty, default to 2 GB
 	if err != nil {
-		return 0, fmt.Errorf("invalid part size value: %w", err)
+		logger.PrintIfVerbose(fmt.Sprintf("Configured part size '%s' is invalid or empty. Defaulting to 2 GB.", partChunkSizeStr))
+		partChunkSizeFloat = 2
 	}
 	// Truncate to integer
 	truncatedSize := int64(partChunkSizeFloat)
