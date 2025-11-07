@@ -389,11 +389,7 @@ func uploadPart(preSignedURL, sourcesFile string, featureFlagsWrapper FeatureFla
 }
 
 func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
-	partSizeBytes, err := getPartSizeBytes()
-	if err != nil {
-		return nil, err
-	}
-
+	partSizeBytes := getPartSizeBytes()
 	f, err := os.Open(zipFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("open input - %w", err)
@@ -418,7 +414,7 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 	return partNames, nil
 }
 
-func getPartSizeBytes() (int64, error) {
+func getPartSizeBytes() int64 {
 	// Get part size in GB from config if config is not provided, default to 2 GB
 	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSizeKey)
 	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
@@ -437,7 +433,7 @@ func getPartSizeBytes() (int64, error) {
 	}
 	logger.PrintIfVerbose("Splitting zip file into parts of size: " + fmt.Sprintf("%.0f", float64(truncatedSize)) + " GB")
 	const bytesPerGB = 1024 * 1024 * 1024
-	return int64(float64(truncatedSize) * float64(bytesPerGB)), nil
+	return int64(float64(truncatedSize) * float64(bytesPerGB))
 }
 
 func calculatePartSizes(totalSize, partSizeBytes int64) []int64 {
