@@ -15,13 +15,28 @@ type InstallationConfiguration struct {
 }
 
 func (i *InstallationConfiguration) ExecutableFilePath() string {
-	return filepath.Join(os.TempDir(), i.WorkingDirName, i.ExecutableFile)
+	basePath := os.TempDir()
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		basePath = homeDir + "/.checkmarx/"
+	}
+	return filepath.Join(basePath, i.WorkingDirName, i.ExecutableFile)
 }
 
 func (i *InstallationConfiguration) HashFilePath() string {
-	return filepath.Join(os.TempDir(), i.WorkingDirName, i.HashFileName)
+	basePath := os.TempDir()
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		basePath = homeDir + "/.checkmarx/"
+	}
+	return filepath.Join(basePath, i.WorkingDirName, i.HashFileName)
 }
 
 func (i *InstallationConfiguration) WorkingDir() string {
-	return filepath.Join(os.TempDir(), i.WorkingDirName)
+	basePath := os.TempDir()
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		basePath = homeDir + "/.checkmarx/"
+	}
+	return filepath.Join(basePath, i.WorkingDirName)
 }
