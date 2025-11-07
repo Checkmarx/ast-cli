@@ -2093,10 +2093,6 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 
 	// check for INCREASE_FILE_UPLOAD_LIMIT feature flag
 	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
-
-	fmt.Println("flagResponse.Status: ", flagResponse.Status)
-	fmt.Println("fileInfo.Size(): ", fileInfo.Size())
-	fmt.Println("MaxSizeBytes: ", MaxSizeBytes)
 	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
 		// File size >5GB, proceed with multipart upload
 		logger.PrintIfVerbose("File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts...")
