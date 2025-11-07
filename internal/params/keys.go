@@ -82,5 +82,5 @@ var (
 	StartMultiPartUploadPathKey         = strings.ToLower(StartMultiPartUploadPathEnv)
 	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
-	MultipartFileSize                   = strings.ToLower(MultipartFileSizeEnv)
+	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
 )

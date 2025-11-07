@@ -420,7 +420,7 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 
 func getPartSizeBytes() (int64, error) {
 	// Get part size in GB from config if config is not provided, default to 2 GB
-	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSize)
+	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSizeKey)
 	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
 	// If parsing fails or value is empty, default to 2 GB
 	if err != nil {
