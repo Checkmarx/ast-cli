@@ -113,6 +113,7 @@ const (
 	ScaExcludeResultTypesParam              = "exclude-result-types"
 	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
 	CliType                                 = "cli"
+	artifactLocationURIString               = "This alert has no associated file"
 )
 
 var (
@@ -188,6 +189,7 @@ func NewResultsCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultCmd := &cobra.Command{
 		Use:   "results",
@@ -201,7 +203,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,6 +265,7 @@ func resultShowSubCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
 		Use:   "show",
@@ -273,7 +276,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -309,8 +312,7 @@ func resultShowSubCommand(
 		commonParams.ResultPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = resultShowCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	resultShowCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation. Requires override-policy-management permission.")
 	resultShowCmd.PersistentFlags().Bool(commonParams.SastRedundancyFlag, false,
 		"Populate SAST results 'data.redundancy' with values '"+fixLabel+"' (to fix) or '"+redundantLabel+"' (no need to fix)")
 	resultShowCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
@@ -601,11 +603,10 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 		*containersIssues = 0
 		enginesStatusCode[commonParams.ContainersType] = 0
 	}
-	if wrappers.IsSCSEnabled {
-		scsIssues = new(int)
-		*scsIssues = 0
-		enginesStatusCode[commonParams.ScsType] = 0
-	}
+
+	scsIssues = new(int)
+	*scsIssues = 0
+	enginesStatusCode[commonParams.ScsType] = 0
 
 	if len(scanInfo.StatusDetails) > 0 {
 		for _, statusDetailItem := range scanInfo.StatusDetails {
@@ -616,7 +617,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 					scaIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.KicsType {
 					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScsType && wrappers.IsSCSEnabled {
+				} else if statusDetailItem.Name == commonParams.ScsType {
 					*scsIssues = notAvailableNumber
 				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
 					*containersIssues = notAvailableNumber
@@ -662,9 +663,9 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	if wrappers.IsContainersEnabled {
 		summary.EnginesResult[commonParams.ContainersType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ContainersType]}
 	}
-	if wrappers.IsSCSEnabled {
-		summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
-	}
+
+	summary.EnginesResult[commonParams.ScsType] = &wrappers.EngineResultSummary{StatusCode: enginesStatusCode[commonParams.ScsType]}
+
 	baseURI, err := resultsWrapper.GetResultsURL(summary.ProjectID)
 	if err != nil {
 		return nil, err
@@ -701,7 +702,7 @@ func summaryReport(
 		summary.APISecurity = *apiSecRisks
 	}
 
-	if summary.HasSCS() && wrappers.IsSCSEnabled {
+	if summary.HasSCS() {
 		// Getting the base SCS overview. Results counts are overwritten in enhanceWithScanSummary->countResult
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
 		if err != nil {
@@ -719,12 +720,12 @@ func summaryReport(
 	setNotAvailableNumberIfZero(summary, &summary.SastIssues, commonParams.SastType)
 	setNotAvailableNumberIfZero(summary, &summary.ScaIssues, commonParams.ScaType)
 	setNotAvailableNumberIfZero(summary, &summary.KicsIssues, commonParams.KicsType)
+	setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
+
 	if wrappers.IsContainersEnabled {
 		setNotAvailableNumberIfZero(summary, summary.ContainersIssues, commonParams.ContainersType)
 	}
-	if wrappers.IsSCSEnabled {
-		setNotAvailableNumberIfZero(summary, summary.ScsIssues, commonParams.ScsType)
-	}
+
 	setRiskMsgAndStyle(summary)
 	setNotAvailableEnginesStatusCode(summary)
 
@@ -781,7 +782,7 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 
 	summary.TotalIssues = summary.SastIssues + summary.ScaIssues + summary.KicsIssues + summary.GetAPISecurityDocumentationTotal()
 
-	if summary.HasSCS() && wrappers.IsSCSEnabled {
+	if summary.HasSCS() {
 		// Special case for SCS where status is partial if any microengines failed
 		if summary.SCSOverview.Status == scanPartialString {
 			summary.EnginesResult[commonParams.ScsType].StatusCode = scanPartialNumber
@@ -853,7 +854,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper, ignorePolicyFlagOmit bool) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -865,7 +866,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			summary.RiskMsg,
 		)
 		if summary.Policies != nil && !strings.EqualFold(summary.Policies.Status, policeManagementNoneStatus) {
-			printPoliciesSummary(summary)
+			printPoliciesSummary(summary, ignorePolicyFlagOmit)
 		}
 
 		printResultsSummaryTable(summary)
@@ -874,7 +875,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			printAPIsSecuritySummary(summary)
 		}
 
-		if summary.HasSCS() && wrappers.IsSCSEnabled {
+		if summary.HasSCS() {
 			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
@@ -886,7 +887,7 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 	return nil
 }
 
-func printPoliciesSummary(summary *wrappers.ResultSummary) {
+func printPoliciesSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit bool) {
 	hasViolations := false
 	for _, policy := range summary.Policies.Policies {
 		if len(policy.RulesViolated) > 0 {
@@ -896,6 +897,9 @@ func printPoliciesSummary(summary *wrappers.ResultSummary) {
 	}
 	if hasViolations {
 		fmt.Printf(tableLine + "\n")
+		if ignorePolicyFlagOmit {
+			printWarningIfIgnorePolicyOmiited()
+		}
 		if summary.Policies.BreakBuild {
 			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
 		} else {
@@ -986,9 +990,8 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	printTableRow("IAC", summary.EnginesResult[commonParams.KicsType], summary.EnginesResult[commonParams.KicsType].StatusCode)
 	printTableRow("SAST", summary.EnginesResult[commonParams.SastType], summary.EnginesResult[commonParams.SastType].StatusCode)
 	printTableRow("SCA", summary.EnginesResult[commonParams.ScaType], summary.EnginesResult[commonParams.ScaType].StatusCode)
-	if wrappers.IsSCSEnabled {
-		printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
-	}
+	printTableRow("SCS", summary.EnginesResult[commonParams.ScsType], summary.EnginesResult[commonParams.ScsType].StatusCode)
+
 	if wrappers.IsContainersEnabled {
 		printTableRow("CONTAINERS", summary.EnginesResult[commonParams.ContainersType], summary.EnginesResult[commonParams.ContainersType].StatusCode)
 	}
@@ -1017,6 +1020,7 @@ func runGetResultCommand(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -1028,6 +1032,19 @@ func runGetResultCommand(
 		sastRedundancy, _ := cmd.Flags().GetBool(commonParams.SastRedundancyFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		scaHideDevAndTestDep, _ := cmd.Flags().GetBool(commonParams.ScaHideDevAndTestDepFlag)
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
+		if ignorePolicy {
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
+			}
+		}
 		waitDelay, _ := cmd.Flags().GetInt(commonParams.WaitDelayFlag)
 		policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
 
@@ -1055,7 +1072,7 @@ func runGetResultCommand(
 
 		var policyResponseModel *wrappers.PolicyResponseModel
 		if !isScanPending(string(scan.Status)) {
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scan, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
@@ -1069,7 +1086,7 @@ func runGetResultCommand(
 
 		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
 			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
-			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper)
+			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper, ignorePolicyFlagOmit)
 		return err
 	}
 }
@@ -1114,11 +1131,6 @@ func runGetCodeBashingCommand(
 	}
 }
 
-func setIsSCSEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
-	scsEngineCLIEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SCSEngineCLIEnabled)
-	wrappers.IsSCSEnabled = scsEngineCLIEnabled.Status
-}
-
 func setIsContainersEnabled(agent string) {
 	wrappers.IsContainersEnabled = !containsIgnoreCase(containerEngineUnsupportedAgents, agent)
 }
@@ -1140,9 +1152,9 @@ func filterResultsByType(results *wrappers.ScanResultsCollection, excludedTypes 
 func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent string) *wrappers.ScanResultsCollection {
 	unsupportedTypesByAgent := map[string][]string{
 		commonParams.VSCodeAgent:       {commonParams.SCSScorecardType},
-		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.JetbrainsAgent:    {commonParams.SCSScorecardType},
 		commonParams.EclipseAgent:      {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
-		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType, commonParams.SCSSecretDetectionType},
+		commonParams.VisualStudioAgent: {commonParams.SCSScorecardType},
 	}
 
 	excludedTypes := make(map[string]struct{})
@@ -1176,10 +1188,10 @@ func CreateScanReport(
 	agent string,
 	resultsParams map[string]string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	reportList := strings.Split(reportTypes, ",")
 	results := &wrappers.ScanResultsCollection{}
-	setIsSCSEnabled(featureFlagsWrapper)
 	setIsContainersEnabled(agent)
 	summary, err := convertScanToResultsSummary(scan, resultsWrapper)
 	if err != nil {
@@ -1192,7 +1204,7 @@ func CreateScanReport(
 		return nil, err
 	}
 	if !scanPending {
-		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent)
+		results, err = ReadResults(resultsWrapper, exportWrapper, scan, resultsParams, agent, featureFlagsWrapper)
 		if err != nil {
 			return nil, err
 		}
@@ -1206,7 +1218,7 @@ func CreateScanReport(
 	}
 	for _, reportType := range reportList {
 		err = createReport(reportType, formatPdfToEmail, formatPdfOptions, formatSbomOptions, targetFile,
-			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, agent)
+			targetPath, results, summary, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return nil, err
 		}
@@ -1235,14 +1247,10 @@ func countResult(summary *wrappers.ResultSummary, result *wrappers.ScanResult) {
 				return
 			}
 		} else if strings.HasPrefix(engineType, commonParams.SscsType) {
-			if wrappers.IsSCSEnabled {
-				addResultToSCSOverview(summary, result)
-				engineType = commonParams.ScsType
-				*summary.ScsIssues++
-				summary.TotalIssues++
-			} else {
-				return
-			}
+			addResultToSCSOverview(summary, result)
+			engineType = commonParams.ScsType
+			*summary.ScsIssues++
+			summary.TotalIssues++
 		} else {
 			return
 		}
@@ -1386,7 +1394,7 @@ func createReport(format,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	agent string) error {
+	ignorePolicyFlagOmit bool) error {
 	if printer.IsFormat(format, printer.FormatIndentedJSON) {
 		return nil
 	}
@@ -1416,7 +1424,7 @@ func createReport(format,
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary, featureFlagsWrapper)
+		return writeConsoleSummary(summary, featureFlagsWrapper, ignorePolicyFlagOmit)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -1479,8 +1487,7 @@ func ReadResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsParams map[string]string,
-	agent string,
-) (results *wrappers.ScanResultsCollection, err error) {
+	agent string, featureflagsWrappers wrappers.FeatureFlagsWrapper) (results *wrappers.ScanResultsCollection, err error) {
 	var resultsModel *wrappers.ScanResultsCollection
 	var errorModel *wrappers.WebError
 
@@ -1503,17 +1510,13 @@ func ReadResults(
 			// Compute SAST results redundancy
 			resultsModel = ComputeRedundantSastResults(resultsModel)
 		}
-		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep)
+		resultsModel, err = enrichScaResults(exportWrapper, scan, resultsModel, scaHideDevAndTestDep, featureflagsWrappers)
 		if err != nil {
 			return nil, err
 		}
 
 		if slices.Contains(scan.Engines, commonParams.ScsType) {
-			if !wrappers.IsSCSEnabled {
-				resultsModel = removeResultsByType(resultsModel, commonParams.SscsType)
-			} else {
-				resultsModel = filterScsResultsByAgent(resultsModel, agent)
-			}
+			resultsModel = filterScsResultsByAgent(resultsModel, agent)
 		}
 
 		resultsModel.ScanID = scan.ID
@@ -1526,10 +1529,9 @@ func enrichScaResults(
 	exportWrapper wrappers.ExportWrapper,
 	scan *wrappers.ScanResponseModel,
 	resultsModel *wrappers.ScanResultsCollection,
-	scaHideDevAndTestDep bool,
-) (*wrappers.ScanResultsCollection, error) {
+	scaHideDevAndTestDep bool, featureflagWrapper wrappers.FeatureFlagsWrapper) (*wrappers.ScanResultsCollection, error) {
 	if slices.Contains(scan.Engines, commonParams.ScaType) {
-		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep)
+		scaExportDetails, err := services.GetExportPackage(exportWrapper, scan.ID, scaHideDevAndTestDep, featureflagWrapper)
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s", failedListingResults)
 		}
@@ -1643,7 +1645,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to add scan to gl-sast report", failedListingResults)
 	}
-	convertCxResultToGlSastVulnerability(results, glSast, summary.BaseURI)
+	convertCxResultToGlSastVulnerability(results, glSast, summary)
 	resultsJSON, err := json.Marshal(glSast)
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to serialize gl-sast report ", failedListingResults)
@@ -2012,10 +2014,10 @@ func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.
 	return sarif
 }
 
-func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) {
+func convertCxResultToGlSastVulnerability(results *wrappers.ScanResultsCollection, glSast *wrappers.GlSastResultsCollection, summary *wrappers.ResultSummary) {
 	for _, result := range results.Results {
 		if strings.TrimSpace(result.Type) == commonParams.SastType {
-			glSast = parseGlSastVulnerability(result, glSast, summaryBaseURI)
+			glSast = parseGlSastVulnerability(result, glSast, summary)
 		}
 	}
 }
@@ -2035,7 +2037,9 @@ func convertCxResultToGlScaFiles(results *wrappers.ScanResultsCollection, glScaR
 		}
 	}
 }
-func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summaryBaseURI string) *wrappers.GlSastResultsCollection {
+func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSastResultsCollection, summary *wrappers.ResultSummary) *wrappers.GlSastResultsCollection {
+	hostName := parseURI(summary.BaseURI)
+
 	queryName := result.ScanResultData.QueryName
 	fileName := result.ScanResultData.Nodes[0].FileName
 	lineNumber := strconv.FormatUint(uint64(result.ScanResultData.Nodes[0].Line), 10)
@@ -2044,13 +2048,14 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 	ID := fmt.Sprintf("%s:%s:%s", queryName, fileName, lineNumber)
 	category := fmt.Sprintf("%s-%s", wrappers.VendorName, result.Type)
 	message := fmt.Sprintf("%s@%s:%s", queryName, fileName, lineNumber)
+	QueryDescriptionLink := fmt.Sprintf("%s/results/%s/%s/sast/description/%s/%s", hostName, summary.ScanID, summary.ProjectID, result.VulnerabilityDetails.CweID, result.ScanResultData.QueryID)
 
 	glSast.Vulnerabilities = append(glSast.Vulnerabilities, wrappers.GlVulnerabilities{
 		ID:          ID,
 		Category:    category,
 		Name:        queryName,
 		Message:     message,
-		Description: result.Description,
+		Description: result.Description + "   \n" + QueryDescriptionLink,
 		CVE:         ID,
 		Severity:    cases.Title(language.English).String(result.Severity),
 		Confidence:  cases.Title(language.English).String(result.Severity),
@@ -2064,7 +2069,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 			{
 				Type:  "cxOneScan",
 				Name:  "CxOne Scan",
-				URL:   summaryBaseURI,
+				URL:   summary.BaseURI,
 				Value: result.ID,
 			},
 		},
@@ -2243,7 +2248,7 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 			} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 				auxIssue.PrimaryLocation = parseContainersSonar(result)
 				sonarIssues = append(sonarIssues, auxIssue)
-			} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+			} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 				sscsSonarIssue := parseSscsSonar(result, &auxIssue)
 				sonarIssues = append(sonarIssues, sscsSonarIssue)
 			}
@@ -2288,7 +2293,7 @@ func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 		sonarIssue.RuleID = result.ID
 	} else if wrappers.IsContainersEnabled && engineType == commonParams.ContainersType {
 		sonarIssue.RuleID = result.ID
-	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+	} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarIssue.RuleID = result.ID
 	}
 
@@ -2325,7 +2330,7 @@ func initSonarRules(result *wrappers.ScanResult) wrappers.SonarRules {
 		sonarRules.Name = result.ScanResultData.ImageTag
 		sonarRules.Description = html.UnescapeString(result.Description)
 		sonarRules.ID = result.ID
-	} else if wrappers.IsSCSEnabled && strings.HasPrefix(engineType, commonParams.SscsType) {
+	} else if strings.HasPrefix(engineType, commonParams.SscsType) {
 		sonarRules.Name = result.ScanResultData.RuleName
 		sonarRules.Description = html.UnescapeString(result.ScanResultData.RuleDescription)
 		sonarRules.ID = result.ID
@@ -2563,7 +2568,7 @@ func findResult(result *wrappers.ScanResult) []wrappers.SarifScanResult {
 		scanResults = parseSarifResultsSca(result, scanResults)
 	} else if result.Type == commonParams.ContainersType && wrappers.IsContainersEnabled {
 		scanResults = parseSarifResultsContainers(result, scanResults)
-	} else if strings.HasPrefix(result.Type, commonParams.SscsType) && wrappers.IsSCSEnabled {
+	} else if strings.HasPrefix(result.Type, commonParams.SscsType) {
 		scanResults = parseSarifResultsSscs(result, scanResults)
 	}
 
@@ -2664,7 +2669,7 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 
 	trimOsSeparatorFromFileName(result)
 	if result.Type == commonParams.SCSScorecardType && result.ScanResultData.Filename == noFileForScorecardResultString {
-		scanLocation.PhysicalLocation.ArtifactLocation.URI = ""
+		scanLocation.PhysicalLocation.ArtifactLocation.URI = artifactLocationURIString
 		scanLocation.PhysicalLocation.ArtifactLocation.Description = &wrappers.SarifMessage{}
 		scanLocation.PhysicalLocation.ArtifactLocation.Description.Text = result.ScanResultData.Filename
 	} else {
@@ -2685,6 +2690,8 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 	var properties wrappers.SarifResultProperties
 	properties.Severity = result.Severity
 	properties.Validity = result.ScanResultData.Validity
+	properties.IsInSource = result.ScanResultData.IsInSource
+	properties.CommitURL = result.ScanResultData.CommitURL
 	scanResult.Properties = &properties
 
 	scanResults = append(scanResults, scanResult)
@@ -2866,4 +2873,18 @@ type ScannerResponse struct {
 	Status    string `json:"Status,omitempty"`
 	Details   string `json:"Details,omitempty"`
 	ErrorCode string `json:"ErrorCode,omitempty"`
+}
+
+func parseURI(summaryBaseURI string) (hostName string) {
+	parsedURL, err := url.Parse(summaryBaseURI)
+	if err != nil {
+		return ""
+	}
+	hostName = fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
+
+	return hostName
+}
+
+func printWarningIfIgnorePolicyOmiited() {
+	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don’t have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
 }

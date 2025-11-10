@@ -9,7 +9,7 @@ import (
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
-func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
+func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
 		Short: "Manage Git hooks",
@@ -31,19 +31,27 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	}
 
 	// Add pre-commit and pre-receive subcommand
-	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper))
-	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper))
+	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper, featureFlagsWrapper))
+	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper, featureFlagsWrapper))
 
 	return hooksCmd
 }
 
-func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
-	allowed, err := jwtWrapper.IsAllowedEngine(params.EnterpriseSecretsLabel)
+func validateLicense(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	var licenseName string
+	if scsLicensingV2Flag.Status {
+		licenseName = params.SecretDetectionLabel
+	} else {
+		licenseName = params.EnterpriseSecretsLabel
+	}
+
+	allowed, err := jwtWrapper.IsAllowedEngine(licenseName)
 	if err != nil {
 		return errors.Wrapf(err, "Failed checking license")
 	}
 	if !allowed {
-		return errors.New("Error: License validation failed. Please verify your CxOne license includes Enterprise Secrets.")
+		return errors.Errorf("Error: License validation failed. Please verify your CxOne license includes %s.", licenseName)
 	}
 	return nil
 }

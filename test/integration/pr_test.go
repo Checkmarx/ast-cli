@@ -4,10 +4,11 @@ package integration
 
 import (
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"

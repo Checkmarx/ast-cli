@@ -3,9 +3,10 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestTelemetryAI(t *testing.T) {

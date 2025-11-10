@@ -22,23 +22,22 @@ type OssPackageResults struct {
 	Packages []OssPackage `json:"Packages"`
 }
 
-func composeID(packageManager, packageName, packageVersion, filePath string) string {
-	return fmt.Sprintf("%s_%s_%s_%s", packageManager, packageName, packageVersion, filePath)
+func composeID(packageManager, packageName, packageVersion string) string {
+	return fmt.Sprintf("%s_%s_%s", packageManager, packageName, packageVersion)
 }
 
 func (p *OssPackage) GetID() string {
-	return composeID(p.PackageManager, p.PackageName, p.PackageVersion, p.FilePath)
+	return composeID(p.PackageManager, p.PackageName, p.PackageVersion)
 }
 
 type IgnoredPackage struct {
 	PackageManager string `json:"PackageManager"`
 	PackageName    string `json:"PackageName"`
 	PackageVersion string `json:"PackageVersion"`
-	FilePath       string `json:"FilePath"`
 }
 
 func (p IgnoredPackage) GetID() string {
-	return composeID(p.PackageManager, p.PackageName, p.PackageVersion, p.FilePath)
+	return composeID(p.PackageManager, p.PackageName, p.PackageVersion)
 }
 
 type Vulnerability struct {

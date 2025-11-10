@@ -2,9 +2,14 @@ package services
 
 import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
+)
+
+const (
+	ApplicationRuleType = "project.name.in"
 )
 
 func createApplicationIds(applicationID, existingApplicationIds []string) []string {
@@ -57,4 +62,72 @@ func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.Appl
 		}
 	}
 	return application
+}
+
+func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+	if applicationName == "" {
+		logger.PrintfIfVerbose("No application name provided. Skipping application update")
+		return nil
+	}
+	applicationResp, err := GetApplication(applicationName, applicationsWrapper)
+	if err != nil {
+		return errors.Wrapf(err, "%s:%s", errorConstants.FailedToGetApplication, applicationName)
+	}
+	if applicationResp == nil {
+		return errors.Errorf("%s: %s", errorConstants.ApplicationNotFound, applicationName)
+	}
+
+	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
+	if directAssociationEnabled.Status {
+		err = associateProjectToApplication(applicationResp.ID, projectID, applicationResp.ProjectIds, applicationsWrapper)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	var applicationModel wrappers.ApplicationConfiguration
+	var newApplicationRule wrappers.Rule
+	var applicationID string
+
+	applicationModel.Name = applicationResp.Name
+	applicationModel.Description = applicationResp.Description
+	applicationModel.Criticality = applicationResp.Criticality
+	applicationModel.Type = applicationResp.Type
+	applicationModel.Tags = applicationResp.Tags
+	newApplicationRule.Type = ApplicationRuleType
+	newApplicationRule.Value = projectName
+	applicationModel.Rules = append(applicationModel.Rules, applicationResp.Rules...)
+	applicationModel.Rules = append(applicationModel.Rules, newApplicationRule)
+	applicationID = applicationResp.ID
+
+	err = updateApplication(&applicationModel, applicationsWrapper, applicationID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateApplication(applicationModel *wrappers.ApplicationConfiguration, applicationWrapper wrappers.ApplicationsWrapper, applicationID string) error {
+	errorModel, err := applicationWrapper.Update(applicationID, applicationModel)
+	return handleApplicationUpdateResponse(errorModel, err)
+}
+
+func associateProjectToApplication(applicationID, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
+	associatedProjectIds = append(associatedProjectIds, projectID)
+	associateProjectsModel := &wrappers.AssociateProjectModel{
+		ProjectIds: associatedProjectIds,
+	}
+	errorModel, err := applicationsWrapper.CreateProjectAssociation(applicationID, associateProjectsModel)
+	return handleApplicationUpdateResponse(errorModel, err)
+}
+
+func handleApplicationUpdateResponse(errorModel *wrappers.ErrorModel, err error) error {
+	if errorModel != nil {
+		err = errors.Errorf(ErrorCodeFormat, errorConstants.FailedToUpdateApplication, errorModel.Code, errorModel.Message)
+	}
+	if errorModel == nil && err == nil {
+		logger.PrintIfVerbose("Successfully updated the application")
+		return nil
+	}
+	return err
 }

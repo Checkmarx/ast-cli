@@ -6,8 +6,11 @@ var EnvVarsBinds = []struct {
 	Default string
 }{
 	{BaseURIKey, BaseURIEnv, ""},
-	{ProxyTypeKey, ProxyTypeEnv, "basic"},
+	{ProxyTypeKey, ProxyTypeEnv, ""},
 	{ProxyDomainKey, ProxyDomainEnv, ""},
+	{ProxyKerberosSPNKey, ProxyKerberosSPNEnv, ""},
+	{ProxyKerberosKrb5ConfKey, ProxyKerberosKrb5ConfEnv, ""},
+	{ProxyKerberosCcacheKey, ProxyKerberosCcacheEnv, ""},
 	{BaseAuthURIKey, BaseAuthURIEnv, ""},
 	{AstAPIKey, AstAPIKeyEnv, ""},
 	{IgnoreProxyKey, IgnoreProxyEnv, ""},

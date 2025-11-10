@@ -31,17 +31,22 @@ func (m *Mapper) ConvertKicsToIacResults(
 
 	for i := range results.Results {
 		result := &results.Results[i]
+		if strings.EqualFold(result.Severity, InfoSeverity) {
+			continue
+		}
 		for j := range result.Locations {
 			loc := &result.Locations[j]
 			locLine := int(loc.Line) - 1
 			lineIndex := m.getOrComputeLineIndex(fileContent, locLine, indexMap)
 
 			iacResult := IacRealtimeResult{
-				Title:        result.QueryName,
-				Description:  result.Description,
-				Severity:     m.mapSeverity(result.Severity),
-				FilePath:     filePath,
-				SimilarityID: loc.SimilarityID,
+				Title:         result.QueryName,
+				Description:   result.Description,
+				ExpectedValue: loc.ExpectedValue,
+				ActualValue:   loc.ActualValue,
+				Severity:      m.mapSeverity(result.Severity),
+				FilePath:      filePath,
+				SimilarityID:  loc.SimilarityID,
 				Locations: []realtimeengine.Location{
 					{
 						Line:       locLine,

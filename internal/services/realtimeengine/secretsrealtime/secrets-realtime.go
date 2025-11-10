@@ -45,7 +45,7 @@ func NewSecretsRealtimeService(
 func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]bool) []SecretsRealtimeResult {
 	filtered := make([]SecretsRealtimeResult, 0, len(results))
 	for _, r := range results {
-		key := fmt.Sprintf("%s_%s_%s", r.Title, r.FilePath, r.SecretValue)
+		key := fmt.Sprintf("%s_%s", r.Title, r.SecretValue)
 		if !ignoreMap[key] {
 			filtered = append(filtered, r)
 		}
@@ -56,7 +56,7 @@ func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]
 func buildIgnoreMap(ignored []IgnoredSecret) map[string]bool {
 	m := make(map[string]bool)
 	for _, s := range ignored {
-		key := fmt.Sprintf("%s_%s_%s", s.Title, s.FilePath, s.SecretValue)
+		key := fmt.Sprintf("%s_%s", s.Title, s.SecretValue)
 		m[key] = true
 	}
 	return m
@@ -86,7 +86,7 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 
 	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {

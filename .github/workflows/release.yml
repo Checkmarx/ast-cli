@@ -62,13 +62,17 @@ jobs:
           git checkout 4.4.15
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew --version
-
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      # New: detect architecture and expose as step output
+      - name: Detect runner architecture
+        id: arch
+        run: |
+          echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@4fe96839fcba8a2d746e020d00a89a37afbc7dc9  #v1-alpha.15
+        uses: douglascamata/setup-docker-macos-action@v1.0.1
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -83,8 +87,7 @@ jobs:
 
       - name: Install Cosign
         if: inputs.dev == false
-        run: |
-          brew install sigstore/tap/cosign
+        uses: sigstore/cosign-installer@v3.2.0
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
@@ -146,7 +149,7 @@ jobs:
       product_name: CLI
       release_version: ${{ inputs.tag }}
       cli_release_version: ""
-      release_author: "Phoenix Team"
+      release_author: "Sypher Team"
       release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
       jira_product_name: ASTCLI
     secrets: inherit

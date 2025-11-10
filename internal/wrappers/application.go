@@ -9,15 +9,29 @@ type ApplicationsResponseModel struct {
 }
 
 type Application struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Criticality int       `json:"criticality"`
-	Rules       []Rule    `json:"rules"`
-	ProjectIds  []string  `json:"projectIds"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
-	Tags        Tags      `json:"tags"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Criticality int               `json:"criticality"`
+	Rules       []Rule            `json:"rules"`
+	ProjectIds  []string          `json:"projectIds"`
+	CreatedAt   time.Time         `json:"createdAt"`
+	UpdatedAt   time.Time         `json:"updatedAt"`
+	Tags        map[string]string `json:"tags"`
+	Type        string            `json:"type"`
+}
+
+type ApplicationConfiguration struct {
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Type        string            `json:"type"`
+	Criticality int               `json:"criticality"`
+	Rules       []Rule            `json:"rules"`
+	Tags        map[string]string `json:"tags"`
+}
+
+type AssociateProjectModel struct {
+	ProjectIds []string `json:"projectIds"`
 }
 
 type Rule struct {
@@ -26,11 +40,8 @@ type Rule struct {
 	Value string `json:"value"`
 }
 
-type Tags struct {
-	Test     string `json:"test"`
-	Priority string `json:"priority"`
-}
-
 type ApplicationsWrapper interface {
 	Get(params map[string]string) (*ApplicationsResponseModel, error)
+	Update(applicationID string, applicationBody *ApplicationConfiguration) (*ErrorModel, error)
+	CreateProjectAssociation(applicationID string, requestModel *AssociateProjectModel) (*ErrorModel, error)
 }

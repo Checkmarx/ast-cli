@@ -27,6 +27,7 @@ import (
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
@@ -298,7 +299,7 @@ func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
-		flag(params.ApplicationName), "my-application",
+		flag(params.ApplicationName), "test-app",
 		flag(params.ProjectName), projectName,
 		flag(params.SourcesFlag), ".",
 		flag(params.ScanTypes), params.IacType,
@@ -488,7 +489,8 @@ func TestContainerEngineScansE2E_InvalidContainerImagesFlag(t *testing.T) {
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	err, _ := executeCommand(t, testArgs...)
-	assertError(t, err, "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag>")
+	fmt.Println(err)
+	assertError(t, err, "Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='nginx', tag=''")
 }
 
 // Create scans from current dir, zip and url and perform assertions in executeScanAssertions
@@ -1666,10 +1668,8 @@ func TestScanCreate_WhenProjectExists_ShouldNotUpdateGroups(t *testing.T) {
 
 }
 
-func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
-	projectID, projectName := getRootProject(t)
-	project := showProject(t, projectID)
-	applicationsBeforeScanCreate := project.ApplicationIds
+func TestScanCreate_WhenProjectExists_ShouldThrow_Error_ApplicationNotFound(t *testing.T) {
+	_, projectName := getRootProject(t)
 
 	args := []string{
 		scanCommand, "create",
@@ -1683,15 +1683,7 @@ func TestScanCreate_WhenProjectExists_ShouldNotUpdateApplication(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	if err != nil {
-		assertError(t, err, "running a scan should pass")
-	}
-
-	project = showProject(t, projectID)
-	applicationsAfterScanCreate := project.ApplicationIds
-	if !reflect.DeepEqual(applicationsBeforeScanCreate, applicationsAfterScanCreate) {
-		t.Errorf("When project exists, applications before and after scan creation should be equal. Got %v, want %v", applicationsAfterScanCreate, applicationsBeforeScanCreate)
-	}
+	assert.Error(t, err, "Application not found: wrong_application")
 
 }
 func TestScanCreateExploitablePath(t *testing.T) {
@@ -2136,7 +2128,8 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 	}
 	scanID, _ := executeCreateScan(t, args)
-	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false)
+	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
+	exportRes, err := services.GetExportPackage(wrappers.NewExportHTTPWrapper("api/sca/export"), scanID, false, wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath))
 	asserts.Nil(t, err)
 	assert.Assert(t, exportRes != nil, "Export response should not be nil")
 }
@@ -2279,6 +2272,122 @@ func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLate
 	assert.Equal(t, createdScanConfig.Value[commands.ConfigContainersPackagesFilterKey], "^internal-.*", "Package filter should be equal")
 }
 
+func TestScanCreate_GitScanWithContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+	gitRepo := SlowRepo // Use the git repository from root_test.go
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), gitRepo, // Git URL for git scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For git scans, UserCustomImages should be included even with containerResolveLocally=true
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], customImages, "UserCustomImages should be set for git scan even with resolve locally")
+}
+
+func TestScanCreate_UploadScanWithContainerResolveLocallyAndCustomImages_ShouldNotIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), ".", // Local directory for upload scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For upload scans with containerResolveLocally=true, UserCustomImages should NOT be included
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], nil, "UserCustomImages should not be set for upload scan with resolve locally")
+}
+
+func TestScanCreate_GitScanWithoutContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	bindKeysToEnvAndDefault(t)
+	var createdScan wrappers.ScanResponseModel
+	var createdScanConfig wrappers.Config
+	scansPath := viper.GetString(params.ScansPathKey)
+	scanWrapper := wrappers.NewHTTPScansWrapper(scansPath)
+
+	customImages := "nginx:alpine,mysql:5.7"
+	gitRepo := SlowRepo // Use the git repository from root_test.go
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.SourcesFlag), gitRepo, // Git URL for git scan
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), customImages,
+		// Note: NOT using ContainerResolveLocallyFlag
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		flag(params.AsyncFlag),
+	}
+	scanID, projectID := executeCreateScan(t, args)
+
+	mapParams := make(map[string]string)
+	mapParams["project-id"] = projectID
+	allScansModel, _, _ := scanWrapper.Get(mapParams)
+
+	createdScan = allScansModel.Scans[0]
+
+	assert.Assert(t, createdScan.ID == scanID, "Scan ID should be equal")
+	assert.Equal(t, len(createdScan.Metadata.Configs), 1, "Scan should have only containers config")
+
+	createdScanConfig = createdScan.Metadata.Configs[0]
+
+	assert.Equal(t, createdScanConfig.Type, params.ContainersType, "Scan type should be equal")
+	// For git scans without containerResolveLocally, UserCustomImages should be included (existing behavior)
+	assert.Equal(t, createdScanConfig.Value[commands.ConfigUserCustomImagesKey], customImages, "UserCustomImages should be set for git scan without resolve locally")
+}
+
 func TestCreateScanWithAsyncFlag_TryShowResults_PolicyNotEvaluated(t *testing.T) {
 	createASTIntegrationTestCommand(t)
 	configuration.LoadConfiguration()
@@ -2384,6 +2493,141 @@ func TestCreateScan_WithScaResolver_ZipSource_Fail(t *testing.T) {
 	assert.Error(t, err, "Scanning Zip files is not supported by ScaResolver.Please use non-zip source")
 }
 
+// TestContainerScan_WithCustomImagesAndDockerfile tests that when providing custom images
+// via CLI and scanning a directory with Dockerfiles, both sets of images are scanned
+func TestContainerScan_WithCustomImagesAndDockerfile(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+
+	// Create a temporary directory with a Dockerfile
+	testDir := "test-container-extraction"
+	os.RemoveAll(testDir)
+	err := os.Mkdir(testDir, 0755)
+	assert.NilError(t, err, "Failed to create test directory")
+	defer os.RemoveAll(testDir)
+
+	// Create a Dockerfile with different images than CLI provides
+	dockerfile := `FROM nginx:1.25.3
+RUN apt-get update
+FROM redis:7.2.3-alpine
+COPY . /app
+FROM mysql:8.2.0`
+	err = os.WriteFile(filepath.Join(testDir, "Dockerfile"), []byte(dockerfile), 0644)
+	assert.NilError(t, err, "Failed to create Dockerfile")
+
+	// Create docker-compose.yml with additional images
+	dockerCompose := `version: '3'
+services:
+  web:
+    image: httpd:2.4.58
+  db:
+    image: postgres:16.1`
+	err = os.WriteFile(filepath.Join(testDir, "docker-compose.yml"), []byte(dockerCompose), 0644)
+	assert.NilError(t, err, "Failed to create docker-compose.yml")
+
+	// Run scan with custom images that are different from Dockerfile images
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_container_extraction",
+		flag(params.SourcesFlag), testDir,
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), "ubuntu:22.04,debian:11", // Different from Dockerfile images
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	// Execute the scan - should create successfully
+	scanID, projectID := executeCreateScan(t, args)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+
+	log.Printf("Created container scan with ID: %s", scanID)
+}
+
+// TestContainerScan_EmptyDirectoryWithCustomImages tests that scanning an empty directory
+// with custom images works correctly (the fix adds a placeholder file)
+func TestContainerScan_EmptyDirectoryWithCustomImages(t *testing.T) {
+	createASTIntegrationTestCommand(t)
+
+	// Create an empty directory
+	emptyDir := "test-empty-container-scan"
+	os.RemoveAll(emptyDir)
+	err := os.Mkdir(emptyDir, 0755)
+	assert.NilError(t, err, "Failed to create empty directory")
+	defer os.RemoveAll(emptyDir)
+
+	// Run scan on empty directory with custom images
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_empty_dir",
+		flag(params.SourcesFlag), emptyDir,
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ContainerImagesFlag), "nginx:latest",
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	// Execute the scan - this should NOT fail with "no files found"
+	scanID, projectID := executeCreateScan(t, args)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+	assert.Assert(t, projectID != "", "Project ID should not be empty")
+
+	log.Printf("Created scan on empty directory with ID: %s", scanID)
+}
+
+// TestContainerScan_DirectoryWithFilesAndFilters tests that the empty directory check
+// works correctly with filters - a directory with only filtered-out files should be
+// treated as empty and get a placeholder file
+func TestContainerScan_DirectoryWithFilesAndFilters(t *testing.T) {
+	// Create a directory with only Java files
+	testDir := "test-filtered-container-scan"
+	os.RemoveAll(testDir)
+	err := os.Mkdir(testDir, 0755)
+	assert.NilError(t, err, "Failed to create test directory")
+	defer os.RemoveAll(testDir)
+
+	// Create some Java files that will be filtered out
+	javaFile := `public class Test {
+    public static void main(String[] args) {
+        System.out.println("Hello");
+    }
+}`
+	err = os.WriteFile(filepath.Join(testDir, "Test.java"), []byte(javaFile), 0644)
+	assert.NilError(t, err, "Failed to create Java file")
+	err = os.WriteFile(filepath.Join(testDir, "Main.java"), []byte(javaFile), 0644)
+	assert.NilError(t, err, "Failed to create second Java file")
+
+	// Run scan with filter that excludes Java files
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests() + "_filtered_dir",
+		flag(params.SourcesFlag), testDir,
+		flag(params.ScanTypes), "container-security",
+		flag(params.ContainerImagesFlag), "alpine:3.18",
+		flag(params.SourceDirFilterFlag), "!*.java", // Filter out Java files
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	// Execute the scan - directory appears empty after filtering
+	outputBuffer := executeCmdWithTimeOutNilAssertion(t,
+		"Container scan on filtered directory should pass", timeout, args...)
+
+	// Extract scan ID from output
+	scanResponse := wrappers.ScanResponseModel{}
+	err = json.Unmarshal(outputBuffer.Bytes(), &scanResponse)
+	assert.NilError(t, err, "Failed to parse scan response")
+
+	// Verify scan was created successfully
+	assert.Assert(t, scanResponse.ID != "", "Scan ID should not be empty")
+	assert.Assert(t, scanResponse.Status != wrappers.ScanFailed,
+		"Scan should not fail with 'no files found' error")
+
+	log.Printf("Created scan on filtered directory with ID: %s", scanResponse.ID)
+
+	// Cleanup
+	deleteScan(t, scanResponse.ID)
+}
+
 func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
 	args := []string{
 		"scan", "create",
@@ -2426,5 +2670,59 @@ func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
 
 	err, _ := executeCommand(t, args...)
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+}
+
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreNotFound(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.GitIgnoreFileFilterFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with gitignore filter should pass without error")
+}
+
+func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ApplicationName), "cli-application",
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Project should be assigned to application")
+}
+
+func TestCreateScanWithNewProjectName_Assign_Groups(t *testing.T) {
+
+	defer deleteProjectByName(t, getProjectNameForTest())
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ProjectGroupList), formatGroups(Groups),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Groups should be assigned to newly created projects")
 
 }

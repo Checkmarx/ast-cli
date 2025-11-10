@@ -13,6 +13,5 @@ type SecretsRealtimeResult struct {
 
 type IgnoredSecret struct {
 	Title       string `json:"Title"`
-	FilePath    string `json:"FilePath"`
 	SecretValue string `json:"SecretValue"`
 }

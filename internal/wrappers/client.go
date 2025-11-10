@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -23,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/kerberos"
 	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 )
 
@@ -30,6 +33,7 @@ const (
 	expiryGraceSeconds      = 10
 	NoTimeout               = 0
 	ntlmProxyToken          = "ntlm"
+	kerberosProxyToken      = "kerberos"
 	checkmarxURLError       = "Could not reach provided Checkmarx server"
 	invalidCredentialsError = "Provided credentials are invalid"
 	APIKeyDecodeErrorFormat = "Token decoding error: %s"
@@ -43,6 +47,7 @@ const (
 	contentTypeHeader       = "Content-Type"
 	formURLContentType      = "application/x-www-form-urlencoded"
 	jsonContentType         = "application/json"
+	defaultDialerDuration   = 30 * time.Second
 )
 
 var (
@@ -139,6 +144,10 @@ func GetClient(timeout uint) *http.Client {
 		client = basicProxyClient(timeout, "")
 	} else if proxyTypeStr == ntlmProxyToken {
 		client = ntmlProxyClient(timeout, proxyStr)
+	} else if proxyTypeStr == kerberosProxyToken {
+		client = kerberosProxyClient(timeout, proxyStr)
+	} else if proxyTypeStr == "kerberos-native" {
+		client = kerberosNativeProxyClient(timeout, proxyStr)
 	} else {
 		client = basicProxyClient(timeout, proxyStr)
 	}
@@ -182,8 +191,8 @@ func basicProxyClient(timeout uint, proxyStr string) *http.Client {
 
 func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 	dialer := &net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
 	}
 	u, _ := url.Parse(proxyStr)
 	domainStr := viper.GetString(commonParams.ProxyDomainKey)
@@ -195,6 +204,116 @@ func ntmlProxyClient(timeout uint, proxyStr string) *http.Client {
 		Transport: &http.Transport{
 			Proxy:       nil,
 			DialContext: ntlmDialContext,
+		},
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+}
+
+func kerberosProxyClient(timeout uint, proxyStr string) *http.Client {
+	dialer := &net.Dialer{
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
+	}
+
+	if proxyStr == "" {
+		logger.PrintIfVerbose("Error: Proxy string is required for Kerberos proxy authentication.")
+		logger.Print("Error: Proxy string is required for Kerberos proxy authentication.")
+		logger.PrintIfVerbose("Please provide Proxy string using: --proxy 'http://proxy.example.com' or set CX_PROXY environment variable")
+		os.Exit(1)
+	}
+
+	u, _ := url.Parse(proxyStr)
+
+	// Get Kerberos configuration from viper
+	proxySPN := viper.GetString(commonParams.ProxyKerberosSPNKey)
+
+	// Validate required SPN parameter
+	if proxySPN == "" {
+		logger.PrintIfVerbose("Error: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.Print("Error: Kerberos SPN is required for Kerberos proxy authentication.")
+		logger.PrintIfVerbose("Please provide SPN using: --proxy-kerberos-spn 'HTTP/proxy.example.com' or set CX_PROXY_KERBEROS_SPN environment variable")
+		os.Exit(1)
+	}
+
+	// Use gokrb5 for all platforms (standard Kerberos)
+	return kerberosGokrb5ProxyClient(timeout, proxyStr, u, dialer, proxySPN)
+}
+
+// kerberosNativeProxyClient creates an HTTP client using Windows native Kerberos (SSPI)
+func kerberosNativeProxyClient(timeout uint, proxyStr string) *http.Client {
+	if runtime.GOOS != "windows" {
+		logger.PrintIfVerbose("Error: --proxy-auth-type kerberos-native is only supported on Windows")
+		logger.Print("Error: --proxy-auth-type kerberos-native is only supported on Windows")
+		os.Exit(1)
+	}
+
+	dialer := &net.Dialer{
+		Timeout:   defaultDialerDuration,
+		KeepAlive: defaultDialerDuration,
+	}
+	u, _ := url.Parse(proxyStr)
+
+	// Get Kerberos configuration
+	proxySPN := viper.GetString(commonParams.ProxyKerberosSPNKey)
+	if proxySPN == "" {
+		logger.PrintIfVerbose("ERROR: Kerberos SPN is required for windows native kerberos authentication")
+		logger.Print("Error: Kerberos SPN is required for windows native kerberos authentication")
+		os.Exit(1)
+	}
+
+	// Validate SSPI setup
+	if err := kerberos.ValidateSSPISetup(proxySPN); err != nil {
+		logger.PrintIfVerbose("Error: Failed to generate a token for the specified SPN." + err.Error())
+		logger.Print("Error: Failed to generate a token for the specified SPN.")
+		os.Exit(1)
+	}
+
+	logger.PrintIfVerbose("Creating HTTP client using Windows native Kerberos (SSPI)")
+	logger.PrintIfVerbose("Windows SSPI SPN: " + proxySPN)
+
+	// Use Windows SSPI DialContext
+	kerberosDialContext := kerberos.WindowsSSPIDialContext(dialer, u, proxySPN, nil)
+
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: kerberosDialContext,
+		},
+		Timeout: time.Duration(timeout) * time.Second,
+	}
+}
+
+// kerberosGokrb5ProxyClient creates an HTTP client using gokrb5 Kerberos (cross-platform)
+func kerberosGokrb5ProxyClient(timeout uint, proxyStr string, u *url.URL, dialer *net.Dialer, proxySPN string) *http.Client {
+	krb5ConfPath := viper.GetString(commonParams.ProxyKerberosKrb5ConfKey)
+	if krb5ConfPath == "" {
+		krb5ConfPath = kerberos.GetDefaultKrb5ConfPath()
+	}
+
+	ccachePath := viper.GetString(commonParams.ProxyKerberosCcacheKey)
+
+	// Early validation: Check gokrb5 Kerberos setup before creating client
+	if err := kerberos.ValidateKerberosSetup(krb5ConfPath, ccachePath, proxySPN); err != nil {
+		logger.PrintIfVerbose("Error: Kerberos proxy authentication setup failed: " + err.Error())
+		logger.Printf("Error: %v", err.Error())
+		os.Exit(0)
+	}
+
+	logger.PrintIfVerbose("Creating HTTP client using Kerberos Proxy using: " + proxyStr)
+	logger.PrintIfVerbose("Kerberos SPN: " + proxySPN)
+	logger.PrintIfVerbose("Kerberos krb5 configuration file: " + krb5ConfPath)
+
+	kerberosConfig := kerberos.KerberosConfig{
+		ProxySPN:     proxySPN,
+		Krb5ConfPath: krb5ConfPath,
+		CcachePath:   ccachePath,
+	}
+
+	kerberosDialContext := kerberos.NewKerberosProxyDialContext(dialer, u, kerberosConfig, nil)
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy:       nil,
+			DialContext: kerberosDialContext,
 		},
 		Timeout: time.Duration(timeout) * time.Second,
 	}
@@ -540,7 +659,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	if req.Body != nil {
 		body, err = io.ReadAll(req.Body)
 		if err != nil {
-			fmt.Errorf("failed to read request body: %w", err)
+			return "", fmt.Errorf("failed to read request body: %w", err)
 		}
 		if req.Body != nil {
 			req.Body.Close()
@@ -665,6 +784,11 @@ func request(client *http.Client, req *http.Request, responseBody bool) (*http.R
 		Domains = AppendIfNotExists(Domains, req.URL.Host)
 		if err != nil {
 			logger.PrintIfVerbose(err.Error())
+			// Check if this is a non-retryable error (e.g., wrong Kerberos SPN)
+			if kerberos.IsNonRetryable(err) {
+				logger.PrintIfVerbose("Non-retryable error detected, skipping retries")
+				return nil, err
+			}
 		}
 		if resp != nil && err == nil {
 			if hasRedirectStatusCode(resp) {

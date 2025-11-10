@@ -3,13 +3,15 @@ package commands
 import (
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHooksCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	cmd := NewHooksCommand(mockJWT)
+	mockFF := &mock.FeatureFlagsMockWrapper{}
+	cmd := NewHooksCommand(mockJWT, mockFF)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "hooks", cmd.Use)
@@ -18,7 +20,8 @@ func TestNewHooksCommand(t *testing.T) {
 
 func TestPreCommitCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	cmd := PreCommitCommand(mockJWT)
+	mockFF := &mock.FeatureFlagsMockWrapper{}
+	cmd := PreCommitCommand(mockJWT, mockFF)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "pre-commit", cmd.Use)
@@ -45,32 +48,69 @@ func TestPreCommitCommand(t *testing.T) {
 
 func TestValidateLicense(t *testing.T) {
 	tests := []struct {
-		name      string
-		aiEnabled int
-		wantError bool
+		name                   string
+		scsLicensingV2         bool
+		allowSecretDetection   int
+		allowEnterpriseSecrets int
+		aiEnabled              int
+		wantErr                bool
 	}{
 		{
-			name:      "License is valid",
-			aiEnabled: 0,
-			wantError: false,
+			name:                   "scsLicensing V2 ON and Secret Detection allowed",
+			scsLicensingV2:         true,
+			allowSecretDetection:   0,
+			allowEnterpriseSecrets: mock.EnterpriseSecretsDisabled,
+			wantErr:                false,
 		},
 		{
-			name:      "License is invalid",
-			aiEnabled: mock.AIProtectionDisabled,
-			wantError: true,
+			name:                   "scsLicensing V2 ON and Secret Detection denied",
+			scsLicensingV2:         true,
+			allowSecretDetection:   mock.SecretDetectionDisabled,
+			allowEnterpriseSecrets: 0,
+			wantErr:                true,
+		},
+		{
+			name:                   "scsLicensing V2 OFF and Enterprise Secrets allowed",
+			scsLicensingV2:         false,
+			allowSecretDetection:   mock.SecretDetectionDisabled,
+			allowEnterpriseSecrets: 0,
+			wantErr:                false,
+		},
+		{
+			name:                   "scsLicensing V2 OFF and Enterprise Secrets denied",
+			scsLicensingV2:         false,
+			allowSecretDetection:   0,
+			allowEnterpriseSecrets: mock.EnterpriseSecretsDisabled,
+			wantErr:                true,
+		},
+		{
+			name:                   "AI enabled and secrets license disabled",
+			aiEnabled:              1,
+			allowEnterpriseSecrets: mock.EnterpriseSecretsDisabled,
+			allowSecretDetection:   mock.SecretDetectionDisabled,
+			wantErr:                true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockJWT := &mock.JWTMockWrapper{
-				AIEnabled: tt.aiEnabled,
+			wrappers.ClearCache()
+			mockFF := &mock.FeatureFlagsMockWrapper{}
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
 			}
 
-			err := validateLicense(mockJWT)
+			mockJWT := &mock.JWTMockWrapper{}
+			mockJWT.AIEnabled = tt.aiEnabled
+			mockJWT.EnterpriseSecretsEnabled = tt.allowEnterpriseSecrets
+			mockJWT.SecretDetectionEnabled = tt.allowSecretDetection
 
-			if tt.wantError {
+			err := validateLicense(mockJWT, mockFF)
+
+			if tt.wantErr {
 				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "License validation failed")
 			} else {
 				assert.NoError(t, err)
 			}
@@ -80,7 +120,8 @@ func TestValidateLicense(t *testing.T) {
 
 func TestSecretsIgnoreCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
-	cmd := secretsIgnoreCommand(mockJWT)
+	mockFF := &mock.FeatureFlagsMockWrapper{}
+	cmd := secretsIgnoreCommand(mockJWT, mockFF)
 	assert.NotNil(t, cmd)
 
 	resultIdsFlag := cmd.Flag("resultIds")

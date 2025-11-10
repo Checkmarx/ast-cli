@@ -43,6 +43,6 @@ func (*ExportMockWrapper) DownloadExportReport(_, targetFile string) error {
 	return nil
 }
 
-func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string) (*wrappers.ScaPackageCollectionExport, error) {
+func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error) {
 	return &wrappers.ScaPackageCollectionExport{}, nil
 }

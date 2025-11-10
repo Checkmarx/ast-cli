@@ -63,3 +63,6 @@ override.tf.json
 
 # Ignore pkgs directory
 vendor/*
+
+# Build artifacts and temporary directories
+internal/commands/data/manifests/obj/

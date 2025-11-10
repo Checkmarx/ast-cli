@@ -162,7 +162,12 @@ func getBitBucketServer(
 	}
 
 	req.URL.RawQuery = q.Encode()
-	resp, err := client.Do(req)
+	resp, err := wrappers.WithSCMRateLimitRetry(
+		wrappers.BitbucketRateLimitConfig,
+		func() (*http.Response, error) {
+			return client.Do(req)
+		},
+	)
 	if err != nil {
 		return err
 	}

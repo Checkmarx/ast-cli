@@ -4,7 +4,7 @@ type ExportWrapper interface {
 	InitiateExportRequest(payload *ExportRequestPayload) (*ExportResponse, error)
 	GetExportReportStatus(reportID string) (*ExportPollingResponse, error)
 	DownloadExportReport(reportID, targetFile string) error
-	GetScaPackageCollectionExport(fileURL string) (*ScaPackageCollectionExport, error)
+	GetScaPackageCollectionExport(fileURL string, auth bool) (*ScaPackageCollectionExport, error)
 }
 
 type ScaPackageCollectionExport struct {

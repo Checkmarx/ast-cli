@@ -4,10 +4,12 @@ package commands
 
 import (
 	"testing"
+	"time"
 
 	asserts "github.com/stretchr/testify/assert"
 
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 
@@ -268,4 +270,31 @@ func TestSupportEmptyTags_whenOnlyKeysFlagHasEmptyValue_shouldNotChangeParams(t 
 	assert.Equal(t, params["tags-keys"], "key1,key2,"+emptyTag)
 	assert.Equal(t, params["tags-values"], "value1")
 	assert.Equal(t, len(params), 4)
+}
+
+func TestToProjectView(t *testing.T) {
+	// Arrange: Create a sample ProjectResponseModel
+	input := wrappers.ProjectResponseModel{
+		ID:             "123",
+		Name:           "Test Project",
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+		MainBranch:     "main",
+		Tags:           map[string]string{"key1": "value1"},
+		Groups:         []string{"group1", "group2"},
+		ApplicationIds: []string{"app1", "app2"},
+	}
+
+	// Act: Call the toProjectView function
+	result := toProjectView(input)
+
+	// Assert: Verify the fields are correctly mapped
+	assert.Equal(t, result.ID, input.ID)
+	assert.Equal(t, result.Name, input.Name)
+	assert.Equal(t, result.CreatedAt, input.CreatedAt)
+	assert.Equal(t, result.UpdatedAt, input.UpdatedAt)
+	assert.Equal(t, result.MainBranch, input.MainBranch)
+	assert.DeepEqual(t, result.Tags, input.Tags)
+	assert.DeepEqual(t, result.Groups, input.Groups)
+	assert.DeepEqual(t, result.ApplicationIds, input.ApplicationIds)
 }

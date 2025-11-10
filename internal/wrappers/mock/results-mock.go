@@ -31,6 +31,9 @@ var containersResults = &wrappers.ScanResult{
 		CweID:     "CWE-1234",
 	},
 }
+var ScanResultData = wrappers.ScanResultData{
+	Filename: "Issue Found in your GitHub repository",
+}
 
 var scsResultsSecretDetection = []*wrappers.ScanResult{
 	{
@@ -46,6 +49,7 @@ var scsResultsSecretDetection = []*wrappers.ScanResult{
 		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
 		Description:          "Generic API Key has detected secret for file application.properties.",
 		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		ScanResultData:       ScanResultData,
 	},
 	{
 		Type:                 params.SCSSecretDetectionType,
@@ -60,6 +64,7 @@ var scsResultsSecretDetection = []*wrappers.ScanResult{
 		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
 		Description:          "Generic API Key has detected secret for file application.properties.",
 		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		ScanResultData:       ScanResultData,
 	},
 }
 var scsResultScorecard = []*wrappers.ScanResult{
@@ -76,6 +81,7 @@ var scsResultScorecard = []*wrappers.ScanResult{
 		FirstScanID:          "3d922bcd-00fe-4774-b182-d51e739dff81",
 		Description:          "score is 0: branch protection not enabled on development/release branches:\\nWarn: branch protection not enabled for branch 'main'",
 		VulnerabilityDetails: wrappers.VulnerabilityDetails{},
+		ScanResultData:       ScanResultData,
 	},
 }
 
@@ -295,6 +301,17 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 			{
 				Type:     "kics",
 				Severity: "low",
+				ScanResultData: wrappers.ScanResultData{
+					QueryName: "mock-query-name-5",
+					Nodes: []*wrappers.ScanResultNode{
+						{
+							FileName: "dummy-file-name-4",
+						},
+						{
+							FileName: "dummy-file-name-4",
+						},
+					},
+				},
 			},
 		},
 	}

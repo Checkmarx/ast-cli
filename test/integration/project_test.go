@@ -4,6 +4,7 @@ package integration
 
 import (
 	"fmt"
+	asserts "github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"log"
@@ -76,7 +77,6 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 		assert.Assert(t, ok, "Project should contain all created tags. Missing %s", key)
 		assert.Equal(t, val, Tags[key], "Tag value should be equal")
 	}
-
 	assert.Assert(t, len(project.Groups) >= len(groups), "The project must contain at least %d groups", len(groups))
 }
 
@@ -134,6 +134,54 @@ func TestCreateWithInvalidGroup(t *testing.T) {
 		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
 	)
 	assertError(t, err, "Failed finding groups: [invalidGroup]")
+}
+
+// when both of these FF are on , validation based on permission of assign-groups-to-all is done by api call.
+// if user is not having this permission and user is trying to assign other groups , error is thrown
+func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || !isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") {
+		t.Skip("ACCESS_MANAGEMENT_ENABLED OR  GROUPS_VALIDATION_ENABLED FFs are not enabled... Skipping test")
+	}
+
+	groups := []string{
+		"TT_Group1",
+	}
+
+	groupsStr := formatGroups(groups)
+
+	_, outBuffer := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), projectNameRandom, flag(params.GroupList), groupsStr,
+	)
+	assert.Assert(t, outBuffer != nil, "Project creation output response should not be nil")
+}
+
+func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
+	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || (isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") && isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED")) {
+		t.Skip("ACCESS_MANAGEMENT_ENABLED FFs are not enabled... Skipping test")
+	}
+
+	groups := []string{
+		"it_test_group_1",
+		"it_test_group_2",
+	}
+
+	groupsStr := formatGroups(groups)
+
+	_, outBuffer := executeCommand(
+		t, "project", "create",
+		flag(params.FormatFlag),
+		printer.FormatJSON,
+		flag(params.ProjectName), projectNameRandom, flag(params.GroupList), groupsStr,
+	)
+
+	createdProject := wrappers.ProjectResponseModel{}
+	unmarshall(t, outBuffer, &createdProject, "Reading project create response JSON should pass")
+	fmt.Printf("New project created with id: %s \n", createdProject.ID)
+	assert.Assert(t, createdProject.ID != "", "Project ID should not be empty")
+	defer deleteProject(t, createdProject.ID)
 }
 
 func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
@@ -224,7 +272,6 @@ func listProjectByID(t *testing.T, projectID string) []wrappers.ProjectResponseM
 		"project", "list",
 		flag(params.FormatFlag), printer.FormatJSON, flag(params.FilterFlag), idFilter,
 	)
-	fmt.Println("Listing project for id output buffer", outputBuffer)
 	var projects []wrappers.ProjectResponseModel
 	_ = unmarshall(t, outputBuffer, &projects, "Reading all projects response JSON should pass")
 	fmt.Println("Listing project for id projects length: ", len(projects))
@@ -317,6 +364,24 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 
 	fmt.Println("Response after project is created : ", string(createdProjectJSON))
 	fmt.Printf("New project created with id: %s \n", createdProject.ID)
-
 	deleteProject(t, createdProject.ID)
+}
+
+func TestProjectShow_MainBranch_Exist(t *testing.T) {
+
+	projectID, projectName := createProject(t, Tags, Groups)
+	defer deleteProject(t, projectID)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.BranchPrimaryFlag),
+	}
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+
+	project := showProject(t, projectID)
+	asserts.Contains(t, project.MainBranch, "dummy_branch", "Project main branch should be 'dummy_branch'")
 }

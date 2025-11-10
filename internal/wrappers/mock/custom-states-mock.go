@@ -1,7 +1,9 @@
 package mock
 
-import "github.com/checkmarx/ast-cli/internal/wrappers"
-import "github.com/pkg/errors"
+import (
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
+)
 
 type CustomStatesMockWrapper struct{}
 

@@ -4,9 +4,10 @@ package commands
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"testing"
 
 	"gotest.tools/assert"
 )

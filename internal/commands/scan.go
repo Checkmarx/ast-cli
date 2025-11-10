@@ -62,7 +62,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.11"
+	containerImage                          = "checkmarx/kics:v2.1.15"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -110,6 +110,10 @@ const (
 		"\nTo use this feature, you would need to purchase a license." +
 		"\nPlease contact our support team for assistance if you believe you have already purchased a license." +
 		"\nLicensed packages: %s"
+	engineScsNotAllowed = "You are trying to run a scan with the \"scs\" scan type. This requires either the \"repository‑health\" or the \"secret‑detection\" package license, depending on which scanner you are running." +
+		"\nTo use this feature, you need to purchase the appropriate license." +
+		"\nIf you think that you have already purchased the relevant license, please contact our support team for assistance." +
+		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
 	directoryCreationPrefix     = "cx-"
 	ScsScoreCardType            = "scorecard"
@@ -120,10 +124,11 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt             = ".json"
-	xmlExt              = ".xml"
-	sbomScanTypeErrMsg  = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix = "--branch-primary="
+	jsonExt                  = ".json"
+	xmlExt                   = ".xml"
+	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix      = "--branch-primary="
+	OverridePolicyManagement = "override-policy-management"
 )
 
 var (
@@ -845,8 +850,7 @@ func scanCreateSubCommand(
 		commonParams.ScanPolicyDefaultTimeout,
 		"Cancel the policy evaluation and fail after the timeout in minutes",
 	)
-	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Do not evaluate policies")
-	_ = createScanCmd.PersistentFlags().MarkHidden(commonParams.IgnorePolicyFlag)
+	createScanCmd.PersistentFlags().Bool(commonParams.IgnorePolicyFlag, false, "Skip policy evaluation. Requires override-policy-management permission.")
 
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
@@ -870,6 +874,7 @@ func scanCreateSubCommand(
 
 	// reading sbom-only flag
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
+	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 
 	return createScanCmd
 }
@@ -985,7 +990,9 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.EnterpriseSecretsType])
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2Flag.Status, userAllowedEngines[commonParams.RepositoryHealthType],
+		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -1023,6 +1030,7 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 
 	if len(allScansModel.Scans) > 0 {
 		scanModelResponse := allScansModel.Scans[0]
+		scanModelResponse.ReplaceMicroEnginesWithSCS()
 		config = scanModelResponse.Metadata.Configs
 		engines := scanModelResponse.Engines
 		// Check if there are no scan types sent using the flags, and use the latest scan engine types
@@ -1179,6 +1187,10 @@ func addScaScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasContain
 	return nil
 }
 
+// addContainersScan creates the container security scan configuration with validation.
+// Container-security scan-type related function.
+// This function validates all --container-images inputs including tar files, image:tag formats,
+// and various prefixed formats (docker:, podman:, file:, etc.) before creating the scan config.
 func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (map[string]interface{}, error) {
 	if !scanTypeEnabled(commonParams.ContainersType) {
 		return nil, nil
@@ -1188,7 +1200,8 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 	containerConfig := wrappers.ContainerConfig{}
 
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
-	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally)
+	isGitScan := getUploadType(cmd) == git
+	initializeContainersConfigWithResubmitValues(resubmitConfig, &containerConfig, containerResolveLocally, isGitScan)
 
 	fileFolderFilter, _ := cmd.PersistentFlags().GetString(commonParams.ContainersFileFolderFilterFlag)
 	if fileFolderFilter != "" {
@@ -1207,22 +1220,48 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 		containerConfig.ImagesFilter = imageTagFilter
 	}
 	userCustomImages, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
-	if userCustomImages != "" && !containerResolveLocally {
+	if userCustomImages != "" {
 		containerImagesList := strings.Split(strings.TrimSpace(userCustomImages), ",")
+
+		// Validate all inputs and collect errors
+		var validationErrors []string
 		for _, containerImageName := range containerImagesList {
+			// Normalize input: trim spaces and quotes
+			containerImageName = strings.TrimSpace(containerImageName)
+			containerImageName = strings.Trim(containerImageName, "'\"")
+
+			// Skip empty entries
+			if containerImageName == "" {
+				continue
+			}
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
-				return nil, containerImagesErr
+				errorMsg := strings.TrimPrefix(containerImagesErr.Error(), "--container-images flag error: ")
+				validationErrors = append(validationErrors, fmt.Sprintf("User input: '%s' error: %s", containerImageName, errorMsg))
 			}
 		}
+
+		// Return consolidated error message if validation failed
+		if len(validationErrors) > 0 {
+			errorHeader := "User input error for --container-images flag. Expected format: <image-name>:<image-tag> or <filename>.tar, or use a supported prefix (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)"
+			formattedErrors := make([]string, len(validationErrors))
+			for i, err := range validationErrors {
+				formattedErrors[i] = "- " + err
+			}
+			return nil, errors.Errorf("%s\n%s", errorHeader, strings.Join(formattedErrors, "\n"))
+		}
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
-		containerConfig.UserCustomImages = userCustomImages
+		if !containerResolveLocally || isGitScan {
+			containerConfig.UserCustomImages = userCustomImages
+		}
 	}
 
 	containerMapConfig[resultsMapValue] = &containerConfig
 	return containerMapConfig, nil
 }
 
-func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally bool) {
+// initializeContainersConfigWithResubmitValues populates container config from previous scan settings.
+// Container-security scan-type related function.
+func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Config, containerConfig *wrappers.ContainerConfig, containerResolveLocally, isGitScan bool) {
 	for _, config := range resubmitConfig {
 		if config.Type != commonParams.ContainersType {
 			continue
@@ -1244,7 +1283,7 @@ func initializeContainersConfigWithResubmitValues(resubmitConfig []wrappers.Conf
 			containerConfig.ImagesFilter = resubmitImagesFilter.(string)
 		}
 		resubmitUserCustomImages := config.Value[ConfigUserCustomImagesKey]
-		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && !containerResolveLocally {
+		if resubmitUserCustomImages != nil && resubmitUserCustomImages != "" && (!containerResolveLocally || isGitScan) {
 			containerConfig.UserCustomImages = resubmitUserCustomImages.(string)
 		}
 	}
@@ -1265,17 +1304,18 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 	return nil
 }
 
-func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, hasEnterpriseSecretsLicense bool) wrappers.SCSConfig {
+func createResubmitConfig(resubmitConfig []wrappers.Config, scsRepoToken, scsRepoURL string, isScsSecretDetectionAllowed,
+	isScsScorecardAllowed bool) wrappers.SCSConfig {
 	scsConfig := wrappers.SCSConfig{}
 	for _, config := range resubmitConfig {
 		resubmitTwoms := config.Value[configTwoms]
-		if resubmitTwoms != nil && hasEnterpriseSecretsLicense {
+		if resubmitTwoms != nil && isScsSecretDetectionAllowed {
 			scsConfig.Twoms = resubmitTwoms.(string)
 		}
 		scsConfig.RepoURL = scsRepoURL
 		scsConfig.RepoToken = scsRepoToken
 		resubmitScoreCard := config.Value[ScsScoreCardType]
-		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" {
+		if resubmitScoreCard == trueString && scsRepoToken != "" && scsRepoURL != "" && isScsScorecardAllowed {
 			scsConfig.Scorecard = trueString
 		} else {
 			scsConfig.Scorecard = falseString
@@ -1328,8 +1368,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	if !scanTypeEnabled(commonParams.ScsType) && !scanTypeEnabled(commonParams.MicroEnginesType) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
+	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
+	scsEnabled := scanTypeEnabled(commonParams.ScsType)
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
 	scsConfig := wrappers.SCSConfig{}
@@ -1350,20 +1394,20 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 
 	if resubmitConfig != nil {
-		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, hasEnterpriseSecretsLicense)
+		scsConfig = createResubmitConfig(resubmitConfig, scsRepoToken, scsRepoURL, scsSecretDetectionAllowed, scsScorecardAllowed)
 		scsMapConfig[resultsMapValue] = &scsConfig
 		return scsMapConfig, nil
 	}
 
 	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines) // secret-detection or scorecard
 
-	if scsSecretDetectionSelected && hasEnterpriseSecretsLicense {
+	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
 	}
 
 	isScsEnginesFlagSet := scsEngines != ""
 
-	if scsScoreCardSelected {
+	if scsScoreCardSelected && scsScorecardAllowed {
 		canRunScorecard, err := isScorecardRunnable(isScsEnginesFlagSet, scsScoreCardSelected, scsRepoToken, scsRepoURL, userScanTypes)
 		if err != nil {
 			return nil, err
@@ -1384,25 +1428,39 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasEnterpr
 	return scsMapConfig, nil
 }
 
+func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
+	if scsLicensingV2 {
+		return hasRepositoryHealthLicense
+	}
+	return hasScsLicense
+}
+
+func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, hasScsLicense bool) bool {
+	if scsLicensingV2 {
+		return hasSecretDetectionLicense
+	}
+	return hasScsLicense && hasEnterpriseSecretsLicense
+}
+
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
-	var SCSScanTypes []string
+
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+
+	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 
 	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 
-	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	if err != nil {
 		err = errors.Errorf("Error validating scan types: %v", err)
 		return err
 	}
 
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
-	userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	if len(userScanTypes) > 0 {
 		userScanTypes = strings.ReplaceAll(strings.ToLower(userScanTypes), " ", "")
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.KicsType, commonParams.IacType, 1)
 		userScanTypes = strings.Replace(strings.ToLower(userScanTypes), commonParams.ContainersTypeFlag, commonParams.ContainersType, 1)
-		userSCSScanTypes = strings.Replace(strings.ToLower(userSCSScanTypes), commonParams.SCSEnginesFlag, commonParams.ScsType, 1)
 
 		scanTypes = strings.Split(userScanTypes, ",")
 
@@ -1420,6 +1478,13 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 
 		for _, scanType := range scanTypes {
+			if scanType == commonParams.ScsType && scsLicensingV2Flag.Status {
+				// the SCS scan type is a special case because it contains two engines.
+				// Before the new licensing model, the main license was named "scs".
+				// Licenses are now separated for each engine, so this validation no longer makes sense.
+				// See validateSCSEngines.
+				continue
+			}
 			if !allowedEngines[scanType] {
 				keys := reflect.ValueOf(allowedEngines).MapKeys()
 				err = errors.Errorf(engineNotAllowed, scanType, scanType, keys)
@@ -1427,11 +1492,12 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 			}
 		}
 
-		SCSScanTypes = strings.Split(userSCSScanTypes, ",")
-		if slices.Contains(SCSScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-			keys := reflect.ValueOf(allowedEngines).MapKeys()
-			err = errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, keys)
-			return err
+		userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+		if slices.Contains(scanTypes, commonParams.ScsType) {
+			err = validateSCSEngines(allowedEngines, userSCSScanTypes, scsLicensingV2Flag.Status)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
 		if isSbomScan {
@@ -1453,6 +1519,25 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	return nil
 }
 
+func validateSCSEngines(allowedEngines map[string]bool, userSCSScanTypes string, scsLicensingV2 bool) error {
+	licensesAvailable := reflect.ValueOf(allowedEngines).MapKeys()
+	scsScanTypes := strings.Split(userSCSScanTypes, ",")
+	if scsLicensingV2 {
+		secretDetectionAllowed := allowedEngines[commonParams.SecretDetectionType]
+		repositoryHeatlhAllowed := allowedEngines[commonParams.RepositoryHealthType]
+		if userSCSScanTypes == "" && !secretDetectionAllowed && !repositoryHeatlhAllowed {
+			return errors.Errorf(engineScsNotAllowed, licensesAvailable)
+		} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !secretDetectionAllowed {
+			return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, licensesAvailable)
+		} else if slices.Contains(scsScanTypes, ScsScoreCardType) && !repositoryHeatlhAllowed {
+			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, licensesAvailable)
+		}
+	} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
+		return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, licensesAvailable)
+	}
+	return nil
+}
+
 func scanTypeEnabled(scanType string) bool {
 	scanTypes := strings.Split(actualScanTypes, ",")
 	for _, a := range scanTypes {
@@ -1471,16 +1556,39 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	}
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
-	err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+
+	// First check if the directory is empty or all files are filtered out
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
 	if err != nil {
 		return "", err
 	}
+
+	// If directory is effectively empty, add a placeholder file
+	if isEmpty {
+		logger.PrintIfVerbose("Directory is empty or all files are filtered out, adding placeholder file")
+		f, err := zipWriter.Create(".container-scan")
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
+		}
+		_, err = f.Write([]byte("1"))
+		if err != nil {
+			return "", errors.Wrapf(err, "Cannot write to placeholder file")
+		}
+	} else {
+		// Add directory files normally
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+		if err != nil {
+			return "", err
+		}
+	}
+
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
 			return "", err
 		}
 	}
+
 	// Close the file
 	err = zipWriter.Close()
 	if err != nil {
@@ -1497,6 +1605,44 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 func isSingleContainerScanTriggered() bool {
 	scanTypeList := strings.Split(actualScanTypes, ",")
 	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
+}
+
+// isDirEmpty checks if a directory is empty or if all files are filtered out
+func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
+	empty := true
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip the root directory itself
+		if path == dir {
+			return nil
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		// Check if file passes filters
+		filename := filepath.Base(relPath)
+		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
+			empty = false
+			return filepath.SkipAll // We found at least one file that will be included
+		}
+
+		return nil
+	})
+
+	return empty, err
 }
 
 func getIncludeFilters(userIncludeFilter string) []string {
@@ -1746,6 +1892,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
+	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
 	var directoryPath string
 	if isSbom {
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -1762,6 +1909,29 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 		}
 	} else {
 		zipFilePath, directoryPath, err = definePathForZipFileOrDirectory(cmd)
+		if isGitIgnoreFilter {
+			gitIgnoreFilter, err := getGitignorePatterns(directoryPath, zipFilePath)
+			if err != nil {
+				return "", "", err
+			}
+
+			if len(gitIgnoreFilter) > 0 {
+				if sourceDirFilter == "" {
+					sourceDirFilter = gitIgnoreFilter[0]
+					for i := 1; i < len(gitIgnoreFilter); i++ {
+						if !strings.Contains(sourceDirFilter, gitIgnoreFilter[i]) {
+							sourceDirFilter += "," + gitIgnoreFilter[i]
+						}
+					}
+				} else {
+					for _, pattern := range gitIgnoreFilter {
+						if !strings.Contains(sourceDirFilter, pattern) {
+							sourceDirFilter += "," + pattern
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if zipFilePath != "" && scaResolverPath != "" {
@@ -1802,6 +1972,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
 				}
+				// Clean up .checkmarx/containers directory on container scan error
+				_ = cleanCheckmarxContainersDirectory(directoryPath)
 				return "", "", containerResolverError
 			}
 		}
@@ -1810,23 +1982,26 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			logger.PrintIfVerbose("Single container scan triggered: compressing only the container resolution file")
 			containerResolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
 			zipFilePath, dirPathErr = util.CompressFile(containerResolutionFilePath, containerResolutionFileName, directoryCreationPrefix)
-		} else if isSingleContainerScanTriggered() && containerImagesFlag != "" {
-			logger.PrintIfVerbose("Single container scan with external images: creating minimal zip file")
-			// For container scans with external images, we need to create a minimal zip file
-			// since the API requires an upload URL even for container-only scans
-			zipFilePath, dirPathErr = createMinimalZipFile()
-			if unzip {
-				dirRemovalErr := cleanTempUnzipDirectory(directoryPath)
-				if dirRemovalErr != nil {
-					return "", "", dirRemovalErr
-				}
+
+			// Clean up .checkmarx/containers directory after successful container scan compression
+			if dirPathErr == nil {
+				_ = cleanCheckmarxContainersDirectory(directoryPath)
 			}
 		} else {
 			if !isSbom {
 				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
 			}
+
+			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
+			if dirPathErr == nil && containerScanTriggered && containerResolveLocally {
+				_ = cleanCheckmarxContainersDirectory(directoryPath)
+			}
 		}
 		if dirPathErr != nil {
+			// Clean up .checkmarx/containers directory on compression error if container scan was involved
+			if containerScanTriggered && containerResolveLocally {
+				_ = cleanCheckmarxContainersDirectory(directoryPath)
+			}
 			return "", "", dirPathErr
 		}
 
@@ -1846,18 +2021,50 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	return preSignedURL, zipFilePath, nil
 }
 
+// cleanCheckmarxContainersDirectory removes only the .checkmarx/containers directory after container scan completion.
+// Container-security scan-type related function.
+// This function performs cleanup of temporary container scan artifacts.
+func cleanCheckmarxContainersDirectory(directoryPath string) error {
+	containersPath := filepath.Join(directoryPath, ".checkmarx", "containers")
+	if _, err := os.Stat(containersPath); os.IsNotExist(err) {
+		logger.PrintIfVerbose("No .checkmarx/containers directory found to clean up")
+		return nil
+	}
+
+	logger.PrintIfVerbose("Cleaning up .checkmarx/containers directory after container scan")
+	err := os.RemoveAll(containersPath)
+	if err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to clean up .checkmarx/containers directory: %s", err.Error()))
+		return errors.Wrapf(err, "Failed to clean up .checkmarx/containers directory")
+	}
+	logger.PrintIfVerbose("Successfully cleaned up .checkmarx/containers directory")
+	return nil
+}
+
+// runContainerResolver executes the container resolver to analyze container images locally.
+// Container-security scan-type related function.
+// This function processes and normalizes container image inputs before passing them to the resolver.
 func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag string, containerResolveLocally bool) error {
 	debug, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 	var containerImagesList []string
 
 	if containerImageFlag != "" {
-		containerImagesList = strings.Split(strings.TrimSpace(containerImageFlag), ",")
-		for _, containerImageName := range containerImagesList {
-			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
-				return containerImagesErr
+		rawImagesList := strings.Split(strings.TrimSpace(containerImageFlag), ",")
+
+		// Normalize input: trim spaces and quotes from each image name
+		for _, img := range rawImagesList {
+			img = strings.TrimSpace(img)
+			img = strings.Trim(img, "'\"")
+			if img != "" {
+				containerImagesList = append(containerImagesList, img)
 			}
 		}
+
 		logger.PrintIfVerbose(fmt.Sprintf("User input container images identified: %v", strings.Join(containerImagesList, ", ")))
+
+		// Pass images as-is to syft - it needs the prefixes to determine the image source
+		// Examples: "oci-dir:my-alpine-image", "docker:nginx:latest", "file:alpine.tar"
+		logger.PrintIfVerbose(fmt.Sprintf("Container images will be passed to syft: %v", strings.Join(containerImagesList, ", ")))
 	}
 	if containerResolveLocally || len(containerImagesList) > 0 {
 		containerResolverErr := containerResolver.Resolve(directoryPath, directoryPath, containerImagesList, debug)
@@ -1989,6 +2196,109 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
+// enforceLocalResolutionForTarFiles checks if any container image is a tar file
+// and enforces local resolution by setting the --containers-local-resolution flag.
+// Container-security scan-type related function.
+func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
+	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
+
+	// If no container images specified, nothing to check
+	if containerImagesFlag == "" {
+		return nil
+	}
+
+	// Check if --containers-local-resolution is already set
+	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+
+	// If already set to true, we're good
+	if containerResolveLocally {
+		return nil
+	}
+
+	// Parse container images list
+	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
+	hasTarFile := false
+
+	for _, containerImageName := range containerImagesList {
+		// Normalize input: trim spaces and quotes
+		containerImageName = strings.TrimSpace(containerImageName)
+		containerImageName = strings.Trim(containerImageName, "'\"")
+
+		// Skip empty entries
+		if containerImageName == "" {
+			continue
+		}
+
+		// Check if this is a tar file by checking if it contains a tar file reference
+		if isTarFileReference(containerImageName) {
+			hasTarFile = true
+			break
+		}
+	}
+
+	// If at least one tar file is found, enforce local resolution
+	if hasTarFile {
+		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
+		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+
+		// Set the flag to true
+		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+		if err != nil {
+			return errors.Wrapf(err, "Failed to set --containers-local-resolution flag")
+		}
+	}
+
+	return nil
+}
+
+// isTarFileReference checks if a container image reference points to a tar file.
+// Container-security scan-type related function.
+func isTarFileReference(imageRef string) bool {
+	// Known prefixes that might precede the actual file path
+	knownPrefixes := []string{
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		filePrefix,
+		ociDirPrefix,
+	}
+
+	// First, trim quotes from the entire input
+	actualRef := strings.Trim(imageRef, "'\"")
+
+	// Strip known prefixes to get the actual reference
+	for _, prefix := range knownPrefixes {
+		if strings.HasPrefix(actualRef, prefix) {
+			actualRef = strings.TrimPrefix(actualRef, prefix)
+			actualRef = strings.Trim(actualRef, "'\"")
+			break
+		}
+	}
+
+	// Check if the reference ends with .tar (case-insensitive)
+	lowerRef := strings.ToLower(actualRef)
+
+	// If it ends with .tar, it's a tar file (no tag suffix allowed)
+	if strings.HasSuffix(lowerRef, ".tar") {
+		return true
+	}
+
+	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
+	// A tar file cannot have a tag suffix like file.tar:tag
+	if strings.Contains(actualRef, ":") {
+		parts := strings.Split(actualRef, ":")
+		const minPartsForTaggedImage = 2
+		if len(parts) >= minPartsForTaggedImage {
+			firstPart := strings.ToLower(parts[0])
+			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
+			if strings.HasSuffix(firstPart, ".tar") {
+				return false
+			}
+		}
+	}
+
+	return false
+}
+
 func runCreateScanCommand(
 	scansWrapper wrappers.ScansWrapper,
 	exportWrapper wrappers.ExportWrapper,
@@ -2014,6 +2324,25 @@ func runCreateScanCommand(
 		err = validateCreateScanFlags(cmd)
 		if err != nil {
 			return err
+		}
+		// Check if tar files are used in --container-images and enforce local resolution
+		err = enforceLocalResolutionForTarFiles(cmd)
+		if err != nil {
+			return err
+		}
+		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
+
+		// Check if the user has permission to override policy management if --ignore-policy is set
+		ignorePolicyFlagOmit := false
+		if ignorePolicy {
+			overridePolicyManagementPer, err := jwtWrapper.CheckPermissionByAccessToken(OverridePolicyManagement)
+			if err != nil {
+				return err
+			}
+			if !overridePolicyManagementPer {
+				ignorePolicyFlagOmit = true
+				ignorePolicy = false
+			}
 		}
 		timeoutMinutes, _ := cmd.Flags().GetInt(commonParams.ScanTimeoutFlag)
 		if timeoutMinutes < 0 {
@@ -2071,20 +2400,21 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
-				featureFlagsWrapper)
+				featureFlagsWrapper,
+				ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
 
 			agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 			policyTimeout, _ := cmd.Flags().GetInt(commonParams.PolicyTimeoutFlag)
-			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, agent, waitDelay, policyTimeout)
+			policyResponseModel, err = services.HandlePolicyEvaluation(cmd, policyWrapper, scanResponseModel, ignorePolicy, agent, waitDelay, policyTimeout)
 			if err != nil {
 				return err
 			}
 
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if reportErr != nil {
 				return reportErr
 			}
@@ -2096,7 +2426,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper)
+				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2105,7 +2435,7 @@ func runCreateScanCommand(
 		// verify break build from policy
 		if policyResponseModel != nil && len(policyResponseModel.Policies) > 0 && policyResponseModel.BreakBuild {
 			logger.PrintIfVerbose("Breaking the build due to policy violation")
-			return errors.Errorf("Policy Violation - Break Build Enabled.")
+			return errors.Errorf("Policy Violation - Break Build Enabled. To bypass the policy evaluation and continue with the build, you can use the `--ignore-policy` flag.")
 		}
 		return nil
 	}
@@ -2258,6 +2588,7 @@ func handleWait(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	err := waitForScanCompletion(
 		scanResponseModel,
@@ -2271,7 +2602,8 @@ func handleWait(
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
 		cmd,
-		featureFlagsWrapper)
+		featureFlagsWrapper,
+		ignorePolicyFlagOmit)
 	if err != nil {
 		verboseFlag, _ := cmd.Flags().GetBool(commonParams.DebugFlag)
 		if verboseFlag {
@@ -2296,6 +2628,7 @@ func createReportsAfterScan(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (*wrappers.ScanResultsCollection, error) {
 	// Create the required reports
 	targetFile, _ := cmd.Flags().GetString(commonParams.TargetFlag)
@@ -2344,6 +2677,7 @@ func createReportsAfterScan(
 		agent,
 		resultsParams,
 		featureFlagsWrapper,
+		ignorePolicyFlagOmit,
 	)
 }
 
@@ -2491,6 +2825,7 @@ func waitForScanCompletion(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) error {
 	log.Println("Wait for scan to complete", scanResponseModel.ID, scanResponseModel.Status)
 	timeout := time.Now().Add(time.Duration(timeoutMinutes) * time.Minute)
@@ -2505,7 +2840,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return err
 		}
@@ -2540,6 +2875,7 @@ func isScanRunning(
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	ignorePolicyFlagOmit bool,
 ) (bool, error) {
 	var scanResponseModel *wrappers.ScanResponseModel
 	var errorModel *wrappers.ErrorModel
@@ -2569,7 +2905,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
-			nil, featureFlagsWrapper) // check this partial case, how to handle it
+			nil, featureFlagsWrapper, ignorePolicyFlagOmit) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
 		}
@@ -3118,7 +3454,7 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 
 	if kicsPresetID, _ := cmd.Flags().GetString(commonParams.IacsPresetIDFlag); kicsPresetID != "" {
 		if _, err := uuid.Parse(kicsPresetID); err != nil {
-			return fmt.Errorf("Invalid value for --%s flag. Must be a valid UUID.", commonParams.IacsPresetIDFlag)
+			return fmt.Errorf("invalid value for --%s flag, must be a valid UUID", commonParams.IacsPresetIDFlag)
 		}
 	}
 	// check if flag was passed as arg
@@ -3130,23 +3466,254 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
+	return nil
+}
+
+// Container image prefix constants for validation
+const (
+	dockerPrefix        = "docker:"
+	podmanPrefix        = "podman:"
+	containerdPrefix    = "containerd:"
+	registryPrefix      = "registry:"
+	dockerArchivePrefix = "docker-archive:"
+	ociArchivePrefix    = "oci-archive:"
+	ociDirPrefix        = "oci-dir:"
+	filePrefix          = "file:"
+	dirPrefix           = "dir:"
+)
+
+// validateContainerImageFormat validates container image references for the --container-images flag.
+// Container-security scan-type related function.
+// This function implements comprehensive validation logic for all supported container image formats:
+// - Standard image:tag format
+// - Tar files (.tar)
+// - Prefixed formats (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)
+// It provides helpful error messages and hints for common user mistakes.
+func validateContainerImageFormat(containerImage string) error {
+	// Define known sources (prefixes) for container image references
+	knownSources := []string{
+		dockerPrefix,
+		podmanPrefix,
+		containerdPrefix,
+		registryPrefix,
+		dockerArchivePrefix,
+		ociArchivePrefix,
+		ociDirPrefix,
+		filePrefix,
+	}
+
+	// Check for explicitly forbidden prefixes first
+	if strings.HasPrefix(containerImage, dirPrefix) {
+		return errors.Errorf("Invalid value for --container-images flag. The 'dir:' prefix is not supported as it would scan entire directories rather than a single image")
+	}
+
+	// Step 1: Check if input has a knownSource prefix
+	var sanitizedInput string
+	hasKnownSource := false
+
+	for _, prefix := range knownSources {
+		if strings.HasPrefix(containerImage, prefix) {
+			hasKnownSource = true
+			sanitizedInput = strings.TrimPrefix(containerImage, prefix)
+			// Remove any quotes after the prefix
+			sanitizedInput = strings.Trim(sanitizedInput, "'\"")
+			break
+		}
+	}
+
+	// If no known source found, use the original input
+	if !hasKnownSource {
+		sanitizedInput = containerImage
+	}
+
+	// Step 2: Look for the last colon (:) in the sanitized input
+	lastColonIndex := strings.LastIndex(sanitizedInput, ":")
+
+	if lastColonIndex != -1 {
+		// Found a colon - everything after it is the image tag, everything before is the image name
+		imageName := sanitizedInput[:lastColonIndex]
+		imageTag := sanitizedInput[lastColonIndex+1:]
+
+		// Validate that both image name and tag are not empty
+		if imageName == "" || imageTag == "" {
+			return errors.Errorf("Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='%s', tag='%s'", imageName, imageTag)
+		}
+
+		// For prefixed inputs, also validate the prefix-specific requirements
+		if hasKnownSource {
+			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+		}
+
+		return nil // Valid image:tag format
+	}
+
+	// Step 3: No colon found - check if it's a tar file or special prefix that doesn't require tags
+	lowerInput := strings.ToLower(sanitizedInput)
+	if strings.HasSuffix(lowerInput, ".tar") {
+		// It's a tar file - check if it exists locally
+		exists, err := osinstaller.FileExists(sanitizedInput)
+		if err != nil {
+			return errors.Errorf("--container-images flag error: %v", err)
+		}
+		if !exists {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist", sanitizedInput)
+		}
+		return nil // Valid tar file
+	}
+
+	// Check for compressed tar files
+	if strings.HasSuffix(lowerInput, ".tar.gz") || strings.HasSuffix(lowerInput, ".tar.bz2") ||
+		strings.HasSuffix(lowerInput, ".tar.xz") || strings.HasSuffix(lowerInput, ".tgz") {
+		return errors.Errorf("--container-images flag error: file '%s' is compressed, use non-compressed format (tar)", sanitizedInput)
+	}
+
+	// Check if it looks like a tar file extension (contains ".tar." but not a valid extension)
+	if strings.Contains(lowerInput, ".tar.") {
+		return errors.Errorf("--container-images flag error: image does not have a tag. Did you try to scan a tar file?")
+	}
+
+	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
+	if hasKnownSource {
+		prefix := getPrefixFromInput(containerImage, knownSources)
+		// oci-dir can reference directories without tags, validate it
+		if prefix == ociDirPrefix {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
+		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
+			return validatePrefixedContainerImage(containerImage, prefix)
+		}
+	}
+
+	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
+	return errors.Errorf("--container-images flag error: image does not have a tag")
+}
+
+// getPrefixFromInput extracts the prefix from a container image reference.
+// Container-security scan-type related function.
+// Helper function to identify which known prefix is used in the input.
+func getPrefixFromInput(input string, prefixes []string) string {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(input, prefix) {
+			return prefix
+		}
+	}
+	return ""
+}
+
+// validatePrefixedContainerImage validates container image references with specific prefixes.
+// Container-security scan-type related function.
+// This function handles prefix-specific validation for archive types (file:, docker-archive:, oci-archive:),
+// daemon types (docker:, podman:, containerd:), registry types, and oci-dir types.
+func validatePrefixedContainerImage(containerImage, prefix string) error {
+	// Remove the prefix to get the actual image reference
+	imageRef := strings.TrimPrefix(containerImage, prefix)
+
+	// Also remove any quotes that might be around the image reference after the prefix
+	imageRef = strings.Trim(imageRef, "'\"")
+
+	if imageRef == "" {
+		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
+	}
+
+	// Delegate to specific validators based on prefix type
+	switch prefix {
+	case dockerArchivePrefix, ociArchivePrefix, filePrefix:
+		return validateArchivePrefix(imageRef)
+	case ociDirPrefix:
+		return validateOCIDirPrefix(imageRef)
+	case registryPrefix:
+		return validateRegistryPrefix(imageRef)
+	case dockerPrefix, podmanPrefix, containerdPrefix:
+		return validateDaemonPrefix(imageRef, prefix)
+	default:
+		return nil
+	}
+}
+
+// validateArchivePrefix validates archive-based prefixes (file:, docker-archive:, oci-archive:).
+// Container-security scan-type related function.
+func validateArchivePrefix(imageRef string) error {
+	exists, err := osinstaller.FileExists(imageRef)
+	if err != nil {
+		return errors.Errorf("--container-images flag error: %v", err)
+	}
+	if !exists {
+		// Check if user mistakenly used archive prefix with an image name:tag format
+		if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
+			return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
+		}
+		return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+	}
+	return nil
+}
+
+// validateOCIDirPrefix validates oci-dir prefix which can reference directories or files.
+// Container-security scan-type related function.
+func validateOCIDirPrefix(imageRef string) error {
+	// oci-dir can handle:
+	// 1. Directories (OCI layout directories)
+	// 2. Files (like .tar files)
+	// 3. Can have optional :tag suffix
+
+	pathToCheck := imageRef
+	if strings.Contains(imageRef, ":") {
+		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+		pathParts := strings.Split(imageRef, ":")
+		if len(pathParts) > 0 && pathParts[0] != "" {
+			pathToCheck = pathParts[0]
+		}
+	}
+
+	exists, err := osinstaller.FileExists(pathToCheck)
+	if err != nil {
+		return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+	}
+	if !exists {
+		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+	}
+	return nil
+}
+
+// validateRegistryPrefix validates registry prefix which must specify a single image.
+// Container-security scan-type related function.
+func validateRegistryPrefix(imageRef string) error {
+	const maxPortLength = 5
+	const minImagePartsWithTag = 2
+	const portPartIndex = 1
+
+	// Registry must specify a single image, not just a registry URL
+	// Valid: registry:ubuntu:latest, registry:registry.example.com/namespace/image:tag
+	// Invalid: registry:registry.example.com (just registry without image)
+
+	// Basic validation - should not be empty and should not be obviously just a registry URL
+	if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
+		strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
+		return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+	}
+
+	// Check for registry:host:port format (just registry URL with port)
+	if strings.Contains(imageRef, ":") {
+		parts := strings.Split(imageRef, ":")
+		if len(parts) == minImagePartsWithTag && len(parts[portPartIndex]) <= maxPortLength && !strings.Contains(imageRef, "/") {
+			// This looks like registry:port format without image
+			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
+		}
+	}
 
 	return nil
 }
 
-func validateContainerImageFormat(containerImage string) error {
-	if strings.HasSuffix(containerImage, ".tar") {
-		_, err := osinstaller.FileExists(containerImage)
-		if err != nil {
-			return errors.Errorf("--container-images flag error: %v", err)
-		}
+// validateDaemonPrefix validates daemon-based prefixes (docker:, podman:, containerd:).
+// Container-security scan-type related function.
+func validateDaemonPrefix(imageRef, prefix string) error {
+	const minImagePartsWithTag = 2
+	const imageNameIndex = 0
+	const imageTagIndex = 1
 
-		return nil
-	}
-
-	imageParts := strings.Split(containerImage, ":")
-	if len(imageParts) != 2 || imageParts[0] == "" || imageParts[1] == "" {
-		return errors.Errorf("Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
+	imageParts := strings.Split(imageRef, ":")
+	if len(imageParts) < minImagePartsWithTag || imageParts[imageNameIndex] == "" || imageParts[imageTagIndex] == "" {
+		return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
 	}
 	return nil
 }
@@ -3193,33 +3760,6 @@ func parseArgs(input string) []string {
 	return args
 }
 
-// createMinimalZipFile creates a minimal zip file for container scans with external images
-// The API requires an upload URL even for container-only scans, so we create a minimal placeholder
-func createMinimalZipFile() (string, error) {
-	outputFile, err := os.CreateTemp(os.TempDir(), "cx-container-*.zip")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create temp file for container-only scan")
-	}
-	defer outputFile.Close()
-
-	zipWriter := zip.NewWriter(outputFile)
-	defer zipWriter.Close()
-
-	// Create a minimal placeholder file
-	f, err := zipWriter.Create(".container-scan")
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot create placeholder file in zip")
-	}
-
-	// Write minimal content (just a single byte)
-	_, err = f.Write([]byte("1"))
-	if err != nil {
-		return "", errors.Wrapf(err, "Cannot write to placeholder file")
-	}
-
-	return outputFile.Name(), nil
-}
-
 func isValidJSONOrXML(path string) (bool, error) {
 	ext := strings.ToLower(filepath.Ext(path))
 	if ext != jsonExt && ext != xmlExt {
@@ -3247,4 +3787,98 @@ func isValidJSONOrXML(path string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func getGitignorePatterns(directoryPath, zipFilePath string) ([]string, error) {
+	var data []byte
+	var err error
+	if directoryPath != "" {
+		gitignorePath := filepath.Join(directoryPath, ".gitignore")
+		if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+			return nil, fmt.Errorf(".gitignore file not found in directory: %s", directoryPath)
+		}
+		data, err = os.ReadFile(gitignorePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if zipFilePath != "" {
+		data, err = readGitIgnoreFromZip(zipFilePath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	lines := strings.Split(string(data), "\n")
+	var patterns []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// This condition skips lines that are empty, comments.
+		// Excluding the lines that contain negotiation characters like !, which are used to negate patterns
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "!") {
+			continue
+		}
+		// Convert build/** to build for path.Match() supported patterns
+		if strings.HasSuffix(line, "/**") {
+			line = strings.TrimSuffix(line, "/**")
+		}
+		// Convert **/temp/ to temp for path.Match() supported patterns
+		if strings.HasPrefix(line, "**/") {
+			line = strings.TrimPrefix(line, "**/")
+		}
+		// Convert temp/ to temp for path.Match() supported patterns
+		if strings.HasSuffix(line, "/") {
+			line = strings.TrimSuffix(line, "/")
+		}
+
+		// Convert LoginController[!0-3].java to LoginController[^0-3].java for path.Match() supported patterns
+		if strings.Contains(line, "!") {
+			line = strings.ReplaceAll(line, "!", "^")
+		}
+		patterns = append(patterns, "!"+line)
+	}
+	return patterns, nil
+}
+
+func readGitIgnoreFromZip(zipPath string) ([]byte, error) {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return []byte(""), fmt.Errorf("failed to open zip: %s", zipPath)
+	}
+	defer r.Close()
+
+	rootFolder := ""
+	if len(r.File) > 0 {
+		parts := strings.Split(r.File[0].Name, "/")
+		if len(parts) > 1 {
+			rootFolder = parts[0]
+		}
+	}
+	expectedGitignorePath := rootFolder + "/.gitignore"
+
+	for _, f := range r.File {
+		if f.Name != expectedGitignorePath {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return []byte(""), fmt.Errorf("failed to open .gitignore inside zip: %w", err)
+		}
+
+		// Read file content
+		data, err := io.ReadAll(rc)
+		if err != nil {
+			err := rc.Close()
+			if err != nil {
+				return nil, err
+			}
+			return []byte(""), fmt.Errorf("failed to read .gitignore content inside zip : %w", err)
+		}
+		// Close with error handling
+		if err := rc.Close(); err != nil {
+			logger.PrintfIfVerbose("Error closing .gitignore reader: %v", err)
+		}
+		return data, nil
+	}
+	return []byte(""), fmt.Errorf(".gitignore not found in zip: %s", zipPath)
 }

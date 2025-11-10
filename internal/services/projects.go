@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	featureFlagsConstants "github.com/checkmarx/ast-cli/internal/constants/feature-flags"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -41,9 +40,14 @@ func FindProject(
 	}
 	branchName := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 	isBranchPrimary, _ = cmd.Flags().GetBool(commonParams.BranchPrimaryFlag)
+	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
+			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName, project.ID, featureFlagsWrapper)
+			if err != nil {
+				return "", err
+			}
 			projectTags, _ := cmd.Flags().GetString(commonParams.ProjectTagList)
 			projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
 			return updateProject(&project, projectsWrapper, projectTags, projectPrivatePackage, isBranchPrimary, branchName)
@@ -52,8 +56,6 @@ func FindProject(
 
 	projectGroups, _ := cmd.Flags().GetString(commonParams.ProjectGroupList)
 	projectPrivatePackage, _ := cmd.Flags().GetString(commonParams.ProjecPrivatePackageFlag)
-
-	applicationName, _ := cmd.Flags().GetString(commonParams.ApplicationName)
 	applicationID, appErr := getApplicationID(applicationName, applicationWrapper)
 	if appErr != nil {
 		return "", appErr
@@ -110,6 +112,7 @@ func createProject(
 	var projModel = wrappers.Project{}
 	projModel.Name = projectName
 	projModel.ApplicationIds = applicationID
+
 	if isBranchPrimary {
 		logger.PrintIfVerbose(fmt.Sprintf("Setting the branch in project : %s", branchName))
 		projModel.MainBranch = branchName
@@ -121,12 +124,6 @@ func createProject(
 		groupsMap, groups, groupErr = GetGroupMap(groupsWrapper, projectGroups, nil)
 		if groupErr != nil {
 			return "", groupErr
-		}
-		// Validate groups access before assigning them to the project.
-		// This validation will only be performed if the ACCESS_MANAGEMENT_PHASE2 flag is ON.
-		err := ValidateGroupsAccessPhase2(groupsMap, accessManagementWrapper, featureFlagsWrapper)
-		if err != nil {
-			return "", err
 		}
 		projModel.Groups = groups
 	}
@@ -234,7 +231,6 @@ func updateProject(project *wrappers.ProjectResponseModel,
 
 	return projectID, nil
 }
-
 func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.ProjectsWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper, projectID string, projectName string,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper, groupsMap []*wrappers.Group) error {
@@ -248,35 +244,5 @@ func UpsertProjectGroups(projModel *wrappers.Project, projectsWrapper wrappers.P
 	if err != nil {
 		return errors.Errorf("%s: %v", failedUpdatingProj, err)
 	}
-	return nil
-}
-
-func ValidateGroupsAccessPhase2(groups []*wrappers.Group, accessManagementWrapper wrappers.AccessManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	// If no groups to validate, return
-	if len(groups) == 0 {
-		return nil
-	}
-
-	amPhase2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, featureFlagsConstants.AccessManagementPhase2)
-	if !amPhase2Flag.Status {
-		return nil
-	}
-
-	// Extract group IDs
-	var groupIDs []string
-	for _, group := range groups {
-		groupIDs = append(groupIDs, group.ID)
-	}
-
-	// Validate groups access
-	hasAccess, err := accessManagementWrapper.HasEntityAccessToGroups(groupIDs)
-	if err != nil {
-		return errors.Wrap(err, "Failed to validate groups access")
-	}
-
-	if !hasAccess {
-		return errors.New("One or more groups are not authorized for assignment")
-	}
-
 	return nil
 }

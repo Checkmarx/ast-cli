@@ -39,6 +39,15 @@ func TestHooksPreCommitUpdatePreCommitHook(t *testing.T) {
 	_ = executeCmdNilAssertion(t, "Uninstalling cx-secret-detection hook", "hooks", "pre-commit", "secrets-uninstall-git-hook")
 }
 
+func TestHooksPreCommitSecretsIgnore(t *testing.T) {
+	tmpDir, cleanup := setupTempDir(t)
+	defer cleanup()
+	// Initialize Git repository
+	execCmd(t, tmpDir, "git", "init")
+	// Ignore precommit hook command
+	_ = executeCmdNilAssertion(t, "precommit secrets Ignore", "hooks", "pre-commit", "secrets-ignore", "--all")
+}
+
 // Helper functions
 func execCmd(t *testing.T, dir string, name string, args ...string) {
 	cmd := exec.Command(name, args...)

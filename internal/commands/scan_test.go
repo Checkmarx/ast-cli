@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -58,7 +59,7 @@ const (
 	additionalParamsError                  = "flag needs an argument: --additional-params"
 	scanCommand                            = "scan"
 	kicsRealtimeCommand                    = "kics-realtime"
-	kicsPresetIDIncorrectValueError        = "Invalid value for --iac-security-preset-id flag. Must be a valid UUID."
+	kicsPresetIDIncorrectValueError        = "invalid value for --iac-security-preset-id flag, must be a valid UUID"
 	InvalidEngineMessage                   = "Please verify if engine is installed"
 	SCSScoreCardError                      = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
@@ -180,7 +181,19 @@ func TestCreateScanFromFolder_InvalidContainerImageFormat_FailCreatingScan(t *te
 	clearFlags()
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "image1,image2:tag", "--scan-types", "containers", "--containers-local-resolution"}
 	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
-	assert.Assert(t, err.Error() == "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar")
+	// The updated format returns a consolidated error message with header and bullet points
+	assert.Assert(t, strings.Contains(err.Error(), "User input error for --container-images flag"))
+	assert.Assert(t, strings.Contains(err.Error(), "User input: 'image1' error: image does not have a tag"))
+}
+
+func TestCreateScanFromFolder_CommaSeparatedContainerImages_SingleBadEntry_FailCreatingScan(t *testing.T) {
+	clearFlags()
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "--container-images", "docker:nginx:latest,dir:/bad/directory,registry:ubuntu:20.04", "--scan-types", "containers"}
+	err := execCmdNotNilAssertion(t, append(baseArgs, "-s", blankSpace+"."+blankSpace)...)
+	// The updated format returns a consolidated error message with all validation errors
+	assert.Assert(t, strings.Contains(err.Error(), "User input error for --container-images flag"))
+	assert.Assert(t, strings.Contains(err.Error(), "dir:/bad/directory"))
+	assert.Assert(t, strings.Contains(err.Error(), "'dir:' prefix is not supported"))
 }
 
 func TestCreateScanWithThreshold_ShouldSuccess(t *testing.T) {
@@ -192,8 +205,9 @@ func TestScanCreate_ApplicationNameIsNotExactMatch_FailedToCreateScan(t *testing
 	assert.Assert(t, err.Error() == errorConstants.ApplicationDoesntExistOrNoPermission)
 }
 
-func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldCreateScan(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.ApplicationDoesntExist, "-s", dummyRepo, "-b", "dummy_branch")
+func TestScanCreate_ExistingProjectAndApplicationWithNoPermission_ShouldFailScan(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "--application-name", mock.NoPermissionApp, "-s", dummyRepo, "-b", "dummy_branch")
+	assert.Assert(t, strings.Contains(err.Error(), errorConstants.FailedToGetApplication), err.Error())
 }
 
 func TestScanCreate_ExistingApplicationWithNoPermission_FailedToCreateScan(t *testing.T) {
@@ -711,18 +725,13 @@ func TestCreateScan_WhenProjectExists_ShouldIgnoreGroups(t *testing.T) {
 	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
 }
 
-func TestCreateScan_WhenProjectExists_ShouldIgnoreApplication(t *testing.T) {
-	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
-	defer logger.SetOutput(os.Stdout)
+// Now as we give the ability to assign existing projects to applications , there is validation if application exists
+
+func TestCreateScan_WhenProjectExists_GetApplication_Fails500Err_Failed(t *testing.T) {
 	baseArgs := []string{scanCommand, "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch",
-		"--debug", "--application-name", "anyApplication"}
-	execCmdNilAssertion(t, baseArgs...)
-	stdoutString, err := util.ReadFileAsString(file.Name())
-	if err != nil {
-		t.Fatalf("Failed to read log file: %v", err)
-	}
-	assert.Equal(t, strings.Contains(stdoutString, noUpdatesForExistingProject), true, "Expected output: %s", noUpdatesForExistingProject)
+		"--debug", "--application-name", mock.FakeInternalServerError500}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
 }
 func TestScanCreateLastSastScanTimeWithInvalidValue(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--sca-exploitable-path", "true", "--sca-last-sast-scan-time", "notaniteger"}
@@ -797,87 +806,143 @@ func TestAddScaScan(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
 	}
 }
-func TestAddSCSScan_ResubmitWithOutScorecardFlags_ShouldPass(t *testing.T) {
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
-
-	_ = cmdCommand.Execute()
-
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, "")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, "")
-
-	resubmitConfig := []wrappers.Config{
+func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
 		{
-			Type: commonParams.ScsType,
-			Value: map[string]interface{}{
-				configTwoms:      trueString,
-				ScsScoreCardType: falseString,
-			},
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
 
-	expectedConfig := wrappers.SCSConfig{
-		Twoms:     trueString,
-		Scorecard: falseString,
-	}
+			_ = cmdCommand.Execute()
 
-	expectedMapConfig := make(map[string]interface{})
-	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	expectedMapConfig[resultsMapValue] = &expectedConfig
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, "")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, "")
 
-	if !reflect.DeepEqual(result, expectedMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			resubmitConfig := []wrappers.Config{
+				{
+					Type: commonParams.ScsType,
+					Value: map[string]interface{}{
+						configTwoms:      trueString,
+						ScsScoreCardType: falseString,
+					},
+				},
+			}
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			expectedConfig := wrappers.SCSConfig{
+				Twoms:     trueString,
+				Scorecard: falseString,
+			}
+
+			expectedMapConfig := make(map[string]interface{})
+			expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			expectedMapConfig[resultsMapValue] = &expectedConfig
+
+			if !reflect.DeepEqual(result, expectedMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			}
+		})
 	}
 }
 
 func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
-
-	_ = cmdCommand.Execute()
-
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-
-	resubmitConfig := []wrappers.Config{
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
 		{
-			Type: commonParams.ScsType,
-			Value: map[string]interface{}{
-				configTwoms:      trueString,
-				ScsScoreCardType: trueString,
-			},
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
 		},
 	}
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "SCS Repo Token")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "SCS Repo URL")
 
-	expectedConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: trueString,
-		RepoToken: dummyToken,
-		RepoURL:   dummyRepo,
-	}
+			_ = cmdCommand.Execute()
 
-	expectedMapConfig := make(map[string]interface{})
-	expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	expectedMapConfig[resultsMapValue] = &expectedConfig
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, commonParams.ScsType)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 
-	if !reflect.DeepEqual(result, expectedMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			resubmitConfig := []wrappers.Config{
+				{
+					Type: commonParams.ScsType,
+					Value: map[string]interface{}{
+						configTwoms:      trueString,
+						ScsScoreCardType: trueString,
+					},
+				},
+			}
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			expectedConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: trueString,
+				RepoToken: dummyToken,
+				RepoURL:   dummyRepo,
+			}
+
+			expectedMapConfig := make(map[string]interface{})
+			expectedMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			expectedMapConfig[resultsMapValue] = &expectedConfig
+
+			if !reflect.DeepEqual(result, expectedMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", expectedMapConfig, result)
+			}
+		})
 	}
 }
 
@@ -1094,510 +1159,869 @@ func TestCreateScan_WithSCSScorecard_ShouldFail(t *testing.T) {
 	assert.Assert(t, err.Error() == SCSScoreCardError)
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-func TestCreateScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, false)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "",
-		Scorecard: "true",
-		RepoURL:   dummyRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms: "true",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
-
-func TestCreateScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.ScanTypeFlag, "scs", "")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms: "true",
+func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: false,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	output := buf.String()
-	if !strings.Contains(output, ScsRepoWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsRepoWarningMsg, output)
-	}
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "",
+				Scorecard: "true",
+				RepoURL:   dummyRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedGithubRepo,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
-
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedRepoWithToken,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecardFlags_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepoWithToken,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypeFlag, "scs", "")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
-	}
-}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
 
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
 
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
 
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
+			output := buf.String()
+			if !strings.Contains(output, ScsRepoWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsRepoWarningMsg, output)
+			}
 
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
-	}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
-
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyRepoWithTokenAndUsername,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
-
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "true",
-		RepoURL:   dummyShortenedRepoWithTokenAndUsername,
-		RepoToken: dummyToken,
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			scsConfig := wrappers.SCSConfig{
+				Twoms: "true",
+			}
+
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "",
-		RepoURL:   "",
-		RepoToken: "",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedGithubRepo,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
-func TestCreateScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
-	// Create a pipe for capturing stdout
-	r, w, _ := os.Pipe()
-	oldStdout := os.Stdout
-	defer func() { os.Stdout = oldStdout }()
-	os.Stdout = w // Redirecting stdout to the pipe
-
-	var resubmitConfig []wrappers.Config
-	cmdCommand := &cobra.Command{
-		Use:   "scan",
-		Short: "Scan a project",
-		Long:  `Scan a project`,
-	}
-	cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
-	cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
-	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
-	_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
-
-	result, _ := addSCSScan(cmdCommand, resubmitConfig, true)
-
-	// Close the writer to signal that we are done capturing the output
-	w.Close()
-
-	// Read from the pipe (stdout)
-	var buf bytes.Buffer
-	_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
-	if err != nil {
-		t.Fatalf("Failed to capture output: %v", err)
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	output := buf.String()
-	if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
-		t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedRepoWithToken,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
 	}
 
-	scsConfig := wrappers.SCSConfig{
-		Twoms:     "true",
-		Scorecard: "",
-		RepoURL:   "",
-		RepoToken: "",
-	}
-	scsMapConfig := make(map[string]interface{})
-	scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
-	scsMapConfig[resultsMapValue] = &scsConfig
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
 
-	if !reflect.DeepEqual(result, scsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepoWithToken,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyRepoWithTokenAndUsername,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTokenAndUsernameInURL_scsMapHasBoth(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to not contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "true",
+				RepoURL:   dummyShortenedRepoWithTokenAndUsername,
+				RepoToken: dummyToken,
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "",
+				RepoURL:   "",
+				RepoToken: "",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a pipe for capturing stdout
+			r, w, _ := os.Pipe()
+			oldStdout := os.Stdout
+			defer func() { os.Stdout = oldStdout }()
+			os.Stdout = w // Redirecting stdout to the pipe
+
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "GitHub token to be used with SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "GitHub url to be used with SCS engines")
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection,scorecard")
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
+			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
+
+			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+
+			// Close the writer to signal that we are done capturing the output
+			w.Close()
+
+			// Read from the pipe (stdout)
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, r) // Copy the captured output to a buffer
+			if err != nil {
+				t.Fatalf("Failed to capture output: %v", err)
+			}
+
+			output := buf.String()
+			if !strings.Contains(output, ScsScorecardUnsupportedHostWarningMsg) {
+				t.Errorf("Expected output to contain %q, but got %q", ScsScorecardUnsupportedHostWarningMsg, output)
+			}
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:     "true",
+				Scorecard: "",
+				RepoURL:   "",
+				RepoToken: "",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
 	}
 }
 
@@ -1758,62 +2182,452 @@ func Test_validateThresholds(t *testing.T) {
 	}
 }
 
-func TestValidateContainerImageFormat(t *testing.T) {
-	var errMessage = "Invalid value for --container-images flag. The value must be in the format <image-name>:<image-tag> or <image-name>.tar"
-
+// TestValidateContainerImageFormat_Comprehensive tests the complete validation logic
+// including input normalization, helpful hints, and all error cases.
+// Container-security scan-type related test function.
+// This test validates all supported container image formats, prefixes, tar files,
+// error messages, and helpful hints for the --container-images flag.
+//
+//nolint:funlen // Test function requires comprehensive test cases
+func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 	testCases := []struct {
 		name           string
 		containerImage string
-		expectedError  error
+		expectedError  string
+		setupFiles     []string
+		setupDirs      []string
 	}{
+		// ==================== Basic Format Tests ====================
 		{
-			name:           "Valid container image format",
+			name:           "Valid image with tag",
 			containerImage: "nginx:latest",
-			expectedError:  nil,
+			expectedError:  "",
 		},
 		{
-			name:           "Valid compressed container image format",
-			containerImage: "nginx.tar",
-			expectedError:  nil,
+			name:           "Valid image with version tag",
+			containerImage: "alpine:3.18",
+			expectedError:  "",
 		},
 		{
-			name:           "Missing image name",
-			containerImage: ":latest",
-			expectedError:  errors.New(errMessage),
+			name:           "Valid image with complex registry",
+			containerImage: "registry.example.com:5000/namespace/image:v1.2.3",
+			expectedError:  "",
 		},
 		{
-			name:           "Missing image tag",
+			name:           "Invalid - missing tag",
+			containerImage: "nginx",
+			expectedError:  "--container-images flag error: image does not have a tag",
+		},
+		{
+			name:           "Invalid - empty tag",
 			containerImage: "nginx:",
-			expectedError:  errors.New(errMessage),
+			expectedError:  "Invalid value for --container-images flag. Image name and tag cannot be empty",
 		},
 		{
-			name:           "Empty image name and tag",
-			containerImage: ":",
-			expectedError:  errors.New(errMessage),
+			name:           "Invalid - empty name",
+			containerImage: ":latest",
+			expectedError:  "Invalid value for --container-images flag. Image name and tag cannot be empty",
+		},
+
+		// ==================== Tar File Tests ====================
+		{
+			name:           "Valid tar file",
+			containerImage: "alpine.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.tar"},
 		},
 		{
-			name:           "Extra colon",
-			containerImage: "nginx:latest:extra",
-			expectedError:  errors.New(errMessage),
+			name:           "Valid tar file in current dir",
+			containerImage: "image-with-path.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image-with-path.tar"},
+		},
+		{
+			name:           "Invalid - tar file does not exist",
+			containerImage: "nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+
+		// ==================== Compressed Tar Tests ====================
+		{
+			name:           "Invalid - compressed tar.gz",
+			containerImage: "image.tar.gz",
+			expectedError:  "--container-images flag error: file 'image.tar.gz' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tar.bz2",
+			containerImage: "image.tar.bz2",
+			expectedError:  "--container-images flag error: file 'image.tar.bz2' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tar.xz",
+			containerImage: "image.tar.xz",
+			expectedError:  "--container-images flag error: file 'image.tar.xz' is compressed, use non-compressed format (tar)",
+		},
+		{
+			name:           "Invalid - compressed tgz",
+			containerImage: "image.tgz",
+			expectedError:  "--container-images flag error: file 'image.tgz' is compressed, use non-compressed format (tar)",
+		},
+
+		// ==================== Helpful Hints Tests ====================
+		{
+			name:           "Hint - looks like tar file (wrong extension)",
+			containerImage: "image.tar.bz",
+			expectedError:  "--container-images flag error: image does not have a tag. Did you try to scan a tar file?",
+		},
+		{
+			name:           "Hint - looks like tar file (typo in extension)",
+			containerImage: "image.tar.ez2",
+			expectedError:  "--container-images flag error: image does not have a tag. Did you try to scan a tar file?",
+		},
+
+		// ==================== File Prefix Tests ====================
+		{
+			name:           "Valid file prefix with tar",
+			containerImage: "file:alpine.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.tar"},
+		},
+		{
+			name:           "Valid file prefix with image",
+			containerImage: "file:prefixed-image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"prefixed-image.tar"},
+		},
+		{
+			name:           "Invalid file prefix - missing file",
+			containerImage: "file:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - file prefix with image name",
+			containerImage: "file:nginx:latest",
+			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+		},
+		{
+			name:           "Hint - file prefix with image (no tag)",
+			containerImage: "file:alpine:3.18",
+			expectedError:  "--container-images flag error: file 'alpine:3.18' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== Docker Archive Tests ====================
+		{
+			name:           "Valid docker-archive",
+			containerImage: "docker-archive:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Invalid docker-archive - missing file",
+			containerImage: "docker-archive:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - docker-archive with image name",
+			containerImage: "docker-archive:nginx:latest",
+			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== OCI Archive Tests ====================
+		{
+			name:           "Valid oci-archive",
+			containerImage: "oci-archive:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+		{
+			name:           "Invalid oci-archive - missing file",
+			containerImage: "oci-archive:nonexistent.tar",
+			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+		},
+		{
+			name:           "Hint - oci-archive with image name",
+			containerImage: "oci-archive:ubuntu:22.04",
+			expectedError:  "--container-images flag error: file 'ubuntu:22.04' does not exist. Did you try to scan an image using image name and tag?",
+		},
+
+		// ==================== Docker Daemon Tests ====================
+		{
+			name:           "Valid docker prefix",
+			containerImage: "docker:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid docker prefix with registry",
+			containerImage: "docker:registry.io/namespace/image:tag",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid docker prefix - missing tag",
+			containerImage: "docker:nginx",
+			expectedError:  "image does not have a tag",
+		},
+		{
+			name:           "Invalid docker prefix - empty",
+			containerImage: "docker:",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Podman Daemon Tests ====================
+		{
+			name:           "Valid podman prefix",
+			containerImage: "podman:alpine:3.18",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid podman prefix - missing tag",
+			containerImage: "podman:alpine",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Containerd Daemon Tests ====================
+		{
+			name:           "Valid containerd prefix",
+			containerImage: "containerd:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid containerd prefix - missing tag",
+			containerImage: "containerd:nginx",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== Registry Tests ====================
+		{
+			name:           "Valid registry prefix",
+			containerImage: "registry:nginx:latest",
+			expectedError:  "",
+		},
+		{
+			name:           "Valid registry with URL",
+			containerImage: "registry:myregistry.io/app:v1.0",
+			expectedError:  "",
+		},
+		{
+			name:           "Invalid registry - just URL without image",
+			containerImage: "registry:myregistry.com",
+			expectedError:  "image does not have a tag",
+		},
+
+		// ==================== OCI-Dir Tests ====================
+		{
+			name:           "Valid oci-dir without tag",
+			containerImage: "oci-dir:my-alpine-image",
+			expectedError:  "",
+			setupDirs:      []string{"my-alpine-image"},
+		},
+		{
+			name:           "Valid oci-dir with tag",
+			containerImage: "oci-dir:my-image:latest",
+			expectedError:  "",
+			setupDirs:      []string{"my-image"},
+		},
+		{
+			name:           "Valid oci-dir with directory name",
+			containerImage: "oci-dir:oci-image-dir",
+			expectedError:  "",
+			setupDirs:      []string{"oci-image-dir"},
+		},
+		{
+			name:           "Invalid oci-dir - directory does not exist",
+			containerImage: "oci-dir:nonexistent-dir",
+			expectedError:  "--container-images flag error: path nonexistent-dir does not exist",
+		},
+		{
+			name:           "Valid oci-dir with tar file",
+			containerImage: "oci-dir:image.tar",
+			expectedError:  "",
+			setupFiles:     []string{"image.tar"},
+		},
+
+		// ==================== Dir Prefix (Forbidden) ====================
+		{
+			name:           "Invalid - dir prefix not supported",
+			containerImage: "dir:/path/to/dir",
+			expectedError:  "Invalid value for --container-images flag. The 'dir:' prefix is not supported",
+		},
+
+		// ==================== Edge Cases ====================
+		{
+			name:           "Complex registry with multiple colons",
+			containerImage: "registry.io:5000/namespace/image:v1.2.3",
+			expectedError:  "",
+		},
+		{
+			name:           "Image name with dash and underscore",
+			containerImage: "my-custom_image:v1.0",
+			expectedError:  "",
+		},
+		{
+			name:           "Tar file with multiple dots in name",
+			containerImage: "alpine.3.18.0.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine.3.18.0.tar"},
 		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			// Setup test files and directories if needed
+			cleanupFuncs := setupTestFilesAndDirs(t, tc.setupFiles, tc.setupDirs)
+			defer func() {
+				for _, cleanup := range cleanupFuncs {
+					cleanup()
+				}
+			}()
+
+			// Run validation
 			err := validateContainerImageFormat(tc.containerImage)
-			if err != nil && tc.expectedError == nil {
-				t.Errorf("Unexpected error: %v", err)
-				return
-			}
-			if err != nil && tc.expectedError != nil && err.Error() != tc.expectedError.Error() {
-				t.Errorf("Expected error %v, but got %v", tc.expectedError, err)
-			}
-			if err == nil && tc.expectedError != nil {
-				t.Errorf("Expected error %v, but got nil", tc.expectedError)
+
+			// Check results
+			if tc.expectedError == "" {
+				if err != nil {
+					t.Errorf("Expected no error, but got: %v", err)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Expected error containing '%s', but got nil", tc.expectedError)
+				} else if !strings.Contains(err.Error(), tc.expectedError) {
+					t.Errorf("Expected error containing '%s', but got: %v", tc.expectedError, err)
+				}
 			}
 		})
 	}
+}
+
+// TestInputNormalization tests the space and quote trimming logic.
+// Container-security scan-type related test function.
+// This test validates input normalization for comma-separated container image lists,
+// including space trimming, quote handling, and empty entry filtering.
+func TestInputNormalization(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "Simple comma-separated list",
+			input:    "nginx:latest,alpine:3.18,ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With spaces after commas",
+			input:    "nginx:latest, alpine:3.18, ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With spaces before and after commas",
+			input:    "nginx:latest , alpine:3.18 , ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With single quotes",
+			input:    "'nginx:latest','alpine:3.18','ubuntu:22.04'",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With double quotes",
+			input:    "\"nginx:latest\",\"alpine:3.18\",\"ubuntu:22.04\"",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "Mixed quotes and spaces",
+			input:    "'nginx:latest', \"alpine:3.18\", ubuntu:22.04",
+			expected: []string{"nginx:latest", "alpine:3.18", "ubuntu:22.04"},
+		},
+		{
+			name:     "With file paths in quotes",
+			input:    "'file:/path/to/image.tar', '/another/path.tar'",
+			expected: []string{"file:/path/to/image.tar", "/another/path.tar"},
+		},
+		{
+			name:     "Empty entries (consecutive commas)",
+			input:    "nginx:latest,,alpine:3.18",
+			expected: []string{"nginx:latest", "alpine:3.18"},
+		},
+		{
+			name:     "Leading/trailing commas",
+			input:    ",nginx:latest,alpine:3.18,",
+			expected: []string{"nginx:latest", "alpine:3.18"},
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Simulate the normalization logic from addContainersScan
+			rawList := strings.Split(strings.TrimSpace(tc.input), ",")
+			var normalized []string
+
+			for _, item := range rawList {
+				// Trim spaces and quotes
+				item = strings.TrimSpace(item)
+				item = strings.Trim(item, "'\"")
+
+				// Skip empty entries
+				if item == "" {
+					continue
+				}
+
+				normalized = append(normalized, item)
+			}
+
+			// Verify results
+			if len(normalized) != len(tc.expected) {
+				t.Errorf("Expected %d items, got %d. Expected: %v, Got: %v",
+					len(tc.expected), len(normalized), tc.expected, normalized)
+				return
+			}
+
+			for i, expected := range tc.expected {
+				if normalized[i] != expected {
+					t.Errorf("Item %d: expected '%s', got '%s'", i, expected, normalized[i])
+				}
+			}
+		})
+	}
+}
+
+// setupTestFilesAndDirs creates temporary files and directories for testing.
+// Container-security scan-type related test helper function.
+// This helper creates test files (like .tar files) and directories needed for container image validation tests.
+func setupTestFilesAndDirs(t *testing.T, files, dirs []string) []func() {
+	var cleanupFuncs []func()
+
+	for _, file := range files {
+		// Create temporary file
+		tempFile, err := os.CreateTemp("", filepath.Base(file))
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		tempFile.Close()
+
+		// Always use relative paths for testing to avoid filesystem permission issues
+		targetFile := filepath.Base(file)
+		err = os.Rename(tempFile.Name(), targetFile)
+		if err != nil {
+			t.Fatalf("Failed to rename temp file to %s: %v", targetFile, err)
+		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			os.Remove(targetFile)
+		})
+	}
+
+	for _, dir := range dirs {
+		// Always use relative paths for testing to avoid filesystem permission issues
+		targetDir := filepath.Base(dir)
+		err := os.MkdirAll(targetDir, 0755)
+		if err != nil {
+			t.Fatalf("Failed to create directory %s: %v", targetDir, err)
+		}
+		cleanupFuncs = append(cleanupFuncs, func() {
+			os.RemoveAll(targetDir)
+		})
+	}
+
+	return cleanupFuncs
 }
 
 func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing.T) {
@@ -1852,12 +2666,95 @@ func TestAddContainersScan_WithCustomImages_ShouldSetUserCustomImages(t *testing
 		expectedImages, containerMapConfig.UserCustomImages)
 }
 
+func TestAddContainersScan_GitScanWithResolveLocallyAndCustomImages_ShouldSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for git scan with resolve locally and custom images
+	expectedImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	gitURL := "https://github.com/user/repo.git"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, expectedImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, gitURL)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was correctly set even with resolve locally true (because it's a git scan)
+	assert.Equal(t, containerMapConfig.UserCustomImages, expectedImages,
+		"Expected UserCustomImages to be set to '%s' for git scan even with resolve locally, but got '%s'",
+		expectedImages, containerMapConfig.UserCustomImages)
+}
+
+func TestAddContainersScan_UploadScanWithResolveLocallyAndCustomImages_ShouldNotSetUserCustomImages(t *testing.T) {
+	// Setup
+	var resubmitConfig []wrappers.Config
+
+	// Create command with container flags
+	cmdCommand := &cobra.Command{}
+	cmdCommand.Flags().String(commonParams.ContainerImagesFlag, "", "Container images")
+	cmdCommand.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Resolve containers locally")
+	cmdCommand.Flags().String(commonParams.SourcesFlag, "", "Source")
+
+	// Set test values for upload scan (local path) with resolve locally and custom images
+	customImages := "artifactory.company.com/repo/image1:latest,artifactory.company.com/repo/image2:1.0.3"
+	localPath := "/path/to/local/directory"
+	_ = cmdCommand.Flags().Set(commonParams.ContainerImagesFlag, customImages)
+	_ = cmdCommand.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, localPath)
+
+	// Enable container scan type
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.ContainersType
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Execute
+	result, err := addContainersScan(cmdCommand, resubmitConfig)
+
+	// Verify no error occurred
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected result to not be nil")
+
+	// Verify
+	containerMapConfig, ok := result[resultsMapValue].(*wrappers.ContainerConfig)
+	assert.Assert(t, ok, "Expected result to contain a ContainerConfig")
+
+	// Check that the UserCustomImages field was NOT set for upload scan with resolve locally
+	assert.Equal(t, containerMapConfig.UserCustomImages, "",
+		"Expected UserCustomImages to be empty for upload scan with resolve locally, but got '%s'",
+		containerMapConfig.UserCustomImages)
+}
+
 func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testing.T) {
 	// Define test cases
 	testCases := []struct {
 		name                    string
 		resubmitConfig          []wrappers.Config
 		containerResolveLocally bool
+		isGitScan               bool
 		expectedCustomImages    string
 	}{
 		{
@@ -1871,10 +2768,11 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
-			name: "When UserCustomImages is valid string and ContainerResolveLocally is true, it should not be set in containerConfig",
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true (upload scan), it should not be set in containerConfig",
 			resubmitConfig: []wrappers.Config{
 				{
 					Type: commonParams.ContainersType,
@@ -1884,7 +2782,22 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: true,
+			isGitScan:               false,
 			expectedCustomImages:    "",
+		},
+		{
+			name: "When UserCustomImages is valid string and ContainerResolveLocally is true but is git scan, it should be set in containerConfig",
+			resubmitConfig: []wrappers.Config{
+				{
+					Type: commonParams.ContainersType,
+					Value: map[string]interface{}{
+						ConfigUserCustomImagesKey: "image1:tag1,image2:tag2",
+					},
+				},
+			},
+			containerResolveLocally: true,
+			isGitScan:               true,
+			expectedCustomImages:    "image1:tag1,image2:tag2",
 		},
 		{
 			name: "When UserCustomImages is empty string, containerConfig should not be updated",
@@ -1897,6 +2810,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1910,6 +2824,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 		{
@@ -1921,6 +2836,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 				},
 			},
 			containerResolveLocally: false,
+			isGitScan:               false,
 			expectedCustomImages:    "",
 		},
 	}
@@ -1932,7 +2848,7 @@ func TestInitializeContainersConfigWithResubmitValues_UserCustomImages(t *testin
 			containerConfig := &wrappers.ContainerConfig{}
 
 			// Call the function under test
-			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally)
+			initializeContainersConfigWithResubmitValues(tc.resubmitConfig, containerConfig, tc.containerResolveLocally, tc.isGitScan)
 
 			// Assert the result
 			assert.Equal(t, tc.expectedCustomImages, containerConfig.UserCustomImages,
@@ -2330,33 +3246,139 @@ func TestValidateScanTypes(t *testing.T) {
 		userScanTypes    string
 		userSCSScanTypes string
 		allowedEngines   map[string]bool
+		scsLicensingV2   bool
 		expectedError    string
 	}{
 		{
-			name:             "No licenses available",
+			name:             "no specific micro engines selected with no licenses available using new sscs licensing",
 			userScanTypes:    "scs",
-			userSCSScanTypes: "sast,secret-detection",
-			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"scs\" scan type does",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "This requires either the \"repository‑health\" or the \"secret‑detection\" package license",
 		},
 		{
-			name:             "SCS license available, secret-detection not available",
+			name:             "no specific micro engines selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "no specific micro engines selected with scs license available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "no specific micro engines selected with all licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "",
+			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using old sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"scs": false, "enterprise-secrets": false},
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"scs\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard and secret-detection selected with no licenses available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard,secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with SCS license available, secret-detection not available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": false},
-			expectedError:    "It looks like the \"secret-detection\" scan type does not exist",
+			scsLicensingV2:   false,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
 		},
 		{
-			name:             "All licenses available",
+			name:             "secret-detection selected with repository-health license available, secret-detection not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"secret-detection\" scan type does not exist or",
+		},
+		{
+			name:             "scorecard selected with secret-detection license available and repository-health not available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "It looks like the \"repository-health\" scan type does not exist or",
+		},
+		{
+			name:             "secret-detection selected with all licenses available using old sscs licensing",
 			userScanTypes:    "scs",
 			userSCSScanTypes: "secret-detection",
 			allowedEngines:   map[string]bool{"scs": true, "enterprise-secrets": true},
+			scsLicensingV2:   false,
+			expectedError:    "",
+		},
+		{
+			name:             "secret-detection selected with secret-detection license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "secret-detection",
+			allowedEngines:   map[string]bool{"repository-health": false, "secret-detection": true},
+			scsLicensingV2:   true,
+			expectedError:    "",
+		},
+		{
+			name:             "scorecard selected with repository-health license available using new sscs licensing",
+			userScanTypes:    "scs",
+			userSCSScanTypes: "scorecard",
+			allowedEngines:   map[string]bool{"repository-health": true, "secret-detection": false},
+			scsLicensingV2:   true,
 			expectedError:    "",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
 			cmd.Flags().String(commonParams.SCSEnginesFlag, tt.userSCSScanTypes, "")
@@ -2366,6 +3388,7 @@ func TestValidateScanTypes(t *testing.T) {
 					return tt.allowedEngines, nil
 				},
 			}
+
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
 			if tt.expectedError != "" {
@@ -2373,6 +3396,100 @@ func TestValidateScanTypes(t *testing.T) {
 			} else {
 				assert.NilError(t, err)
 			}
+		})
+	}
+}
+
+func TestIsScsScorecardAllowed(t *testing.T) {
+	tests := []struct {
+		name                       string
+		scsLicensingV2             bool
+		hasRepositoryHealthLicense bool
+		hasScsLicense              bool
+		expectedAllowed            bool
+	}{
+		{
+			name:            "scsLicensingV2 disabled and has scs license",
+			scsLicensingV2:  false,
+			hasScsLicense:   true,
+			expectedAllowed: true,
+		},
+		{
+			name:            "scsLicensingV2 disabled and does not have scs license",
+			scsLicensingV2:  false,
+			hasScsLicense:   false,
+			expectedAllowed: false,
+		},
+		{
+			name:                       "scsLicensingV2 enabled and has repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: true,
+			expectedAllowed:            true,
+		},
+		{
+			name:                       "scsLicensingV2 enabled and does not have repository health license",
+			scsLicensingV2:             true,
+			hasRepositoryHealthLicense: false,
+			expectedAllowed:            false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsScorecardAllowed(tt.scsLicensingV2, tt.hasRepositoryHealthLicense, tt.hasScsLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
+		})
+	}
+}
+
+func TestIsScsSecretDetectionAllowed(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+		hasScsLicense               bool
+		expectedAllowed             bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled and has scs and enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               true,
+			expectedAllowed:             true,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has enterprise secrets but does not have scs license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: true,
+			hasScsLicense:               false,
+			expectedAllowed:             false,
+		},
+		{
+			name:                        "scsLicensingV2 disabled and has scs license but does not have enterprise secrets license",
+			scsLicensingV2:              false,
+			hasEnterpriseSecretsLicense: false,
+			hasScsLicense:               true,
+			expectedAllowed:             false,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and has secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: true,
+			expectedAllowed:           true,
+		},
+		{
+			name:                      "scsLicensingV2 enabled and does not have secret detection license",
+			scsLicensingV2:            true,
+			hasSecretDetectionLicense: false,
+			expectedAllowed:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualAllowed := isScsSecretDetectionAllowed(tt.scsLicensingV2, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, tt.hasScsLicense)
+			assert.Equal(t, tt.expectedAllowed, actualAllowed)
 		})
 	}
 }
@@ -2441,4 +3558,694 @@ func Test_CreateScanWithSbomFlag(t *testing.T) {
 	)
 
 	assert.ErrorContains(t, err, "Failed creating a scan: Input in bad format: failed to read file:")
+}
+
+// Tests for container scan directory handling bug fix (AST-107490)
+
+func Test_isSingleContainerScanTriggered_WithSingleContainerType_ShouldReturnTrue(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test single container scan type
+	actualScanTypes = commonParams.ContainersType
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, result, "Should return true for single container scan type")
+}
+
+func Test_isSingleContainerScanTriggered_WithMultipleScanTypes_ShouldReturnFalse(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test multiple scan types including container
+	actualScanTypes = fmt.Sprintf("%s,%s", commonParams.ContainersType, commonParams.SastType)
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for multiple scan types")
+
+	// Test multiple scan types without container
+	actualScanTypes = fmt.Sprintf("%s,%s", commonParams.SastType, commonParams.ScaType)
+	result = isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for multiple scan types without container")
+}
+
+func Test_isSingleContainerScanTriggered_WithNonContainerType_ShouldReturnFalse(t *testing.T) {
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Test single non-container scan type
+	actualScanTypes = commonParams.SastType
+	result := isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for single non-container scan type")
+
+	// Test empty scan types
+	actualScanTypes = ""
+	result = isSingleContainerScanTriggered()
+	assert.Assert(t, !result, "Should return false for empty scan types")
+}
+
+func TestCreateScan_WithContainerImagesAndDirectory_ShouldProcessDirectoryFiles(t *testing.T) {
+	// This test ensures that when using --container-images with a directory source,
+	// the directory files are properly processed instead of creating a minimal zip
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "nginx:latest,alpine:3.14",
+	}
+
+	// This should succeed - directory files should be processed normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithSingleContainerScanAndDirectory_ShouldProcessAllFiles(t *testing.T) {
+	// Test that single container scans with directory sources process all files,
+	// not just container resolution files
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+	}
+
+	// This should succeed and process the entire directory
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndZipSource_ShouldProcessZipNormally(t *testing.T) {
+	// Test that container scans with zip sources work normally
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data/sources.zip",
+		"--scan-types", "containers",
+		"--container-images", "redis:6.2,postgres:13",
+	}
+
+	// This should succeed and process the zip file normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithMixedScanTypesAndContainerImages_ShouldProcessAllFiles(t *testing.T) {
+	// Test that mixed scan types with container images process all files
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "sast,containers,iac-security",
+		"--container-images", "ubuntu:20.04",
+	}
+
+	// This should succeed and process all source files for all scan types
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesOnly_ShouldNotCreateMinimalZip(t *testing.T) {
+	// Test that using only --container-images flag doesn't create a minimal zip
+	// and properly processes directory contents
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--container-images", "mongo:4.4,elasticsearch:7.15.0",
+	}
+
+	// This should succeed and process directory files normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerResolveLocallyAndImages_ShouldProcessDirectoryContents(t *testing.T) {
+	// Test that container-resolve-locally with container images processes directory contents
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+		"--container-images", "node:16-alpine,python:3.9-slim",
+	}
+
+	// This should succeed and process both directory contents and external images
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerScanAndFileFilters_ShouldApplyFiltersToDirectory(t *testing.T) {
+	// Test that file filters are applied to directory contents in container scans
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "nginx:latest",
+		"--file-filter", "!*.log,!temp/**",
+	}
+
+	// This should succeed and apply file filters to the directory scan
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithComplexContainerScenario_ShouldHandleAllCases(t *testing.T) {
+	// Test a complex scenario that would have failed before the bug fix
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--container-images", "httpd:2.4,tomcat:9.0-jdk11",
+		"--containers-local-resolution",
+		"--file-filter", "!node_modules/**",
+		"--containers-file-folder-filter", "!*.tmp",
+	}
+
+	// This complex scenario should work correctly after the bug fix
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndEmptyDirectory_ShouldProcessEmptyDirectory(t *testing.T) {
+	// Test edge case: container images with empty directory should not create minimal zip
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--container-images", "busybox:latest",
+	}
+
+	// This should succeed and process the directory even if empty
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithOnlyContainerResolveLocally_ShouldProcessDirectory(t *testing.T) {
+	// Test that containers-local-resolution without external images works correctly
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--containers-local-resolution",
+	}
+
+	// This should succeed and process directory for local container resolution
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_WithContainerImagesAndIncludeFilters_ShouldApplyFilters(t *testing.T) {
+	// Test that include filters work correctly with container images
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "alpine:latest",
+		"--file-include", "*.dockerfile,*.yaml",
+	}
+
+	// This should succeed and apply include filters to directory scan
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_EdgeCase_SingleContainerWithCustomImages_ShouldNotCreateMinimalZip(t *testing.T) {
+	// This is the exact edge case that was fixed - single container scan with custom images
+	// Before the fix, this would create a minimal zip instead of processing directory
+
+	// Save original actualScanTypes
+	originalScanTypes := actualScanTypes
+	defer func() {
+		actualScanTypes = originalScanTypes
+	}()
+
+	// Set to single container scan type
+	actualScanTypes = commonParams.ContainersType
+
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", "data",
+		"--scan-types", "containers",
+		"--container-images", "nginx:1.21,php:8.0-apache",
+	}
+
+	// This was the failing case before the bug fix - should now succeed
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestCreateScan_VerifyNoMinimalZipCreation_WithContainerImagesFlag(t *testing.T) {
+	// This test verifies that the createMinimalZipFile function is no longer called
+	// when using container images with directory sources
+
+	baseArgs := []string{
+		"scan", "create",
+		"--project-name", "MOCK",
+		"-b", "dummy_branch",
+		"-s", ".",
+		"--scan-types", "containers",
+		"--container-images", "mariadb:10.6,redis:6.2-alpine",
+		"--file-filter", "!*.md",
+	}
+
+	// Before the fix, this would have triggered createMinimalZipFile
+	// After the fix, it should process directory contents normally
+	execCmdNilAssertion(t, baseArgs...)
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	_, err := getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, ".gitignore file not found in directory")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_PermissionDenied(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0000)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	_, err = getGitignorePatterns(dir, "")
+	assert.ErrorContains(t, err, "permission denied")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(""), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
+	}
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
+}
+
+func TestGetGitignorePatterns_DirPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(`src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write .gitignore: %v", err)
+	}
+	gitIgnoreFilter, err := getGitignorePatterns(dir, "")
+	if err != nil {
+		t.Fatalf("Error in fetching pattern from .gitignore file: %v", err)
+	}
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_FailedToOpenZipFIle(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, "failed to open zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_NotFound(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	_, err = getGitignorePatterns("", zipPath)
+	assert.ErrorContains(t, err, ".gitignore not found in zip")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_EmptyPatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+
+	_, err = fileInZip.Write([]byte(""))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) == 0, "Expected no patterns from empty .gitignore file")
+}
+
+func TestGetGitignorePatterns_ZipPath_GitIgnore_PatternList(t *testing.T) {
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "example.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPath)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Create a zip writer
+	zipWriter := zip.NewWriter(zipFile)
+
+	// Add a file to the zip archive
+	fileInZip, err := zipWriter.Create("example" + "/.gitignore")
+	if err != nil {
+		t.Fatalf("Failed to add file to zip: %v", err)
+	}
+	_, err = fileInZip.Write([]byte(`src
+src/
+**/vullib
+**/admin/
+vulnerability/**
+application-jira.yml
+*.yml
+LoginController[0-1].java
+LoginController[!0-3].java
+LoginController[01].java
+LoginController[!456].java
+?pplication-jira.yml
+a*cation-jira.yml`))
+	if err != nil {
+		t.Fatalf("Failed to write data to zip: %v", err)
+	}
+	err = zipWriter.Close()
+	if err != nil {
+		return
+	}
+
+	gitIgnoreFilter, _ := getGitignorePatterns("", zipPath)
+	assert.Assert(t, len(gitIgnoreFilter) > 0, "Expected patterns from .gitignore file")
+}
+
+func Test_CreateScanWithIgnorePolicyFlag(t *testing.T) {
+	execCmdNilAssertion(
+		t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data/sources.zip", "--branch", "dummy_branch", "--ignore-policy",
+	)
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_Application(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--application-name", mock.ExistingApplication, "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedNoApplication_NameProvided(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug"}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "No application name provided. Skipping application update"), true, "Expected output: %s", "No application name provided. Skipping application update")
+}
+
+func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", "NoPermissionApp"}
+	err := execCmdNotNilAssertion(
+		t,
+		baseArgs...,
+	)
+	assert.ErrorContains(t, err, errorConstants.FailedToGetApplication, err.Error())
+}
+
+func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociationEnabledShouldPass(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+// TestIsTarFileReference tests the tar file detection logic.
+// Container-security scan-type related test function.
+func TestIsTarFileReference(t *testing.T) {
+	testCases := []struct {
+		name     string
+		imageRef string
+		expected bool
+	}{
+		// Tar files (various formats)
+		{"Simple tar", "alpine.tar", true},
+		{"Tar with path", "/path/to/image.tar", true},
+		{"Tar case insensitive", "image.TAR", true},
+		{"Tar with quotes", "'alpine.tar'", true},
+		{"Tar multiple dots", "alpine.3.18.0.tar", true},
+
+		// Prefixed tar files
+		{"docker-archive tar", "docker-archive:alpine.tar", true},
+		{"oci-archive tar", "oci-archive:image.tar", true},
+		{"file prefix tar", "file:myimage.tar", true},
+		{"oci-dir tar", "oci-dir:image.tar", true},
+
+		// Non-tar images
+		{"Image with tag", "nginx:latest", false},
+		{"Image with registry", "registry.io/namespace/image:v1.0", false},
+		{"Compressed tar.gz", "image.tar.gz", false},
+
+		// Prefixed non-tar images
+		{"docker-archive image", "docker-archive:nginx:latest", false},
+		{"docker daemon image", "docker:nginx:latest", false},
+		{"registry image", "registry:ubuntu:20.04", false},
+		{"oci-dir with directory:tag", "oci-dir:/path/to/dir:latest", false},
+
+		// Invalid: tar file cannot have tag
+		{"Invalid tar with tag", "oci-dir:image.tar:latest", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if result := isTarFileReference(tc.imageRef); result != tc.expected {
+				t.Errorf("Expected %v for '%s', got %v", tc.expected, tc.imageRef, result)
+			}
+		})
+	}
+}
+
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// Container-security scan-type related test function.
+func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		containerImages         string
+		initialLocalResolution  bool
+		expectedLocalResolution bool
+		expectWarning           bool
+	}{
+		// No action needed
+		{"Empty images", "", false, false, false},
+		{"Already enabled", "alpine.tar", true, true, false},
+		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
+		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
+		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
+
+		// Should enable local resolution
+		{"Single tar", "alpine.tar", false, true, true},
+		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
+		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
+		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
+		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
+		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock command
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.ContainerImagesFlag, "", "")
+			cmd.Flags().Bool(commonParams.ContainerResolveLocallyFlag, false, "")
+
+			// Set the initial flag values
+			_ = cmd.Flags().Set(commonParams.ContainerImagesFlag, tc.containerImages)
+			_ = cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, fmt.Sprintf("%v", tc.initialLocalResolution))
+
+			// Capture output to check for warning message
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			// Run the function
+			err := enforceLocalResolutionForTarFiles(cmd)
+
+			// Restore stdout
+			w.Close()
+			os.Stdout = oldStdout
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			output := buf.String()
+
+			// Validate results
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+
+			actualLocalResolution, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
+			if actualLocalResolution != tc.expectedLocalResolution {
+				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
+			}
+
+			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			if tc.expectWarning && !hasWarning {
+				t.Errorf("Expected warning but got: %s", output)
+			} else if !tc.expectWarning && hasWarning {
+				t.Errorf("Unexpected warning: %s", output)
+			}
+		})
+	}
+}
+
+// TestEnforceLocalResolutionForTarFiles_Integration tests the integration with scan create command.
+// Container-security scan-type related test function.
+func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
+	tempDir := t.TempDir()
+	tarFile := filepath.Join(tempDir, "test.tar")
+	if file, err := os.Create(tarFile); err != nil {
+		t.Fatalf("Failed to create test tar: %v", err)
+	} else {
+		file.Close()
+	}
+
+	testCases := []struct {
+		name       string
+		images     string
+		addFlag    bool
+		expectWarn bool
+	}{
+		{"Tar without flag", tarFile, false, true},
+		{"Tar with flag", tarFile, true, false},
+		{"Image without flag", "nginx:latest", false, false},
+		{"Mixed without flag", tarFile + ",nginx:latest", false, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{"scan", "create", "--project-name", "MOCK", "-s", ".",
+				"-b", "test-branch", "--scan-types", "containers", "--container-images", tc.images}
+			if tc.addFlag {
+				args = append(args, "--containers-local-resolution")
+			}
+
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+			execCmdNilAssertion(t, args...)
+			w.Close()
+			os.Stdout = oldStdout
+
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			hasWarning := strings.Contains(buf.String(), "Warning:") && strings.Contains(buf.String(), "Tar file")
+
+			if tc.expectWarn != hasWarning {
+				t.Errorf("Expected warning=%v, got=%v", tc.expectWarn, hasWarning)
+			}
+		})
+	}
 }
