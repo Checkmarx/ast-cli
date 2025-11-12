@@ -1851,7 +1851,6 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
-				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
@@ -1880,7 +1879,6 @@ func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
 		flag(params.TargetFormatFlag), strings.Join(
 			[]string{
 				printer.FormatJSON,
-				printer.FormatJSONv2,
 				printer.FormatSarif,
 				printer.FormatSonar,
 				printer.FormatSummaryConsole,
