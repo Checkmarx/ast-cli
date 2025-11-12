@@ -46,6 +46,12 @@ func Print(w io.Writer, view interface{}, format string) error {
 			return err
 		}
 		_, _ = fmt.Fprintln(w, string(viewJSON))
+	} else if IsFormat(format, FormatJSONv2) {
+		viewJSON, err := json.Marshal(view)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintln(w, string(viewJSON))
 	} else if IsFormat(format, FormatList) {
 		entities := toEntities(view)
 		printList(w, entities)
