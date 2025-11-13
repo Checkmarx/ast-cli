@@ -28,7 +28,7 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.40.0
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.18.0
 	golang.org/x/text v0.27.0
 	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
