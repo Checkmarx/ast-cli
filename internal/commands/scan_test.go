@@ -2972,15 +2972,31 @@ func TestResubmitConfig_ProjectDoesNotExist_ReturnedEmptyConfig(t *testing.T) {
 func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInSuccessCase(t *testing.T) {
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, true, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
 	assert.NilError(t, err)
 	assert.Equal(t, zipPath, "")
 }
 
 func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(t *testing.T) {
+	// Create a temporary zip file
+	dir := t.TempDir()
+	zipPathTemp := filepath.Join(dir, "failureCase.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPathTemp)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, true, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, true, featureFlagsWrapper)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
 	assert.Equal(t, zipPath, "")
@@ -2989,18 +3005,33 @@ func TestUploadZip_whenUserProvideZip_shouldReturnEmptyZipFilePathInFailureCase(
 func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInSuccessCase(t *testing.T) {
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "test.zip", false, false, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, false, featureFlagsWrapper)
 	assert.NilError(t, err)
-	assert.Equal(t, zipPath, "test.zip")
+	assert.Equal(t, zipPath, "data/sources.zip")
 }
 
 func TestUploadZip_whenUserNotProvideZip_shouldReturnZipFilePathInFailureCase(t *testing.T) {
+	// Create a temporary zip file
+	dir := t.TempDir()
+	zipPathTemp := filepath.Join(dir, "failureCase.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPathTemp)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
 	uploadWrapper := mock.UploadsMockWrapper{}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	_, zipPath, err := uploadZip(&uploadWrapper, "failureCase.zip", false, false, featureFlagsWrapper)
+	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, false, featureFlagsWrapper)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFile"), err.Error())
-	assert.Equal(t, zipPath, "failureCase.zip")
+	assert.Equal(t, zipPath, zipPathTemp)
 }
 
 func TestAddSastScan_ScanFlags(t *testing.T) {
@@ -4248,4 +4279,97 @@ func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB(t *testing.T) {
+	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
+	MaxSizeBytes = 1
+	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
+	uploadWrapper := mock.UploadsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+	assert.Equal(t, url, "multiPart/path/to/nowhere")
+}
+
+func TestUploadZip_AsMultipartUpload_when_FF_Disable_ZIP_Exceeds_5GB(t *testing.T) {
+	fileInfo, err := os.Stat("data/sources.zip")
+	if err != nil {
+		t.Fatalf("Failed to close zip file: %v", err)
+	}
+	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
+	MaxSizeBytes = fileInfo.Size() - 1
+	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
+
+	uploadWrapper := mock.UploadsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: false}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+	assert.Equal(t, url, "singlePart/path/to/nowhere")
+}
+
+func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_LessThan_5GB(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+	assert.Equal(t, url, "singlePart/path/to/nowhere")
+}
+
+func TestUploadZip_AsMultipartUpload_when_FF_Disable_ZIP_LessThan_5GB(t *testing.T) {
+	uploadWrapper := mock.UploadsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: false}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
+	assert.NilError(t, err)
+	assert.Equal(t, zipPath, "")
+	assert.Equal(t, url, "singlePart/path/to/nowhere")
+}
+
+func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB_Error(t *testing.T) {
+	// Create a temporary zip file
+	dir := t.TempDir()
+	zipPathTemp := filepath.Join(dir, "failureCaseLarge.zip")
+
+	// Create the zip file
+	zipFile, err := os.Create(zipPathTemp)
+	if err != nil {
+		t.Fatalf("Failed to create zip file: %v", err)
+	}
+	defer func(zipFile *os.File) {
+		err := zipFile.Close()
+		if err != nil {
+			t.Fatalf("Failed to close zip file: %v", err)
+		}
+	}(zipFile)
+
+	// Seek to 5KB + 1 byte
+	_, err = zipFile.Seek(5*1024+1, 0) // 5121 bytes
+	if err != nil {
+		panic("Failed to seek in zip file: " + err.Error())
+	}
+
+	// Write a single byte to allocate space
+	_, err = zipFile.Write([]byte{0})
+	if err != nil {
+		panic("Failed to write to zip file: " + err.Error())
+	}
+
+	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
+	MaxSizeBytes = 1
+	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() //
+
+	uploadWrapper := mock.UploadsMockWrapper{}
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, true, featureFlagsWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFileInMultipart"), err.Error())
+	assert.Equal(t, zipPath, "")
 }
