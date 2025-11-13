@@ -22,6 +22,7 @@ func TestNewUtilsCommand(t *testing.T) {
 		nil,
 		mock.LearnMoreMockWrapper{},
 		mock.TenantConfigurationMockWrapper{},
+		&mock.JWTMockWrapper{},
 		mock.ChatMockWrapper{},
 		nil,
 		nil,

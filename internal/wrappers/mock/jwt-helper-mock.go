@@ -75,3 +75,18 @@ func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error) {
 	return true, nil
 }
+
+// GetLicenseDetails mock for tests
+func (j *JWTMockWrapper) GetLicenseDetails(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+	licenseDetails = make(map[string]string)
+
+	// Add scan.config.plugins.standalone as true
+	licenseDetails["scan.config.plugins.standalone"] = "true"
+
+	// Add mock engine license data
+	for _, engine := range engines {
+		licenseDetails[engine] = "true"
+	}
+
+	return licenseDetails, nil
+}
