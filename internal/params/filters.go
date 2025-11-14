@@ -147,6 +147,8 @@ var BaseIncludeFilters = []string{
 	"*.mjs",
 	"*.mts",
 	"*.cts",
+	"*.html",
+	"*.xhtml",
 }
 
 var BaseExcludeFilters = []string{
