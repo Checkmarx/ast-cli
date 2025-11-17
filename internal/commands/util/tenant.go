@@ -53,7 +53,6 @@ func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappe
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
 			tenantConfigurationResponseView := toTenantConfigurationResponseView(tenantConfigurationResponse)
 
-			// Get license details and add them to the response
 			licenseDetails, err := jwtWrapper.GetLicenseDetails(featureFlagsWrapper)
 			if err == nil {
 				tenantConfigurationResponseView = appendLicenseDetails(tenantConfigurationResponseView, licenseDetails)
