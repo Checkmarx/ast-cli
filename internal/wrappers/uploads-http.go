@@ -39,7 +39,7 @@ type MultipartPresignedURL struct {
 	PartNumber int    `json:"partNumber"`
 }
 
-type CompleteMultipartUpload struct {
+type CompleteMultipartUploadRequest struct {
 	UploadID   string `json:"UploadID"`
 	ObjectName string `json:"objectName"`
 	PartList   []Part `json:"partList"`
@@ -165,11 +165,7 @@ func NewUploadsHTTPWrapper(path string) UploadsWrapper {
 }
 
 func (u *UploadsHTTPWrapper) UploadFileInMultipart(sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (*string, error) {
-	// calculate file size and compare with 5GB limit
-	fileInfo, err := os.Stat(sourcesFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to stat - %s", sourcesFile)
-	}
+	fileInfo, _ := os.Stat(sourcesFile)
 
 	startMultipartUploadRequest := StartMultipartUploadRequest{}
 	startMultipartUploadRequest.FileSize = fileInfo.Size()
@@ -182,14 +178,13 @@ func (u *UploadsHTTPWrapper) UploadFileInMultipart(sourcesFile string, featureFl
 		return nil, errors.Errorf("Failed to split ZIP file for multipart upload - %s", err.Error())
 	}
 
-	// ensure temporary parts are removed when this function returns
 	defer cleanUpTempParts(partList)
 
 	for i, part := range partList {
 		logger.PrintfIfVerbose("Part%d created at: %s", i+1, part)
 	}
 
-	completeMultipartUpload := &CompleteMultipartUpload{
+	completeMultipartUploadRequest := &CompleteMultipartUploadRequest{
 		UploadID:   startMultipartUploadResponse.UploadID,
 		ObjectName: startMultipartUploadResponse.ObjectName,
 	}
@@ -199,56 +194,31 @@ func (u *UploadsHTTPWrapper) UploadFileInMultipart(sourcesFile string, featureFl
 	for i, partPath := range partList {
 		partNumber := i + 1
 
-		// Generate presigned URL
 		presignedURL, err := getPresignedURLForMultipartUploading(startMultipartUploadResponse, partNumber)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get presigned URL for part%d - %s", partNumber, err.Error())
+			return nil, errors.Errorf("Failed to get presigned URL for part%d - %s", partNumber, err.Error())
 		}
 
 		if partNumber == 1 {
 			presignedURLPart1 = presignedURL
 		}
-		// Upload part
+
 		etag, err := uploadPart(presignedURL, partPath, featureFlagsWrapper)
 		if err != nil {
-			return nil, fmt.Errorf("failed to upload part%d - %s", partNumber, err.Error())
+			return nil, errors.Errorf("Failed to upload part%d - %s", partNumber, err.Error())
 		}
 
-		// Append part info
-		completeMultipartUpload.PartList = append(completeMultipartUpload.PartList, Part{
+		completeMultipartUploadRequest.PartList = append(completeMultipartUploadRequest.PartList, Part{
 			ETag:       etag,
 			PartNumber: partNumber,
 		})
 	}
 
-	// call the complete multipart upload API
-	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	path := viper.GetString(commonParams.CompleteMultipartUploadPathEnv)
-	jsonBytes, err := json.Marshal(completeMultipartUpload)
+	err = completeMultipartUpload(*completeMultipartUploadRequest)
 	if err != nil {
-		return nil, errors.Errorf("Failed to marshal complete multipart upload request body - %s", err.Error())
+		return nil, errors.Errorf("Failed to complete multipart upload - %s", err.Error())
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	if err != nil {
-		return nil, err
-	}
-	decoder := json.NewDecoder(resp.Body)
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	switch resp.StatusCode {
-	case http.StatusNoContent:
-		return &presignedURLPart1, nil
-	case http.StatusUnauthorized:
-		return nil, errors.New(errorConstants.StatusUnauthorized)
-	default:
-		errorModel := ErrorModel{}
-		err = decoder.Decode(&errorModel)
-		if err != nil {
-			return nil, errors.Errorf("Parsing error model failed - %s", err.Error())
-		}
-		return nil, errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
-	}
+	return &presignedURLPart1, nil
 }
 
 func startMultipartUpload(startMultipartUploadRequest StartMultipartUploadRequest) (StartMultipartUploadResponse, error) {
@@ -256,7 +226,7 @@ func startMultipartUpload(startMultipartUploadRequest StartMultipartUploadReques
 	path := viper.GetString(commonParams.StartMultiPartUploadPathEnv)
 	jsonBytes, err := json.Marshal(startMultipartUploadRequest)
 	if err != nil {
-		return StartMultipartUploadResponse{}, errors.Errorf("Failed to marshal start multipart upload request body - %s", err.Error())
+		return StartMultipartUploadResponse{}, err
 	}
 	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
@@ -271,20 +241,20 @@ func startMultipartUpload(startMultipartUploadRequest StartMultipartUploadReques
 		startMultipartUpload := StartMultipartUploadResponse{}
 		err = decoder.Decode(&startMultipartUpload)
 		if err != nil {
-			return StartMultipartUploadResponse{}, errors.Errorf("failed to start the multipart upload - %s ", err.Error())
+			return StartMultipartUploadResponse{}, err
 		}
 		return startMultipartUpload, nil
 	case http.StatusBadRequest:
 		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return StartMultipartUploadResponse{}, errors.Errorf("failed to start the multipart upload - %s ", err.Error())
+			return StartMultipartUploadResponse{}, err
 		}
 		return StartMultipartUploadResponse{}, errors.Errorf(errorModel.Message)
 	case http.StatusUnauthorized:
 		return StartMultipartUploadResponse{}, errors.New(errorConstants.StatusUnauthorized)
 	default:
-		return StartMultipartUploadResponse{}, errors.Errorf("response status code %d", resp.StatusCode)
+		return StartMultipartUploadResponse{}, errors.Errorf("Response status code %d", resp.StatusCode)
 	}
 }
 
@@ -299,14 +269,13 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 	}
 	jsonBytes, err := json.Marshal(multipartPresignedURL)
 	if err != nil {
-		return "", errors.Errorf("Failed to marshal multipart upload presigned URL request body - %s", err.Error())
+		return "", err
 	}
 
 	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
-		return "", errors.Errorf("Invoking HTTP request to get pre-signed URL failed - %s", err.Error())
+		return "", err
 	}
-
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -318,7 +287,7 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return "", errors.Errorf("Parsing error model failed - %s", err.Error())
+			return "", err
 		}
 		return "", errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 
@@ -326,25 +295,24 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 		model := UploadModelMultipart{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return "", errors.Errorf("Parsing upload model failed - %s", err.Error())
+			return "", err
 		}
 		return model.PresignedURL, nil
 
 	default:
-		return "", errors.Errorf("response status code %d", resp.StatusCode)
+		return "", errors.Errorf("Response status code %d", resp.StatusCode)
 	}
 }
 
 func uploadPart(preSignedURL, sourcesFile string, featureFlagsWrapper FeatureFlagsWrapper) (string, error) {
 	if preSignedURL == "" {
-		return "", errors.New("preSignedURL is empty or nil")
+		return "", errors.New("PreSignedURL is empty or nil")
 	}
 
 	file, err := os.Open(sourcesFile)
 	if err != nil {
-		return "", errors.Errorf("Failed to open file for multipart upload %s - %s", sourcesFile, err.Error())
+		return "", err
 	}
-	// Close the file later
 	defer func() {
 		_ = file.Close()
 	}()
@@ -356,13 +324,13 @@ func uploadPart(preSignedURL, sourcesFile string, featureFlagsWrapper FeatureFla
 
 	stat, err := file.Stat()
 	if err != nil {
-		return "", errors.Errorf("Failed to stat file %s - %s", sourcesFile, err.Error())
+		return "", err
 	}
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, MinioEnabled)
 	useAccessToken := flagResponse.Status
 	resp, err := SendHTTPRequestByFullURLContentLength(http.MethodPut, preSignedURL, file, stat.Size(), useAccessToken, NoTimeout, accessToken, true)
 	if err != nil {
-		return "", errors.Errorf("Invoking HTTP request to upload file failed - %s", err.Error())
+		return "", err
 	}
 
 	defer func() {
@@ -380,11 +348,41 @@ func uploadPart(preSignedURL, sourcesFile string, featureFlagsWrapper FeatureFla
 			_ = resp.Body.Close()
 		}()
 		if err != nil {
-			return "", errors.Errorf("Reading response body failed - %s", err.Error())
+			return "", err
 		}
 		return "", errors.Errorf("Bad request while uploading part -  %s", string(body))
 	default:
-		return "", errors.Errorf("Failed to upload part of multipart - %d", resp.StatusCode)
+		return "", errors.Errorf("Response status code %d", resp.StatusCode)
+	}
+}
+
+func completeMultipartUpload(completeMultipartUploadRequest CompleteMultipartUploadRequest) error {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	path := viper.GetString(commonParams.CompleteMultipartUploadPathEnv)
+	jsonBytes, err := json.Marshal(completeMultipartUploadRequest)
+	if err != nil {
+		return err
+	}
+	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	if err != nil {
+		return err
+	}
+	decoder := json.NewDecoder(resp.Body)
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	switch resp.StatusCode {
+	case http.StatusNoContent:
+		return nil
+	case http.StatusUnauthorized:
+		return errors.New(errorConstants.StatusUnauthorized)
+	default:
+		errorModel := ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return err
+		}
+		return errors.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 	}
 }
 
@@ -392,16 +390,16 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 	partSizeBytes := getPartSizeBytes()
 	f, err := os.Open(zipFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("open input - %w", err)
+		return nil, err
 	}
 	defer closeFileVerbose(f)
 
 	stat, err := f.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("stat input - %w", err)
+		return nil, err
 	}
 	if stat.Size() == 0 {
-		return nil, fmt.Errorf("input file is empty")
+		return nil, err
 	}
 
 	partSizes := calculatePartSizes(stat.Size(), partSizeBytes)
@@ -415,19 +413,14 @@ func SplitZipBySizeGB(zipFilePath string) ([]string, error) {
 }
 
 func getPartSizeBytes() int64 {
-	// Get part size in GB from config if config is not provided, default to 2 GB
 	partChunkSizeStr := viper.GetString(commonParams.MultipartFileSizeKey)
 	partChunkSizeFloat, err := strconv.ParseFloat(partChunkSizeStr, 64)
-	// If parsing fails or value is empty, default to 2 GB
 	if err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Configured part size '%s' is invalid or empty. Defaulting to 2 GB.", partChunkSizeStr))
 		partChunkSizeFloat = 2
 	}
-	// Truncate to integer
 	truncatedSize := int64(partChunkSizeFloat)
 	if truncatedSize < 1 || truncatedSize > 5 {
-		// Enforce part size to be between 1 GB and 5 GB.
-		// If the configured part size is outside this range, default to 2 GB.
 		logger.PrintIfVerbose(fmt.Sprintf("Configured part size %d GB is outside the allowed range (1 – 5 GB). Defaulting to 2 GB.", truncatedSize))
 		truncatedSize = 2
 	}
@@ -458,7 +451,7 @@ func createParts(f *os.File, partSizes []int64) ([]string, error) {
 	for i, size := range partSizes {
 		partFile, err := os.CreateTemp("", fmt.Sprintf("cx-part%d-*", i+1))
 		if err != nil {
-			return partNames, fmt.Errorf("create part%d - %w", i+1, err)
+			return partNames, err
 		}
 		offset := int64(0)
 		for j := 0; j < i; j++ {
@@ -473,7 +466,7 @@ func createParts(f *os.File, partSizes []int64) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			return partNames, fmt.Errorf("seek to part%d - %w", i+1, err)
+			return partNames, err
 		}
 		if _, err := io.CopyN(partFile, f, size); err != nil && err != io.EOF {
 			err := partFile.Close()
@@ -484,13 +477,13 @@ func createParts(f *os.File, partSizes []int64) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
-			return partNames, fmt.Errorf("copy to part%d - %w", i+1, err)
+			return partNames, err
 		}
 		if err := partFile.Sync(); err != nil {
-			logger.PrintfIfVerbose("warning: failed to sync part%d - %v", i+1, err)
+			return partNames, err
 		}
 		if err := partFile.Close(); err != nil {
-			logger.PrintfIfVerbose("warning: failed to close part%d - %v", i+1, err)
+			return partNames, err
 		}
 		partNames[i] = partFile.Name()
 	}
@@ -499,7 +492,7 @@ func createParts(f *os.File, partSizes []int64) ([]string, error) {
 
 func closeFileVerbose(f *os.File) {
 	if err := f.Close(); err != nil {
-		logger.PrintfIfVerbose("warning: failed to close input file - %v", err)
+		logger.PrintfIfVerbose("Warning: failed to close input file - %v", err)
 	}
 }
 

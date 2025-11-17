@@ -2084,22 +2084,17 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	// Send a request to uploads service
 	var preSignedURL *string
 
-	// calculate file size and compare with 5GB limit
 	fileInfo, err := os.Stat(zipFilePath)
 	if err != nil {
-		return "", zipFilePath, errors.Wrapf(err, "Failed to stat %s", zipFilePath)
+		return "", zipFilePath, errors.Wrapf(err, "Failed to check the size - %s", zipFilePath)
 	}
 	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
 
-	// check for INCREASE_FILE_UPLOAD_LIMIT feature flag
 	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
 	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
-		// File size >5GB, proceed with multipart upload
-		logger.PrintIfVerbose("File size >5GB and INCREASE_FILE_UPLOAD_LIMIT flag is enabled,hence uploading file in multiple parts...")
+		logger.PrintIfVerbose("Uploading source code in multiple parts.")
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)
 	} else {
-		// File size is within <=5GB, proceed with upload in single part
-		logger.PrintIfVerbose("File size is within the limit and uploading file in a single part...")
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
 	}
 	if zipFilePathErr != nil {
