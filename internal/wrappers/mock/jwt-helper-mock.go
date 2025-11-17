@@ -23,6 +23,8 @@ const SecretDetectionDisabled = 1
 
 var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
 
+const licenseEnabledValue = "true"
+
 // GetAllowedEngines mock for tests
 func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
 	if j.CustomGetAllowedEngines != nil {
@@ -87,7 +89,7 @@ func (j *JWTMockWrapper) GetLicenseDetails(featureFlagsWrapper wrappers.FeatureF
 	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
 
 	for _, engine := range engines {
-		licenseDetails[engine] = "true"
+		licenseDetails[engine] = licenseEnabledValue
 	}
 
 	return licenseDetails, nil
