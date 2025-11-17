@@ -79,7 +79,7 @@ func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string)
 	return true, nil
 }
 
-func (j *JWTMockWrapper) GetLicenseDetails(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+func (j *JWTMockWrapper) GetLicenseDetails() (licenseDetails map[string]string, err error) {
 	licenseDetails = make(map[string]string)
 
 	assistEnabled := (j.CheckmarxOneAssistEnabled != CheckmarxOneAssistDisabled) || (j.AIEnabled != AIProtectionDisabled)

@@ -77,7 +77,7 @@ func NewUtilsCommand(
 
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
-	tenantCmd := NewTenantConfigurationCommand(tenantWrapper, jwtWrapper, featureFlagsWrapper)
+	tenantCmd := NewTenantConfigurationCommand(tenantWrapper, jwtWrapper)
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 

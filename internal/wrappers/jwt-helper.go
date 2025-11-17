@@ -24,7 +24,7 @@ type JWTStruct struct {
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
-	GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error)
+	GetLicenseDetails() (licenseDetails map[string]string, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
@@ -78,7 +78,7 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 	return getDefaultEngines(scsLicensingV2Flag.Status), nil
 }
 
-func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
 	licenseDetails = make(map[string]string)
 
 	jwtStruct, err := getJwtStruct()

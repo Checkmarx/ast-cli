@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tenant",
 		Short: "Shows the tenant settings",
@@ -27,7 +27,7 @@ func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper, 
 			`,
 			),
 		},
-		RunE: runTenantCmd(wrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: runTenantCmd(wrapper, jwtWrapper),
 	}
 	cmd.PersistentFlags().String(
 		params.FormatFlag,
@@ -40,7 +40,7 @@ func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper, 
 	return cmd
 }
 
-func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		tenantConfigurationResponse, errorModel, err := wrapper.GetTenantConfiguration()
 		if err != nil {
@@ -53,7 +53,7 @@ func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappe
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
 			tenantConfigurationResponseView := toTenantConfigurationResponseView(tenantConfigurationResponse)
 
-			licenseDetails, err := jwtWrapper.GetLicenseDetails(featureFlagsWrapper)
+			licenseDetails, err := jwtWrapper.GetLicenseDetails()
 			if err == nil {
 				tenantConfigurationResponseView = appendLicenseDetails(tenantConfigurationResponseView, licenseDetails)
 			}
