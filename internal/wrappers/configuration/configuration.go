@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
@@ -281,7 +282,7 @@ func GetConfigFilePath() (string, error) {
 
 func verifyConfigDir(fullPath string) {
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		fmt.Println("Creating directory")
+		logger.PrintfIfVerbose("Creating configuration file at default directory path")
 		err = os.Mkdir(fullPath, homeDirectoryPermissions)
 		if err != nil {
 			log.Fatal("Cannot file home directory.", err)
