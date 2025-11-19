@@ -26,6 +26,45 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
+func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails []string, projectId string) (*ScaPredicateResult, error) {
+	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
+	r.SetPath(viper.GetString(params.ScaResultsPredicatesPathEnv))
+	var request = "/entity-profile/search"
+	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to %s", r.path+request))
+
+	scaPredicateRequest := make(map[string]interface{})
+	for _, vulnerability := range vulnerabilityDetails {
+		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)
+		scaPredicateRequest[vulnerabilityKeyVal[0]] = vulnerabilityKeyVal[1]
+	}
+	scaPredicateRequest["projectId"] = projectId
+	scaPredicateRequest["actionType"] = params.ChangeState
+	jsonBody, err := json.Marshal(scaPredicateRequest)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to marshal request")
+	}
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path+request, bytes.NewBuffer(jsonBody), true, clientTimeout)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to send request")
+	}
+	defer func() {
+		if err == nil {
+			_ = resp.Body.Close()
+		}
+	}()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("Failed to get SCA predicate result.")
+	}
+	fmt.Println("HM Response: ", resp.Body)
+	decoder := json.NewDecoder(resp.Body)
+	var scaPredicates ScaPredicateResult
+	err = decoder.Decode(&scaPredicates)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to decode response")
+	}
+	return &scaPredicates, nil
+}
+
 func (r *ResultsPredicatesHTTPWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
 	*PredicatesCollectionResponseModel, *WebError, error,
 ) {
@@ -118,7 +157,6 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interf
 	if err != nil {
 		return nil, err
 	}
-
 	var triageAPIPath string
 	if strings.EqualFold(strings.TrimSpace(scanType), params.SastType) {
 		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
@@ -151,7 +189,9 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interf
 	// in case of ne/pne when mandatory comment arent provided, cli is not transforming error message
 	responseMap := make(map[string]interface{})
 	if err := json.NewDecoder(resp.Body).Decode(&responseMap); err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("failed to read the response, %v", err.Error()))
+		if scanType != params.ScaType { // for sca, we are not getting any response in the response body, so we are not logging the error
+			logger.PrintIfVerbose(fmt.Sprintf("failed to read the response, %v", err.Error()))
+		}
 	} else {
 		if val, ok := responseMap["code"].(float64); ok {
 			if val == 4002 && responseMap["message"] != nil {

@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -94,8 +96,9 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	triageShowCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageShowCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID")
 	triageShowCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
+	triageShowCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "List Vulnerabilities string")
 
-	markFlagAsRequired(triageShowCmd, params.SimilarityIDFlag)
+	// markFlagAsRequired(triageShowCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ScanTypeFlag)
 
@@ -147,44 +150,50 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
-
+		vulnerabilityDetails, _ := cmd.Flags().GetStringSlice(params.VulnerabilitiesFlag)
 		projectIDs := strings.Split(projectID, ",")
 		if len(projectIDs) > 1 {
 			return errors.Errorf("%s", "Multiple project-ids are not allowed.")
 		}
 
-		predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(
-			similarityID,
-			projectID,
-			scanType,
-		)
-
-		if err != nil {
-			return errors.Wrapf(err, "%s", "Failed showing the predicate")
-		}
-
-		// Checking the response
-		if errorModel != nil {
-			return errors.Errorf(
-				"%s: CODE: %d, %s",
-				"Failed showing the predicate.",
-				errorModel.Code,
-				errorModel.Message,
-			)
-		} else if predicatesCollection != nil {
-			err = printByFormat(cmd, toPredicatesView(*predicatesCollection))
+		if strings.EqualFold(scanType, params.ScaType) {
+			//SCA
+			scaResponse, err := resultsPredicatesWrapper.ScaPredicateResult(vulnerabilityDetails, projectID)
+			if err != nil {
+				return errors.Wrapf(err, "%s", "Failed showing the predicate")
+			}
+			err = printByFormat(cmd, toScaPredicateResultView(*scaResponse))
 			if err != nil {
 				return err
 			}
+			return nil
+		} else {
+			//other than SCA
+			predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityID, projectID, scanType)
+
+			// Checking the response
+			if errorModel != nil {
+				return errors.Errorf(
+					"%s: CODE: %d, %s",
+					"Failed showing the predicate.",
+					errorModel.Code,
+					errorModel.Message,
+				)
+			} else if predicatesCollection != nil {
+				err = printByFormat(cmd, toPredicatesView(*predicatesCollection))
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
 		}
 
-		return nil
 	}
 }
 
 func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, customStatesWrapper wrappers.CustomStatesWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-
 		similarityID, _ := cmd.Flags().GetString(params.SimilarityIDFlag)
 		projectID, _ := cmd.Flags().GetString(params.ProjectIDFlag)
 		severity, _ := cmd.Flags().GetString(params.SeverityFlag)
@@ -204,7 +213,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		state, customStateID, err = determineSystemOrCustomState(customStatesWrapper, featureFlagsWrapper, state, customStateID)
 		predicate, err := handlePredicate(vulnerabilityDetails, similarityID, projectID, severity, state, customStateID, comment, scanType)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "%s", "Failed updating the predicate")
 		}
 		_, err = resultsPredicatesWrapper.PredicateSeverityAndState(predicate, scanType)
 		if err != nil {
@@ -215,13 +224,13 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 }
 
 func handlePredicate(vulnerabilityDetails []string, similarityID string, projectID string, severity string, state string, customStateID int, comment string, scanType string) (interface{}, error) {
-	// TODO trim space here
 	scanType = strings.ToLower(scanType)
+	scanType = strings.TrimSpace(scanType)
 	if strings.EqualFold(scanType, Sca) {
 		state = transformState(state)
 		payload, err := handleScaTriage(vulnerabilityDetails, comment, state, projectID)
 		if err != nil {
-			return nil, errors.Errorf("%s", "Failed Sca handling")
+			return nil, err
 		}
 		return payload, nil
 	} else {
@@ -257,7 +266,6 @@ func transformState(state string) string {
 	return ""
 }
 
-// TODO rename the function
 func handleScaTriage(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
 	scaTriageInfo := make(map[string]interface{})
 	for _, vulnerability := range vulnerabilityDetails {
@@ -268,18 +276,30 @@ func handleScaTriage(vulnerabilityDetails []string, comment string, state string
 		}
 		scaTriageInfo[vulnerabilityKeyVal[0]] = vulnerabilityKeyVal[1]
 	}
+
+	if scaTriageInfo["packageName"] == nil && scaTriageInfo["packagename"] == nil {
+		return nil, errors.Errorf("Package name is required")
+	}
+	if scaTriageInfo["packageVersion"] == nil && scaTriageInfo["packageversion"] == nil {
+		return nil, errors.Errorf("Package version is required")
+	}
+	if scaTriageInfo["packageManager"] == nil && scaTriageInfo["packagemanager"] == nil {
+		fmt.Println("Package manager is required")
+		return nil, errors.Errorf("Package manager is required")
+	}
+
 	scaTriageInfo["projectIds"] = []string{projectId}
 	actionInfo := make(map[string]interface{})
 	actionInfo["actionType"] = params.ChangeState
 	actionInfo["value"] = state
 	actionInfo["comment"] = comment
 	scaTriageInfo["actions"] = []map[string]interface{}{actionInfo}
-
 	b, err := json.Marshal(scaTriageInfo)
 	if err != nil {
 		return nil, errors.Errorf("Failed to serialize vulnerabilities %s", scaTriageInfo)
 	}
 	payload := &wrappers.ScaPredicateRequest{}
+	fmt.Println("Payload: ", string(b))
 	err = json.Unmarshal(b, payload)
 	if err != nil {
 		return nil, errors.Errorf("Failed to deserialize vulnerabilities %s", b)
@@ -356,6 +376,41 @@ type predicateView struct {
 	Comment      string
 	CreatedBy    string
 	CreatedAt    time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+}
+
+type scaPredicateResultView struct {
+	VulnerabilityID string    `format:"name:Vulnerability ID"`
+	PackageName     string    `format:"name:Package Name"`
+	PackageVersion  string    `format:"name:Package Version"`
+	PackageManager  string    `format:"name:Package Manager"`
+	Comment         string    `format:"name:Comment"`
+	State           string    `format:"name:State"`
+	CreatedBy       string    `format:"name:Created By"`
+	CreatedAt       time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
+}
+
+func toScaPredicateResultView(scaPredicateResult wrappers.ScaPredicateResult) []scaPredicateResultView {
+	view := []scaPredicateResultView{}
+	if len(scaPredicateResult.Actions) > 0 {
+		for _, action := range scaPredicateResult.Actions {
+			view = append(view, scaPredicateResultView{
+				VulnerabilityID: scaPredicateResult.Context.VulnerabilityId,
+				PackageName:     scaPredicateResult.Context.PackageName,
+				PackageVersion:  scaPredicateResult.Context.PackageVersion,
+				PackageManager:  scaPredicateResult.Context.PackageManager,
+				Comment:         action.Message,
+				State:           action.ActionValue,
+				CreatedBy:       action.UserName,
+				CreatedAt:       action.CreatedAt,
+			})
+		}
+	}
+
+	sort.Slice(view, func(i, j int) bool {
+		return view[i].CreatedAt.After(view[j].CreatedAt)
+	})
+
+	return view
 }
 
 func toPredicatesView(predicatesCollection wrappers.PredicatesCollectionResponseModel) []predicateView {

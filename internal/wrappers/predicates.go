@@ -62,8 +62,35 @@ type PredicateHistory struct {
 }
 
 type PredicatesCollectionResponseModel struct {
+	ScaResponse                interface{}        `json:"scaPredicate,omitempty"`
 	PredicateHistoryPerProject []PredicateHistory `json:"predicateHistoryPerProject"`
 	TotalCount                 int                `json:"totalCount"`
+}
+
+type ScaPredicateResult struct {
+	ID         string    `json:"id"`
+	Context    Context   `json:"context"`
+	Name       string    `json:"name"`
+	Actions    []Action  `json:"actions"`
+	EntityType string    `json:"entityType"`
+	Enabled    bool      `json:"enabled"`
+	CreatedAt  time.Time `json:"createdAt"`
+}
+
+type Context struct {
+	PackageManager  string `json:"PackageManager"`
+	PackageName     string `json:"PackageName"`
+	PackageVersion  string `json:"PackageVersion"`
+	VulnerabilityId string `json:"VulnerabilityId"`
+}
+
+type Action struct {
+	ActionType  string    `json:"actionType"`
+	ActionValue string    `json:"actionValue"`
+	Enabled     bool      `json:"enabled"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UserName    string    `json:"userName"`
+	Message     string    `json:"message"`
 }
 
 type CustomState struct {
@@ -77,6 +104,7 @@ type CustomStatesWrapper interface {
 }
 
 type ResultsPredicatesWrapper interface {
+	ScaPredicateResult(vulnerabilityDetails []string, projectId string) (*ScaPredicateResult, error)
 	PredicateSeverityAndState(predicate interface{}, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,
