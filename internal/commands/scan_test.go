@@ -4286,7 +4286,7 @@ func TestValidateGitCommitHistoryFlag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cmdCommand := &cobra.Command{}
-			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
 			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
 
 			err := validateGitCommitHistoryFlag(cmdCommand)
@@ -4392,7 +4392,7 @@ func TestShouldEnableGitCommitHistory(t *testing.T) {
 				Use:   "scan",
 				Short: "Scan a project with git commit history",
 			}
-			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
 			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
 			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
 			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")

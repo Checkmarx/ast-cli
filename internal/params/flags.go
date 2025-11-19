@@ -238,8 +238,8 @@ const (
 	SCSRepoURLFlag   = "scs-repo-url"
 
 	// Secret Detection Git Commit History
-	GitCommitHistoryFlag      = "git-commit-history"
-	GitCommitHistoryFlagUsage = "Enable or disable commit history scan for Secret Detection (default: false)"
+	GitCommitHistoryFlag            = "git-commit-history"
+	GitCommitHistoryFlagDescription = "Enable or disable commit history scan for Secret Detection"
 
 	// Containers Config Flags
 	ContainersFileFolderFilterFlag      = "containers-file-folder-filter"

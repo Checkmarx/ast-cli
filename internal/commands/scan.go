@@ -864,7 +864,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
-	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
+	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
