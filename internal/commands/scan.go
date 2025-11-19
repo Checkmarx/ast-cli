@@ -864,6 +864,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
@@ -1403,6 +1404,11 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
+
+		// Set git commit history if enabled and all validations pass
+		if shouldEnableGitCommitHistory(cmd) {
+			scsConfig.GitCommitHistory = trueString
+		}
 	}
 
 	isScsEnginesFlagSet := scsEngines != ""
@@ -3466,6 +3472,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
+
+	// Validate git-commit-history flag
+	err = validateGitCommitHistoryFlag(cmd)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -3727,6 +3740,78 @@ func validateBooleanString(value string) error {
 		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
+}
+
+// validateGitCommitHistoryFlag validates the git-commit-history flag (needed for Secret Detection)
+func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+
+	err := validateBooleanString(gitCommitHistory)
+	if err != nil {
+		return errors.Errorf("Invalid value for --git-commit-history. Use 'true' or 'false'.")
+	}
+
+	return nil
+}
+
+// shouldEnableGitCommitHistory checks if the git-commit-history flag should be enabled
+func shouldEnableGitCommitHistory(cmd *cobra.Command) bool {
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+
+	// If flag is not set to true, return false
+	if strings.ToLower(strings.TrimSpace(gitCommitHistory)) != trueString {
+		return false
+	}
+
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.ScsType) {
+		fmt.Println("Warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.")
+		return false
+	}
+
+	// Check if only scorecard is enabled (no secret detection)
+	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines)
+	if scsScoreCardSelected && !scsSecretDetectionSelected {
+		fmt.Println("Warning: Commit History applies only to Secret Detection. The flag will be ignored.")
+		return false
+	}
+
+	// Check if there's a git repository context
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+
+	hasGitContext := false
+
+	// Check if source directory has .git folder (in root or subdirectories)
+	if source != "" && !hasGitContext {
+		sourceTrimmed := strings.TrimSpace(source)
+		info, statErr := os.Stat(sourceTrimmed)
+		if statErr == nil && info != nil && info.IsDir() {
+			gitPath := filepath.Join(sourceTrimmed, ".git")
+			if _, err := os.Stat(gitPath); err == nil {
+				hasGitContext = true
+			} else {
+				// If not found in root, search subdirectories
+				_ = filepath.Walk(sourceTrimmed, func(path string, info os.FileInfo, err error) error {
+					if err != nil || hasGitContext {
+						return nil
+					}
+					if info.IsDir() && info.Name() == ".git" {
+						hasGitContext = true
+						return filepath.SkipAll
+					}
+					return nil
+				})
+			}
+		}
+	}
+
+	if !hasGitContext {
+		fmt.Println("Warning: No Git history found. Secret Detection will scan the working tree only.")
+		return false
+	}
+
+	return true
 }
 
 func parseArgs(input string) []string {
