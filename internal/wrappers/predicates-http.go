@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -26,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails []string, projectId string) (*ScaPredicateResult, error) {
+func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	r.SetPath(viper.GetString(params.ScaResultsPredicatesPathEnv))
 	var request = "/entity-profile/search"
@@ -34,10 +35,13 @@ func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails [
 
 	scaPredicateRequest := make(map[string]interface{})
 	for _, vulnerability := range vulnerabilityDetails {
-		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)
+		vulnerabilityKeyVal := strings.Split(vulnerability, "=")
+		if len(vulnerabilityKeyVal) != params.KeyValuePairSize {
+			return nil, errors.Errorf("Invalid vulnerability details format: %s", vulnerability)
+		}
 		scaPredicateRequest[vulnerabilityKeyVal[0]] = vulnerabilityKeyVal[1]
 	}
-	scaPredicateRequest["projectId"] = projectId
+	scaPredicateRequest["projectId"] = projectID
 	scaPredicateRequest["actionType"] = params.ChangeState
 	jsonBody, err := json.Marshal(scaPredicateRequest)
 	if err != nil {
@@ -55,7 +59,6 @@ func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails [
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("Failed to get SCA predicate result.")
 	}
-	fmt.Println("HM Response: ", resp.Body)
 	decoder := json.NewDecoder(resp.Body)
 	var scaPredicates ScaPredicateResult
 	err = decoder.Decode(&scaPredicates)
@@ -147,27 +150,16 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interf
 	*WebError, error,
 ) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
-	var predicateModel interface{}
-	if !strings.EqualFold(strings.TrimSpace(scanType), params.ScaType) {
-		predicateModel = []interface{}{predicate}
-	} else {
-		predicateModel = predicate
-	}
+
+	predicateModel := preparePredicateModel(predicate, scanType)
 	jsonBytes, err := json.Marshal(predicateModel)
 	if err != nil {
 		return nil, err
 	}
-	var triageAPIPath string
-	if strings.EqualFold(strings.TrimSpace(scanType), params.SastType) {
-		triageAPIPath = viper.GetString(params.SastResultsPredicatesPathKey)
-	} else if strings.EqualFold(strings.TrimSpace(scanType), params.KicsType) || strings.EqualFold(strings.TrimSpace(scanType), params.IacType) {
-		triageAPIPath = viper.GetString(params.KicsResultsPredicatesPathKey)
-	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScsType) {
-		triageAPIPath = viper.GetString(params.ScsResultsWritePredicatesPathKey)
-	} else if strings.EqualFold(strings.TrimSpace(scanType), params.ScaType) {
-		triageAPIPath = viper.GetString(params.ScaResultsPredicatesPathEnv)
-	} else {
-		return nil, errors.Errorf(invalidScanType, scanType)
+
+	triageAPIPath, err := getTriageAPIPath(scanType)
+	if err != nil {
+		return nil, err
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", triageAPIPath))
@@ -186,38 +178,71 @@ func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interf
 		_ = resp.Body.Close()
 	}()
 
-	// in case of ne/pne when mandatory comment arent provided, cli is not transforming error message
+	if err := checkMandatoryCommentError(resp.Body, scanType); err != nil {
+		return nil, err
+	}
+
+	return nil, handlePredicateStatusCode(resp.StatusCode)
+}
+
+func preparePredicateModel(predicate interface{}, scanType string) interface{} {
+	if !strings.EqualFold(strings.TrimSpace(scanType), params.ScaType) {
+		return []interface{}{predicate}
+	}
+	return predicate
+}
+
+func getTriageAPIPath(scanType string) (string, error) {
+	ScanType := strings.ToLower(strings.TrimSpace(scanType))
+
+	switch ScanType {
+	case strings.ToLower(params.SastType):
+		return viper.GetString(params.SastResultsPredicatesPathKey), nil
+	case strings.ToLower(params.KicsType), strings.ToLower(params.IacType):
+		return viper.GetString(params.KicsResultsPredicatesPathKey), nil
+	case strings.ToLower(params.ScsType):
+		return viper.GetString(params.ScsResultsWritePredicatesPathKey), nil
+	case strings.ToLower(params.ScaType):
+		return viper.GetString(params.ScaResultsPredicatesPathEnv), nil
+	default:
+		return "", errors.Errorf(invalidScanType, scanType)
+	}
+}
+
+func checkMandatoryCommentError(body io.ReadCloser, scanType string) error {
 	responseMap := make(map[string]interface{})
-	if err := json.NewDecoder(resp.Body).Decode(&responseMap); err != nil {
-		if scanType != params.ScaType { // for sca, we are not getting any response in the response body, so we are not logging the error
+	if err := json.NewDecoder(body).Decode(&responseMap); err != nil {
+		if scanType != params.ScaType {
 			logger.PrintIfVerbose(fmt.Sprintf("failed to read the response, %v", err.Error()))
 		}
-	} else {
-		if val, ok := responseMap["code"].(float64); ok {
-			if val == 4002 && responseMap["message"] != nil {
-				if errMsg, ok := responseMap["message"].(string); ok {
-					if errMsg == "A comment is required to make changes to the result state" {
-						return nil, errors.Errorf(errMsg)
-					}
-				}
+		return nil
+	}
+
+	if val, ok := responseMap["code"].(float64); ok && val == 4002 {
+		if errMsg, ok := responseMap["message"].(string); ok {
+			if errMsg == "A comment is required to make changes to the result state" {
+				return errors.Errorf(errMsg)
 			}
 		}
 	}
+	return nil
+}
 
-	switch resp.StatusCode {
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, errors.Errorf("Predicate bad request.")
+func handlePredicateStatusCode(statusCode int) error {
+	switch statusCode {
 	case http.StatusOK, http.StatusCreated:
 		fmt.Println("Predicate updated successfully.")
-		return nil, nil
+		return nil
 	case http.StatusNotModified:
-		return nil, errors.Errorf("No changes to update.")
+		return errors.Errorf("No changes to update.")
 	case http.StatusForbidden:
-		return nil, errors.Errorf("No permission to update predicate.")
+		return errors.Errorf("No permission to update predicate.")
 	case http.StatusNotFound:
-		return nil, errors.Errorf("Predicate not found.")
+		return errors.Errorf("Predicate not found.")
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		return errors.Errorf("Predicate bad request.")
 	default:
-		return nil, errors.Errorf("response status code %d", resp.StatusCode)
+		return errors.Errorf("response status code %d", statusCode)
 	}
 }
 

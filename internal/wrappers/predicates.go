@@ -26,7 +26,7 @@ type ScaPredicateRequest struct {
 	PackageName     string      `json:"packageName"`
 	PackageVersion  string      `json:"packageVersion"`
 	PackageManager  string      `json:"packageManager"`
-	VulnerabilityId string      `json:"vulnerabilityId"`
+	VulnerabilityID string      `json:"vulnerabilityId"`
 	ProjectIds      []string    `json:"projectIds"`
 	Actions         []ScaAction `json:"actions"`
 }
@@ -81,7 +81,7 @@ type Context struct {
 	PackageManager  string `json:"PackageManager"`
 	PackageName     string `json:"PackageName"`
 	PackageVersion  string `json:"PackageVersion"`
-	VulnerabilityId string `json:"VulnerabilityId"`
+	VulnerabilityID string `json:"VulnerabilityId"`
 }
 
 type Action struct {
@@ -104,7 +104,7 @@ type CustomStatesWrapper interface {
 }
 
 type ResultsPredicatesWrapper interface {
-	ScaPredicateResult(vulnerabilityDetails []string, projectId string) (*ScaPredicateResult, error)
+	ScaPredicateResult(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error)
 	PredicateSeverityAndState(predicate interface{}, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,

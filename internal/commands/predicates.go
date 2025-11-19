@@ -99,7 +99,6 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	triageShowCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 	triageShowCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "List Vulnerabilities string")
 
-	// markFlagAsRequired(triageShowCmd, params.SimilarityIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ScanTypeFlag)
 
@@ -158,7 +157,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 		}
 
 		if strings.EqualFold(scanType, params.ScaType) {
-			//SCA
+			// SCA
 			if len(vulnerabilityDetails) == 0 {
 				return errors.Errorf("%s", "Failed showing the predicate. Vulnerabilities are required for SCA triage")
 			}
@@ -166,15 +165,17 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			if err != nil {
 				return errors.Wrapf(err, "%s", "Failed showing the predicate")
 			}
-			err = printByFormat(cmd, toScaPredicateResultView(*scaResponse))
+			err = printByFormat(cmd, toScaPredicateResultView(scaResponse))
 			if err != nil {
 				return err
 			}
 			return nil
 		} else {
-			//other than SCA
+			// other than SCA
 			predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityID, projectID, scanType)
-
+			if err != nil {
+				return errors.Wrapf(err, "%s", "Failed showing the predicate")
+			}
 			// Checking the response
 			if errorModel != nil {
 				return errors.Errorf(
@@ -227,7 +228,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	}
 }
 
-func preparePredicateRequest(vulnerabilityDetails []string, similarityID string, projectID string, severity string, state string, customStateID int, comment string, scanType string) (interface{}, error) {
+func preparePredicateRequest(vulnerabilityDetails []string, similarityID, projectID, severity, state string, customStateID int, comment, scanType string) (interface{}, error) {
 	scanType = strings.ToLower(scanType)
 	scanType = strings.TrimSpace(scanType)
 	if strings.EqualFold(scanType, Sca) {
@@ -270,13 +271,13 @@ func transformState(state string) string {
 	return ""
 }
 
-func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
+func prepareScaTriagePayload(vulnerabilityDetails []string, comment, state, projectID string) (interface{}, error) {
 	if len(vulnerabilityDetails) == 0 {
 		return nil, errors.Errorf("Vulnerabilities details are required.")
 	}
 	scaTriageInfo := make(map[string]interface{})
 	for _, vulnerability := range vulnerabilityDetails {
-		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)
+		vulnerabilityKeyVal := strings.Split(vulnerability, "=")
 		err := validateVulnerabilityDetails(vulnerabilityKeyVal)
 		if err != nil {
 			return nil, err
@@ -295,7 +296,7 @@ func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, stat
 		return nil, errors.Errorf("Package manager is required")
 	}
 
-	scaTriageInfo["projectIds"] = []string{projectId}
+	scaTriageInfo["projectIds"] = []string{projectID}
 	actionInfo := make(map[string]interface{})
 	actionInfo["actionType"] = params.ChangeState
 	actionInfo["value"] = state
@@ -307,7 +308,7 @@ func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, stat
 		return nil, errors.Errorf("Failed to prepare SCA triage request")
 	}
 	payload := wrappers.ScaPredicateRequest{}
-	err = json.Unmarshal(b, payload)
+	err = json.Unmarshal(b, &payload)
 	if err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Failed to deserialize vulnerabilities %s", string(b)))
 		return nil, errors.Errorf("Failed to prepare SCA triage request")
@@ -318,9 +319,6 @@ func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, stat
 func validateVulnerabilityDetails(vulnerability []string) error {
 	if len(vulnerability) != params.KeyValuePairSize {
 		return errors.Errorf("Invalid vulnerabilities. It should be in a KEY=VALUE format")
-	}
-	if len(strings.Split(vulnerability[1], ",")) > params.SingleValueSize || len(strings.Split(vulnerability[1], ",")) > params.SingleValueSize {
-		return errors.Errorf("Cannot specify multiple values to key %s", vulnerability[0])
 	}
 	return nil
 }
@@ -397,12 +395,12 @@ type scaPredicateResultView struct {
 	CreatedAt       time.Time `format:"name:Created at;time:01-02-06 15:04:05"`
 }
 
-func toScaPredicateResultView(scaPredicateResult wrappers.ScaPredicateResult) []scaPredicateResultView {
+func toScaPredicateResultView(scaPredicateResult *wrappers.ScaPredicateResult) []scaPredicateResultView {
 	view := []scaPredicateResultView{}
 	if len(scaPredicateResult.Actions) > 0 {
 		for _, action := range scaPredicateResult.Actions {
 			view = append(view, scaPredicateResultView{
-				VulnerabilityID: scaPredicateResult.Context.VulnerabilityId,
+				VulnerabilityID: scaPredicateResult.Context.VulnerabilityID,
 				PackageName:     scaPredicateResult.Context.PackageName,
 				PackageVersion:  scaPredicateResult.Context.PackageVersion,
 				PackageManager:  scaPredicateResult.Context.PackageManager,

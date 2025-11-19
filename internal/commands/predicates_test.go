@@ -347,7 +347,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 		vulnerabilityDetails []string
 		comment              string
 		state                string
-		projectId            string
+		projectID            string
 		expectedError        string
 	}{
 		{
@@ -359,7 +359,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 			},
 			comment:       "Testing missing package name",
 			state:         "NOT_EXPLOITABLE",
-			projectId:     "test-project-123",
+			projectID:     "test-project-123",
 			expectedError: "Package name is required",
 		},
 		{
@@ -371,7 +371,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 			},
 			comment:       "Testing missing package version",
 			state:         "NOT_EXPLOITABLE",
-			projectId:     "test-project-123",
+			projectID:     "test-project-123",
 			expectedError: "Package version is required",
 		},
 		{
@@ -383,7 +383,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 			},
 			comment:       "Testing missing package manager",
 			state:         "NOT_EXPLOITABLE",
-			projectId:     "test-project-123",
+			projectID:     "test-project-123",
 			expectedError: "Package manager is required",
 		},
 		{
@@ -395,7 +395,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 			},
 			comment:       "Testing invalid format",
 			state:         "NOT_EXPLOITABLE",
-			projectId:     "test-project-123",
+			projectID:     "test-project-123",
 			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
 		},
 	}
@@ -403,7 +403,7 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			payload, err := prepareScaTriagePayload(tt.vulnerabilityDetails, tt.comment, tt.state, tt.projectId)
+			payload, err := prepareScaTriagePayload(tt.vulnerabilityDetails, tt.comment, tt.state, tt.projectID)
 			if tt.expectedError != "" {
 				assert.ErrorContains(t, err, tt.expectedError)
 			} else {
@@ -454,9 +454,9 @@ func TestToScaPredicateResultView(t *testing.T) {
 	createdAt1, _ := time.Parse(time.RFC3339, "2024-01-15T10:00:00Z")
 	createdAt2, _ := time.Parse(time.RFC3339, "2024-01-16T12:00:00Z")
 
-	scaPredicateResult := wrappers.ScaPredicateResult{
+	scaPredicateResult := &wrappers.ScaPredicateResult{
 		Context: wrappers.Context{
-			VulnerabilityId: "CVE-2021-23337",
+			VulnerabilityID: "CVE-2021-23337",
 			PackageName:     "lodash",
 			PackageVersion:  "4.17.20",
 			PackageManager:  "npm",
@@ -505,9 +505,9 @@ func TestToScaPredicateResultView(t *testing.T) {
 
 func TestToScaPredicateResultView_EmptyActions(t *testing.T) {
 	// Arrange: Create SCA predicate result with no actions
-	scaPredicateResult := wrappers.ScaPredicateResult{
+	scaPredicateResult := &wrappers.ScaPredicateResult{
 		Context: wrappers.Context{
-			VulnerabilityId: "CVE-2021-23337",
+			VulnerabilityID: "CVE-2021-23337",
 			PackageName:     "lodash",
 			PackageVersion:  "4.17.20",
 			PackageManager:  "npm",
