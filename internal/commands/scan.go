@@ -3779,39 +3779,50 @@ func shouldEnableGitCommitHistory(cmd *cobra.Command) bool {
 
 	// Check if there's a git repository context
 	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
-
-	hasGitContext := false
-
-	// Check if source directory has .git folder (in root or subdirectories)
-	if source != "" && !hasGitContext {
-		sourceTrimmed := strings.TrimSpace(source)
-		info, statErr := os.Stat(sourceTrimmed)
-		if statErr == nil && info != nil && info.IsDir() {
-			gitPath := filepath.Join(sourceTrimmed, ".git")
-			if _, err := os.Stat(gitPath); err == nil {
-				hasGitContext = true
-			} else {
-				// If not found in root, search subdirectories
-				_ = filepath.Walk(sourceTrimmed, func(path string, info os.FileInfo, err error) error {
-					if err != nil || hasGitContext {
-						return nil
-					}
-					if info.IsDir() && info.Name() == ".git" {
-						hasGitContext = true
-						return filepath.SkipAll
-					}
-					return nil
-				})
-			}
-		}
-	}
-
-	if !hasGitContext {
+	if !hasGitRepository(source) {
 		fmt.Println("Warning: No Git history found. Secret Detection will scan the working tree only.")
 		return false
 	}
 
 	return true
+}
+
+// hasGitRepository checks if the source directory contains a Git repository
+func hasGitRepository(source string) bool {
+	if source == "" {
+		return false
+	}
+
+	sourceTrimmed := strings.TrimSpace(source)
+	info, err := os.Stat(sourceTrimmed)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+
+	// Check if .git exists in the root directory
+	gitPath := filepath.Join(sourceTrimmed, ".git")
+	if _, err := os.Stat(gitPath); err == nil {
+		return true
+	}
+
+	// fallback: search for .git in subdirectories
+	return searchGitInSubdirectories(sourceTrimmed)
+}
+
+// searchGitInSubdirectories walks through subdirectories to find a .git folder
+func searchGitInSubdirectories(sourcePath string) bool {
+	found := false
+	_ = filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if info.IsDir() && info.Name() == ".git" {
+			found = true
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return found
 }
 
 func parseArgs(input string) []string {
