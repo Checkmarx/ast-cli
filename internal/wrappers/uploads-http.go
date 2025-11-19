@@ -496,7 +496,6 @@ func closeFileVerbose(f *os.File) {
 	}
 }
 
-// cleanUpTempParts removes the temporary part files created during multipart upload.
 func cleanUpTempParts(partList []string) {
 	cleanupMaxRetries := 3
 	for i, partPath := range partList {
