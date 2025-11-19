@@ -4249,3 +4249,185 @@ func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateGitCommitHistoryFlag(t *testing.T) {
+	tests := []struct {
+		name             string
+		flagValue        string
+		expectedErrorMsg string
+	}{
+		{
+			name:      "Valid true value",
+			flagValue: "true",
+		},
+		{
+			name:      "Valid false value",
+			flagValue: "false",
+		},
+		{
+			name:      "Valid TRUE value (case insensitive)",
+			flagValue: "TRUE",
+		},
+		{
+			name:      "Valid FALSE value (case insensitive)",
+			flagValue: "FALSE",
+		},
+		{
+			name:             "Invalid value 'maybe'",
+			flagValue:        "maybe",
+			expectedErrorMsg: "Invalid value for --git-commit-history. Use 'true' or 'false'.",
+		},
+		{
+			name:      "Empty value",
+			flagValue: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+
+			err := validateGitCommitHistoryFlag(cmdCommand)
+			if err != nil {
+				assert.Assert(t, err.Error() == tt.expectedErrorMsg, "Expected error: %v, got: %v", tt.expectedErrorMsg, err)
+			} else {
+				assert.NilError(t, err, "Expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestShouldEnableGitCommitHistory(t *testing.T) {
+	// Create a temporary directory with .git for testing
+	tempDir := t.TempDir()
+	gitDir := filepath.Join(tempDir, ".git")
+	_ = os.Mkdir(gitDir, 0755)
+
+	// Create a directory without .git
+	tempDirNoGit := t.TempDir()
+
+	// Create a directory with .git in a subdirectory
+	tempDirWithSubGit := t.TempDir()
+	subDir := filepath.Join(tempDirWithSubGit, "project1")
+	_ = os.Mkdir(subDir, 0755)
+	gitDirSub := filepath.Join(subDir, ".git")
+	_ = os.Mkdir(gitDirSub, 0755)
+
+	tests := []struct {
+		name           string
+		flagValue      string
+		scanTypes      string
+		scsEngines     string
+		source         string
+		expectEnabled  bool
+		expectWarnings []string
+	}{
+		{
+			name:          "Flag set to false - disabled",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			expectEnabled: false,
+		},
+		{
+			name:           "Flag set to true with SCS not in scan types - warning and disabled",
+			flagValue:      "true",
+			scanTypes:      "sast",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			expectEnabled:  false,
+			expectWarnings: []string{"--git-commit-history' was provided, but SCS is not selected"},
+		},
+		{
+			name:           "Flag set to true with only scorecard - warning and disabled",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "scorecard",
+			source:         tempDir,
+			expectEnabled:  false,
+			expectWarnings: []string{"Commit History applies only to Secret Detection"},
+		},
+		{
+			name:           "Flag set to true without git context - warning and disabled",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDirNoGit,
+			expectEnabled:  false,
+			expectWarnings: []string{"No Git history found"},
+		},
+		{
+			name:          "Flag set to true with git context (directory) - enabled",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			expectEnabled: true,
+		},
+		{
+			name:          "Flag set to true with git in subdirectory - enabled",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDirWithSubGit,
+			expectEnabled: true,
+		},
+		{
+			name:          "Flag set to true with both secret-detection and scorecard - enabled",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection,scorecard",
+			source:        tempDir,
+			expectEnabled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create command with flags
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project with git commit history",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagUsage)
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
+
+			_ = cmdCommand.Execute()
+
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, tt.scanTypes)
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, tt.scsEngines)
+			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tt.source)
+
+			// Capture output for warnings (fmt.Println goes to stdout)
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			result := shouldEnableGitCommitHistory(cmdCommand)
+
+			w.Close()
+			os.Stdout = oldStdout
+
+			// Read captured output
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			r.Close()
+			output := buf.String()
+
+			// Check result
+			assert.Equal(t, tt.expectEnabled, result, "Expected enabled=%v, got=%v", tt.expectEnabled, result)
+
+			// Check warnings
+			for _, expectedWarning := range tt.expectWarnings {
+				assert.Assert(t, strings.Contains(output, expectedWarning),
+					"Expected warning containing '%s' not found in output: %s", expectedWarning, output)
+			}
+		})
+	}
+}
