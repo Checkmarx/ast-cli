@@ -10,6 +10,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -211,7 +212,7 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		}
 		var err error
 		state, customStateID, err = determineSystemOrCustomState(customStatesWrapper, featureFlagsWrapper, state, customStateID)
-		predicate, err := handlePredicate(vulnerabilityDetails, similarityID, projectID, severity, state, customStateID, comment, scanType)
+		predicate, err := preparePredicateRequest(vulnerabilityDetails, similarityID, projectID, severity, state, customStateID, comment, scanType)
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed updating the predicate")
 		}
@@ -223,12 +224,12 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 	}
 }
 
-func handlePredicate(vulnerabilityDetails []string, similarityID string, projectID string, severity string, state string, customStateID int, comment string, scanType string) (interface{}, error) {
+func preparePredicateRequest(vulnerabilityDetails []string, similarityID string, projectID string, severity string, state string, customStateID int, comment string, scanType string) (interface{}, error) {
 	scanType = strings.ToLower(scanType)
 	scanType = strings.TrimSpace(scanType)
 	if strings.EqualFold(scanType, Sca) {
 		state = transformState(state)
-		payload, err := handleScaTriage(vulnerabilityDetails, comment, state, projectID)
+		payload, err := prepareScaTriagePayload(vulnerabilityDetails, comment, state, projectID)
 		if err != nil {
 			return nil, err
 		}
@@ -266,7 +267,7 @@ func transformState(state string) string {
 	return ""
 }
 
-func handleScaTriage(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
+func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
 	scaTriageInfo := make(map[string]interface{})
 	for _, vulnerability := range vulnerabilityDetails {
 		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)
@@ -296,13 +297,14 @@ func handleScaTriage(vulnerabilityDetails []string, comment string, state string
 	scaTriageInfo["actions"] = []map[string]interface{}{actionInfo}
 	b, err := json.Marshal(scaTriageInfo)
 	if err != nil {
-		return nil, errors.Errorf("Failed to serialize vulnerabilities %s", scaTriageInfo)
+		logger.PrintIfVerbose(fmt.Sprintf("Failed to serialize vulnerabilities %s", scaTriageInfo))
+		return nil, errors.Errorf("Failed to prepare SCA triage request")
 	}
-	payload := &wrappers.ScaPredicateRequest{}
-	fmt.Println("Payload: ", string(b))
+	payload := wrappers.ScaPredicateRequest{}
 	err = json.Unmarshal(b, payload)
 	if err != nil {
-		return nil, errors.Errorf("Failed to deserialize vulnerabilities %s", b)
+		logger.PrintIfVerbose(fmt.Sprintf("Failed to deserialize vulnerabilities %s", string(b)))
+		return nil, errors.Errorf("Failed to prepare SCA triage request")
 	}
 	return payload, nil
 }
