@@ -991,9 +991,8 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2Flag.Status, userAllowedEngines[commonParams.RepositoryHealthType],
-		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.RepositoryHealthType],
+		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType], featureFlagsWrapper)
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -1369,11 +1368,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
-	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasRepositoryHealthLicense,
+	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]interface{}, error) {
 	scsEnabled := scanTypeEnabled(commonParams.ScsType)
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense, scsEnabled)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1406,7 +1406,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 		scsConfig.Twoms = trueString
 
 		// Set git commit history if enabled and all validations pass
-		if shouldEnableGitCommitHistory(cmd) {
+		commitHistoryFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SscsCommitHistoryEnabled)
+		if shouldEnableGitCommitHistory(cmd, commitHistoryFlag.Status) {
 			scsConfig.GitCommitHistory = trueString
 		}
 	}
@@ -3755,7 +3756,12 @@ func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
 }
 
 // shouldEnableGitCommitHistory checks if the git-commit-history flag should be enabled
-func shouldEnableGitCommitHistory(cmd *cobra.Command) bool {
+func shouldEnableGitCommitHistory(cmd *cobra.Command, commitHistoryFlag bool) bool {
+	if !commitHistoryFlag {
+		fmt.Println("Warning: Git commit history scanning is not available. The flag will be ignored.")
+		return false
+	}
+
 	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
 
 	// If flag is not set to true, return false
