@@ -149,7 +149,7 @@ func TestIsCustomState(t *testing.T) {
 	}
 }
 func TestRunTriageUpdateWithNotFoundCustomState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 	clearFlags()
@@ -171,7 +171,7 @@ func TestRunTriageUpdateWithNotFoundCustomState(t *testing.T) {
 }
 
 func TestRunTriageUpdateWithCustomState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 	clearFlags()
@@ -193,7 +193,7 @@ func TestRunTriageUpdateWithCustomState(t *testing.T) {
 }
 
 func TestRunTriageUpdateWithSystemState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 
@@ -338,4 +338,140 @@ func TestDetermineSystemOrCustomState(t *testing.T) {
 			assert.Equal(t, customStateID, tt.expectedCustomState)
 		})
 	}
+}
+
+func TestPrepareScaTriagePayload(t *testing.T) {
+	tests := []struct {
+		name                 string
+		vulnerabilityDetails []string
+		comment              string
+		state                string
+		projectId            string
+		expectedError        string
+	}{
+		{
+			name: "Valid SCA triage payload",
+			vulnerabilityDetails: []string{
+				"packageName=lodash",
+				"packageVersion=4.17.20",
+				"packageManager=npm",
+				"vulnerabilityId=CVE-2021-23337",
+			},
+			comment:       "Testing SCA triage",
+			state:         "NOT_EXPLOITABLE",
+			projectId:     "test-project-123",
+			expectedError: "",
+		},
+		{
+			name: "Missing packageName",
+			vulnerabilityDetails: []string{
+				"packageVersion=4.17.20",
+				"packageManager=npm",
+				"vulnerabilityId=CVE-2021-23337",
+			},
+			comment:       "Testing missing package name",
+			state:         "NOT_EXPLOITABLE",
+			projectId:     "test-project-123",
+			expectedError: "Package name is required",
+		},
+		{
+			name: "Missing packageVersion",
+			vulnerabilityDetails: []string{
+				"packageName=lodash",
+				"packageManager=npm",
+				"vulnerabilityId=CVE-2021-23337",
+			},
+			comment:       "Testing missing package version",
+			state:         "NOT_EXPLOITABLE",
+			projectId:     "test-project-123",
+			expectedError: "Package version is required",
+		},
+		{
+			name: "Missing packageManager",
+			vulnerabilityDetails: []string{
+				"packageName=lodash",
+				"packageVersion=4.17.20",
+				"vulnerabilityId=CVE-2021-23337",
+			},
+			comment:       "Testing missing package manager",
+			state:         "NOT_EXPLOITABLE",
+			projectId:     "test-project-123",
+			expectedError: "Package manager is required",
+		},
+		{
+			name: "Invalid vulnerability format - no equals sign",
+			vulnerabilityDetails: []string{
+				"packageNamelodash",
+				"packageVersion=4.17.20",
+				"packageManager=npm",
+			},
+			comment:       "Testing invalid format",
+			state:         "NOT_EXPLOITABLE",
+			projectId:     "test-project-123",
+			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
+		},
+		{
+			name: "Case insensitive package name",
+			vulnerabilityDetails: []string{
+				"packagename=lodash",
+				"packageversion=4.17.20",
+				"packagemanager=npm",
+				"vulnerabilityId=CVE-2021-23337",
+			},
+			comment:       "Testing case insensitive",
+			state:         "CONFIRMED",
+			projectId:     "test-project-123",
+			expectedError: "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := prepareScaTriagePayload(tt.vulnerabilityDetails, tt.comment, tt.state, tt.projectId)
+			if tt.expectedError != "" {
+				assert.ErrorContains(t, err, tt.expectedError)
+			} else {
+				assert.NilError(t, err)
+				assert.Assert(t, payload != nil, "Expected payload to be non-nil")
+			}
+		})
+	}
+}
+
+func TestRunUpdateTriageCommandForSCA(t *testing.T) {
+	execCmdNilAssertion(
+		t,
+		"triage",
+		"update",
+		"--project-id",
+		"MOCK",
+		"--state",
+		"not_exploitable",
+		"--comment",
+		"Testing SCA triage commands.",
+		"--scan-type",
+		"sca",
+		"--vulnerabilities",
+		"packageName=lodash,packageVersion=4.17.20,packageManager=npm,vulnerabilityId=CVE-2021-23337",
+	)
+}
+
+func TestRunUpdateTriageCommandForSCAWithMissingPackageDetails(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"triage",
+		"update",
+		"--project-id",
+		"MOCK",
+		"--state",
+		"not_exploitable",
+		"--comment",
+		"Testing SCA triage with missing details.",
+		"--scan-type",
+		"sca",
+		"--vulnerabilities",
+		"packageVersion=4.17.20",
+	)
+	assert.ErrorContains(t, err, "Package name is required")
 }
