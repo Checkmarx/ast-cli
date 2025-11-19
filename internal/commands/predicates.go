@@ -159,6 +159,9 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 
 		if strings.EqualFold(scanType, params.ScaType) {
 			//SCA
+			if len(vulnerabilityDetails) == 0 {
+				return errors.Errorf("%s", "Failed showing the predicate. Vulnerabilities are required for SCA triage")
+			}
 			scaResponse, err := resultsPredicatesWrapper.ScaPredicateResult(vulnerabilityDetails, projectID)
 			if err != nil {
 				return errors.Wrapf(err, "%s", "Failed showing the predicate")
@@ -268,6 +271,9 @@ func transformState(state string) string {
 }
 
 func prepareScaTriagePayload(vulnerabilityDetails []string, comment string, state string, projectId string) (interface{}, error) {
+	if len(vulnerabilityDetails) == 0 {
+		return nil, errors.Errorf("Vulnerabilities details are required.")
+	}
 	scaTriageInfo := make(map[string]interface{})
 	for _, vulnerability := range vulnerabilityDetails {
 		vulnerabilityKeyVal := strings.SplitN(vulnerability, "=", 2)

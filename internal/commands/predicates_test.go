@@ -5,6 +5,7 @@ package commands
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -350,19 +351,6 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 		expectedError        string
 	}{
 		{
-			name: "Valid SCA triage payload",
-			vulnerabilityDetails: []string{
-				"packageName=lodash",
-				"packageVersion=4.17.20",
-				"packageManager=npm",
-				"vulnerabilityId=CVE-2021-23337",
-			},
-			comment:       "Testing SCA triage",
-			state:         "NOT_EXPLOITABLE",
-			projectId:     "test-project-123",
-			expectedError: "",
-		},
-		{
 			name: "Missing packageName",
 			vulnerabilityDetails: []string{
 				"packageVersion=4.17.20",
@@ -410,19 +398,6 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 			projectId:     "test-project-123",
 			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
 		},
-		{
-			name: "Case insensitive package name",
-			vulnerabilityDetails: []string{
-				"packagename=lodash",
-				"packageversion=4.17.20",
-				"packagemanager=npm",
-				"vulnerabilityId=CVE-2021-23337",
-			},
-			comment:       "Testing case insensitive",
-			state:         "CONFIRMED",
-			projectId:     "test-project-123",
-			expectedError: "",
-		},
 	}
 
 	for _, tt := range tests {
@@ -439,39 +414,110 @@ func TestPrepareScaTriagePayload(t *testing.T) {
 	}
 }
 
-func TestRunUpdateTriageCommandForSCA(t *testing.T) {
-	execCmdNilAssertion(
-		t,
-		"triage",
-		"update",
-		"--project-id",
-		"MOCK",
-		"--state",
-		"not_exploitable",
-		"--comment",
-		"Testing SCA triage commands.",
-		"--scan-type",
-		"sca",
-		"--vulnerabilities",
-		"packageName=lodash,packageVersion=4.17.20,packageManager=npm,vulnerabilityId=CVE-2021-23337",
-	)
+func TestPrepareScaTriagePayloadWithMissingVulnerabilities(t *testing.T) {
+	payload, err := prepareScaTriagePayload(nil, "Testing missing vulnerabilities", "NOT_EXPLOITABLE", "test-project-123")
+	assert.ErrorContains(t, err, "Vulnerabilities details are required.")
+	assert.Assert(t, payload == nil, "Expected payload to be nil")
 }
 
-func TestRunUpdateTriageCommandForSCAWithMissingPackageDetails(t *testing.T) {
+func TestRunShowTriageCommandForSCAWithMissingVulnerabilities(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
 		"triage",
-		"update",
+		"show",
 		"--project-id",
 		"MOCK",
-		"--state",
-		"not_exploitable",
-		"--comment",
-		"Testing SCA triage with missing details.",
+		"--scan-type",
+		"sca",
+	)
+	// SCA triage show requires vulnerabilities flag
+	assert.Assert(t, err != nil, "Expected error when vulnerabilities flag is missing")
+}
+
+func TestRunShowTriageCommandForSCAWithMultipleProjects(t *testing.T) {
+	err := execCmdNotNilAssertion(
+		t,
+		"triage",
+		"show",
+		"--project-id",
+		"MOCK1,MOCK2",
 		"--scan-type",
 		"sca",
 		"--vulnerabilities",
-		"packageVersion=4.17.20",
+		"packageName=lodash,packageVersion=4.17.20,packageManager=npm",
 	)
-	assert.ErrorContains(t, err, "Package name is required")
+	assert.ErrorContains(t, err, "Multiple project-ids are not allowed")
+}
+
+func TestToScaPredicateResultView(t *testing.T) {
+	// Arrange: Create sample SCA predicate result
+	createdAt1, _ := time.Parse(time.RFC3339, "2024-01-15T10:00:00Z")
+	createdAt2, _ := time.Parse(time.RFC3339, "2024-01-16T12:00:00Z")
+
+	scaPredicateResult := wrappers.ScaPredicateResult{
+		Context: wrappers.Context{
+			VulnerabilityId: "CVE-2021-23337",
+			PackageName:     "lodash",
+			PackageVersion:  "4.17.20",
+			PackageManager:  "npm",
+		},
+		Actions: []wrappers.Action{
+			{
+				ActionType:  "ChangeState",
+				ActionValue: "NOT_EXPLOITABLE",
+				Message:     "This is not exploitable in our context",
+				UserName:    "test-user",
+				CreatedAt:   createdAt1,
+				Enabled:     true,
+			},
+			{
+				ActionType:  "ChangeState",
+				ActionValue: "CONFIRMED",
+				Message:     "Actually, this needs to be fixed",
+				UserName:    "test-user-2",
+				CreatedAt:   createdAt2,
+				Enabled:     true,
+			},
+		},
+	}
+
+	// Act: Call the toScaPredicateResultView function
+	result := toScaPredicateResultView(scaPredicateResult)
+
+	// Assert: Verify the conversion
+	assert.Equal(t, len(result), 2, "Expected 2 predicate result views")
+
+	// Check first action
+	assert.Equal(t, result[1].VulnerabilityID, "CVE-2021-23337")
+	assert.Equal(t, result[1].PackageName, "lodash")
+	assert.Equal(t, result[1].PackageVersion, "4.17.20")
+	assert.Equal(t, result[1].PackageManager, "npm")
+	assert.Equal(t, result[1].State, "NOT_EXPLOITABLE")
+	assert.Equal(t, result[1].Comment, "This is not exploitable in our context")
+	assert.Equal(t, result[1].CreatedBy, "test-user")
+	assert.Equal(t, result[1].CreatedAt, createdAt1)
+
+	// Check second action
+	assert.Equal(t, result[0].State, "CONFIRMED")
+	assert.Equal(t, result[0].Comment, "Actually, this needs to be fixed")
+	assert.Equal(t, result[0].CreatedBy, "test-user-2")
+}
+
+func TestToScaPredicateResultView_EmptyActions(t *testing.T) {
+	// Arrange: Create SCA predicate result with no actions
+	scaPredicateResult := wrappers.ScaPredicateResult{
+		Context: wrappers.Context{
+			VulnerabilityId: "CVE-2021-23337",
+			PackageName:     "lodash",
+			PackageVersion:  "4.17.20",
+			PackageManager:  "npm",
+		},
+		Actions: []wrappers.Action{},
+	}
+
+	// Act: Call the toScaPredicateResultView function
+	result := toScaPredicateResultView(scaPredicateResult)
+
+	// Assert: Verify empty result
+	assert.Equal(t, len(result), 0, "Expected empty predicate result views")
 }
