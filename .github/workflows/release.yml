@@ -72,7 +72,7 @@ jobs:
           echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@de9dc31504356970f7ab9b785d6afee99b994692 #v1.0.1
+        uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
       - name: Test docker
         if: inputs.dev == false
         run: |

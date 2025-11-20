@@ -18,6 +18,7 @@ const ScsLicensingV2Enabled = "SSCS_NEW_LICENSING_ENABLED"
 const SscsCommitHistoryEnabled = "SSCS_COMMIT_HISTORY_ENABLED"
 const DirectAssociationEnabled = "DIRECT_APP_ASSOCIATION_ENABLED"
 const maxRetries = 3
+const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 
 var DefaultFFLoad bool = false
 
