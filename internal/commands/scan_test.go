@@ -832,7 +832,6 @@ func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
 				Short: "Scan a project",
@@ -908,7 +907,6 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
 				Short: "Scan a project",
@@ -1199,7 +1197,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1266,7 +1263,6 @@ func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1333,7 +1329,6 @@ func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1398,7 +1393,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndGitCommitHistoryFlag_scsMapHasSecre
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1426,9 +1420,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndGitCommitHistoryFlag_scsMapHasSecre
 					Status: true,
 				},
 			}
-			defer func() {
-				mock.Flags = wrappers.FeatureFlagsResponseModel{}
-			}()
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1475,7 +1467,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1557,7 +1548,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDet
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1615,7 +1605,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1703,7 +1692,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1791,7 +1779,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_s
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1878,7 +1865,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 	}
 
 	for _, tt := range tests {
-		wrappers.ClearCache()
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
@@ -1966,7 +1952,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 	}
 
 	for _, tt := range tests {
-		wrappers.ClearCache()
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
@@ -2054,7 +2039,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 	}
 
 	for _, tt := range tests {
-		wrappers.ClearCache()
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
@@ -2143,7 +2127,6 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecret
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -3553,7 +3536,6 @@ func TestValidateScanTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrappers.ClearCache()
 			mock.Flag = wrappers.FeatureFlagResponseModel{
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
