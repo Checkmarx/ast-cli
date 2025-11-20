@@ -153,6 +153,7 @@ var (
 	aditionalParameters []string
 	kicsErrorCodes      = []string{"60", "50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
+	MaxSizeBytes        int64 = 5 * 1024 * 1024 * 1024 // 5 GB in bytes
 )
 
 func NewScanCommand(
@@ -2082,7 +2083,20 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	var zipFilePathErr error
 	// Send a request to uploads service
 	var preSignedURL *string
-	preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
+
+	fileInfo, err := os.Stat(zipFilePath)
+	if err != nil {
+		return "", zipFilePath, errors.Wrapf(err, "Failed to check the size - %s", zipFilePath)
+	}
+	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
+
+	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
+	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
+		logger.PrintIfVerbose("Uploading source code in multiple parts.")
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)
+	} else {
+		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFile(zipFilePath, featureFlagsWrapper)
+	}
 	if zipFilePathErr != nil {
 		if unzip || !userProvidedZip {
 			return "", zipFilePath, errors.Wrapf(zipFilePathErr, "%s: Failed to upload sources file\n", failedCreating)
