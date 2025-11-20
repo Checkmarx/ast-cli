@@ -216,6 +216,10 @@ func runTriageUpdate(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper,
 		}
 		var err error
 		state, customStateID, err = determineSystemOrCustomState(customStatesWrapper, featureFlagsWrapper, state, customStateID)
+		if err != nil {
+			return errors.Wrapf(err, "%s", "Failed updating the predicate")
+		}
+
 		predicate, err := preparePredicateRequest(vulnerabilityDetails, similarityID, projectID, severity, state, customStateID, comment, scanType)
 		if err != nil {
 			return errors.Wrapf(err, "%s", "Failed updating the predicate")

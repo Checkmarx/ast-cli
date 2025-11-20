@@ -13,6 +13,8 @@ import (
 	"gotest.tools/assert"
 )
 
+var requiredFlagsError = "required flag(s) \"project-id\", \"scan-type\" not set"
+
 func TestTriageHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "triage")
 }
@@ -42,7 +44,7 @@ func TestRunUpdateTriageCommand(t *testing.T) {
 
 func TestRunShowTriageCommandWithNoInput(t *testing.T) {
 	err := execCmdNotNilAssertion(t, "triage", "show")
-	assert.Assert(t, err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"similarity-id\" not set")
+	assert.Assert(t, err.Error() == requiredFlagsError)
 }
 
 func TestRunUpdateTriageCommandWithNoInput(t *testing.T) {
@@ -50,7 +52,7 @@ func TestRunUpdateTriageCommandWithNoInput(t *testing.T) {
 	fmt.Println(err)
 	assert.Assert(
 		t,
-		err.Error() == "required flag(s) \"project-id\", \"scan-type\", \"severity\", \"similarity-id\" not set")
+		err.Error() == requiredFlagsError)
 }
 
 func TestTriageGetStatesFlag(t *testing.T) {
