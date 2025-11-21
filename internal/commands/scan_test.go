@@ -861,6 +861,7 @@ func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -937,6 +938,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1218,6 +1220,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1285,6 +1288,7 @@ func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1348,6 +1352,7 @@ func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1494,6 +1499,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1567,6 +1573,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDet
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1638,6 +1645,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1726,6 +1734,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1814,6 +1823,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_s
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1902,6 +1912,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -1990,6 +2001,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -2078,6 +2090,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -2166,6 +2179,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecret
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 			result, _ := addSCSScan(cmdCommand, resubmitConfig,
@@ -3587,6 +3601,7 @@ func TestValidateScanTypes(t *testing.T) {
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
