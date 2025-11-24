@@ -296,7 +296,6 @@ func prepareScaTriagePayload(vulnerabilityDetails []string, comment, state, proj
 		return nil, errors.Errorf("Package version is required")
 	}
 	if scaTriageInfo["packageManager"] == nil && scaTriageInfo["packagemanager"] == nil {
-		fmt.Println("Package manager is required")
 		return nil, errors.Errorf("Package manager is required")
 	}
 
