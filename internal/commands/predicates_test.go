@@ -586,6 +586,7 @@ func TestTransformState(t *testing.T) {
 	}
 }
 
+//nolint:goconst
 func TestPrepareScaTriagePayloadWithValidData(t *testing.T) {
 	vulnerabilityDetails := []string{
 		"packageName=lodash",
