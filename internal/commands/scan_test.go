@@ -4595,20 +4595,30 @@ func TestValidateGitCommitHistoryFlag(t *testing.T) {
 			expectedErrorMsg: "Invalid value for --git-commit-history. Use 'true' or 'false'.",
 		},
 		{
-			name:      "Empty value",
-			flagValue: "",
+			name:             "Empty value",
+			flagValue:        "",
+			expectedErrorMsg: "Invalid value for --git-commit-history. Use 'true' or 'false'.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmdCommand := &cobra.Command{}
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Test scan command",
+			}
 			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
+
+			_ = cmdCommand.Execute()
+
 			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
 
 			err := validateGitCommitHistoryFlag(cmdCommand)
-			if err != nil {
-				assert.Assert(t, err.Error() == tt.expectedErrorMsg, "Expected error: %v, got: %v", tt.expectedErrorMsg, err)
+			if tt.expectedErrorMsg != "" {
+				assert.Assert(t, err != nil, "Expected error but got nil")
+				if err != nil {
+					assert.Assert(t, err.Error() == tt.expectedErrorMsg, "Expected error: %v, got: %v", tt.expectedErrorMsg, err)
+				}
 			} else {
 				assert.NilError(t, err, "Expected no error, got: %v", err)
 			}
@@ -4616,7 +4626,7 @@ func TestValidateGitCommitHistoryFlag(t *testing.T) {
 	}
 }
 
-func TestShouldEnableGitCommitHistory(t *testing.T) {
+func TestGetGitCommitHistoryValue(t *testing.T) {
 	// Create a temporary directory with .git for testing
 	tempDir := t.TempDir()
 	gitDir := filepath.Join(tempDir, ".git")
@@ -4638,85 +4648,158 @@ func TestShouldEnableGitCommitHistory(t *testing.T) {
 		scanTypes      string
 		scsEngines     string
 		source         string
-		expectEnabled  bool
-		expectWarnings string
 		ffEnabled      bool
+		expectedValue  string
+		expectWarnings string
 	}{
 		{
-			name:           "Feature flag disabled - disabled",
+			name:          "Flag true with valid context - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:           "Flag true with FF disabled - returns empty with warning",
 			flagValue:      "true",
 			scanTypes:      "scs",
 			scsEngines:     "secret-detection",
 			source:         tempDir,
-			expectEnabled:  false,
-			expectWarnings: "Git commit history scanning is not available",
 			ffEnabled:      false,
+			expectedValue:  "",
+			expectWarnings: "Git commit history scanning is not available. The flag will be ignored.",
 		},
 		{
-			name:          "Flag set to false - disabled",
-			flagValue:     "false",
-			scanTypes:     "scs",
-			scsEngines:    "secret-detection",
-			source:        tempDir,
-			expectEnabled: false,
-			ffEnabled:     true,
+			name:           "Flag false with valid context - returns false",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "false",
+			expectWarnings: "",
 		},
 		{
-			name:           "Flag set to true with SCS not in scan types - warning and disabled",
+			name:           "Flag false with FF disabled - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      false,
+			expectedValue:  "",
+			expectWarnings: "Git commit history scanning is not available. The flag will be ignored.",
+		},
+		{
+			name:           "Flag true without SCS scan type - returns empty with warning",
 			flagValue:      "true",
 			scanTypes:      "sast",
 			scsEngines:     "secret-detection",
 			source:         tempDir,
-			expectEnabled:  false,
-			expectWarnings: "--git-commit-history' was provided, but SCS is not selected",
 			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.",
 		},
 		{
-			name:           "Flag set to true with only scorecard - warning and disabled",
+			name:           "Flag false without SCS scan type - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "sast",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.",
+		},
+		{
+			name:           "Flag true with only scorecard engine - returns empty with warning",
 			flagValue:      "true",
 			scanTypes:      "scs",
 			scsEngines:     "scorecard",
 			source:         tempDir,
-			expectEnabled:  false,
-			expectWarnings: "Commit History applies only to Secret Detection",
 			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "Commit History applies only to Secret Detection. The flag will be ignored.",
 		},
 		{
-			name:           "Flag set to true without git context - warning and disabled",
+			name:           "Flag false with only scorecard engine - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "scorecard",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "Commit History applies only to Secret Detection. The flag will be ignored.",
+		},
+		{
+			name:           "Flag true without git repository - returns empty with warning",
 			flagValue:      "true",
 			scanTypes:      "scs",
 			scsEngines:     "secret-detection",
 			source:         tempDirNoGit,
-			expectEnabled:  false,
-			expectWarnings: "No Git history found",
 			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "No Git history found. Secret Detection will scan the working tree only.",
 		},
 		{
-			name:          "Flag set to true with git context (directory) - enabled",
-			flagValue:     "true",
-			scanTypes:     "scs",
-			scsEngines:    "secret-detection",
-			source:        tempDir,
-			expectEnabled: true,
-			ffEnabled:     true,
+			name:           "Flag false without git repository - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDirNoGit,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: "No Git history found. Secret Detection will scan the working tree only.",
 		},
 		{
-			name:          "Flag set to true with git in subdirectory - enabled",
-			flagValue:     "true",
-			scanTypes:     "scs",
-			scsEngines:    "secret-detection",
-			source:        tempDirWithSubGit,
-			expectEnabled: true,
-			ffEnabled:     true,
+			name:           "Flag true with git in subdirectory - returns true",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDirWithSubGit,
+			ffEnabled:      true,
+			expectedValue:  "true",
+			expectWarnings: "",
 		},
 		{
-			name:          "Flag set to true with both secret-detection and scorecard - enabled",
-			flagValue:     "true",
-			scanTypes:     "scs",
-			scsEngines:    "secret-detection,scorecard",
-			source:        tempDir,
-			expectEnabled: true,
-			ffEnabled:     true,
+			name:           "Flag true with both engines - returns true",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection,scorecard",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "true",
+			expectWarnings: "",
+		},
+		{
+			name:           "Flag false with both engines - returns false",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection,scorecard",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "false",
+			expectWarnings: "",
+		},
+		{
+			name:           "Case insensitive TRUE - returns true",
+			flagValue:      "TRUE",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "true",
+			expectWarnings: "",
+		},
+		{
+			name:           "Case insensitive FALSE - returns false",
+			flagValue:      "FALSE",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "false",
+			expectWarnings: "",
 		},
 	}
 
@@ -4739,12 +4822,12 @@ func TestShouldEnableGitCommitHistory(t *testing.T) {
 			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, tt.scsEngines)
 			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tt.source)
 
-			// Capture output for warnings (fmt.Println goes to stdout)
+			// Capture output for warnings
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			result := shouldEnableGitCommitHistory(cmdCommand, tt.ffEnabled)
+			result := getGitCommitHistoryValue(cmdCommand, tt.ffEnabled)
 
 			w.Close()
 			os.Stdout = oldStdout
@@ -4756,7 +4839,7 @@ func TestShouldEnableGitCommitHistory(t *testing.T) {
 			output := buf.String()
 
 			// Check result
-			assert.Equal(t, tt.expectEnabled, result, "Expected enabled=%v, got=%v", tt.expectEnabled, result)
+			assert.Equal(t, tt.expectedValue, result, "Expected value=%s, got=%s", tt.expectedValue, result)
 
 			// Check warnings
 			if tt.expectWarnings != "" {

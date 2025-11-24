@@ -1406,10 +1406,10 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasReposit
 	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
 
-		// Set git commit history if enabled and all validations pass
+		// Set git commit history based on FF and validations
 		commitHistoryFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SscsCommitHistoryEnabled)
-		if shouldEnableGitCommitHistory(cmd, commitHistoryFlag.Status) {
-			scsConfig.GitCommitHistory = trueString
+		if gitCommitHistoryValue := getGitCommitHistoryValue(cmd, commitHistoryFlag.Status); gitCommitHistoryValue != "" {
+			scsConfig.GitCommitHistory = gitCommitHistoryValue
 		}
 	}
 
@@ -3762,34 +3762,38 @@ func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
 	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
 
 	err := validateBooleanString(gitCommitHistory)
-	if err != nil {
+	if err != nil || gitCommitHistory == "" {
 		return errors.Errorf("Invalid value for --git-commit-history. Use 'true' or 'false'.")
 	}
 
 	return nil
 }
 
-// shouldEnableGitCommitHistory checks if the git-commit-history flag should be enabled
-func shouldEnableGitCommitHistory(cmd *cobra.Command, commitHistoryFlag bool) bool {
-	if !commitHistoryFlag {
+// getGitCommitHistoryValue determines the value for git commit history config based on flag and validations
+func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) string {
+	if !isFeatureFlagEnabled {
 		fmt.Println("Warning: Git commit history scanning is not available. The flag will be ignored.")
-		return false
+		return ""
 	}
 
 	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+	gitCommitHistoryValue := strings.ToLower(gitCommitHistory)
 
-	// If flag is not set to true, return false
-	if strings.ToLower(strings.TrimSpace(gitCommitHistory)) != trueString {
-		return false
+	if !validateGitCommitHistoryContext(cmd) {
+		return ""
 	}
 
+	return gitCommitHistoryValue
+}
+
+// validateGitCommitHistoryContext validates if the context is appropriate for functionality
+func validateGitCommitHistoryContext(cmd *cobra.Command) bool {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.ScsType) {
 		fmt.Println("Warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.")
 		return false
 	}
 
-	// Check if only scorecard is enabled (no secret detection)
 	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines)
 	if scsScoreCardSelected && !scsSecretDetectionSelected {
@@ -3797,7 +3801,6 @@ func shouldEnableGitCommitHistory(cmd *cobra.Command, commitHistoryFlag bool) bo
 		return false
 	}
 
-	// Check if there's a git repository context
 	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 	if !hasGitRepository(source) {
 		fmt.Println("Warning: No Git history found. Secret Detection will scan the working tree only.")
