@@ -523,3 +523,201 @@ func TestToScaPredicateResultView_EmptyActions(t *testing.T) {
 	// Assert: Verify empty result
 	assert.Equal(t, len(result), 0, "Expected empty predicate result views")
 }
+
+func TestTransformState(t *testing.T) {
+	tests := []struct {
+		name          string
+		inputState    string
+		expectedState string
+	}{
+		{
+			name:          "TO_VERIFY uppercase",
+			inputState:    "TO_VERIFY",
+			expectedState: "ToVerify",
+		},
+		{
+			name:          "to_verify lowercase",
+			inputState:    "to_verify",
+			expectedState: "ToVerify",
+		},
+		{
+			name:          "NOT_EXPLOITABLE uppercase",
+			inputState:    "NOT_EXPLOITABLE",
+			expectedState: "NotExploitable",
+		},
+		{
+			name:          "not_exploitable lowercase",
+			inputState:    "not_exploitable",
+			expectedState: "NotExploitable",
+		},
+		{
+			name:          "PROPOSED_NOT_EXPLOITABLE uppercase",
+			inputState:    "PROPOSED_NOT_EXPLOITABLE",
+			expectedState: "ProposedNotExploitable",
+		},
+		{
+			name:          "CONFIRMED uppercase",
+			inputState:    "CONFIRMED",
+			expectedState: "Confirmed",
+		},
+		{
+			name:          "URGENT uppercase",
+			inputState:    "URGENT",
+			expectedState: "Urgent",
+		},
+		{
+			name:          "State with whitespace",
+			inputState:    "  TO_VERIFY  ",
+			expectedState: "ToVerify",
+		},
+		{
+			name:          "Unknown state",
+			inputState:    "CUSTOM_STATE",
+			expectedState: "",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			result := transformState(tt.inputState)
+			assert.Equal(t, result, tt.expectedState)
+		})
+	}
+}
+
+func TestPrepareScaTriagePayloadWithValidData(t *testing.T) {
+	vulnerabilityDetails := []string{
+		"packageName=lodash",
+		"packageVersion=4.17.20",
+		"packageManager=npm",
+		"vulnerabilityId=CVE-2021-23337",
+	}
+	comment := "This is a test comment"
+	state := "NOT_EXPLOITABLE"
+	projectID := "test-project-123"
+
+	payload, err := prepareScaTriagePayload(vulnerabilityDetails, comment, state, projectID)
+
+	assert.NilError(t, err)
+	assert.Assert(t, payload != nil, "Expected payload to be non-nil")
+}
+
+func TestPrepareScaTriagePayloadWithCaseInsensitiveFields(t *testing.T) {
+	tests := []struct {
+		name                 string
+		vulnerabilityDetails []string
+		shouldSucceed        bool
+		expectedError        string
+	}{
+		{
+			name: "Lowercase package fields",
+			vulnerabilityDetails: []string{
+				"packagename=lodash",
+				"packageversion=4.17.20",
+				"packagemanager=npm",
+			},
+			shouldSucceed: true,
+		},
+		{
+			name: "Mixed case package fields",
+			vulnerabilityDetails: []string{
+				"packageName=lodash",
+				"packageversion=4.17.20",
+				"packageManager=npm",
+			},
+			shouldSucceed: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			payload, err := prepareScaTriagePayload(tt.vulnerabilityDetails, "test comment", "NOT_EXPLOITABLE", "project-123")
+			if tt.shouldSucceed {
+				assert.NilError(t, err)
+				assert.Assert(t, payload != nil, "Expected payload to be non-nil")
+			} else {
+				assert.ErrorContains(t, err, tt.expectedError)
+			}
+		})
+	}
+}
+
+func TestValidateVulnerabilityDetails(t *testing.T) {
+	tests := []struct {
+		name          string
+		vulnerability []string
+		expectError   bool
+		expectedError string
+	}{
+		{
+			name:          "Valid key-value pair",
+			vulnerability: []string{"packageName", "lodash"},
+			expectError:   false,
+		},
+		{
+			name:          "Invalid - no value",
+			vulnerability: []string{"packageName"},
+			expectError:   true,
+			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
+		},
+		{
+			name:          "Invalid - too many values",
+			vulnerability: []string{"packageName", "lodash", "extra"},
+			expectError:   true,
+			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
+		},
+		{
+			name:          "Invalid - empty array",
+			vulnerability: []string{},
+			expectError:   true,
+			expectedError: "Invalid vulnerabilities. It should be in a KEY=VALUE format",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateVulnerabilityDetails(tt.vulnerability)
+			if tt.expectError {
+				assert.ErrorContains(t, err, tt.expectedError)
+			} else {
+				assert.NilError(t, err)
+			}
+		})
+	}
+}
+
+func TestRunUpdateTriageCommandForSCA(t *testing.T) {
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
+	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+
+	cmd := triageUpdateSubCommand(mockResultsPredicatesWrapper, mockFeatureFlagsWrapper, mockCustomStatesWrapper)
+	cmd.SetArgs([]string{
+		"--project-id", "MOCK",
+		"--state", "NOT_EXPLOITABLE",
+		"--scan-type", "sca",
+		"--vulnerabilities", "packageName=lodash,packageVersion=4.17.20,packageManager=npm",
+		"--comment", "Testing SCA update",
+	})
+
+	err := cmd.Execute()
+	assert.NilError(t, err)
+}
+
+func TestPrepareScaTriagePayloadWithMissingVulnerabilityId(t *testing.T) {
+	vulnerabilityDetails := []string{
+		"packageName=lodash",
+		"packageVersion=4.17.20",
+		"packageManager=npm",
+	}
+	comment := "Testing without vulnerability ID"
+	state := "NOT_EXPLOITABLE"
+	projectID := "test-project-123"
+
+	payload, err := prepareScaTriagePayload(vulnerabilityDetails, comment, state, projectID)
+	assert.NilError(t, err)
+	assert.Assert(t, payload != nil, "Expected payload to be non-nil even without vulnerabilityId")
+}
