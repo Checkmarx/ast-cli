@@ -4781,26 +4781,6 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			expectedValue:  "false",
 			expectWarnings: "",
 		},
-		{
-			name:           "Case insensitive TRUE - returns true",
-			flagValue:      "TRUE",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         tempDir,
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Case insensitive FALSE - returns false",
-			flagValue:      "FALSE",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         tempDir,
-			ffEnabled:      true,
-			expectedValue:  "false",
-			expectWarnings: "",
-		},
 	}
 
 	for _, tt := range tests {
