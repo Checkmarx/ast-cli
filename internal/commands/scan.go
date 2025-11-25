@@ -124,6 +124,12 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
+	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Use 'true' or 'false'."
+	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: Git commit history scanning is not available. The flag will be ignored."
+	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag."
+	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: Commit History applies only to Secret Detection. The flag will be ignored."
+	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
+
 	jsonExt                  = ".json"
 	xmlExt                   = ".xml"
 	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
@@ -865,7 +871,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
-	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
+	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
@@ -3762,8 +3768,8 @@ func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
 	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
 
 	err := validateBooleanString(gitCommitHistory)
-	if err != nil || gitCommitHistory == "" {
-		return errors.Errorf("Invalid value for --git-commit-history. Use 'true' or 'false'.")
+	if err != nil {
+		return errors.Errorf(gitCommitHistoryInvalidValueErrorMsg)
 	}
 
 	return nil
@@ -3772,7 +3778,7 @@ func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
 // getGitCommitHistoryValue determines the value for git commit history config based on flag and validations
 func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) string {
 	if !isFeatureFlagEnabled {
-		fmt.Println("Warning: Git commit history scanning is not available. The flag will be ignored.")
+		fmt.Println(gitCommitHistoryNotAvailableWarningMsg)
 		return ""
 	}
 
@@ -3790,20 +3796,20 @@ func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) str
 func validateGitCommitHistoryContext(cmd *cobra.Command) bool {
 	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
 	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.ScsType) {
-		fmt.Println("Warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.")
+		fmt.Println(gitCommitHistoryNotSelectedWarningMsg)
 		return false
 	}
 
 	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines)
 	if scsScoreCardSelected && !scsSecretDetectionSelected {
-		fmt.Println("Warning: Commit History applies only to Secret Detection. The flag will be ignored.")
+		fmt.Println(gitCommitHistoryNotApplicableWarningMsg)
 		return false
 	}
 
 	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 	if !hasGitRepository(source) {
-		fmt.Println("Warning: No Git history found. Secret Detection will scan the working tree only.")
+		fmt.Println(gitCommitHistoryNoGitRepositoryWarningMsg)
 		return false
 	}
 

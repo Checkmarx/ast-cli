@@ -1411,7 +1411,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndGitCommitHistoryFlag_scsMapHasSecre
 				Long:  `Scan a project`,
 			}
 			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
-			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
 			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
 			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
 
@@ -4592,12 +4592,7 @@ func TestValidateGitCommitHistoryFlag(t *testing.T) {
 		{
 			name:             "Invalid value 'maybe'",
 			flagValue:        "maybe",
-			expectedErrorMsg: "Invalid value for --git-commit-history. Use 'true' or 'false'.",
-		},
-		{
-			name:             "Empty value",
-			flagValue:        "",
-			expectedErrorMsg: "Invalid value for --git-commit-history. Use 'true' or 'false'.",
+			expectedErrorMsg: gitCommitHistoryInvalidValueErrorMsg,
 		},
 	}
 
@@ -4669,7 +4664,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      false,
 			expectedValue:  "",
-			expectWarnings: "Git commit history scanning is not available. The flag will be ignored.",
+			expectWarnings: gitCommitHistoryNotAvailableWarningMsg,
 		},
 		{
 			name:           "Flag false with valid context - returns false",
@@ -4689,7 +4684,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      false,
 			expectedValue:  "",
-			expectWarnings: "Git commit history scanning is not available. The flag will be ignored.",
+			expectWarnings: gitCommitHistoryNotAvailableWarningMsg,
 		},
 		{
 			name:           "Flag true without SCS scan type - returns empty with warning",
@@ -4699,7 +4694,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.",
+			expectWarnings: gitCommitHistoryNotSelectedWarningMsg,
 		},
 		{
 			name:           "Flag false without SCS scan type - returns empty with warning",
@@ -4709,7 +4704,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "--git-commit-history' was provided, but SCS is not selected. Ignoring this flag.",
+			expectWarnings: gitCommitHistoryNotSelectedWarningMsg,
 		},
 		{
 			name:           "Flag true with only scorecard engine - returns empty with warning",
@@ -4719,7 +4714,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "Commit History applies only to Secret Detection. The flag will be ignored.",
+			expectWarnings: gitCommitHistoryNotApplicableWarningMsg,
 		},
 		{
 			name:           "Flag false with only scorecard engine - returns empty with warning",
@@ -4729,7 +4724,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDir,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "Commit History applies only to Secret Detection. The flag will be ignored.",
+			expectWarnings: gitCommitHistoryNotApplicableWarningMsg,
 		},
 		{
 			name:           "Flag true without git repository - returns empty with warning",
@@ -4739,7 +4734,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDirNoGit,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "No Git history found. Secret Detection will scan the working tree only.",
+			expectWarnings: gitCommitHistoryNoGitRepositoryWarningMsg,
 		},
 		{
 			name:           "Flag false without git repository - returns empty with warning",
@@ -4749,7 +4744,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			source:         tempDirNoGit,
 			ffEnabled:      true,
 			expectedValue:  "",
-			expectWarnings: "No Git history found. Secret Detection will scan the working tree only.",
+			expectWarnings: gitCommitHistoryNoGitRepositoryWarningMsg,
 		},
 		{
 			name:           "Flag true with git in subdirectory - returns true",
@@ -4790,7 +4785,7 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 				Use:   "scan",
 				Short: "Scan a project with git commit history",
 			}
-			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
 			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
 			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
 			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
