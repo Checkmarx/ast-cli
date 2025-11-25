@@ -110,6 +110,8 @@ var BaseIncludeFilters = []string{
 	"*.inc",
 	"*.jar",
 	"*.js",
+	"*.xsjs",
+	"*.xsjslib",
 	"*.dll",
 	"*.tf",
 	"*.yaml",
@@ -145,6 +147,8 @@ var BaseIncludeFilters = []string{
 	"*.mjs",
 	"*.mts",
 	"*.cts",
+	"*.html",
+	"*.xhtml",
 }
 
 var BaseExcludeFilters = []string{

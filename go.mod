@@ -3,13 +3,14 @@ module github.com/checkmarx/ast-cli
 go 1.24.6
 
 require (
-	github.com/Checkmarx/containers-resolver v1.0.24
+	github.com/Checkmarx/containers-resolver v1.0.25
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
-	github.com/Checkmarx/gen-ai-wrapper v1.0.2
+	github.com/Checkmarx/gen-ai-wrapper v1.0.3
 	github.com/Checkmarx/manifest-parser v0.1.1
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms/v3 v3.21.0
 	github.com/gofrs/flock v0.12.1
@@ -19,12 +20,11 @@ require (
 	github.com/gookit/color v1.5.4
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jsumners/go-getport v1.0.0
-	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.40.0
@@ -36,13 +36,9 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
+require cyphar.com/go-pathrs v0.2.1 // indirect
+
 require (
-	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
-	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
-	github.com/jcmturner/gofork v1.7.6 // indirect
-	github.com/jcmturner/goidentity/v6 v6.0.1 // indirect
-	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6 // indirect
 	github.com/AdamKorcz/go-118-fuzz-build v0.0.0-20240914100643-eb91380d8434 // indirect
@@ -50,7 +46,7 @@ require (
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Checkmarx/containers-images-extractor v1.0.18
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.20 // indirect
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.21 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -95,7 +91,7 @@ require (
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
-	github.com/containerd/containerd v1.7.28 // indirect
+	github.com/containerd/containerd v1.7.29 // indirect
 	github.com/containerd/containerd/api v1.9.0 // indirect
 	github.com/containerd/continuity v0.4.5 // indirect
 	github.com/containerd/errdefs v1.0.0 // indirect
@@ -106,7 +102,7 @@ require (
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/containerd/ttrpc v1.2.7 // indirect
 	github.com/containerd/typeurl/v2 v2.2.3 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deitch/magic v0.0.0-20240306090643-c67ab88f10cb // indirect
 	github.com/distribution/reference v0.6.0 // indirect
@@ -165,11 +161,17 @@ require (
 	github.com/h2non/filetype v1.1.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
+	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
+	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
+	github.com/jcmturner/gofork v1.7.6 // indirect
+	github.com/jcmturner/goidentity/v6 v6.0.1 // indirect
+	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jinzhu/copier v0.4.0 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -217,7 +219,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.2.1 // indirect
-	github.com/opencontainers/selinux v1.12.0 // indirect
+	github.com/opencontainers/selinux v1.13.0 // indirect
 	github.com/pborman/indent v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
@@ -285,7 +287,7 @@ require (
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/term v0.33.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
@@ -321,4 +323,6 @@ require (
 	sigs.k8s.io/yaml v1.5.0 // indirect
 )
 
-replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.27
+replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.29
+
+replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v1.13.0

@@ -62,13 +62,17 @@ jobs:
           git checkout 4.4.15
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew --version
-
       - name: Install gon
         run: |
           brew install Bearer/tap/gon
+      # New: detect architecture and expose as step output
+      - name: Detect runner architecture
+        id: arch
+        run: |
+          echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@v1.0.1
+        uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -83,8 +87,7 @@ jobs:
 
       - name: Install Cosign
         if: inputs.dev == false
-        run: |
-          brew install sigstore/tap/cosign
+        uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 #v3.2.0
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2

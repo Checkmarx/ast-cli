@@ -27,8 +27,8 @@ const (
 	NoPermissionToUpdateApplication        = "you do not have permission to update the application"
 	FailedToUpdateApplication              = "failed to update application"
 	ApplicationNotFound                    = "Application not found"
+	ErrMissingAIFeatureLicense             = "User does not have the required license for AI-assisted functionality."
 
-	// asca Engine
 	FileExtensionIsRequired = "file must have an extension"
 
 	// Realtime

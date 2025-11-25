@@ -86,7 +86,7 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 
 	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to ensure license").Error()
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {

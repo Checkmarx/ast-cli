@@ -30,7 +30,7 @@ func RunScanSecretsRealtimeCommand(
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
-			return errorconstants.NewRealtimeEngineError("failed to return secrets").Error()
+			return errorconstants.NewRealtimeEngineError(err.Error()).Error()
 		}
 
 		return nil
