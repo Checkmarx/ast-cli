@@ -21,6 +21,13 @@ func (m *ScansMockWrapper) GetWorkflowByID(_ string) ([]*wrappers.ScanTaskRespon
 
 func (m *ScansMockWrapper) Create(scanModel *wrappers.Scan) (*wrappers.ScanResponseModel, *wrappers.ErrorModel, error) {
 	fmt.Println("Called Create in ScansMockWrapper")
+	if scanModel.Project.ID == "fake-queue-capacity-error-id" {
+		return nil, &wrappers.ErrorModel{
+			Code:    142,
+			Message: "Failed to enqueue scan. Max Queued reached",
+			Type:    "ERROR",
+		}, nil
+	}
 	if scanModel.Project.ID == "fake-kics-scanner-fail-id" {
 		return &wrappers.ScanResponseModel{
 			ID:     "fake-scan-id-kics-scanner-fail",

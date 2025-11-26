@@ -4,6 +4,8 @@ const (
 	CustomStatesAPIPathEnv              = "CX_CUSTOM_STATES_PATH"
 	TenantEnv                           = "CX_TENANT"
 	BranchEnv                           = "CX_BRANCH"
+	ScanEnqueueRetriesEnv               = "CX_SCAN_ENQUEUE_RETRIES"
+	ScanEnqueueRetryDelayEnv            = "CX_SCAN_ENQUEUE_RETRY_DELAY"
 	BaseURIEnv                          = "CX_BASE_URI"
 	ClientTimeoutEnv                    = "CX_TIMEOUT"
 	ProxyEnv                            = "HTTP_PROXY"
