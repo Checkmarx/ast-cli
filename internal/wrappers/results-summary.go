@@ -83,7 +83,10 @@ var IsContainersEnabled bool
 
 func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
 	criticalIssues := 0
-	for _, v := range *engineSummary {
+	for k, v := range *engineSummary {
+		if k == params.APISecType { // exclude API Security
+			continue
+		}
 		criticalIssues += v.Critical
 	}
 	return criticalIssues
@@ -91,7 +94,10 @@ func (engineSummary *EnginesResultsSummary) GetCriticalIssues() int {
 
 func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 	highIssues := 0
-	for _, v := range *engineSummary {
+	for k, v := range *engineSummary {
+		if k == params.APISecType {
+			continue
+		}
 		highIssues += v.High
 	}
 	return highIssues
@@ -99,7 +105,10 @@ func (engineSummary *EnginesResultsSummary) GetHighIssues() int {
 
 func (engineSummary *EnginesResultsSummary) GetLowIssues() int {
 	lowIssues := 0
-	for _, v := range *engineSummary {
+	for k, v := range *engineSummary {
+		if k == params.APISecType {
+			continue
+		}
 		lowIssues += v.Low
 	}
 	return lowIssues
@@ -107,7 +116,10 @@ func (engineSummary *EnginesResultsSummary) GetLowIssues() int {
 
 func (engineSummary *EnginesResultsSummary) GetMediumIssues() int {
 	mediumIssues := 0
-	for _, v := range *engineSummary {
+	for k, v := range *engineSummary {
+		if k == params.APISecType {
+			continue
+		}
 		mediumIssues += v.Medium
 	}
 	return mediumIssues
@@ -115,7 +127,10 @@ func (engineSummary *EnginesResultsSummary) GetMediumIssues() int {
 
 func (engineSummary *EnginesResultsSummary) GetInfoIssues() int {
 	infoIssues := 0
-	for _, v := range *engineSummary {
+	for k, v := range *engineSummary {
+		if k == params.APISecType {
+			continue
+		}
 		infoIssues += v.Info
 	}
 	return infoIssues
