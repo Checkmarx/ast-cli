@@ -1,12 +1,17 @@
 package wrappers
 
 import (
+	"os/user"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 // JWTStruct model used to get all jwt fields
@@ -157,4 +162,50 @@ func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (hasPe
 		}
 	}
 	return permission, nil
+}
+
+func GetUniqueID() string {
+	var uniqueID string
+	// Check License first
+	jwtWrapper := NewJwtWrapper()
+	isAllowed, err := jwtWrapper.IsAllowedEngine("Checkmarx Developer Assist")
+	if err != nil {
+		logger.PrintIfVerbose("Failed to check engine allowance: " + err.Error())
+		return ""
+	}
+	if !isAllowed {
+		logger.PrintIfVerbose("User does not have permission to standalone dev assists feature")
+		return ""
+	}
+
+	// Check if unique id is already set
+	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
+	if uniqueID != "" {
+		return uniqueID
+	}
+
+	// Generate new unique id
+	logger.PrintIfVerbose("Generating new unique id")
+	currentUser, err := user.Current()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get user: " + err.Error())
+		return ""
+	}
+	username := currentUser.Username
+	username = strings.TrimSpace(username)
+	logger.PrintIfVerbose("Username to be used for unique id: " + username)
+	if strings.Contains(username, "\\") {
+		username = strings.Split(username, "\\")[1]
+	}
+	uniqueID = uuid.New().String() + "_" + username
+
+	logger.PrintIfVerbose("Unique id: " + uniqueID)
+	viper.Set(commonParams.UniqueIDConfigKey, uniqueID)
+	configFilePath, _ := configuration.GetConfigFilePath()
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.UniqueIDConfigKey, uniqueID)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to write config: " + err.Error())
+		return ""
+	}
+	return uniqueID
 }

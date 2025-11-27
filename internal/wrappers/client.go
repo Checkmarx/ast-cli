@@ -12,7 +12,6 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"os"
-	"os/user"
 	"runtime"
 	"strings"
 	"sync"
@@ -21,13 +20,11 @@ import (
 	applicationErrors "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/kerberos"
 	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
 )
@@ -983,86 +980,4 @@ func extractAZPFromToken(astToken string) (string, error) {
 		return "ast-app", nil // default value in case of error
 	}
 	return azp, nil
-}
-
-func GetUniqueID() string {
-	var uniqueID string
-	isAllowed := false
-	accessToken, err := GetAccessToken()
-	if err != nil {
-		logger.PrintIfVerbose("Failed to get access token")
-		return ""
-	}
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-	token, _, err := parser.ParseUnverified(accessToken, jwt.MapClaims{})
-	if err != nil {
-		logger.PrintIfVerbose("Failed to parse JWT token " + err.Error())
-		return ""
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		logger.PrintIfVerbose("Failed to get JWT claims")
-		return ""
-	}
-
-	astLicense, ok := claims["ast-license"].(map[string]interface{})
-	if !ok {
-		logger.PrintIfVerbose("Failed to get ast-license from claims")
-		return ""
-	}
-
-	licenseData, ok := astLicense["LicenseData"].(map[string]interface{})
-	if !ok {
-		logger.PrintIfVerbose("Failed to get LicenseData from ast-license")
-		return ""
-	}
-
-	allowedEngines, ok := licenseData["allowedEngines"].([]interface{})
-	if !ok {
-		logger.PrintIfVerbose("Failed to get allowedEngines from LicenseData")
-		return ""
-	}
-
-	for _, engine := range allowedEngines {
-		engineStr, ok := engine.(string)
-		if !ok {
-			continue
-		}
-		if strings.EqualFold(engineStr, "Checkmarx Developer Assist") {
-			isAllowed = true
-			break
-		}
-	}
-
-	if !isAllowed {
-		logger.PrintIfVerbose("User does not not have permission to standalone dev asists feature")
-		return ""
-	}
-	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
-	if uniqueID != "" {
-		return uniqueID
-	}
-	logger.PrintIfVerbose("Generating new unique id")
-	currentUser, err := user.Current()
-	if err != nil {
-		logger.PrintIfVerbose("Failed to get user: " + err.Error())
-		return ""
-	}
-	username := currentUser.Username
-	username = strings.TrimSpace(username)
-	logger.PrintIfVerbose("Username to be used for unique id: " + username)
-	if strings.Contains(username, "\\") {
-		username = strings.Split(username, "\\")[1]
-	}
-	uniqueID = uuid.New().String() + "_" + username
-
-	logger.PrintIfVerbose("Unique id: " + uniqueID)
-	viper.Set(commonParams.UniqueIDConfigKey, uniqueID)
-	configFilePath, _ := configuration.GetConfigFilePath()
-	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.UniqueIDConfigKey, uniqueID)
-	if err != nil {
-		logger.PrintIfVerbose("Failed to write config: " + err.Error())
-		return ""
-	}
-	return uniqueID
 }
