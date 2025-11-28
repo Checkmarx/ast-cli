@@ -132,13 +132,11 @@ func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 
 	originStr := viper.GetString(commonParams.OriginKey)
 	req.Header.Set("Cx-Origin", originStr)
-	logger.PrintIfVerbose("getting unique id")
 
 	if !isAuth {
 		uniqueID := GetUniqueID()
 		if uniqueID != "" {
 			req.Header.Set("UniqueId", uniqueID)
-			logger.PrintIfVerbose("unique id: " + uniqueID)
 		}
 	}
 }

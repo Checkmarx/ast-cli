@@ -119,21 +119,6 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.
 
 func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		defer func() {
-			logger.PrintIfVerbose("Calling GetUniqueId func")
-			uniqueID := wrappers.GetUniqueID()
-			if uniqueID != "" {
-				logger.PrintIfVerbose("Set unique id: " + uniqueID)
-				err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
-					UniqueID: uniqueID,
-					Type:     "authentication",
-					SubType:  "authentication",
-				})
-				if err != nil {
-					logger.PrintIfVerbose("Failed to send telemetry data: " + err.Error())
-				}
-			}
-		}()
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
 		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
 		apiKey := viper.GetString(params.AstAPIKey)
@@ -141,6 +126,19 @@ func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Comm
 			authWrapper := wrappers.NewAuthHTTPWrapper()
 			authWrapper.SetPath(viper.GetString(params.ScansPathKey))
 			err := authWrapper.ValidateLogin()
+
+			uniqueID := wrappers.GetUniqueID()
+			if uniqueID != "" {
+				telemetryErr := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
+					UniqueID: uniqueID,
+					Type:     "authentication",
+					SubType:  "authentication",
+				})
+				if telemetryErr != nil {
+					logger.PrintIfVerbose("Failed to send telemetry data: " + telemetryErr.Error())
+				}
+			}
+
 			if err != nil {
 				return errors.Errorf("%s", err)
 			}

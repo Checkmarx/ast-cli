@@ -214,7 +214,6 @@ func GetUniqueID() string {
 	}
 
 	// Generate new unique id
-	logger.PrintIfVerbose("Generating new unique id")
 	currentUser, err := user.Current()
 	if err != nil {
 		logger.PrintIfVerbose("Failed to get user: " + err.Error())
@@ -222,13 +221,10 @@ func GetUniqueID() string {
 	}
 	username := currentUser.Username
 	username = strings.TrimSpace(username)
-	logger.PrintIfVerbose("Username to be used for unique id: " + username)
 	if strings.Contains(username, "\\") {
 		username = strings.Split(username, "\\")[1]
 	}
 	uniqueID = uuid.New().String() + "_" + username
-
-	logger.PrintIfVerbose("Unique id: " + uniqueID)
 	viper.Set(commonParams.UniqueIDConfigKey, uniqueID)
 	configFilePath, _ := configuration.GetConfigFilePath()
 	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.UniqueIDConfigKey, uniqueID)
