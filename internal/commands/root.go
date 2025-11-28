@@ -205,7 +205,7 @@ func NewAstCLI(
 	)
 
 	versionCmd := util.NewVersionCommand()
-	authCmd := NewAuthCommand(authWrapper)
+	authCmd := NewAuthCommand(authWrapper, telemetryWrapper)
 	utilsCmd := util.NewUtilsCommand(
 		gitHubWrapper,
 		azureWrapper,
@@ -215,6 +215,7 @@ func NewAstCLI(
 		prWrapper,
 		learnMoreWrapper,
 		tenantWrapper,
+		jwtWrapper,
 		chatWrapper,
 		policyWrapper,
 		scansWrapper,
