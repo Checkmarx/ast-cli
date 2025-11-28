@@ -2726,3 +2726,22 @@ func TestCreateScanWithNewProjectName_Assign_Groups(t *testing.T) {
 	assert.NilError(t, err, "Groups should be assigned to newly created projects")
 
 }
+func TestCreateScan_AsMultipartUpload_Success(t *testing.T) {
+	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
+	commands.MaxSizeBytes = 10240                                     // 10KB less than actual file size
+	defer func() { commands.MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), "data/insecure.zip",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err)
+	log.SetOutput(os.Stderr)
+	assert.Assert(t, strings.Contains(buf.String(), "Uploading source code in multiple parts"), "Test for uploading file in multiple parts failed.")
+}
