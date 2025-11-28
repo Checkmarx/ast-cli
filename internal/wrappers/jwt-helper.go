@@ -93,7 +93,7 @@ func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err err
 
 	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
 		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
-	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneStandAloneType)
+	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxDevAssistType)
 
 	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
 	licenseDetails["scan.config.plugins.cxonedevassist"] = strconv.FormatBool(devAssistEnabled)
@@ -197,7 +197,7 @@ func GetUniqueID() string {
 	var uniqueID string
 	// Check License first
 	jwtWrapper := NewJwtWrapper()
-	isAllowed, err := jwtWrapper.IsAllowedEngine("Checkmarx Developer Assist")
+	isAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxDevAssistType)
 	if err != nil {
 		logger.PrintIfVerbose("Failed to check engine allowance: " + err.Error())
 		return ""
