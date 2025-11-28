@@ -86,20 +86,23 @@ func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err err
 		return nil, err
 	}
 
-	assistEnabled := false
-	standaloneEnabled := false
-	for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
-		if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneAssistType) ||
-			strings.EqualFold(allowedEngine, commonParams.AIProtectionType) {
-			assistEnabled = true
-		} else if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneStandAloneType) {
-			standaloneEnabled = true
-		}
-	}
+	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
+		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
+	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneStandAloneType)
 
 	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
-	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails["scan.config.plugins.cxonedevassist"] = strconv.FormatBool(devAssistEnabled)
 	return licenseDetails, nil
+}
+
+// containsIgnoreCase returns true if target exists in arr using case-insensitive comparison
+func containsIgnoreCase(arr []string, target string) bool {
+	for _, s := range arr {
+		if strings.EqualFold(s, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func getJwtStruct() (*JWTStruct, error) {
