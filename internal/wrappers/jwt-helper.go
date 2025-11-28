@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"strconv"
 	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -23,6 +24,7 @@ type JWTStruct struct {
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
+	GetLicenseDetails() (licenseDetails map[string]string, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
@@ -74,6 +76,33 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 	}
 
 	return getDefaultEngines(scsLicensingV2Flag.Status), nil
+}
+
+func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
+	licenseDetails = make(map[string]string)
+
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return nil, err
+	}
+
+	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
+		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
+	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneStandAloneType)
+
+	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
+	licenseDetails["scan.config.plugins.cxonedevassist"] = strconv.FormatBool(devAssistEnabled)
+	return licenseDetails, nil
+}
+
+// containsIgnoreCase returns true if target exists in arr using case-insensitive comparison
+func containsIgnoreCase(arr []string, target string) bool {
+	for _, s := range arr {
+		if strings.EqualFold(s, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func getJwtStruct() (*JWTStruct, error) {
