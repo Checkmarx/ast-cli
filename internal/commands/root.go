@@ -215,6 +215,7 @@ func NewAstCLI(
 		prWrapper,
 		learnMoreWrapper,
 		tenantWrapper,
+		jwtWrapper,
 		chatWrapper,
 		policyWrapper,
 		scansWrapper,

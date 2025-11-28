@@ -289,6 +289,7 @@ const (
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
 	CheckmarxOneAssistType         = "Checkmarx One Assist"
+	CheckmarxOneStandAloneType     = "Checkmarx Developer Assist"
 	ContainersType                 = "containers"
 	APIDocumentationFlag           = "apisec-swagger-filter"
 	IacType                        = "iac-security"

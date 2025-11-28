@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
+func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tenant",
 		Short: "Shows the tenant settings",
@@ -27,7 +27,7 @@ func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper) 
 			`,
 			),
 		},
-		RunE: runTenantCmd(wrapper),
+		RunE: runTenantCmd(wrapper, jwtWrapper),
 	}
 	cmd.PersistentFlags().String(
 		params.FormatFlag,
@@ -40,7 +40,7 @@ func NewTenantConfigurationCommand(wrapper wrappers.TenantConfigurationWrapper) 
 	return cmd
 }
 
-func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper) func(cmd *cobra.Command, args []string) error {
+func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper, jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		tenantConfigurationResponse, errorModel, err := wrapper.GetTenantConfiguration()
 		if err != nil {
@@ -52,10 +52,16 @@ func runTenantCmd(wrapper wrappers.TenantConfigurationWrapper) func(cmd *cobra.C
 		if tenantConfigurationResponse != nil {
 			format, _ := cmd.Flags().GetString(params.FormatFlag)
 			tenantConfigurationResponseView := toTenantConfigurationResponseView(tenantConfigurationResponse)
+
+			licenseDetails, err := jwtWrapper.GetLicenseDetails()
+			if err == nil {
+				tenantConfigurationResponseView = appendLicenseDetails(tenantConfigurationResponseView, licenseDetails)
+			}
+
 			if format == "" {
 				format = defaultFormat
 			}
-			err := printer.Print(cmd.OutOrStdout(), tenantConfigurationResponseView, format)
+			err = printer.Print(cmd.OutOrStdout(), tenantConfigurationResponseView, format)
 			if err != nil {
 				return err
 			}
@@ -74,5 +80,19 @@ func toTenantConfigurationResponseView(response *[]*wrappers.TenantConfiguration
 			},
 		)
 	}
+	return tenantConfigurationResponseView
+}
+
+func appendLicenseDetails(responseView interface{}, licenseDetails map[string]string) interface{} {
+	tenantConfigurationResponseView := responseView.([]*wrappers.TenantConfigurationResponse)
+
+	for key, value := range licenseDetails {
+		licenseEntry := &wrappers.TenantConfigurationResponse{
+			Key:   key,
+			Value: value,
+		}
+		tenantConfigurationResponseView = append(tenantConfigurationResponseView, licenseEntry)
+	}
+
 	return tenantConfigurationResponseView
 }
