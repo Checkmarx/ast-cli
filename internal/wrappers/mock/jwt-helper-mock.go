@@ -86,7 +86,7 @@ func (j *JWTMockWrapper) GetLicenseDetails() (licenseDetails map[string]string, 
 	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
 
 	standaloneEnabled := true
-	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(standaloneEnabled)
 
 	for _, engine := range engines {
 		licenseDetails[engine] = licenseEnabledValue
