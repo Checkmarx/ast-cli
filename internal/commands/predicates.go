@@ -161,11 +161,11 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			if len(vulnerabilityDetails) == 0 {
 				return errors.Errorf("%s", "Failed showing the predicate. Vulnerabilities are required for SCA triage")
 			}
-			scaResponse, err := resultsPredicatesWrapper.ScaPredicateResult(vulnerabilityDetails, projectID)
+			scaPredicates, err := resultsPredicatesWrapper.GetScaPredicates(vulnerabilityDetails, projectID)
 			if err != nil {
 				return errors.Wrapf(err, "%s", "Failed showing the predicate")
 			}
-			err = printByFormat(cmd, toScaPredicateResultView(scaResponse))
+			err = printByFormat(cmd, toScaPredicateResultView(scaPredicates))
 			if err != nil {
 				return err
 			}

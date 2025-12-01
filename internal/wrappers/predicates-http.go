@@ -27,7 +27,7 @@ func NewResultsPredicatesHTTPWrapper() ResultsPredicatesWrapper {
 	return &ResultsPredicatesHTTPWrapper{}
 }
 
-func (r *ResultsPredicatesHTTPWrapper) ScaPredicateResult(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error) {
+func (r *ResultsPredicatesHTTPWrapper) GetScaPredicates(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error) {
 	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
 	r.SetPath(viper.GetString(params.ScaResultsPredicatesPathEnv))
 	var request = "/entity-profile/search"

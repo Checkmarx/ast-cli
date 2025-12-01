@@ -104,7 +104,7 @@ type CustomStatesWrapper interface {
 }
 
 type ResultsPredicatesWrapper interface {
-	ScaPredicateResult(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error)
+	GetScaPredicates(vulnerabilityDetails []string, projectID string) (*ScaPredicateResult, error)
 	PredicateSeverityAndState(predicate interface{}, scanType string) (*WebError, error)
 	GetAllPredicatesForSimilarityID(
 		similarityID string, projectID string, scannerType string,

@@ -44,7 +44,7 @@ func (r ResultsPredicatesWrapper) GetAllPredicatesForSimilarityID(similarityID, 
 	}, nil, nil
 }
 
-func (r ResultsPredicatesWrapper) ScaPredicateResult(vulnerabilityDetails []string, projectID string) (*wrappers.ScaPredicateResult, error) {
-	fmt.Println("Called 'ScaPredicateResult' in ResultsPredicatesMockWrapper")
+func (r ResultsPredicatesWrapper) GetScaPredicates(vulnerabilityDetails []string, projectID string) (*wrappers.ScaPredicateResult, error) {
+	fmt.Println("Called 'GetScaPredicates' in ResultsPredicatesMockWrapper")
 	return nil, nil
 }
