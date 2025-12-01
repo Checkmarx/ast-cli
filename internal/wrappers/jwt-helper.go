@@ -96,7 +96,7 @@ func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err err
 	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxDevAssistType)
 
 	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
-	licenseDetails["scan.config.plugins.cxonedevassist"] = strconv.FormatBool(devAssistEnabled)
+	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(devAssistEnabled)
 	return licenseDetails, nil
 }
 
