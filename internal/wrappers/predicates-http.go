@@ -39,7 +39,7 @@ func (r *ResultsPredicatesHTTPWrapper) GetScaPredicates(vulnerabilityDetails []s
 		if len(vulnerabilityKeyVal) != params.KeyValuePairSize {
 			return nil, errors.Errorf("Invalid vulnerability details format: %s", vulnerability)
 		}
-		scaPredicateRequest[vulnerabilityKeyVal[0]] = vulnerabilityKeyVal[1]
+		scaPredicateRequest[strings.TrimSpace(vulnerabilityKeyVal[0])] = strings.TrimSpace(vulnerabilityKeyVal[1])
 	}
 	scaPredicateRequest["projectId"] = projectID
 	scaPredicateRequest["actionType"] = params.ChangeState

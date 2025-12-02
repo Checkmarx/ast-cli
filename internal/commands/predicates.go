@@ -286,7 +286,7 @@ func prepareScaTriagePayload(vulnerabilityDetails []string, comment, state, proj
 		if err != nil {
 			return nil, err
 		}
-		scaTriageInfo[vulnerabilityKeyVal[0]] = strings.TrimSpace(vulnerabilityKeyVal[1])
+		scaTriageInfo[strings.TrimSpace(vulnerabilityKeyVal[0])] = strings.TrimSpace(vulnerabilityKeyVal[1])
 	}
 
 	if scaTriageInfo["packageName"] == nil && scaTriageInfo["packagename"] == nil {
