@@ -107,45 +107,6 @@ func (r *ResultsPredicatesHTTPWrapper) SetPath(newPath string) {
 	r.path = newPath
 }
 
-func (r *ResultsPredicatesHTTPWrapper) PredicateScaState(predicate *ScaPredicateRequest) (*WebError, error) {
-	clientTimeout := viper.GetUint(params.ClientTimeoutKey)
-	jsonBody, err := json.Marshal(predicate)
-	if err != nil {
-		return nil, err
-	}
-	var scaTriageAPIPath string
-
-	scaTriageAPIPath = viper.GetString(params.ScaResultsPredicatesPathEnv)
-	logger.PrintIfVerbose(fmt.Sprintf("Sending POST request to  %s", scaTriageAPIPath))
-	logger.PrintIfVerbose(fmt.Sprintf("Request Payload:  %s", string(jsonBody)))
-
-	r.SetPath(scaTriageAPIPath)
-
-	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(jsonBody), true, clientTimeout)
-	if err != nil {
-		return nil, err
-	}
-	logger.PrintIfVerbose(fmt.Sprintf("Response : %s", resp.Status))
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	switch resp.StatusCode {
-	case http.StatusOK, http.StatusCreated:
-		fmt.Println("Predicate updated successfully.")
-		return nil, nil
-	case http.StatusForbidden:
-		return nil, errors.Errorf("You do not have permission to update state")
-	case http.StatusNotFound:
-		return nil, errors.Errorf("Predicate not found.")
-	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, errors.Errorf("Predicate bad request.")
-
-	default:
-		return nil, errors.Errorf("response status code %d", resp.StatusCode)
-	}
-}
-
 func (r ResultsPredicatesHTTPWrapper) PredicateSeverityAndState(predicate interface{}, scanType string) (
 	*WebError, error,
 ) {
