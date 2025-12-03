@@ -27,6 +27,21 @@ func (f FeatureFlagsMockWrapper) GetSpecificFlag(specificFlag string) (*wrappers
 		fmt.Println(FFErr)
 		return nil, FFErr
 	}
+
+	// If Flags (plural) is set, search for the specific flag by name
+	if len(Flags) > 0 {
+		for _, flag := range Flags {
+			if flag.Name == specificFlag {
+				fmt.Println("Returning flag from Flags collection:", flag.Status, "for flag name:", flag.Name)
+				return &wrappers.FeatureFlagResponseModel{Name: flag.Name, Status: flag.Status}, nil
+			}
+		}
+		// If flag not found in collection, return default (false)
+		fmt.Println("Flag not found in Flags collection, returning default (false) for flag:", specificFlag)
+		return &wrappers.FeatureFlagResponseModel{Name: specificFlag, Status: false}, nil
+	}
+
+	// Otherwise, return the single Flag (backward compatibility)
 	fmt.Println("Returning flag:", Flag.Status, "for flag name:", Flag.Name)
 	return &Flag, nil
 }

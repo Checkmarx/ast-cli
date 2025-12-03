@@ -9,6 +9,7 @@ import (
 
 func TestCreateScanAndProjectWithGroupFFTrue(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: true}}
+	defer clearFlags()
 	execCmdNilAssertion(
 		t,
 		"scan", "create", "--project-name", "new-project", "-b", "dummy_branch", "-s", ".", "--project-groups", "group",
@@ -17,6 +18,7 @@ func TestCreateScanAndProjectWithGroupFFTrue(t *testing.T) {
 
 func TestCreateScanAndProjectWithGroupFFFalse(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: false}}
+	defer clearFlags()
 	execCmdNilAssertion(
 		t,
 		"scan", "create", "--project-name", "new-project", "-b", "dummy_branch", "-s", ".", "--project-groups", "group",
@@ -24,6 +26,7 @@ func TestCreateScanAndProjectWithGroupFFFalse(t *testing.T) {
 }
 func TestCreateProjectWithGroupFFTrue(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: true}}
+	defer clearFlags()
 	execCmdNilAssertion(
 		t, "project", "create", "--project-name", "new-project", "--groups", "group",
 	)
@@ -31,6 +34,7 @@ func TestCreateProjectWithGroupFFTrue(t *testing.T) {
 
 func TestCreateProjectWithGroupFFFalse(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: false}}
+	defer clearFlags()
 	execCmdNilAssertion(
 		t,
 		"project", "create", "--project-name", "new-project", "--groups", "group",
@@ -39,6 +43,7 @@ func TestCreateProjectWithGroupFFFalse(t *testing.T) {
 
 func TestCreateScanForExistingProjectWithGroupFFTrue(t *testing.T) {
 	mock.Flags = wrappers.FeatureFlagsResponseModel{{Name: "ACCESS_MANAGEMENT_ENABLED", Status: true}}
+	defer clearFlags()
 	execCmdNilAssertion(
 		t,
 		"scan", "create", "--project-name", "MOCK", "-b", "dummy_branch", "-s", ".", "--project-groups", "group",

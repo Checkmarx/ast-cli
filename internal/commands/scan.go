@@ -124,6 +124,12 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
+	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Use 'true' or 'false'."
+	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: Git commit history scanning is not available. The flag will be ignored."
+	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag."
+	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: Commit History applies only to Secret Detection. The flag will be ignored."
+	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
+
 	jsonExt                  = ".json"
 	xmlExt                   = ".xml"
 	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
@@ -865,6 +871,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
@@ -991,9 +998,8 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2Flag.Status, userAllowedEngines[commonParams.RepositoryHealthType],
-		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.RepositoryHealthType],
+		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType], featureFlagsWrapper)
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -1369,11 +1375,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
-	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasRepositoryHealthLicense,
+	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]interface{}, error) {
 	scsEnabled := scanTypeEnabled(commonParams.ScsType)
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense, scsEnabled)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1404,6 +1411,12 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
+
+		// Set git commit history based on FF and validations
+		commitHistoryFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SscsCommitHistoryEnabled)
+		if gitCommitHistoryValue := getGitCommitHistoryValue(cmd, commitHistoryFlag.Status); gitCommitHistoryValue != "" {
+			scsConfig.GitCommitHistory = gitCommitHistoryValue
+		}
 	}
 
 	isScsEnginesFlagSet := scsEngines != ""
@@ -3480,6 +3493,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
+
+	// Validate git-commit-history flag
+	err = validateGitCommitHistoryFlag(cmd)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -3741,6 +3761,97 @@ func validateBooleanString(value string) error {
 		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
+}
+
+// validateGitCommitHistoryFlag validates the git-commit-history flag (needed for Secret Detection)
+func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+
+	err := validateBooleanString(gitCommitHistory)
+	if err != nil {
+		return errors.Errorf(gitCommitHistoryInvalidValueErrorMsg)
+	}
+
+	return nil
+}
+
+// getGitCommitHistoryValue determines the value for git commit history config based on flag and validations
+func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) string {
+	if !isFeatureFlagEnabled {
+		fmt.Println(gitCommitHistoryNotAvailableWarningMsg)
+		return ""
+	}
+
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+	gitCommitHistoryValue := strings.ToLower(gitCommitHistory)
+
+	if !validateGitCommitHistoryContext(cmd) {
+		return ""
+	}
+
+	return gitCommitHistoryValue
+}
+
+// validateGitCommitHistoryContext validates if the context is appropriate for functionality
+func validateGitCommitHistoryContext(cmd *cobra.Command) bool {
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.ScsType) {
+		fmt.Println(gitCommitHistoryNotSelectedWarningMsg)
+		return false
+	}
+
+	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines)
+	if scsScoreCardSelected && !scsSecretDetectionSelected {
+		fmt.Println(gitCommitHistoryNotApplicableWarningMsg)
+		return false
+	}
+
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	if !hasGitRepository(source) {
+		fmt.Println(gitCommitHistoryNoGitRepositoryWarningMsg)
+		return false
+	}
+
+	return true
+}
+
+// hasGitRepository checks if the source directory contains a Git repository
+func hasGitRepository(source string) bool {
+	if source == "" {
+		return false
+	}
+
+	sourceTrimmed := strings.TrimSpace(source)
+	info, err := os.Stat(sourceTrimmed)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+
+	// Check if .git exists in the root directory
+	gitPath := filepath.Join(sourceTrimmed, ".git")
+	if _, err := os.Stat(gitPath); err == nil {
+		return true
+	}
+
+	// fallback: search for .git in subdirectories
+	return searchGitInSubdirectories(sourceTrimmed)
+}
+
+// searchGitInSubdirectories walks through subdirectories to find a .git folder
+func searchGitInSubdirectories(sourcePath string) bool {
+	found := false
+	_ = filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if info.IsDir() && info.Name() == ".git" {
+			found = true
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return found
 }
 
 func parseArgs(input string) []string {
