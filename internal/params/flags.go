@@ -33,6 +33,8 @@ const (
 	AsyncFlag                      = "async"
 	WaitDelayFlag                  = "wait-delay"
 	ScanTimeoutFlag                = "scan-timeout"
+	ScanEnqueueRetriesFlag         = "scan-enqueue-retries"
+	ScanEnqueueRetryDelayFlag      = "scan-enqueue-retry-delay"
 	PolicyTimeoutFlag              = "policy-timeout"
 	IgnorePolicyFlag               = "ignore-policy"
 	SourceDirFilterFlag            = "file-filter"
