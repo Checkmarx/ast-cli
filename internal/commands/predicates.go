@@ -97,7 +97,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 	triageShowCmd.PersistentFlags().String(params.SimilarityIDFlag, "", "Similarity ID")
 	triageShowCmd.PersistentFlags().String(params.ProjectIDFlag, "", "Project ID")
 	triageShowCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
-	triageShowCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "List Vulnerabilities string")
+	triageShowCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "SCA Vulnerabilities details")
 
 	markFlagAsRequired(triageShowCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageShowCmd, params.ScanTypeFlag)
@@ -133,7 +133,7 @@ func triageUpdateSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesW
 	triageUpdateCmd.PersistentFlags().Int(params.CustomStateIDFlag, -1, "Specify the ID of the states that you would like to apply to this result")
 	triageUpdateCmd.PersistentFlags().String(params.CommentFlag, "", "Optional comment")
 	triageUpdateCmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
-	triageUpdateCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "List Vulnerabilities string")
+	triageUpdateCmd.PersistentFlags().StringSlice(params.VulnerabilitiesFlag, []string{}, "SCA Vulnerabilities details")
 
 	markFlagAsRequired(triageUpdateCmd, params.ProjectIDFlag)
 	markFlagAsRequired(triageUpdateCmd, params.ScanTypeFlag)
@@ -156,8 +156,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			return errors.Errorf("%s", "Multiple project-ids are not allowed.")
 		}
 
-		if strings.EqualFold(scanType, params.ScaType) {
-			// SCA
+		if strings.EqualFold(strings.ToLower(strings.TrimSpace(scanType)), params.ScaType) {
 			if len(vulnerabilityDetails) == 0 {
 				return errors.Errorf("%s", "Failed showing the predicate. Vulnerabilities are required for SCA triage")
 			}
@@ -171,7 +170,6 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			}
 			return nil
 		} else {
-			// other than SCA
 			predicatesCollection, errorModel, err = resultsPredicatesWrapper.GetAllPredicatesForSimilarityID(similarityID, projectID, scanType)
 			if err != nil {
 				return errors.Wrapf(err, "%s", "Failed showing the predicate")
