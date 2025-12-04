@@ -924,6 +924,7 @@ func printAPIsSecuritySummary(summary *wrappers.ResultSummary) {
 	if summary.HasAPISecurityDocumentation() {
 		fmt.Printf("              APIS DOCUMENTATION: %*d \n", defaultPaddingSize, summary.GetAPISecurityDocumentationTotal())
 	}
+	fmt.Printf("              Note: APIs vulnerability are part of SAST and therefore excluded from the TOTAL.\n")
 	fmt.Printf(tableLine + twoNewLines)
 }
 
