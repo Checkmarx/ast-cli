@@ -84,7 +84,7 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featur
 		}
 
 		if scanType == params.ScaType {
-			scaCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SCA_CUSTOM_STATES_ENABLED")
+			scaCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SCA_CUSTOM_STATES")
 			if !scaCustomStates.Status {
 				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
 			}
