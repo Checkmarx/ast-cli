@@ -62,7 +62,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.16"
+	containerImage                          = "checkmarx/kics:v2.1.17"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
