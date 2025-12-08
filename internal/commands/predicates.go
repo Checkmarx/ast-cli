@@ -69,27 +69,23 @@ func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featur
 			return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
 		}
 
-		if scanType == params.SastType || scanType == "" {
+		switch scanType {
+		case params.KicsType:
+			kicsCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "KICS_CUSTOM_STATES_ENABLED")
+			if !kicsCustomStates.Status {
+				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+			}
+		case params.ScaType:
+			scaCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SCA_CUSTOM_STATES")
+			if !scaCustomStates.Status {
+				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+			}
+		default:
 			sastCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SAST_CUSTOM_STATES_ENABLED")
 			if !sastCustomStates.Status {
 				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
 			}
 		}
-
-		if scanType == params.KicsType {
-			kicsCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "KICS_CUSTOM_STATES_ENABLED")
-			if !kicsCustomStates.Status {
-				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
-			}
-		}
-
-		if scanType == params.ScaType {
-			scaCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SCA_CUSTOM_STATES")
-			if !scaCustomStates.Status {
-				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
-			}
-		}
-
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)
 		if err != nil {
