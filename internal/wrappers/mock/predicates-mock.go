@@ -7,17 +7,17 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-type ResultsPredicatesWrapper struct {
+type ResultsPredicatesMockWrapper struct {
 }
 
-func (r ResultsPredicatesWrapper) PredicateSeverityAndState(predicate interface{}, scanType string) (
+func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate interface{}, scanType string) (
 	*wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'PredicateSeverityAndState' in ResultsPredicatesMockWrapper")
 	return nil, nil
 }
 
-func (r ResultsPredicatesWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
+func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarityID, projectID, scannerType string) (
 	*wrappers.PredicatesCollectionResponseModel, *wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'GetAllPredicatesForSimilarityID' in ResultsPredicatesMockWrapper")
@@ -44,7 +44,7 @@ func (r ResultsPredicatesWrapper) GetAllPredicatesForSimilarityID(similarityID, 
 	}, nil, nil
 }
 
-func (r ResultsPredicatesWrapper) GetScaPredicates(vulnerabilityDetails []string, projectID string) (*wrappers.ScaPredicateResult, error) {
+func (r ResultsPredicatesMockWrapper) GetScaPredicates(vulnerabilityDetails []string, projectID string) (*wrappers.ScaPredicateResult, error) {
 	fmt.Println("Called 'GetScaPredicates' in ResultsPredicatesMockWrapper")
 	return nil, nil
 }
