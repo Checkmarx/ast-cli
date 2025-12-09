@@ -61,9 +61,7 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper,
 func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
-		if scanType != "" {
-			scanType = strings.TrimSpace(strings.ToLower(scanType))
-		}
+		scanType = strings.TrimSpace(strings.ToLower(scanType))
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
 		if !flagResponse.Status {
 			return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
