@@ -131,7 +131,7 @@ const (
 	SingleValueSize              = 1
 	ChangeState                  = "ChangeState"
 	SimilarityIDFlag             = "similarity-id"
-	VulnerabilitiesFlag          = "vulnerabilities"
+	VulnerabilitiesFlag          = "vulnerability-identifiers"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
 	CustomStateIDFlag            = "state-id"
