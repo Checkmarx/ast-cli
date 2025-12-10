@@ -152,7 +152,7 @@ func TestIsCustomState(t *testing.T) {
 	}
 }
 func TestRunTriageUpdateWithNotFoundCustomState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 	clearFlags()
@@ -174,7 +174,7 @@ func TestRunTriageUpdateWithNotFoundCustomState(t *testing.T) {
 }
 
 func TestRunTriageUpdateWithCustomState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 	clearFlags()
@@ -196,7 +196,7 @@ func TestRunTriageUpdateWithCustomState(t *testing.T) {
 }
 
 func TestRunTriageUpdateWithSystemState(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 
@@ -691,7 +691,7 @@ func TestValidateVulnerabilityDetails(t *testing.T) {
 }
 
 func TestRunUpdateTriageCommandForSCA(t *testing.T) {
-	mockResultsPredicatesWrapper := &mock.ResultsPredicatesWrapper{}
+	mockResultsPredicatesWrapper := &mock.ResultsPredicatesMockWrapper{}
 	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
 
