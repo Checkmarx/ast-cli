@@ -184,10 +184,11 @@ func TestContainerImageValidation_MultipleImagesValidation(t *testing.T) {
 func TestContainerImageValidation_TarFiles(t *testing.T) {
 	// Create a temporary .tar file for testing
 	tempDir := t.TempDir()
-	validTarFile := filepath.Join(tempDir, "test-image.tar")
+	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
 	// Create an empty .tar file for testing
-	f, err := os.Create(validTarFile)
+	// Note: An empty tar file is NOT a valid container image, so it should fail during processing
+	f, err := os.Create(emptyTarFile)
 	assert.NilError(t, err, "Should create temp .tar file")
 	f.Close()
 
@@ -198,10 +199,10 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 		description   string
 	}{
 		{
-			name:          "ValidTarFile",
-			tarFile:       validTarFile,
-			shouldSucceed: true,
-			description:   "Valid .tar file path should be accepted",
+			name:          "EmptyTarFile",
+			tarFile:       emptyTarFile,
+			shouldSucceed: false,
+			description:   "Empty .tar file should fail during container resolution (not a valid container image)",
 		},
 		{
 			name:          "NonExistentTarFile",
@@ -239,33 +240,18 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 // TestContainerImageValidation_MixedTarAndRegularImages tests mixing .tar files with regular images
 func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
 	// Create a temporary .tar file for testing
+	// Note: An empty tar file is NOT a valid container image
 	tempDir := t.TempDir()
-	validTarFile := filepath.Join(tempDir, "test-image.tar")
+	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
-	f, err := os.Create(validTarFile)
+	f, err := os.Create(emptyTarFile)
 	assert.NilError(t, err, "Should create temp .tar file")
 	f.Close()
 
-	t.Run("ValidTarAndRegularImage", func(t *testing.T) {
+	t.Run("EmptyTarAndRegularImage", func(t *testing.T) {
+		// Empty tar file should fail during container resolution
 		createASTIntegrationTestCommand(t)
-		imageList := fmt.Sprintf("nginx:alpine,%s", validTarFile)
-		testArgs := []string{
-			"scan", "create",
-			flag(params.ProjectName), getProjectNameForScanTests(),
-			flag(params.SourcesFlag), "data/insecure.zip",
-			flag(params.ContainerImagesFlag), imageList,
-			flag(params.BranchFlag), "dummy_branch",
-			flag(params.ScanTypes), params.ContainersTypeFlag,
-			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
-		}
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty for mixed valid images")
-		assert.Assert(t, projectID != "", "Project ID should not be empty for mixed valid images")
-	})
-
-	t.Run("ValidTarAndInvalidRegularImage", func(t *testing.T) {
-		createASTIntegrationTestCommand(t)
-		imageList := fmt.Sprintf("nginx:,%s", validTarFile)
+		imageList := fmt.Sprintf("nginx:alpine,%s", emptyTarFile)
 		testArgs := []string{
 			"scan", "create",
 			flag(params.ProjectName), getProjectNameForScanTests(),
@@ -276,6 +262,22 @@ func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
 			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
 		err, _ := executeCommand(t, testArgs...)
-		assert.Assert(t, err != nil, "Expected error for mixed images with one invalid")
+		assert.Assert(t, err != nil, "Expected error for empty tar file mixed with valid images")
+	})
+
+	t.Run("EmptyTarAndInvalidRegularImage", func(t *testing.T) {
+		createASTIntegrationTestCommand(t)
+		imageList := fmt.Sprintf("nginx:,%s", emptyTarFile)
+		testArgs := []string{
+			"scan", "create",
+			flag(params.ProjectName), getProjectNameForScanTests(),
+			flag(params.SourcesFlag), "data/insecure.zip",
+			flag(params.ContainerImagesFlag), imageList,
+			flag(params.BranchFlag), "dummy_branch",
+			flag(params.ScanTypes), params.ContainersTypeFlag,
+			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+		}
+		err, _ := executeCommand(t, testArgs...)
+		assert.Assert(t, err != nil, "Expected error for mixed images with invalid")
 	})
 }
