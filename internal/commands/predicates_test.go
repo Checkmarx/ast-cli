@@ -445,7 +445,7 @@ func TestRunShowTriageCommandForSCAWithMultipleProjects(t *testing.T) {
 		"MOCK1,MOCK2",
 		"--scan-type",
 		"sca",
-		"--vulnerabilities",
+		"--vulnerability-identifiers",
 		"packageName=lodash,packageVersion=4.17.20,packageManager=npm",
 	)
 	assert.ErrorContains(t, err, "Multiple project-ids are not allowed")
@@ -700,7 +700,7 @@ func TestRunUpdateTriageCommandForSCA(t *testing.T) {
 		"--project-id", "MOCK",
 		"--state", "NOT_EXPLOITABLE",
 		"--scan-type", "sca",
-		"--vulnerabilities", "packageName=lodash,packageVersion=4.17.20,packageManager=npm",
+		"--vulnerability-identifiers", "packageName=lodash,packageVersion=4.17.20,packageManager=npm",
 		"--comment", "Testing SCA update",
 	})
 
