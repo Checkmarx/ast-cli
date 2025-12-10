@@ -124,10 +124,10 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Use 'true' or 'false'."
-	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: Git commit history scanning is not available. The flag will be ignored."
-	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: '--git-commit-history' was provided, but SCS is not selected. Ignoring this flag."
-	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: Commit History applies only to Secret Detection. The flag will be ignored."
+	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Valid values are: 'true' or 'false'"
+	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: --git-commit-history flag ignored because git commit history scanning is not available."
+	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: --git-commit-history flag ignored because scs was not specified in scan types."
+	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: --git-commit-history flag ignored because secret detection wasn't run on this scan."
 	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
 
 	jsonExt                  = ".json"
