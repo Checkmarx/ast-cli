@@ -17,7 +17,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
 	github.com/google/uuid v1.6.0
-	github.com/gookit/color v1.5.4
+	github.com/gookit/color v1.6.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jsumners/go-getport v1.0.0
 	github.com/mssola/user_agent v0.6.0
