@@ -1297,7 +1297,7 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType
 		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
 		if apiDocumentation != "" {
-			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+			apiSecConfig.SwaggerFilter = apiDocumentation
 		}
 		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
@@ -2900,11 +2900,13 @@ func isScanRunning(
 	}
 	if errorModel != nil {
 		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
-	} else if scanResponseModel != nil {
-		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
-			log.Println("Scan status: ", scanResponseModel.Status)
-			return true, nil
-		}
+	}
+	if scanResponseModel == nil {
+		return true, nil // Retry if response is unexpectedly nil
+	}
+	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
+		log.Println("Scan status: ", scanResponseModel.Status)
+		return true, nil
 	}
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
