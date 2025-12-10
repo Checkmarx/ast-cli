@@ -1297,7 +1297,7 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType
 		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
 		if apiDocumentation != "" {
-			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+			apiSecConfig.SwaggerFilter = apiDocumentation
 		}
 		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
