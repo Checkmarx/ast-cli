@@ -2640,6 +2640,23 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			expectedError:  "Invalid value for --container-images flag. The 'dir:' prefix is not supported",
 		},
 
+		// ==================== Unknown Prefix Tests ====================
+		{
+			name:           "Invalid - unknown prefix with tar file",
+			containerImage: "invalid-prefix:test-image.tar",
+			expectedError:  "Invalid value for --container-images flag. Unknown prefix 'invalid-prefix:'",
+		},
+		{
+			name:           "Invalid - typo in prefix (dcoker)",
+			containerImage: "dcoker:my-image.tar",
+			expectedError:  "Invalid value for --container-images flag. Unknown prefix 'dcoker:'",
+		},
+		{
+			name:           "Invalid - custom prefix with tar",
+			containerImage: "myprefix:archive.tar",
+			expectedError:  "Invalid value for --container-images flag. Unknown prefix 'myprefix:'",
+		},
+
 		// ==================== Edge Cases ====================
 		{
 			name:           "Complex registry with multiple colons",

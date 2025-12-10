@@ -3580,6 +3580,14 @@ func validateContainerImageFormat(containerImage string) error {
 			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
 		}
 
+		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
+		// If the "tag" ends with .tar and the "image name" looks like a simple prefix (no / or .)
+		// then the user likely intended to use a prefix format but used an unknown prefix
+		lowerTag := strings.ToLower(imageTag)
+		if strings.HasSuffix(lowerTag, ".tar") && !strings.Contains(imageName, "/") && !strings.Contains(imageName, ".") {
+			return errors.Errorf("Invalid value for --container-images flag. Unknown prefix '%s:'. Supported prefixes are: docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:", imageName)
+		}
+
 		return nil // Valid image:tag format
 	}
 
