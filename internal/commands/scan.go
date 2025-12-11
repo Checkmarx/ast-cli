@@ -62,7 +62,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.16"
+	containerImage                          = "checkmarx/kics:v2.1.17"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -1297,7 +1297,7 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType
 		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
 		if apiDocumentation != "" {
-			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+			apiSecConfig.SwaggerFilter = apiDocumentation
 		}
 		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
@@ -2900,11 +2900,13 @@ func isScanRunning(
 	}
 	if errorModel != nil {
 		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
-	} else if scanResponseModel != nil {
-		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
-			log.Println("Scan status: ", scanResponseModel.Status)
-			return true, nil
-		}
+	}
+	if scanResponseModel == nil {
+		return true, nil // Retry if response is unexpectedly nil
+	}
+	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
+		log.Println("Scan status: ", scanResponseModel.Status)
+		return true, nil
 	}
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
@@ -3556,6 +3558,14 @@ func validateContainerImageFormat(containerImage string) error {
 		// For prefixed inputs, also validate the prefix-specific requirements
 		if hasKnownSource {
 			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+		}
+
+		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
+		// If the "tag" ends with .tar and the "image name" looks like a simple prefix (no / or .)
+		// then the user likely intended to use a prefix format but used an unknown prefix
+		lowerTag := strings.ToLower(imageTag)
+		if strings.HasSuffix(lowerTag, ".tar") && !strings.Contains(imageName, "/") && !strings.Contains(imageName, ".") {
+			return errors.Errorf("Invalid value for --container-images flag. Unknown prefix '%s:'. Supported prefixes are: docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:", imageName)
 		}
 
 		return nil // Valid image:tag format
