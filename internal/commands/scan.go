@@ -3826,13 +3826,18 @@ func validateGitCommitHistoryContext(cmd *cobra.Command) bool {
 	return true
 }
 
-// hasGitRepository checks if the source directory contains a Git repository
+// hasGitRepository checks if the source directory contains a Git repository or is a Git URL
 func hasGitRepository(source string) bool {
 	if source == "" {
 		return false
 	}
 
 	sourceTrimmed := strings.TrimSpace(source)
+
+	if util.IsGitURL(sourceTrimmed) {
+		return true
+	}
+
 	info, err := os.Stat(sourceTrimmed)
 	if err != nil || !info.IsDir() {
 		return false
