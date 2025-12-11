@@ -82,4 +82,8 @@ const (
 	RiskManagementPathEnv               = "CX_RISK_MANAGEMENT_PATH"
 	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 	RealtimeScannerPathEnv              = "CX_REALTIME_SCANNER_PATH"
+	StartMultiPartUploadPathEnv         = "CX_START_MULTIPART_UPLOAD_PATH"
+	MultipartPresignedPathEnv           = "CX_MULTIPART_PRESIGNED_URL_PATH"
+	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"
+	MultipartFileSizeEnv                = "MULTIPART_FILE_SIZE"
 )

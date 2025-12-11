@@ -72,7 +72,7 @@ jobs:
           echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
       - name: Setup Docker on macOS
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@v1.0.1
+        uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
       - name: Test docker
         if: inputs.dev == false
         run: |
@@ -87,7 +87,7 @@ jobs:
 
       - name: Install Cosign
         if: inputs.dev == false
-        uses: sigstore/cosign-installer@v3.2.0
+        uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 #v3.2.0
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2

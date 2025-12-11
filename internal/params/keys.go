@@ -81,4 +81,8 @@ var (
 	RiskManagementPathKey               = strings.ToLower(RiskManagementPathEnv)
 	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 	RealtimeScannerPathKey              = strings.ToLower(RealtimeScannerPathEnv)
+	StartMultiPartUploadPathKey         = strings.ToLower(StartMultiPartUploadPathEnv)
+	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
+	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
+	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
 )
