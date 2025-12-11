@@ -124,11 +124,12 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt                  = ".json"
-	xmlExt                   = ".xml"
-	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix      = "--branch-primary="
-	OverridePolicyManagement = "override-policy-management"
+	jsonExt                      = ".json"
+	xmlExt                       = ".xml"
+	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix          = "--branch-primary="
+	OverridePolicyManagement     = "override-policy-management"
+	defaultScanEnqueueRetryDelay = 5
 )
 
 var (
@@ -715,7 +716,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().Int(
 		commonParams.ScanEnqueueRetryDelayFlag,
-		5,
+		defaultScanEnqueueRetryDelay,
 		"Base delay in seconds between scan enqueue retry attempts with exponential backoff (default: 5)",
 	)
 	createScanCmd.PersistentFlags().StringP(

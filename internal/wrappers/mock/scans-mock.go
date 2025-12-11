@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const ErrCodeMaxQueuedReached = 142
+
 var HasScs bool
 
 type ScansMockWrapper struct {
@@ -23,7 +25,7 @@ func (m *ScansMockWrapper) Create(scanModel *wrappers.Scan) (*wrappers.ScanRespo
 	fmt.Println("Called Create in ScansMockWrapper")
 	if scanModel.Project.ID == "fake-queue-capacity-error-id" {
 		return nil, &wrappers.ErrorModel{
-			Code:    142,
+			Code:    ErrCodeMaxQueuedReached,
 			Message: "Failed to enqueue scan. Max Queued reached",
 			Type:    "ERROR",
 		}, nil

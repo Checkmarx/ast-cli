@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	failedToParseGetAll        = "Failed to parse list response"
-	failedToParseTags          = "Failed to parse tags response"
-	failedToParseBranches      = "Failed to parse branches response"
-	queueCapacityErrorCode     = 142
+	failedToParseGetAll    = "Failed to parse list response"
+	failedToParseTags      = "Failed to parse tags response"
+	failedToParseBranches  = "Failed to parse branches response"
+	queueCapacityErrorCode = 142
 )
 
 type ScansHTTPWrapper struct {
@@ -64,9 +64,11 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 
 		// Parse response
 		scanResp, errorModel, err = handleScanResponseWithBody(resp, err, http.StatusCreated)
-
-		// Close response body
+		// Close response body explicitly after parsing
 		_ = resp.Body.Close()
+		if err != nil {
+			return nil, nil, err
+		}
 
 		// Check if it's a queue capacity error and we have retries left
 		if isQueueCapacityError(errorModel) && attempt < scanEnqueueRetries {
