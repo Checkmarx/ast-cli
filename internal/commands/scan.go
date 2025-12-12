@@ -1434,7 +1434,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 func isScsEnabled(scsLicensingV2 bool) bool {
 	if scsLicensingV2 {
-		return scanTypeEnabled(commonParams.SecretDetectionType) || scanTypeEnabled(commonParams.RepositoryHealthType)
+		return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
+			scanTypeEnabled(commonParams.RepositoryHealthType)
 	}
 	return scanTypeEnabled(commonParams.ScsType)
 }
