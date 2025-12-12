@@ -1,6 +1,7 @@
 package wrappers
 
 import (
+	"strconv"
 	"strings"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -23,6 +24,7 @@ type JWTStruct struct {
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
+	GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
@@ -74,6 +76,30 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 	}
 
 	return getDefaultEngines(scsLicensingV2Flag.Status), nil
+}
+
+func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+	licenseDetails = make(map[string]string)
+
+	jwtStruct, err := getJwtStruct()
+	if err != nil {
+		return nil, err
+	}
+
+	assistEnabled := false
+	standaloneEnabled := false
+	for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
+		if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneAssistType) ||
+			strings.EqualFold(allowedEngine, commonParams.AIProtectionType) {
+			assistEnabled = true
+		} else if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneStandAloneType) {
+			standaloneEnabled = true
+		}
+	}
+
+	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
+	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
+	return licenseDetails, nil
 }
 
 func getJwtStruct() (*JWTStruct, error) {

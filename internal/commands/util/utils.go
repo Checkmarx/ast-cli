@@ -35,6 +35,7 @@ func NewUtilsCommand(
 	prWrapper wrappers.PRWrapper,
 	learnMoreWrapper wrappers.LearnMoreWrapper,
 	tenantWrapper wrappers.TenantConfigurationWrapper,
+	jwtWrapper wrappers.JWTWrapper,
 	chatWrapper wrappers.ChatWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	scansWrapper wrappers.ScansWrapper,
@@ -76,7 +77,7 @@ func NewUtilsCommand(
 
 	learnMoreCmd := NewLearnMoreCommand(learnMoreWrapper)
 
-	tenantCmd := NewTenantConfigurationCommand(tenantWrapper)
+	tenantCmd := NewTenantConfigurationCommand(tenantWrapper, jwtWrapper, featureFlagsWrapper)
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
