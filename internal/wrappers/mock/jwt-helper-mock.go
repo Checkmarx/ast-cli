@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -74,4 +75,20 @@ func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 
 func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error) {
 	return true, nil
+}
+
+func (j *JWTMockWrapper) GetLicenseDetails(featureFlagsWrapper wrappers.FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+	licenseDetails = make(map[string]string)
+
+	assistEnabled := (j.CheckmarxOneAssistEnabled != CheckmarxOneAssistDisabled) || (j.AIEnabled != AIProtectionDisabled)
+	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
+
+	standaloneEnabled := true
+	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
+
+	for _, engine := range engines {
+		licenseDetails[engine] = "true"
+	}
+
+	return licenseDetails, nil
 }
