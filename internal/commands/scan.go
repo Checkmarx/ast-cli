@@ -1371,7 +1371,7 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
 	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	scsEnabled := scanTypeEnabled(commonParams.ScsType)
+	scsEnabled := isScsEnabled(scsLicensingV2)
 	if !scsEnabled {
 		return nil, nil
 	}
@@ -1430,6 +1430,13 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 	scsMapConfig[resultsMapValue] = &scsConfig
 	return scsMapConfig, nil
+}
+
+func isScsEnabled(scsLicensingV2 bool) bool {
+	if scsLicensingV2 {
+		return scanTypeEnabled(commonParams.SecretDetectionType) || scanTypeEnabled(commonParams.RepositoryHealthType)
+	}
+	return scanTypeEnabled(commonParams.ScsType)
 }
 
 func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense bool) bool {
