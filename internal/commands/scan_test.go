@@ -4843,6 +4843,26 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			expectedValue:  "false",
 			expectWarnings: "",
 		},
+		{
+			name:           "Flag true with zip file - returns true",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         "/path/to/source.zip",
+			ffEnabled:      true,
+			expectedValue:  "true",
+			expectWarnings: "",
+		},
+		{
+			name:           "Flag false with zip file - returns false",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         "/path/to/source.zip",
+			ffEnabled:      true,
+			expectedValue:  "false",
+			expectWarnings: "",
+		},
 	}
 
 	for _, tt := range tests {
