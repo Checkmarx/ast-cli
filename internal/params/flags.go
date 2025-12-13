@@ -130,7 +130,10 @@ const (
 		"Example: scan --threshold \"sast-high=10;sca-high=5;iac-security-low=10\""
 	KeyValuePairSize             = 2
 	WaitDelayDefault             = 5
+	SingleValueSize              = 1
+	ChangeState                  = "ChangeState"
 	SimilarityIDFlag             = "similarity-id"
+	VulnerabilitiesFlag          = "vulnerability-identifiers"
 	SeverityFlag                 = "severity"
 	StateFlag                    = "state"
 	CustomStateIDFlag            = "state-id"
@@ -291,6 +294,7 @@ const (
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
 	CheckmarxOneAssistType         = "Checkmarx One Assist"
+	CheckmarxDevAssistType         = "Checkmarx Developer Assist"
 	ContainersType                 = "containers"
 	APIDocumentationFlag           = "apisec-swagger-filter"
 	IacType                        = "iac-security"
