@@ -1371,9 +1371,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
 	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	scsEnabled := scanTypeEnabled(commonParams.ScsType)
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	scsEnabled := isScsEnabled(scsLicensingV2)
+	if !scsEnabled {
+		return nil, nil
+	}
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1429,18 +1432,26 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 	return scsMapConfig, nil
 }
 
-func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
+func isScsEnabled(scsLicensingV2 bool) bool {
+	if scsLicensingV2 {
+		return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
+			scanTypeEnabled(commonParams.RepositoryHealthType)
+	}
+	return scanTypeEnabled(commonParams.ScsType)
+}
+
+func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense bool) bool {
 	if scsLicensingV2 {
 		return hasRepositoryHealthLicense
 	}
-	return hasScsLicense
+	return true
 }
 
-func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, hasScsLicense bool) bool {
+func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) bool {
 	if scsLicensingV2 {
 		return hasSecretDetectionLicense
 	}
-	return hasScsLicense && hasEnterpriseSecretsLicense
+	return hasEnterpriseSecretsLicense
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {

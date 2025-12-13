@@ -292,3 +292,50 @@ func TestTriageShowAndUpdateWithCustomStates(t *testing.T) {
 
 	assert.Assert(t, found, "Updated predicate should have state set to state2")
 }
+
+func TestScaUpdateWithVulnerabilityDetails(t *testing.T) {
+
+	fmt.Println("Testing the command 'triage update' with scan-type sca using vulnerability-details.")
+
+	_, projectID := getRootScan(t)
+
+	// Hardcoded vulnerability details for testing SCA triage
+	packageName := "Maven-org.apache.tomcat.embed:tomcat-embed-core"
+	packageVersion := "9.0.14"
+	vulnerabilityID := "CVE-2024-56337"
+	packageManager := "maven"
+	state := "NOT_EXPLOITABLE"
+	comment := "Testing CLI Command for triage with SCA scan type."
+
+	args := []string{
+		"triage", "update",
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packagename=%s", packageName),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packageversion=%s", packageVersion),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("vulnerabilityId=%s", vulnerabilityID),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packageManager=%s", packageManager),
+		flag(params.StateFlag), state,
+		flag(params.CommentFlag), comment,
+		flag(params.ScanTypeFlag), params.ScaType,
+	}
+
+	err, outputBufferForStep1 := executeCommand(t, args...)
+	_, readingError := io.ReadAll(outputBufferForStep1)
+	assert.NilError(t, readingError, "Reading result should pass")
+
+	assert.NilError(t, err, "Updating the SCA predicate with vulnerability-details should pass.")
+
+	fmt.Println("Testing the command 'triage show' with scan-type sca to verify the update.")
+	outputBufferForStep2 := executeCmdNilAssertion(
+		t, "SCA Predicates should be fetched.", "triage", "show",
+		flag(params.FormatFlag), printer.FormatJSON,
+		flag(params.ProjectIDFlag), projectID,
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packagename=%s", packageName),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packageversion=%s", packageVersion),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("vulnerabilityId=%s", vulnerabilityID),
+		flag(params.VulnerabilitiesFlag), fmt.Sprintf("packageManager=%s", packageManager),
+		flag(params.ScanTypeFlag), params.ScaType,
+	)
+
+	fmt.Println(outputBufferForStep2)
+}
