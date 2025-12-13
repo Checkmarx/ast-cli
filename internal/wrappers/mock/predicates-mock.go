@@ -10,7 +10,7 @@ import (
 type ResultsPredicatesMockWrapper struct {
 }
 
-func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate *wrappers.PredicateRequest, scanType string) (
+func (r ResultsPredicatesMockWrapper) PredicateSeverityAndState(predicate interface{}, scanType string) (
 	*wrappers.WebError, error,
 ) {
 	fmt.Println("Called 'PredicateSeverityAndState' in ResultsPredicatesMockWrapper")
@@ -42,4 +42,9 @@ func (r ResultsPredicatesMockWrapper) GetAllPredicatesForSimilarityID(similarity
 			},
 		},
 	}, nil, nil
+}
+
+func (r ResultsPredicatesMockWrapper) GetScaPredicates(vulnerabilityDetails []string, projectID string) (*wrappers.ScaPredicateResult, error) {
+	fmt.Println("Called 'GetScaPredicates' in ResultsPredicatesMockWrapper")
+	return nil, nil
 }

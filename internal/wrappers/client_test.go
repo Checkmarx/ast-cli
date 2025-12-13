@@ -192,7 +192,7 @@ func TestSetAgentNameAndOrigin(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 
 	userAgent := req.Header.Get("User-Agent")
 	origin := req.Header.Get("origin")
