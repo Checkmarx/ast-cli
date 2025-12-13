@@ -1,13 +1,18 @@
 package wrappers
 
 import (
+	"os/user"
 	"strconv"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 // JWTStruct model used to get all jwt fields
@@ -24,7 +29,7 @@ type JWTStruct struct {
 
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
-	GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error)
+	GetLicenseDetails() (licenseDetails map[string]string, err error)
 	IsAllowedEngine(engine string) (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
@@ -78,7 +83,7 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 	return getDefaultEngines(scsLicensingV2Flag.Status), nil
 }
 
-func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (licenseDetails map[string]string, err error) {
+func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
 	licenseDetails = make(map[string]string)
 
 	jwtStruct, err := getJwtStruct()
@@ -86,20 +91,23 @@ func (*JWTStruct) GetLicenseDetails(featureFlagsWrapper FeatureFlagsWrapper) (li
 		return nil, err
 	}
 
-	assistEnabled := false
-	standaloneEnabled := false
-	for _, allowedEngine := range jwtStruct.AstLicense.LicenseData.AllowedEngines {
-		if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneAssistType) ||
-			strings.EqualFold(allowedEngine, commonParams.AIProtectionType) {
-			assistEnabled = true
-		} else if strings.EqualFold(allowedEngine, commonParams.CheckmarxOneStandAloneType) {
-			standaloneEnabled = true
-		}
-	}
+	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
+		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
+	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxDevAssistType)
 
 	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
-	licenseDetails["scan.config.plugins.standalone"] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(devAssistEnabled)
 	return licenseDetails, nil
+}
+
+// containsIgnoreCase returns true if target exists in arr using case-insensitive comparison
+func containsIgnoreCase(arr []string, target string) bool {
+	for _, s := range arr {
+		if strings.EqualFold(s, target) {
+			return true
+		}
+	}
+	return false
 }
 
 func getJwtStruct() (*JWTStruct, error) {
@@ -183,4 +191,46 @@ func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (hasPe
 		}
 	}
 	return permission, nil
+}
+
+func GetUniqueID() string {
+	var uniqueID string
+	// Check License first
+	jwtWrapper := NewJwtWrapper()
+	isAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxDevAssistType)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to check engine allowance: " + err.Error())
+		return ""
+	}
+	if !isAllowed {
+		logger.PrintIfVerbose("User does not have permission to standalone dev assists feature")
+		return ""
+	}
+
+	// Check if unique id is already set
+	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
+	if uniqueID != "" {
+		return uniqueID
+	}
+
+	// Generate new unique id
+	currentUser, err := user.Current()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get user: " + err.Error())
+		return ""
+	}
+	username := currentUser.Username
+	username = strings.TrimSpace(username)
+	if strings.Contains(username, "\\") {
+		username = strings.Split(username, "\\")[1]
+	}
+	uniqueID = uuid.New().String() + "_" + username
+	viper.Set(commonParams.UniqueIDConfigKey, uniqueID)
+	configFilePath, _ := configuration.GetConfigFilePath()
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.UniqueIDConfigKey, uniqueID)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to write config: " + err.Error())
+		return ""
+	}
+	return uniqueID
 }
