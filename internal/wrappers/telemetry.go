@@ -10,6 +10,7 @@ type DataForAITelemetry struct {
 	ScanType        string `json:"scanType"`
 	Status          string `json:"status"`
 	TotalCount      int    `json:"totalCount"`
+	UniqueID        string `json:"uniqueId"`
 }
 
 type TelemetryWrapper interface {

@@ -34,7 +34,12 @@ func EnsureLicense(jwtWrapper wrappers.JWTWrapper) error {
 		return errors.Wrap(err, "failed to check AIProtectionType engine allowance")
 	}
 
-	if aiAllowed || assistAllowed {
+	devAssistAllowed, err := jwtWrapper.IsAllowedEngine(params.CheckmarxDevAssistType)
+	if err != nil {
+		return errors.Wrap(err, "failed to check Checkmarx Developer Assist engine allowance")
+	}
+
+	if aiAllowed || assistAllowed || devAssistAllowed {
 		return nil
 	}
 	return errors.New(errorconstants.ErrMissingAIFeatureLicense)
