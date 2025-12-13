@@ -124,11 +124,12 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt                  = ".json"
-	xmlExt                   = ".xml"
-	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix      = "--branch-primary="
-	OverridePolicyManagement = "override-policy-management"
+	jsonExt                      = ".json"
+	xmlExt                       = ".xml"
+	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix          = "--branch-primary="
+	OverridePolicyManagement     = "override-policy-management"
+	defaultScanEnqueueRetryDelay = 5
 )
 
 var (
@@ -708,6 +709,16 @@ func scanCreateSubCommand(
 		0,
 		"Cancel the scan and fail after the timeout in minutes",
 	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetriesFlag,
+		0,
+		"Number of retry attempts for scan enqueue failures due to queue capacity (default: 0, no retries)",
+	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetryDelayFlag,
+		defaultScanEnqueueRetryDelay,
+		"Base delay in seconds between scan enqueue retry attempts with exponential backoff (default: 5)",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
@@ -856,6 +867,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetriesKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetriesFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetryDelayKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetryDelayFlag))
 	if err != nil {
 		log.Fatal(err)
 	}

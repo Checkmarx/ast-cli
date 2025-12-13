@@ -6,6 +6,8 @@ var (
 	CustomStatesAPIPathKey              = strings.ToLower(CustomStatesAPIPathEnv)
 	TenantKey                           = strings.ToLower(TenantEnv)
 	BranchKey                           = strings.ToLower(BranchEnv)
+	ScanEnqueueRetriesKey               = strings.ToLower(ScanEnqueueRetriesEnv)
+	ScanEnqueueRetryDelayKey            = strings.ToLower(ScanEnqueueRetryDelayEnv)
 	BaseURIKey                          = strings.ToLower(BaseURIEnv)
 	ProxyKey                            = strings.ToLower(ProxyEnv)
 	ProxyTypeKey                        = strings.ToLower(ProxyTypeEnv)
