@@ -4626,15 +4626,165 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 	gitDir := filepath.Join(tempDir, ".git")
 	_ = os.Mkdir(gitDir, 0755)
 
-	// Create a directory without .git
-	tempDirNoGit := t.TempDir()
-
 	// Create a directory with .git in a subdirectory
 	tempDirWithSubGit := t.TempDir()
 	subDir := filepath.Join(tempDirWithSubGit, "project1")
 	_ = os.Mkdir(subDir, 0755)
 	gitDirSub := filepath.Join(subDir, ".git")
 	_ = os.Mkdir(gitDirSub, 0755)
+
+	tests := []struct {
+		name          string
+		flagValue     string
+		scanTypes     string
+		scsEngines    string
+		source        string
+		ffEnabled     bool
+		expectedValue string
+	}{
+		{
+			name:          "Flag true with valid context - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with valid context - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with git in subdirectory - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDirWithSubGit,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with both engines - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection,scorecard",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with both engines - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection,scorecard",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with HTTPS GitHub URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with HTTPS GitLab URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://gitlab.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with SSH git@ format URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "git@github.com:user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with SSH protocol URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "ssh://git@github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with git URL - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with zip file - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "/path/to/source.zip",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with zip file - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "/path/to/source.zip",
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project with git commit history",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
+
+			_ = cmdCommand.Execute()
+
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, tt.scanTypes)
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, tt.scsEngines)
+			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tt.source)
+
+			result := getGitCommitHistoryValue(cmdCommand, tt.ffEnabled)
+
+			assert.Equal(t, tt.expectedValue, result, "Expected value=%s, got=%s", tt.expectedValue, result)
+		})
+	}
+}
+
+func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
+	// Create a temporary directory with .git for testing
+	tempDir := t.TempDir()
+	gitDir := filepath.Join(tempDir, ".git")
+	_ = os.Mkdir(gitDir, 0755)
+
+	// Create a directory without .git
+	tempDirNoGit := t.TempDir()
 
 	tests := []struct {
 		name           string
@@ -4647,15 +4797,6 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 		expectWarnings string
 	}{
 		{
-			name:          "Flag true with valid context - returns true",
-			flagValue:     "true",
-			scanTypes:     "scs",
-			scsEngines:    "secret-detection",
-			source:        tempDir,
-			ffEnabled:     true,
-			expectedValue: "true",
-		},
-		{
 			name:           "Flag true with FF disabled - returns empty with warning",
 			flagValue:      "true",
 			scanTypes:      "scs",
@@ -4664,16 +4805,6 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			ffEnabled:      false,
 			expectedValue:  "",
 			expectWarnings: gitCommitHistoryNotAvailableWarningMsg,
-		},
-		{
-			name:           "Flag false with valid context - returns false",
-			flagValue:      "false",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         tempDir,
-			ffEnabled:      true,
-			expectedValue:  "false",
-			expectWarnings: "",
 		},
 		{
 			name:           "Flag false with FF disabled - returns empty with warning",
@@ -4745,111 +4876,10 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			expectedValue:  "",
 			expectWarnings: gitCommitHistoryNoGitRepositoryWarningMsg,
 		},
-		{
-			name:           "Flag true with git in subdirectory - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         tempDirWithSubGit,
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with both engines - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection,scorecard",
-			source:         tempDir,
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag false with both engines - returns false",
-			flagValue:      "false",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection,scorecard",
-			source:         tempDir,
-			ffEnabled:      true,
-			expectedValue:  "false",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with HTTPS GitHub URL - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "https://github.com/user/repo.git",
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with HTTPS GitLab URL - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "https://gitlab.com/user/repo.git",
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with SSH git@ format URL - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "git@github.com:user/repo.git",
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with SSH protocol URL - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "ssh://git@github.com/user/repo.git",
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag false with git URL - returns false",
-			flagValue:      "false",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "https://github.com/user/repo.git",
-			ffEnabled:      true,
-			expectedValue:  "false",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag true with zip file - returns true",
-			flagValue:      "true",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "/path/to/source.zip",
-			ffEnabled:      true,
-			expectedValue:  "true",
-			expectWarnings: "",
-		},
-		{
-			name:           "Flag false with zip file - returns false",
-			flagValue:      "false",
-			scanTypes:      "scs",
-			scsEngines:     "secret-detection",
-			source:         "/path/to/source.zip",
-			ffEnabled:      true,
-			expectedValue:  "false",
-			expectWarnings: "",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create command with flags
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
 				Short: "Scan a project with git commit history",
@@ -4882,14 +4912,9 @@ func TestGetGitCommitHistoryValue(t *testing.T) {
 			r.Close()
 			output := buf.String()
 
-			// Check result
 			assert.Equal(t, tt.expectedValue, result, "Expected value=%s, got=%s", tt.expectedValue, result)
-
-			// Check warnings
-			if tt.expectWarnings != "" {
-				assert.Assert(t, strings.Contains(output, tt.expectWarnings),
-					"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
-			}
+			assert.Assert(t, strings.Contains(output, tt.expectWarnings),
+				"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
 		})
 	}
 }
