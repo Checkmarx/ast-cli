@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
 const (
-	failedToParseGetAll   = "Failed to parse list response"
-	failedToParseTags     = "Failed to parse tags response"
-	failedToParseBranches = "Failed to parse branches response"
+	failedToParseGetAll    = "Failed to parse list response"
+	failedToParseTags      = "Failed to parse tags response"
+	failedToParseBranches  = "Failed to parse branches response"
+	queueCapacityErrorCode = 142
 )
 
 type ScansHTTPWrapper struct {
@@ -29,6 +32,11 @@ func NewHTTPScansWrapper(path string) ScansWrapper {
 	}
 }
 
+// isQueueCapacityError checks if the error is due to queue capacity limits (error code 142)
+func isQueueCapacityError(errorModel *ErrorModel) bool {
+	return errorModel != nil && errorModel.Code == queueCapacityErrorCode
+}
+
 func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(model)
@@ -36,19 +44,51 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 		return nil, nil, err
 	}
 
-	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
-	}
-	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
+	// Get scan enqueue retry configuration
+	scanEnqueueRetries := viper.GetInt(commonParams.ScanEnqueueRetriesKey)
+	scanEnqueueRetryDelay := viper.GetInt(commonParams.ScanEnqueueRetryDelayKey)
+
+	var scanResp *ScanResponseModel
+	var errorModel *ErrorModel
+
+	// Retry loop for scan creation (queue capacity errors)
+	for attempt := 0; attempt <= scanEnqueueRetries; attempt++ {
+		// Standard HTTP retry (for 502, 401)
+		fn := func() (*http.Response, error) {
+			return SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 		}
-	}()
-	return handleScanResponseWithBody(resp, err, http.StatusCreated)
+		resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// Parse response
+		scanResp, errorModel, err = handleScanResponseWithBody(resp, err, http.StatusCreated)
+		// Close response body explicitly after parsing
+		_ = resp.Body.Close()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		// Check if it's a queue capacity error and we have retries left
+		if isQueueCapacityError(errorModel) && attempt < scanEnqueueRetries {
+			// Calculate exponential backoff delay
+			waitDuration := time.Duration(scanEnqueueRetryDelay) * time.Second * (1 << attempt)
+			logger.PrintIfVerbose(fmt.Sprintf(
+				"Scan creation failed due to queue capacity (attempt %d/%d). Waiting %v before retry...",
+				attempt+1,
+				scanEnqueueRetries,
+				waitDuration,
+			))
+			time.Sleep(waitDuration)
+			continue
+		}
+
+		// Success or non-retryable error - break out of loop
+		break
+	}
+
+	return scanResp, errorModel, err
 }
 
 func (s *ScansHTTPWrapper) Get(params map[string]string) (*ScansCollectionResponseModel, *ErrorModel, error) {

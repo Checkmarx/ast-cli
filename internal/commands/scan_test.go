@@ -3646,20 +3646,12 @@ func TestIsScsScorecardAllowed(t *testing.T) {
 		name                       string
 		scsLicensingV2             bool
 		hasRepositoryHealthLicense bool
-		hasScsLicense              bool
 		expectedAllowed            bool
 	}{
 		{
-			name:            "scsLicensingV2 disabled and has scs license",
+			name:            "scsLicensingV2 disabled",
 			scsLicensingV2:  false,
-			hasScsLicense:   true,
 			expectedAllowed: true,
-		},
-		{
-			name:            "scsLicensingV2 disabled and does not have scs license",
-			scsLicensingV2:  false,
-			hasScsLicense:   false,
-			expectedAllowed: false,
 		},
 		{
 			name:                       "scsLicensingV2 enabled and has repository health license",
@@ -3677,7 +3669,7 @@ func TestIsScsScorecardAllowed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualAllowed := isScsScorecardAllowed(tt.scsLicensingV2, tt.hasRepositoryHealthLicense, tt.hasScsLicense)
+			actualAllowed := isScsScorecardAllowed(tt.scsLicensingV2, tt.hasRepositoryHealthLicense)
 			assert.Equal(t, tt.expectedAllowed, actualAllowed)
 		})
 	}
@@ -3689,28 +3681,18 @@ func TestIsScsSecretDetectionAllowed(t *testing.T) {
 		scsLicensingV2              bool
 		hasSecretDetectionLicense   bool
 		hasEnterpriseSecretsLicense bool
-		hasScsLicense               bool
 		expectedAllowed             bool
 	}{
 		{
-			name:                        "scsLicensingV2 disabled and has scs and enterprise secrets license",
+			name:                        "scsLicensingV2 disabled and has enterprise secrets license",
 			scsLicensingV2:              false,
 			hasEnterpriseSecretsLicense: true,
-			hasScsLicense:               true,
 			expectedAllowed:             true,
 		},
 		{
-			name:                        "scsLicensingV2 disabled and has enterprise secrets but does not have scs license",
-			scsLicensingV2:              false,
-			hasEnterpriseSecretsLicense: true,
-			hasScsLicense:               false,
-			expectedAllowed:             false,
-		},
-		{
-			name:                        "scsLicensingV2 disabled and has scs license but does not have enterprise secrets license",
+			name:                        "scsLicensingV2 disabled but does not have enterprise secrets license",
 			scsLicensingV2:              false,
 			hasEnterpriseSecretsLicense: false,
-			hasScsLicense:               true,
 			expectedAllowed:             false,
 		},
 		{
@@ -3729,7 +3711,7 @@ func TestIsScsSecretDetectionAllowed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualAllowed := isScsSecretDetectionAllowed(tt.scsLicensingV2, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, tt.hasScsLicense)
+			actualAllowed := isScsSecretDetectionAllowed(tt.scsLicensingV2, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
 			assert.Equal(t, tt.expectedAllowed, actualAllowed)
 		})
 	}

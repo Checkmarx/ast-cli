@@ -130,11 +130,12 @@ const (
 	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: --git-commit-history flag ignored because secret detection wasn't run on this scan."
 	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
 
-	jsonExt                  = ".json"
-	xmlExt                   = ".xml"
-	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix      = "--branch-primary="
-	OverridePolicyManagement = "override-policy-management"
+	jsonExt                      = ".json"
+	xmlExt                       = ".xml"
+	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix          = "--branch-primary="
+	OverridePolicyManagement     = "override-policy-management"
+	defaultScanEnqueueRetryDelay = 5
 )
 
 var (
@@ -714,6 +715,16 @@ func scanCreateSubCommand(
 		0,
 		"Cancel the scan and fail after the timeout in minutes",
 	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetriesFlag,
+		0,
+		"Number of retry attempts for scan enqueue failures due to queue capacity (default: 0, no retries)",
+	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetryDelayFlag,
+		defaultScanEnqueueRetryDelay,
+		"Base delay in seconds between scan enqueue retry attempts with exponential backoff (default: 5)",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
@@ -862,6 +873,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetriesKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetriesFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetryDelayKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetryDelayFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -1377,10 +1396,13 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasRepositoryHealthLicense,
 	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]interface{}, error) {
-	scsEnabled := scanTypeEnabled(commonParams.ScsType)
 	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense, scsEnabled)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	scsEnabled := isScsEnabled(scsLicensingV2Flag.Status)
+	if !scsEnabled {
+		return nil, nil
+	}
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1442,18 +1464,26 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasReposit
 	return scsMapConfig, nil
 }
 
-func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
+func isScsEnabled(scsLicensingV2 bool) bool {
+	if scsLicensingV2 {
+		return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
+			scanTypeEnabled(commonParams.RepositoryHealthType)
+	}
+	return scanTypeEnabled(commonParams.ScsType)
+}
+
+func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense bool) bool {
 	if scsLicensingV2 {
 		return hasRepositoryHealthLicense
 	}
-	return hasScsLicense
+	return true
 }
 
-func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, hasScsLicense bool) bool {
+func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) bool {
 	if scsLicensingV2 {
 		return hasSecretDetectionLicense
 	}
-	return hasScsLicense && hasEnterpriseSecretsLicense
+	return hasEnterpriseSecretsLicense
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
