@@ -2463,7 +2463,7 @@ func runCreateScanCommand(
 				return reportErr
 			}
 
-			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results)
+			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results, featureFlagsWrapper)
 
 			if err != nil {
 				return err
@@ -2731,6 +2731,7 @@ func applyThreshold(
 	thresholdMap map[string]int,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -2742,7 +2743,7 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results)
+	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results, featureFlagsWrapper)
 
 	if err != nil {
 		return err
@@ -2830,6 +2831,7 @@ func getSummaryThresholdMap(
 	scan *wrappers.ScanResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
 
@@ -2848,6 +2850,12 @@ func getSummaryThresholdMap(
 		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
 		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
 		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
+
+		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+		criticalEnabled := flagResponse.Status
+		if criticalEnabled {
+			summaryMap["api-security-critical"] = apiSecRisks.Risks[0]
+		}
 	}
 	return summaryMap, nil
 }
