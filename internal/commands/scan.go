@@ -2848,6 +2848,7 @@ func getSummaryThresholdMap(
 		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
 		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
 		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
+		summaryMap["api-security-critical"] = apiSecRisks.Risks[0]
 	}
 	return summaryMap, nil
 }
