@@ -126,12 +126,19 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 	return nil, err
 }
 
-func setAgentNameAndOrigin(req *http.Request) {
+func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
 	req.Header.Set("User-Agent", agentStr)
 
 	originStr := viper.GetString(commonParams.OriginKey)
 	req.Header.Set("Cx-Origin", originStr)
+
+	if !isAuth {
+		uniqueID := GetUniqueID()
+		if uniqueID != "" {
+			req.Header.Set("UniqueId", uniqueID)
+		}
+	}
 }
 
 func GetClient(timeout uint) *http.Client {
@@ -375,7 +382,7 @@ func SendHTTPRequestByFullURLContentLength(
 		req.ContentLength = contentLength
 	}
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken, bearerFormat)
 	}
@@ -427,7 +434,7 @@ func SendHTTPRequestPasswordAuth(method string, body io.Reader, timeout uint, us
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, true)
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +471,7 @@ func HTTPRequestWithQueryParams(
 	}
 	req, err := http.NewRequest(method, u, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +519,7 @@ func SendHTTPRequestWithJSONContentType(method, path string, body io.Reader, aut
 	}
 	req, err := http.NewRequest(method, fullURL, body)
 	client := GetClient(timeout)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, false)
 	req.Header.Add("Content-Type", jsonContentType)
 	if err != nil {
 		return nil, err
@@ -645,7 +652,7 @@ func writeCredentialsToCache(accessToken string) {
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
-	setAgentNameAndOrigin(req)
+	setAgentNameAndOrigin(req, true)
 	if err != nil {
 		return "", err
 	}

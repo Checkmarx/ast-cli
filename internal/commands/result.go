@@ -982,7 +982,7 @@ func printResultsSummaryTable(summary *wrappers.ResultSummary) {
 	totalLowIssues := summary.EnginesResult.GetLowIssues()
 	totalInfoIssues := summary.EnginesResult.GetInfoIssues()
 	fmt.Printf(tableLine + twoNewLines)
-	fmt.Printf("              Total Results: %d                       \n", summary.TotalIssues)
+	fmt.Printf("              Total Results: %d (Total Results includes only API documentation vulnerabilities\n              and does not include API code vulnerabilities.)\n", summary.TotalIssues)
 	fmt.Println(tableLine)
 	fmt.Printf(TableTitleFormat, "   ", "Critical", "High", "Medium", "Low", "Info", "Status")
 
