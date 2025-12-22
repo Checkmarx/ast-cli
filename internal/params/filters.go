@@ -128,7 +128,7 @@ var BaseIncludeFilters = []string{
 	"requirement*.txt",
 	"composer.lock",
 	"Dockerfile*",
-	"dock*",
+	".dock*",
 	"*.dart",
 	"*.plist",
 	"go.mod",
