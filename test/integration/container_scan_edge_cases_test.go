@@ -49,8 +49,9 @@ func TestContainerScan_ErrorHandling_InvalidAndValidScenarios(t *testing.T) {
 func TestContainerScan_TarFileValidation(t *testing.T) {
 	tempDir := t.TempDir()
 
-	t.Run("ExistingTarFile", func(t *testing.T) {
-		// Create a dummy .tar file
+	t.Run("EmptyTarFile", func(t *testing.T) {
+		// Create an empty .tar file
+		// Note: An empty tar file is NOT a valid container image, so container resolution will fail
 		tarFile := filepath.Join(tempDir, "test-container.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -66,9 +67,8 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 			flag(params.ScanTypes), params.ContainersTypeFlag,
 			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty for existing tar file")
-		assert.Assert(t, projectID != "", "Project ID should not be empty for existing tar file")
+		err, _ = executeCommand(t, testArgs...)
+		assert.Assert(t, err != nil, "Expected error for empty tar file (not a valid container image)")
 	})
 
 	t.Run("NonExistentTarFile", func(t *testing.T) {
@@ -87,8 +87,9 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 		assert.Assert(t, err != nil, "Expected error for non-existent tar file")
 	})
 
-	t.Run("TarFileWithOtherImages", func(t *testing.T) {
-		// Create a dummy .tar file
+	t.Run("EmptyTarFileWithOtherImages", func(t *testing.T) {
+		// Create an empty .tar file
+		// Note: An empty tar file is NOT a valid container image, so container resolution will fail
 		tarFile := filepath.Join(tempDir, "another-test.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -104,9 +105,8 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 			flag(params.ScanTypes), params.ContainersTypeFlag,
 			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
-		scanID, projectID := executeCreateScan(t, testArgs)
-		assert.Assert(t, scanID != "", "Scan ID should not be empty for tar file with other images")
-		assert.Assert(t, projectID != "", "Project ID should not be empty for tar file with other images")
+		err, _ = executeCommand(t, testArgs...)
+		assert.Assert(t, err != nil, "Expected error for empty tar file mixed with other images")
 	})
 }
 

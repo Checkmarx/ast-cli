@@ -124,11 +124,12 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
-	jsonExt                  = ".json"
-	xmlExt                   = ".xml"
-	sbomScanTypeErrMsg       = "The --sbom-only flag can only be used when the scan type is sca"
-	BranchPrimaryPrefix      = "--branch-primary="
-	OverridePolicyManagement = "override-policy-management"
+	jsonExt                      = ".json"
+	xmlExt                       = ".xml"
+	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
+	BranchPrimaryPrefix          = "--branch-primary="
+	OverridePolicyManagement     = "override-policy-management"
+	defaultScanEnqueueRetryDelay = 5
 )
 
 var (
@@ -708,6 +709,16 @@ func scanCreateSubCommand(
 		0,
 		"Cancel the scan and fail after the timeout in minutes",
 	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetriesFlag,
+		0,
+		"Number of retry attempts for scan enqueue failures due to queue capacity (default: 0, no retries)",
+	)
+	createScanCmd.PersistentFlags().Int(
+		commonParams.ScanEnqueueRetryDelayFlag,
+		defaultScanEnqueueRetryDelay,
+		"Base delay in seconds between scan enqueue retry attempts with exponential backoff (default: 5)",
+	)
 	createScanCmd.PersistentFlags().StringP(
 		commonParams.SourcesFlag,
 		commonParams.SourcesFlagSh,
@@ -856,6 +867,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.ApplicationName, "", "Name of the application to assign with the project")
 	// Link the environment variables to the CLI argument(s).
 	err = viper.BindPFlag(commonParams.BranchKey, createScanCmd.PersistentFlags().Lookup(commonParams.BranchFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetriesKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetriesFlag))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = viper.BindPFlag(commonParams.ScanEnqueueRetryDelayKey, createScanCmd.PersistentFlags().Lookup(commonParams.ScanEnqueueRetryDelayFlag))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -1297,7 +1316,7 @@ func addAPISecScan(cmd *cobra.Command) map[string]interface{} {
 		apiSecMapConfig[resultsMapType] = commonParams.APISecType
 		apiDocumentation, _ := cmd.Flags().GetString(commonParams.APIDocumentationFlag)
 		if apiDocumentation != "" {
-			apiSecConfig.SwaggerFilter = strings.ToLower(apiDocumentation)
+			apiSecConfig.SwaggerFilter = apiDocumentation
 		}
 		apiSecMapConfig[resultsMapValue] = &apiSecConfig
 		return apiSecMapConfig
@@ -1371,9 +1390,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
 	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	scsEnabled := scanTypeEnabled(commonParams.ScsType)
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, scsEnabled)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, scsEnabled)
+	scsEnabled := isScsEnabled(scsLicensingV2)
+	if !scsEnabled {
+		return nil, nil
+	}
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1429,18 +1451,26 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 	return scsMapConfig, nil
 }
 
-func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense, hasScsLicense bool) bool {
+func isScsEnabled(scsLicensingV2 bool) bool {
+	if scsLicensingV2 {
+		return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
+			scanTypeEnabled(commonParams.RepositoryHealthType)
+	}
+	return scanTypeEnabled(commonParams.ScsType)
+}
+
+func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense bool) bool {
 	if scsLicensingV2 {
 		return hasRepositoryHealthLicense
 	}
-	return hasScsLicense
+	return true
 }
 
-func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense, hasScsLicense bool) bool {
+func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) bool {
 	if scsLicensingV2 {
 		return hasSecretDetectionLicense
 	}
-	return hasScsLicense && hasEnterpriseSecretsLicense
+	return hasEnterpriseSecretsLicense
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
@@ -2900,11 +2930,13 @@ func isScanRunning(
 	}
 	if errorModel != nil {
 		log.Fatalf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
-	} else if scanResponseModel != nil {
-		if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
-			log.Println("Scan status: ", scanResponseModel.Status)
-			return true, nil
-		}
+	}
+	if scanResponseModel == nil {
+		return true, nil // Retry if response is unexpectedly nil
+	}
+	if scanResponseModel.Status == wrappers.ScanRunning || scanResponseModel.Status == wrappers.ScanQueued {
+		log.Println("Scan status: ", scanResponseModel.Status)
+		return true, nil
 	}
 	log.Println("Scan Finished with status: ", scanResponseModel.Status)
 	if scanResponseModel.Status == wrappers.ScanPartial {
@@ -3556,6 +3588,14 @@ func validateContainerImageFormat(containerImage string) error {
 		// For prefixed inputs, also validate the prefix-specific requirements
 		if hasKnownSource {
 			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+		}
+
+		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
+		// If the "tag" ends with .tar and the "image name" looks like a simple prefix (no / or .)
+		// then the user likely intended to use a prefix format but used an unknown prefix
+		lowerTag := strings.ToLower(imageTag)
+		if strings.HasSuffix(lowerTag, ".tar") && !strings.Contains(imageName, "/") && !strings.Contains(imageName, ".") {
+			return errors.Errorf("Invalid value for --container-images flag. Unknown prefix '%s:'. Supported prefixes are: docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:", imageName)
 		}
 
 		return nil // Valid image:tag format
