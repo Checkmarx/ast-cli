@@ -167,7 +167,7 @@ var KicsBaseFilters = []string{
 	".terraform.tfvars",
 	"Dockerfile",
 	".proto",
-	".dockerfile",
+	".dockerfile*",
 }
 
 var DisabledExclusions = map[string]bool{
