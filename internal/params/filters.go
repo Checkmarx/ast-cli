@@ -127,8 +127,6 @@ var BaseIncludeFilters = []string{
 	"requirement.txt",
 	"requirement*.txt",
 	"composer.lock",
-	"Dockerfile*",
-	"dock*",
 	"*.dart",
 	"*.plist",
 	"go.mod",
@@ -149,6 +147,9 @@ var BaseIncludeFilters = []string{
 	"*.cts",
 	"*.html",
 	"*.xhtml",
+	"*[dD]ocker-compose*.[yY][mM][lL]",
+	"*[dD]ocker-compose*.[yY][aA][mM][lL]",
+	"*[dD]ockerfile*",
 }
 
 var BaseExcludeFilters = []string{
@@ -168,6 +169,8 @@ var KicsBaseFilters = []string{
 	"Dockerfile",
 	".proto",
 	".dockerfile",
+	"docker-compose",
+	"Docker-compose",
 }
 
 var DisabledExclusions = map[string]bool{
