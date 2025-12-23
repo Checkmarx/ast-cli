@@ -127,8 +127,6 @@ var BaseIncludeFilters = []string{
 	"requirement.txt",
 	"requirement*.txt",
 	"composer.lock",
-	"Dockerfile*",
-	".dock*",
 	"*.dart",
 	"*.plist",
 	"go.mod",
@@ -149,6 +147,10 @@ var BaseIncludeFilters = []string{
 	"*.cts",
 	"*.html",
 	"*.xhtml",
+	//Add all option for dockerfiles for scan
+	"*[dD]ocker-compose*.[yY][mM][lL]",
+	"*[dD]ocker-compose*.[yY][aA][mM][lL]",
+	"*[dD]ockerfile*",
 }
 
 var BaseExcludeFilters = []string{
@@ -167,7 +169,9 @@ var KicsBaseFilters = []string{
 	".terraform.tfvars",
 	"Dockerfile",
 	".proto",
-	".dockerfile*",
+	".dockerfile",
+	"docker-compose",
+	"Docker-compose",
 }
 
 var DisabledExclusions = map[string]bool{
