@@ -87,4 +87,5 @@ var (
 	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
+	DisableASCALatestVersionKey         = strings.ToLower(DisableASCALatestVersionEnv)
 )

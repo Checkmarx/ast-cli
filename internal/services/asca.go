@@ -7,11 +7,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -158,8 +160,8 @@ func buildAscaIgnoreMap(ignored []grpcs.AscaIgnoreFinding) map[string]bool {
 
 func manageASCAInstallation(ascaParams AscaScanParams, ascaWrappers AscaWrappersParam) error {
 	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
-
-	if !ASCAInstalled || ascaParams.ASCAUpdateVersion {
+	if !ASCAInstalled || (ascaParams.ASCAUpdateVersion && strings.TrimSpace(strings.ToLower(viper.GetString(commonParams.DisableASCALatestVersionKey))) != "true") {
+		logger.PrintIfVerbose("Ensuring ASCA is installed or is up to date")
 		if err := checkLicense(ascaParams.IsDefaultAgent, ascaWrappers); err != nil {
 			_ = ascaWrappers.ASCAWrapper.ShutDown()
 			return err
