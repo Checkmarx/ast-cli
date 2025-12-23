@@ -59,15 +59,35 @@ func triageGetStatesSubCommand(customStatesWrapper wrappers.CustomStatesWrapper,
 	}
 
 	triageGetStatesCmd.PersistentFlags().Bool(params.AllStatesFlag, false, "Show all custom states, including the ones that have been deleted")
-
+	triageGetStatesCmd.PersistentFlags().String(params.ScanTypeFlag, "sast", "Scan Type")
 	return triageGetStatesCmd
 }
 
 func runTriageGetStates(customStatesWrapper wrappers.CustomStatesWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
+		scanType, _ := cmd.Flags().GetString(params.ScanTypeFlag)
+		scanType = strings.TrimSpace(strings.ToLower(scanType))
 		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CustomStatesFeatureFlag)
 		if !flagResponse.Status {
 			return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+		}
+
+		switch scanType {
+		case params.KicsType:
+			kicsCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "KICS_CUSTOM_STATES_ENABLED")
+			if !kicsCustomStates.Status {
+				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+			}
+		case params.ScaType:
+			scaCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SCA_CUSTOM_STATES")
+			if !scaCustomStates.Status {
+				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+			}
+		default:
+			sastCustomStates, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, "SAST_CUSTOM_STATES_ENABLED")
+			if !sastCustomStates.Status {
+				return printer.Print(cmd.OutOrStdout(), systemStates, printer.FormatJSON)
+			}
 		}
 		includeDeleted, _ := cmd.Flags().GetBool(params.AllStatesFlag)
 		states, err := customStatesWrapper.GetAllCustomStates(includeDeleted)

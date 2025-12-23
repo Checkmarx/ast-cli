@@ -213,6 +213,187 @@ func TestRunTriageUpdateWithSystemState(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRunTriageGetStates_ScanTypeSwitch(t *testing.T) {
+	tests := []struct {
+		name                    string
+		scanType                string
+		customStatesFeatureFlag wrappers.FeatureFlagResponseModel
+		scanTypeFeatureFlag     wrappers.FeatureFlagResponseModel
+		expectedError           bool
+		description             string
+	}{
+		{
+			name:                    "KICS scan type with KICS custom states enabled",
+			scanType:                "kics",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "KICS_CUSTOM_STATES_ENABLED", Status: true},
+			expectedError:           false,
+			description:             "Should successfully get custom states for KICS when feature flag is enabled",
+		},
+		{
+			name:                    "KICS scan type with KICS custom states disabled",
+			scanType:                "kics",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "KICS_CUSTOM_STATES_ENABLED", Status: false},
+			expectedError:           false,
+			description:             "Should return system states for KICS when feature flag is disabled",
+		},
+		{
+			name:                    "SCA scan type with SCA custom states enabled",
+			scanType:                "sca",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SCA_CUSTOM_STATES", Status: true},
+			expectedError:           false,
+			description:             "Should successfully get custom states for SCA when feature flag is enabled",
+		},
+		{
+			name:                    "SCA scan type with SCA custom states disabled",
+			scanType:                "sca",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SCA_CUSTOM_STATES", Status: false},
+			expectedError:           false,
+			description:             "Should return system states for SCA when feature flag is disabled",
+		},
+		{
+			name:                    "SAST scan type with SAST custom states enabled",
+			scanType:                "sast",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SAST_CUSTOM_STATES_ENABLED", Status: true},
+			expectedError:           false,
+			description:             "Should successfully get custom states for SAST when feature flag is enabled",
+		},
+		{
+			name:                    "SAST scan type with SAST custom states disabled",
+			scanType:                "sast",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SAST_CUSTOM_STATES_ENABLED", Status: false},
+			expectedError:           false,
+			description:             "Should return system states for SAST when feature flag is disabled",
+		},
+		{
+			name:                    "Unknown scan type defaults to SAST behavior",
+			scanType:                "unknown",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SAST_CUSTOM_STATES_ENABLED", Status: true},
+			expectedError:           false,
+			description:             "Should default to SAST logic for unknown scan types",
+		},
+		{
+			name:                    "KICS with uppercase scan type",
+			scanType:                "KICS",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "KICS_CUSTOM_STATES_ENABLED", Status: true},
+			expectedError:           false,
+			description:             "Should handle uppercase scan type correctly",
+		},
+		{
+			name:                    "SCA with mixed case scan type",
+			scanType:                "ScA",
+			customStatesFeatureFlag: wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true},
+			scanTypeFeatureFlag:     wrappers.FeatureFlagResponseModel{Name: "SCA_CUSTOM_STATES", Status: true},
+			expectedError:           false,
+			description:             "Should handle mixed case scan type correctly",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			clearFlags()
+			mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+			mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+
+			// First, set the custom states feature flag
+			mock.Flag = tt.customStatesFeatureFlag
+			cmd := triageGetStatesSubCommand(mockCustomStatesWrapper, mockFeatureFlagsWrapper)
+
+			// Then set the scan-type specific feature flag for the actual execution
+			mock.Flag = tt.scanTypeFeatureFlag
+			cmd.SetArgs([]string{"--scan-type", tt.scanType})
+
+			err := cmd.Execute()
+
+			if tt.expectedError {
+				assert.Assert(t, err != nil, tt.description)
+			} else {
+				assert.NilError(t, err, tt.description)
+			}
+		})
+	}
+}
+
+func TestRunTriageGetStates_OverallFeatureFlagDisabled(t *testing.T) {
+	clearFlags()
+	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+
+	// Set the overall custom states feature flag to disabled
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: false}
+
+	cmd := triageGetStatesSubCommand(mockCustomStatesWrapper, mockFeatureFlagsWrapper)
+	cmd.SetArgs([]string{"--scan-type", "sast"})
+
+	err := cmd.Execute()
+	assert.NilError(t, err, "Should return system states when overall custom states feature flag is disabled")
+}
+
+func TestRunTriageGetStates_WithAllFlag(t *testing.T) {
+	clearFlags()
+	mockCustomStatesWrapper := &mock.CustomStatesMockWrapper{}
+	mockFeatureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+
+	tests := []struct {
+		name     string
+		scanType string
+		allFlag  bool
+	}{
+		{
+			name:     "KICS with all flag true",
+			scanType: "kics",
+			allFlag:  true,
+		},
+		{
+			name:     "SCA with all flag false",
+			scanType: "sca",
+			allFlag:  false,
+		},
+		{
+			name:     "SAST with all flag true",
+			scanType: "sast",
+			allFlag:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			clearFlags()
+			mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.CustomStatesFeatureFlag, Status: true}
+
+			cmd := triageGetStatesSubCommand(mockCustomStatesWrapper, mockFeatureFlagsWrapper)
+
+			// Set the scan-type specific feature flag to enabled
+			switch tt.scanType {
+			case "kics":
+				mock.Flag = wrappers.FeatureFlagResponseModel{Name: "KICS_CUSTOM_STATES_ENABLED", Status: true}
+			case "sca":
+				mock.Flag = wrappers.FeatureFlagResponseModel{Name: "SCA_CUSTOM_STATES", Status: true}
+			default:
+				mock.Flag = wrappers.FeatureFlagResponseModel{Name: "SAST_CUSTOM_STATES_ENABLED", Status: true}
+			}
+
+			args := []string{"--scan-type", tt.scanType}
+			if tt.allFlag {
+				args = append(args, "--all")
+			}
+			cmd.SetArgs(args)
+
+			err := cmd.Execute()
+			assert.NilError(t, err)
+		})
+	}
+}
+
 func TestDetermineSystemOrCustomState(t *testing.T) {
 	tests := []struct {
 		name                string
