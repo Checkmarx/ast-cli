@@ -147,7 +147,6 @@ var BaseIncludeFilters = []string{
 	"*.cts",
 	"*.html",
 	"*.xhtml",
-	//Add all option for dockerfiles for scan
 	"*[dD]ocker-compose*.[yY][mM][lL]",
 	"*[dD]ocker-compose*.[yY][aA][mM][lL]",
 	"*[dD]ockerfile*",
