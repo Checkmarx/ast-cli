@@ -88,4 +88,5 @@ const (
 	MultipartPresignedPathEnv           = "CX_MULTIPART_PRESIGNED_URL_PATH"
 	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"
 	MultipartFileSizeEnv                = "MULTIPART_FILE_SIZE"
+	DisableASCALatestVersionEnv         = "DISABLE_ASCA_UPDATE"
 )
