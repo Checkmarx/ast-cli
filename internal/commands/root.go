@@ -114,6 +114,17 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		// Track whether auth-related flags were explicitly provided on the CLI,
+		// so that downstream logic can prefer CLI values over config-file values
+		// when both are present but of different types (API key vs client-id/secret).
+		if cmd.PersistentFlags().Changed(params.AccessKeyIDFlag) || cmd.Flags().Changed(params.AccessKeyIDFlag) ||
+			cmd.PersistentFlags().Changed(params.AccessKeySecretFlag) || cmd.Flags().Changed(params.AccessKeySecretFlag) {
+			viper.Set(params.CLIAuthAccessKeyFromFlag, true)
+		}
+		if cmd.PersistentFlags().Changed(params.AstAPIKeyFlag) || cmd.Flags().Changed(params.AstAPIKeyFlag) {
+			viper.Set(params.CLIAuthAPIKeyFromFlag, true)
+		}
+
 		err := customLogConfiguration(rootCmd)
 		if err != nil {
 			return err

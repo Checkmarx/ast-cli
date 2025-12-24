@@ -599,6 +599,10 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+
+	accessKeyFromCLI := viper.GetBool(commonParams.CLIAuthAccessKeyFromFlag)
+	apiKeyFromCLI := viper.GetBool(commonParams.CLIAuthAPIKeyFromFlag)
+
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
@@ -612,10 +616,20 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 		return "", err
 	}
 
-	if astAPIKey != "" {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
-	} else {
+	// Decide which auth mechanism to use:
+	// - If only one type (client credentials or API key) was provided via CLI, prefer that over config values.
+	// - Otherwise, fall back to the existing precedence: client credentials first, then API key.
+	switch {
+	case accessKeyFromCLI && !apiKeyFromCLI && accessKeyID != "" && accessKeySecret != "":
 		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	case apiKeyFromCLI && !accessKeyFromCLI && astAPIKey != "":
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+	default:
+		if accessKeyID != "" && accessKeySecret != "" {
+			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+		} else if astAPIKey != "" {
+			accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+		}
 	}
 
 	if err != nil {

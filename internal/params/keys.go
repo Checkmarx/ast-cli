@@ -87,4 +87,8 @@ var (
 	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
+
+	// Internal markers to indicate whether auth values were provided explicitly via CLI flags.
+	CLIAuthAccessKeyFromFlag = "cli_auth_access_key_from_flag"
+	CLIAuthAPIKeyFromFlag    = "cli_auth_apikey_from_flag"
 )
