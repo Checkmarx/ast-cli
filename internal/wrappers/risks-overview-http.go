@@ -143,7 +143,7 @@ func (r *RisksOverviewHTTPWrapper) GetFilterResultForAPISecByScanID(scanID strin
 	return APISecRiskEntriesResult{Entries: allEntries}, nil, nil
 }
 
-func getAPISecPaginatedResultPage(apiSecurityResultPath string, scanID string, queryParam map[string]string, filters []FilterParam) (*APISecPaginatedResult, *WebError, error) {
+func getAPISecPaginatedResultPage(apiSecurityResultPath, scanID string, queryParam map[string]string, filters []FilterParam) (*APISecPaginatedResult, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	var filteringJSON []byte

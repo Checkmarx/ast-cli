@@ -2914,14 +2914,16 @@ func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOvervie
 		severityCount := make(map[string]int)
 		originCount := make(map[string]int)
 		totalRecords := 0
-		for _, entry := range entries {
-			if isExploitable(entry.State) {
-				sev := strings.ToLower(entry.Severity)
-				severityCount[sev]++
-				orig := strings.ToLower(entry.Origin)
-				originCount[orig]++
-				totalRecords++
+		for i := range entries {
+			entry := &entries[i]
+			if !isExploitable(entry.State) {
+				continue
 			}
+			sev := strings.ToLower(entry.Severity)
+			severityCount[sev]++
+			orig := strings.ToLower(entry.Origin)
+			originCount[orig]++
+			totalRecords++
 		}
 		var riskDistribution []wrappers.RiskDistributionEntry
 		if originCount["code"] > 0 {
