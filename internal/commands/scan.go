@@ -2463,7 +2463,7 @@ func runCreateScanCommand(
 				return reportErr
 			}
 
-			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results)
+			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results, featureFlagsWrapper)
 
 			if err != nil {
 				return err
@@ -2731,6 +2731,7 @@ func applyThreshold(
 	thresholdMap map[string]int,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -2742,7 +2743,11 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results)
+	resultsParams, err := getFilters(cmd)
+	if err != nil {
+		return err
+	}
+	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results, featureFlagsWrapper, resultsParams)
 
 	if err != nil {
 		return err
@@ -2830,6 +2835,8 @@ func getSummaryThresholdMap(
 	scan *wrappers.ScanResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	resultsParam map[string]string,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
 
@@ -2841,13 +2848,21 @@ func getSummaryThresholdMap(
 	}
 
 	if slices.Contains(scan.Engines, commonParams.APISecType) {
-		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scan.ID)
+		apiSecFilterRisks, err := getFilterResultsForAPISecScanner(risksOverviewWrapper, scan.ID, resultsParam)
 		if err != nil {
 			return nil, err
 		}
-		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
-		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
-		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
+		if apiSecFilterRisks != nil && apiSecFilterRisks.SeverityCount != nil {
+			summaryMap["api-security-high"] = apiSecFilterRisks.SeverityCount["high"]
+			summaryMap["api-security-medium"] = apiSecFilterRisks.SeverityCount["medium"]
+			summaryMap["api-security-low"] = apiSecFilterRisks.SeverityCount["low"]
+
+			flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+			criticalEnabled := flagResponse.Status
+			if criticalEnabled {
+				summaryMap["api-security-critical"] = apiSecFilterRisks.SeverityCount["critical"]
+			}
+		}
 	}
 	return summaryMap, nil
 }
