@@ -3461,11 +3461,17 @@ func Wait(attempt int) {
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
-	flagValue, _ := cmd.Flags().GetString(inUseFlagKey)
-	if flagValue == "" {
-		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
+	inUseValues, _ := cmd.Flags().GetStringSlice(inUseFlagKey)
+	if len(inUseValues) > 0 {
+		return strings.Join(inUseValues, ",")
 	}
-	return flagValue
+
+	deprecatedValues, _ := cmd.Flags().GetStringSlice(deprecatedFlagKey)
+	if len(deprecatedValues) > 0 {
+		return strings.Join(deprecatedValues, ",")
+	}
+
+	return ""
 }
 
 func validateCreateScanFlags(cmd *cobra.Command) error {
