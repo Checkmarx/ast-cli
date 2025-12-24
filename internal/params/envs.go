@@ -30,6 +30,7 @@ const (
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
 	RisksOverviewPathEnv                = "CX_RISKS_OVERVIEW_PATH"
+	APISecurityResultPathEnv            = "API_SECURITY_RESULT_PATH"
 	ScsScanOverviewPathEnv              = "CX_SCS_SCAN_OVERVIEW_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"

@@ -1278,11 +1278,10 @@ func createEmptyResultSummary() *wrappers.ResultSummary {
 		KicsIssues:       0,
 		ContainersIssues: containersIssues,
 		SCSOverview:      &wrappers.SCSOverview{},
-		APISecurity: wrappers.APISecResult{
+		APISecurity: wrappers.APISecFilteredResult{
 			APICount:        0,
 			TotalRisksCount: 0,
-			Risks:           []int{0, 0, 0, 0},
-			StatusCode:      0,
+			SeverityCount:   map[string]int{"critical": 0, "high": 0, "medium": 0, "low": 0},
 		},
 		EnginesEnabled: []string{"sast", "sca", "kics", "containers"},
 		EnginesResult: wrappers.EnginesResultsSummary{
@@ -1701,4 +1700,43 @@ func extractURLFromDescription(description string) string {
 		return "http" + strings.Split(parts[1], " ")[0]
 	}
 	return ""
+}
+
+func TestGetFilterResultsForAPISecScanner(t *testing.T) {
+	mockWrapper := mock.RisksOverviewMockWrapper{}
+	scanID := "test-scan-id"
+	resultsParams := map[string]string{}
+
+	result, err := getFilterResultsForAPISecScanner(mockWrapper, scanID, resultsParams)
+	assert.NilError(t, err)
+	assert.Assert(t, result == nil, "Expected nil result for empty entries")
+
+	mockEntries := []wrappers.APISecRiskEntry{
+		{Severity: "Critical", Origin: "code", State: "to_verify"},
+		{Severity: "High", Origin: "documentation", State: "to_verify"},
+		{Severity: "Medium", Origin: "code", State: "to_verify"},
+		{Severity: "Low", Origin: "documentation", State: "to_verify"},
+		{Severity: "Critical", Origin: "code", State: "not_exploitable"},
+	}
+	mockWrapperWithEntries := &mock.RisksOverviewMockWrapperWithEntries{Entries: mockEntries}
+	result, err = getFilterResultsForAPISecScanner(mockWrapperWithEntries, scanID, resultsParams)
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected non-nil result for entries")
+	if result == nil {
+		return
+	}
+	assert.Equal(t, result.SeverityCount["critical"], 1)
+	assert.Equal(t, result.SeverityCount["high"], 1)
+	assert.Equal(t, result.SeverityCount["medium"], 1)
+	assert.Equal(t, result.SeverityCount["low"], 1)
+	assert.Equal(t, result.TotalRisksCount, 4)
+	assert.Equal(t, len(result.RiskDistribution), 2)
+	for _, dist := range result.RiskDistribution {
+		if dist.Origin == "code" {
+			assert.Equal(t, dist.Total, 2)
+		}
+		if dist.Origin == "documentation" {
+			assert.Equal(t, dist.Total, 2)
+		}
+	}
 }

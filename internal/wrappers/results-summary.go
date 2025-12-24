@@ -20,7 +20,7 @@ type ResultSummary struct {
 	ContainersIssues *int         `json:"ContainersIssues,omitempty"`
 	ScsIssues        *int         `json:"ScsIssues,omitempty"`
 	SCSOverview      *SCSOverview `json:"ScsOverview,omitempty"`
-	APISecurity      APISecResult
+	APISecurity      APISecFilteredResult
 	RiskStyle        string
 	RiskMsg          string
 	Status           string
@@ -41,14 +41,20 @@ type ResultSummary struct {
 
 // nolint: govet
 type APISecResult struct {
-	APICount         int                `json:"api_count,omitempty"`
-	TotalRisksCount  int                `json:"total_risks_count,omitempty"`
-	Risks            []int              `json:"risks,omitempty"`
-	RiskDistribution []riskDistribution `json:"risk_distribution,omitempty"`
+	APICount         int                     `json:"api_count,omitempty"`
+	TotalRisksCount  int                     `json:"total_risks_count,omitempty"`
+	Risks            []int                   `json:"risks,omitempty"`
+	RiskDistribution []RiskDistributionEntry `json:"risk_distribution,omitempty"`
 	StatusCode       int
 }
 
-type riskDistribution struct {
+type APISecFilteredResult struct {
+	SeverityCount    map[string]int
+	TotalRisksCount  int
+	RiskDistribution []RiskDistributionEntry
+	APICount         int
+}
+type RiskDistributionEntry struct {
 	Origin string `json:"origin,omitempty"`
 	Total  int    `json:"total,omitempty"`
 }
@@ -166,7 +172,7 @@ func (r *ResultSummary) SCSIssuesValue() int {
 	return *r.ScsIssues
 }
 
-func (r *ResultSummary) getRiskFromAPISecurity(origin string) *riskDistribution {
+func (r *ResultSummary) getRiskFromAPISecurity(origin string) *RiskDistributionEntry {
 	for _, risk := range r.APISecurity.RiskDistribution {
 		if strings.EqualFold(risk.Origin, origin) {
 			return &risk

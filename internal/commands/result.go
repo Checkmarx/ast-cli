@@ -693,15 +693,24 @@ func summaryReport(
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	results *wrappers.ScanResultsCollection,
+	resultsParams map[string]string,
 ) (*wrappers.ResultSummary, error) {
 	if summary.HasAPISecurity() {
+		apiSecFilterRisks, err := getFilterResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID, resultsParams)
+		if err != nil {
+			return nil, err
+		}
+		if apiSecFilterRisks != nil {
+			summary.APISecurity = *apiSecFilterRisks
+		}
 		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, summary.ScanID)
 		if err != nil {
 			return nil, err
 		}
-		summary.APISecurity = *apiSecRisks
+		if apiSecRisks != nil {
+			summary.APISecurity.APICount = apiSecRisks.APICount
+		}
 	}
-
 	if summary.HasSCS() {
 		// Getting the base SCS overview. Results counts are overwritten in enhanceWithScanSummary->countResult
 		SCSOverview, err := getScanOverviewForSCSScanner(scsScanOverviewWrapper, summary.ScanID)
@@ -770,13 +779,13 @@ func enhanceWithScanSummary(summary *wrappers.ResultSummary, results *wrappers.S
 	flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
 	criticalEnabled := flagResponse.Status
 	if summary.HasAPISecurity() {
-		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.Risks[3]
-		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.Risks[2]
-		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.Risks[1]
+		summary.EnginesResult[commonParams.APISecType].Low = summary.APISecurity.SeverityCount["low"]
+		summary.EnginesResult[commonParams.APISecType].Medium = summary.APISecurity.SeverityCount["medium"]
+		summary.EnginesResult[commonParams.APISecType].High = summary.APISecurity.SeverityCount["high"]
 		if !criticalEnabled {
 			summary.EnginesResult[commonParams.APISecType].Critical = notAvailableNumber
 		} else {
-			summary.EnginesResult[commonParams.APISecType].Critical = summary.APISecurity.Risks[0]
+			summary.EnginesResult[commonParams.APISecType].Critical = summary.APISecurity.SeverityCount["critical"]
 		}
 	}
 
@@ -1211,7 +1220,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results, resultsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -2887,4 +2896,47 @@ func parseURI(summaryBaseURI string) (hostName string) {
 
 func printWarningIfIgnorePolicyOmiited() {
 	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don’t have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
+}
+
+func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOverviewWrapper, scanID string, resultsParams map[string]string) (aPISecSeveritySummary *wrappers.APISecFilteredResult, err error) {
+	var apiSecRiskEntriesResult wrappers.APISecRiskEntriesResult
+	var errorModel *wrappers.WebError
+
+	apiSecRiskEntriesResult, errorModel, err = risksOverviewWrapper.GetFilterResultForAPISecByScanID(scanID, resultsParams)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("%s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	}
+	if len(apiSecRiskEntriesResult.Entries) > 0 {
+		entries := apiSecRiskEntriesResult.Entries
+		severityCount := make(map[string]int)
+		originCount := make(map[string]int)
+		totalRecords := 0
+		for i := range entries {
+			entry := &entries[i]
+			if !isExploitable(entry.State) {
+				continue
+			}
+			sev := strings.ToLower(entry.Severity)
+			severityCount[sev]++
+			orig := strings.ToLower(entry.Origin)
+			originCount[orig]++
+			totalRecords++
+		}
+		var riskDistribution []wrappers.RiskDistributionEntry
+		if originCount["code"] > 0 {
+			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: "code", Total: originCount["code"]})
+		}
+		if originCount["documentation"] > 0 {
+			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: "documentation", Total: originCount["documentation"]})
+		}
+		return &wrappers.APISecFilteredResult{
+			SeverityCount:    severityCount,
+			RiskDistribution: riskDistribution,
+			TotalRisksCount:  totalRecords,
+		}, nil
+	}
+	return nil, nil
 }
