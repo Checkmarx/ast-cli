@@ -5,6 +5,7 @@ package integration
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -53,6 +54,9 @@ func TestAzureUserCountOrgs(t *testing.T) {
 
 func TestAzureUserCountProjects(t *testing.T) {
 	_ = viper.BindEnv(pat)
+	fmt.Println("Org Name:- " + os.Getenv(envOrg))
+	fmt.Println("Project Name:- " + os.Getenv(envProject))
+	fmt.Println("Repos:- " + os.Getenv(envRepos))
 	buffer := executeCmdNilAssertion(
 		t,
 		"Counting contributors from checkmarxdev should pass",
