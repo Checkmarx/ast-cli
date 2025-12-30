@@ -1127,28 +1127,53 @@ func TestAddKicsScan(t *testing.T) {
 		Long:  `Scan a project`,
 	}
 
-	cmdCommand.PersistentFlags().String(commonParams.KicsFilterFlag, "", "Filter for KICS scan")
-	cmdCommand.PersistentFlags().Bool(commonParams.IacsPlatformsFlag, false, "IaC platforms")
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.KicsFilterFlag,
+		[]string{},
+		"Filter for KICS scan",
+	)
 
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.IacsFilterFlag,
+		[]string{},
+		"IaC filter",
+	)
+
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.IacsPlatformsFlag,
+		[]string{},
+		"IaC platforms",
+	)
+
+	// Execute command to initialize flags
 	_ = cmdCommand.Execute()
 
+	// Set values
 	_ = cmdCommand.Flags().Set(commonParams.KicsFilterFlag, "test")
-	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "true")
+	_ = cmdCommand.Flags().Set(commonParams.IacsPlatformsFlag, "terraform")
 
 	result := addKicsScan(cmdCommand, resubmitConfig)
 
-	kicsConfig := wrappers.KicsConfig{
-		Filter: "test",
+	expectedConfig := wrappers.KicsConfig{
+		Filter:    "test",
+		Platforms: "terraform",
 	}
-	kicsMapConfig := make(map[string]interface{})
-	kicsMapConfig[resultsMapType] = commonParams.KicsType
 
-	kicsMapConfig[resultsMapValue] = &kicsConfig
+	// Type assertion
+	if result[resultsMapType] != commonParams.KicsType {
+		t.Errorf("Expected type %s, got %v",
+			commonParams.KicsType,
+			result[resultsMapType],
+		)
+	}
 
-	if !reflect.DeepEqual(result, kicsMapConfig) {
-		t.Errorf("Expected %+v, but got %+v", kicsMapConfig, result)
+	actualConfig := result[resultsMapValue].(*wrappers.KicsConfig)
+
+	if !reflect.DeepEqual(actualConfig, &expectedConfig) {
+		t.Errorf("Expected %+v, but got %+v", expectedConfig, actualConfig)
 	}
 }
+
 func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--project-tags", "SEG", "--debug"}
 	cmd := createASTTestCommand()
