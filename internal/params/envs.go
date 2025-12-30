@@ -30,6 +30,7 @@ const (
 	ResultsPathEnv                      = "CX_RESULTS_PATH"
 	ScanSummaryPathEnv                  = "CX_SCAN_SUMMARY_PATH"
 	RisksOverviewPathEnv                = "CX_RISKS_OVERVIEW_PATH"
+	APISecurityResultPathEnv            = "API_SECURITY_RESULT_PATH"
 	ScsScanOverviewPathEnv              = "CX_SCS_SCAN_OVERVIEW_PATH"
 	SastResultsPathEnv                  = "CX_SAST_RESULTS_PATH"
 	SastResultsPredicatesPathEnv        = "CX_SAST_RESULTS_PREDICATES_PATH"
@@ -88,4 +89,5 @@ const (
 	MultipartPresignedPathEnv           = "CX_MULTIPART_PRESIGNED_URL_PATH"
 	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"
 	MultipartFileSizeEnv                = "MULTIPART_FILE_SIZE"
+	DisableASCALatestVersionEnv         = "DISABLE_ASCA_UPDATE"
 )

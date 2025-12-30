@@ -832,6 +832,7 @@ func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
 				Short: "Scan a project",
@@ -856,8 +857,15 @@ func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
 				},
 			}
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			expectedConfig := wrappers.SCSConfig{
 				Twoms:     trueString,
@@ -901,6 +909,7 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
 				Short: "Scan a project",
@@ -925,8 +934,15 @@ func TestAddSCSScan_ResubmitWithScorecardFlags_ShouldPass(t *testing.T) {
 				},
 			}
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			expectedConfig := wrappers.SCSConfig{
 				Twoms:     "true",
@@ -1210,6 +1226,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1224,8 +1241,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecard_scsMapHasBoth(t *testing.
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			scsConfig := wrappers.SCSConfig{
 				Twoms:     "true",
@@ -1270,6 +1294,7 @@ func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1284,8 +1309,15 @@ func TestAddSCSScan_WithoutSCSSecretDetection_scsMapNoSecretDetection(t *testing
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepo)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			scsConfig := wrappers.SCSConfig{
 				Twoms:     "",
@@ -1330,6 +1362,7 @@ func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1340,11 +1373,98 @@ func TestAddSCSScan_WithSCSSecretDetection_scsMapHasSecretDetection(t *testing.T
 			_ = cmdCommand.Execute()
 			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			scsConfig := wrappers.SCSConfig{
 				Twoms: "true",
+			}
+			scsMapConfig := make(map[string]interface{})
+			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
+			scsMapConfig[resultsMapValue] = &scsConfig
+
+			if !reflect.DeepEqual(result, scsMapConfig) {
+				t.Errorf("Expected %+v, but got %+v", scsMapConfig, result)
+			}
+		})
+	}
+}
+
+func TestAddSCSScan_WithSCSSecretDetectionAndGitCommitHistoryFlag_scsMapHasSecretDetection(t *testing.T) {
+	tests := []struct {
+		name                        string
+		scsLicensingV2              bool
+		hasRepositoryHealthLicense  bool
+		hasSecretDetectionLicense   bool
+		hasEnterpriseSecretsLicense bool
+	}{
+		{
+			name:                        "scsLicensingV2 disabled",
+			scsLicensingV2:              false,
+			hasRepositoryHealthLicense:  false,
+			hasSecretDetectionLicense:   false,
+			hasEnterpriseSecretsLicense: true,
+		},
+		{
+			name:                        "scsLicensingV2 enabled",
+			scsLicensingV2:              true,
+			hasRepositoryHealthLicense:  true,
+			hasSecretDetectionLicense:   true,
+			hasEnterpriseSecretsLicense: false,
+		},
+	}
+
+	// Create a temporary directory with .git for testing
+	tempDir := t.TempDir()
+	gitDir := filepath.Join(tempDir, ".git")
+	_ = os.Mkdir(gitDir, 0755)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
+			var resubmitConfig []wrappers.Config
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project",
+				Long:  `Scan a project`,
+			}
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS Engine flag")
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
+
+			_ = cmdCommand.Execute()
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, "secret-detection")
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, "true")
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, "scs")
+			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tempDir)
+
+			mock.Flags = wrappers.FeatureFlagsResponseModel{
+				{
+					Name:   wrappers.ScsLicensingV2Enabled,
+					Status: tt.scsLicensingV2,
+				},
+				{
+					Name:   wrappers.SscsCommitHistoryEnabled,
+					Status: true,
+				},
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
+
+			scsConfig := wrappers.SCSConfig{
+				Twoms:            "true",
+				GitCommitHistory: "true",
 			}
 			scsMapConfig := make(map[string]interface{})
 			scsMapConfig[resultsMapType] = commonParams.MicroEnginesType
@@ -1383,6 +1503,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1399,8 +1520,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardWithScanTypesAndNoScorecar
 			_ = cmdCommand.Execute()
 			_ = cmdCommand.Flags().Set(commonParams.ScanTypeFlag, "scs")
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			scsConfig := wrappers.SCSConfig{
 				Twoms: "true",
@@ -1458,6 +1586,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDet
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			var resubmitConfig []wrappers.Config
 			cmdCommand := &cobra.Command{
 				Use:   "scan",
@@ -1465,8 +1594,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndWithoutScanTypes_scsMapHasSecretDet
 				Long:  `Scan a project`,
 			}
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			scsConfig := wrappers.SCSConfig{
 				Twoms: "true",
@@ -1509,6 +1645,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1529,8 +1666,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepo_scsMap
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedGithubRepo)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1590,6 +1734,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1610,8 +1755,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithToken)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1671,6 +1823,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_s
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1691,8 +1844,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenInURL_s
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithToken)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1752,6 +1912,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1772,8 +1933,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGithubRepoWithTokenAndUser
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyRepoWithTokenAndUsername)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1833,6 +2001,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1853,8 +2022,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardShortenedGithubRepoWithTok
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyShortenedRepoWithTokenAndUsername)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1914,6 +2090,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -1934,8 +2111,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitLabRepo_scsMapHasSecret
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummyGitlabRepo)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -1995,6 +2179,7 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecret
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			wrappers.ClearCache()
 			// Create a pipe for capturing stdout
 			r, w, _ := os.Pipe()
 			oldStdout := os.Stdout
@@ -2015,8 +2200,15 @@ func TestAddSCSScan_WithSCSSecretDetectionAndScorecardGitSSHRepo_scsMapHasSecret
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoTokenFlag, dummyToken)
 			_ = cmdCommand.Flags().Set(commonParams.SCSRepoURLFlag, dummySSHRepo)
 
-			result, _ := addSCSScan(cmdCommand, resubmitConfig, tt.scsLicensingV2,
-				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense)
+			mock.Flag = wrappers.FeatureFlagResponseModel{
+				Name:   wrappers.ScsLicensingV2Enabled,
+				Status: tt.scsLicensingV2,
+			}
+			defer clearFlags()
+
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			result, _ := addSCSScan(cmdCommand, resubmitConfig,
+				tt.hasRepositoryHealthLicense, tt.hasSecretDetectionLicense, tt.hasEnterpriseSecretsLicense, featureFlagsWrapper)
 
 			// Close the writer to signal that we are done capturing the output
 			w.Close()
@@ -3451,6 +3643,7 @@ func TestValidateScanTypes(t *testing.T) {
 				Name:   wrappers.ScsLicensingV2Enabled,
 				Status: tt.scsLicensingV2,
 			}
+			defer clearFlags()
 
 			cmd := &cobra.Command{}
 			cmd.Flags().String(commonParams.ScanTypes, tt.userScanTypes, "")
@@ -4396,4 +4589,357 @@ func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB_Error(t *tes
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(err.Error(), "error from UploadFileInMultipart"), err.Error())
 	assert.Equal(t, zipPath, "")
+}
+
+func TestValidateGitCommitHistoryFlag(t *testing.T) {
+	tests := []struct {
+		name             string
+		flagValue        string
+		expectedErrorMsg string
+	}{
+		{
+			name:      "Valid true value",
+			flagValue: "true",
+		},
+		{
+			name:      "Valid false value",
+			flagValue: "false",
+		},
+		{
+			name:      "Valid TRUE value (case insensitive)",
+			flagValue: "TRUE",
+		},
+		{
+			name:      "Valid FALSE value (case insensitive)",
+			flagValue: "FALSE",
+		},
+		{
+			name:             "Invalid value 'maybe'",
+			flagValue:        "maybe",
+			expectedErrorMsg: gitCommitHistoryInvalidValueErrorMsg,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Test scan command",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "false", commonParams.GitCommitHistoryFlagDescription)
+
+			_ = cmdCommand.Execute()
+
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+
+			err := validateGitCommitHistoryFlag(cmdCommand)
+			if tt.expectedErrorMsg != "" {
+				assert.Assert(t, err != nil, "Expected error but got nil")
+				if err != nil {
+					assert.Assert(t, err.Error() == tt.expectedErrorMsg, "Expected error: %v, got: %v", tt.expectedErrorMsg, err)
+				}
+			} else {
+				assert.NilError(t, err, "Expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetGitCommitHistoryValue(t *testing.T) {
+	// Create a temporary directory with .git for testing
+	tempDir := t.TempDir()
+	gitDir := filepath.Join(tempDir, ".git")
+	_ = os.Mkdir(gitDir, 0755)
+
+	// Create a directory with .git in a subdirectory
+	tempDirWithSubGit := t.TempDir()
+	subDir := filepath.Join(tempDirWithSubGit, "project1")
+	_ = os.Mkdir(subDir, 0755)
+	gitDirSub := filepath.Join(subDir, ".git")
+	_ = os.Mkdir(gitDirSub, 0755)
+
+	tests := []struct {
+		name          string
+		flagValue     string
+		scanTypes     string
+		scsEngines    string
+		source        string
+		ffEnabled     bool
+		expectedValue string
+	}{
+		{
+			name:          "Flag true with valid context - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with valid context - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with git in subdirectory - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        tempDirWithSubGit,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with both engines - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection,scorecard",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with both engines - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection,scorecard",
+			source:        tempDir,
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with HTTPS GitHub URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with HTTPS GitLab URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://gitlab.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with SSH git@ format URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "git@github.com:user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag true with SSH protocol URL - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "ssh://git@github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with git URL - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "https://github.com/user/repo.git",
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+		{
+			name:          "Flag true with zip file - returns true",
+			flagValue:     "true",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "/path/to/source.zip",
+			ffEnabled:     true,
+			expectedValue: "true",
+		},
+		{
+			name:          "Flag false with zip file - returns false",
+			flagValue:     "false",
+			scanTypes:     "scs",
+			scsEngines:    "secret-detection",
+			source:        "/path/to/source.zip",
+			ffEnabled:     true,
+			expectedValue: "false",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project with git commit history",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
+
+			_ = cmdCommand.Execute()
+
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, tt.scanTypes)
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, tt.scsEngines)
+			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tt.source)
+
+			result := getGitCommitHistoryValue(cmdCommand, tt.ffEnabled)
+
+			assert.Equal(t, tt.expectedValue, result, "Expected value=%s, got=%s", tt.expectedValue, result)
+		})
+	}
+}
+
+func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
+	// Create a temporary directory with .git for testing
+	tempDir := t.TempDir()
+	gitDir := filepath.Join(tempDir, ".git")
+	_ = os.Mkdir(gitDir, 0755)
+
+	// Create a directory without .git
+	tempDirNoGit := t.TempDir()
+
+	tests := []struct {
+		name           string
+		flagValue      string
+		scanTypes      string
+		scsEngines     string
+		source         string
+		ffEnabled      bool
+		expectedValue  string
+		expectWarnings string
+	}{
+		{
+			name:           "Flag true with FF disabled - returns empty with warning",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      false,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotAvailableWarningMsg,
+		},
+		{
+			name:           "Flag false with FF disabled - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      false,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotAvailableWarningMsg,
+		},
+		{
+			name:           "Flag true without SCS scan type - returns empty with warning",
+			flagValue:      "true",
+			scanTypes:      "sast",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotSelectedWarningMsg,
+		},
+		{
+			name:           "Flag false without SCS scan type - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "sast",
+			scsEngines:     "secret-detection",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotSelectedWarningMsg,
+		},
+		{
+			name:           "Flag true with only scorecard engine - returns empty with warning",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "scorecard",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotApplicableWarningMsg,
+		},
+		{
+			name:           "Flag false with only scorecard engine - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "scorecard",
+			source:         tempDir,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNotApplicableWarningMsg,
+		},
+		{
+			name:           "Flag true without git repository - returns empty with warning",
+			flagValue:      "true",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDirNoGit,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNoGitRepositoryWarningMsg,
+		},
+		{
+			name:           "Flag false without git repository - returns empty with warning",
+			flagValue:      "false",
+			scanTypes:      "scs",
+			scsEngines:     "secret-detection",
+			source:         tempDirNoGit,
+			ffEnabled:      true,
+			expectedValue:  "",
+			expectWarnings: gitCommitHistoryNoGitRepositoryWarningMsg,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmdCommand := &cobra.Command{
+				Use:   "scan",
+				Short: "Scan a project with git commit history",
+			}
+			cmdCommand.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
+			cmdCommand.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types")
+			cmdCommand.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "SCS engines")
+			cmdCommand.PersistentFlags().String(commonParams.SourcesFlag, "", "Sources")
+
+			_ = cmdCommand.Execute()
+
+			_ = cmdCommand.Flags().Set(commonParams.GitCommitHistoryFlag, tt.flagValue)
+			_ = cmdCommand.Flags().Set(commonParams.ScanTypes, tt.scanTypes)
+			_ = cmdCommand.Flags().Set(commonParams.SCSEnginesFlag, tt.scsEngines)
+			_ = cmdCommand.Flags().Set(commonParams.SourcesFlag, tt.source)
+
+			// Capture output for warnings
+			oldStdout := os.Stdout
+			r, w, _ := os.Pipe()
+			os.Stdout = w
+
+			result := getGitCommitHistoryValue(cmdCommand, tt.ffEnabled)
+
+			w.Close()
+			os.Stdout = oldStdout
+
+			// Read captured output
+			var buf bytes.Buffer
+			_, _ = io.Copy(&buf, r)
+			r.Close()
+			output := buf.String()
+
+			assert.Equal(t, tt.expectedValue, result, "Expected value=%s, got=%s", tt.expectedValue, result)
+			assert.Assert(t, strings.Contains(output, tt.expectWarnings),
+				"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
+		})
+	}
 }

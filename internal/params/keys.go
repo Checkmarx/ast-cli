@@ -29,6 +29,7 @@ var (
 	ResultsPathKey                      = strings.ToLower(ResultsPathEnv)
 	ScanSummaryPathKey                  = strings.ToLower(ScanSummaryPathEnv)
 	RisksOverviewPathKey                = strings.ToLower(RisksOverviewPathEnv)
+	APISecurityResultPathKey            = strings.ToLower(APISecurityResultPathEnv)
 	ScsScanOverviewPathKey              = strings.ToLower(ScsScanOverviewPathEnv)
 	SastResultsPathKey                  = strings.ToLower(SastResultsPathEnv)
 	KicsResultsPathKey                  = strings.ToLower(KicsResultsPathEnv)
@@ -87,4 +88,5 @@ var (
 	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
+	DisableASCALatestVersionKey         = strings.ToLower(DisableASCALatestVersionEnv)
 )
