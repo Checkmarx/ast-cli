@@ -86,4 +86,5 @@ var EnvVarsBinds = []struct {
 	{MultipartPresignedPathKey, MultipartPresignedPathEnv, "api/uploads/multipart-presigned"},
 	{CompleteMultiPartUploadPathKey, CompleteMultipartUploadPathEnv, "api/uploads/complete-multipart-upload"},
 	{MultipartFileSizeKey, MultipartFileSizeEnv, "2"},
+	{DisableASCALatestVersionKey, DisableASCALatestVersionEnv, ""},
 }
