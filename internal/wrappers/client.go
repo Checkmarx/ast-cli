@@ -612,10 +612,10 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 		return "", err
 	}
 
-	if astAPIKey != "" {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
-	} else {
+	if accessKeyID != "" {
 		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	} else {
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
 	}
 
 	if err != nil {
@@ -874,6 +874,8 @@ func GetAuthURI() (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
+	//accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
+
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
