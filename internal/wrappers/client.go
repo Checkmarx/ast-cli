@@ -874,7 +874,6 @@ func GetAuthURI() (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-
 	if len(apiKey) > 0 {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
