@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cobra"
 	"io"
 	"io/ioutil"
 	"net"
@@ -595,10 +596,19 @@ func enrichWithPasswordCredentials(
 	return nil
 }
 
-func configureClientCredentialsAndGetNewToken() (string, error) {
-	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+func configureClientCredentialsAndGetNewToken(cmd *cobra.Command) (string, error) {
+	// 🔹 Read CLI values first
+	accessKeyID, _ := cmd.Flags().GetString(commonParams.AccessKeyIDConfigKey)
+	accessKeySecret, _ := cmd.Flags().GetString(commonParams.AccessKeySecretConfigKey)
+	astAPIKey, _ := cmd.Flags().GetString(commonParams.AstAPIKey)
+
+	// 🔹 If nothing passed via CLI, fall back to config
+	if accessKeyID == "" && accessKeySecret == "" && astAPIKey == "" {
+		accessKeyID = viper.GetString(commonParams.AccessKeyIDConfigKey)
+		accessKeySecret = viper.GetString(commonParams.AccessKeySecretConfigKey)
+		astAPIKey = viper.GetString(commonParams.AstAPIKey)
+	}
+
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
@@ -613,9 +623,15 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	}
 
 	if accessKeyID != "" {
-		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+		accessToken, err = getNewToken(
+			getCredentialsPayload(accessKeyID, accessKeySecret),
+			authURI,
+		)
 	} else {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+		accessToken, err = getNewToken(
+			getAPIKeyPayload(astAPIKey),
+			authURI,
+		)
 	}
 
 	if err != nil {
@@ -623,7 +639,6 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	}
 
 	writeCredentialsToCache(accessToken)
-
 	return accessToken, nil
 }
 
