@@ -33,6 +33,26 @@ jobs:
           fi
   integration-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test-group:
+          - name: "scan-create"
+            pattern: "^(TestScan|TestCreate|TestCancel|TestBranch|TestBroken|TestIncremental)"
+          - name: "container"
+            pattern: "^TestContainer"
+          - name: "results"
+            pattern: "^(TestResults|TestResult_)"
+          - name: "auth-config"
+            pattern: "^(TestAuth|TestLoad|TestSet|TestRoot|TestTenant|TestTelemetry)"
+          - name: "pr-decoration"
+            pattern: "^TestPR"
+          - name: "git-providers"
+            pattern: "^(TestAzure|TestBitbucket|TestGit)"
+          - name: "realtime-engines"
+            pattern: "^(TestIac|TestOss|TestSca|TestSecrets|TestExecute|TestASCA)"
+          - name: "other"
+            pattern: "^(TestCode|TestImport|TestProject|TestChat|TestPre|TestHooks|TestKics|TestRun|Test_)"
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -49,7 +69,21 @@ jobs:
         run: |
           pip install pre-commit
           pre-commit install
-      - name: Go Integration test
+      - name: Start Squid Proxy
+        run: |
+          docker run \
+            --name squid \
+            -d \
+            -p 3128:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+      - name: Download ScaResolver
+        run: |
+          wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+      - name: Run Integration Tests - ${{ matrix.test-group.name }}
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -95,27 +129,117 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
-          ./internal/commands/.scripts/integration_down.sh
+          echo "Running test group: ${{ matrix.test-group.name }}"
+          echo "Test pattern: ${{ matrix.test-group.pattern }}"
 
-      - name: Coverage report
+          go test \
+            -tags integration \
+            -v \
+            -timeout 60m \
+            -run "${{ matrix.test-group.pattern }}" \
+            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+            -coverprofile cover-${{ matrix.test-group.name }}.out \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
+
+          TEST_EXIT_CODE=${PIPESTATUS[0]}
+
+          # Check for failed tests
+          if grep -q "^--- FAIL:" test_output.log; then
+            echo "Some tests failed, attempting retry..."
+            grep -E "^--- FAIL: " test_output.log | awk '{print $3}' > failedTests
+
+            while IFS= read -r testName; do
+              echo "Retrying: $testName"
+              go test \
+                -tags integration \
+                -v \
+                -timeout 30m \
+                -run "^$testName$" \
+                -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+                -coverprofile cover_rerun.out \
+                github.com/checkmarx/ast-cli/test/integration || TEST_EXIT_CODE=1
+
+              if [ -f cover_rerun.out ]; then
+                gocovmerge cover-${{ matrix.test-group.name }}.out cover_rerun.out > merged.out
+                mv merged.out cover-${{ matrix.test-group.name }}.out
+                rm -f cover_rerun.out
+              fi
+            done < failedTests
+          fi
+
+          exit $TEST_EXIT_CODE
+
+      - name: Cleanup projects
+        if: always()
+        shell: bash
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+        run: |
+          if [ -f projectName.txt ]; then
+            go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+          fi
+
+      - name: Stop Squid Proxy
+        if: always()
+        run: docker rm -f squid || true
+
+      - name: Upload coverage artifact
+        if: always()
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: ${{ runner.os }}-coverage-latest
+          name: coverage-${{ matrix.test-group.name }}
+          path: cover-${{ matrix.test-group.name }}.out
+          retention-days: 1
+
+  merge-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
+          path: ./coverage-reports
+
+      - name: Merge coverage reports
+        run: |
+          echo "Coverage files found:"
+          ls -la ./coverage-reports/
+
+          gocovmerge ./coverage-reports/cover-*.out > cover.out
+          go tool cover -html=cover.out -o coverage.html
+
+          echo "Merged coverage report generated"
+
+      - name: Upload merged coverage report
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: ${{ runner.os }}-coverage-merged
           path: coverage.html
 
-      - name: Check if total coverage is greater then 75
+      - name: Check if total coverage is greater than 75
         shell: bash
         run: |
           CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
           EXPECTED_CODE_COV=75
           var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
           if [ "$var" -eq 1 ];then
-            echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+            echo "Your code coverage is too low. Coverage percentage is: $CODE_COV"
             exit 1
           else
-            echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+            echo "Your code coverage test passed! Coverage percentage is: $CODE_COV"
             exit 0
           fi
   lint:
