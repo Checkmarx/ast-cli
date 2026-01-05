@@ -3,11 +3,11 @@ package iacrealtime
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"os"
+	"path/filepath"
 )
 
 type IacRealtimeService struct {
@@ -135,4 +135,13 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 		return errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 	return nil
+}
+
+func checkEnginePresentInPath(engineName string) (string, error) {
+	fallbackPath := filepath.Join("/usr/local/bin", engineName)
+	info, err := os.Stat(fallbackPath)
+	if err == nil && !info.IsDir() {
+		return fallbackPath, nil
+	}
+	return "", fmt.Errorf(engineName + " not found in PATH or /usr/local/bin")
 }
