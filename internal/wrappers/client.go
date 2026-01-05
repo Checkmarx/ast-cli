@@ -618,16 +618,16 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 
 	// Decide which auth mechanism to use:
 	// - If only one type (client credentials or API key) was provided via CLI, prefer that over config values.
-	// - Otherwise, fall back to the existing precedence: client credentials first, then API key.
+	// - Otherwise, fall back to the existing precedence: API KEY first, then client credentials.
 	switch {
 	case accessKeyFromCLI && !apiKeyFromCLI && accessKeyID != "" && accessKeySecret != "":
 		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 	case apiKeyFromCLI && !accessKeyFromCLI && astAPIKey != "":
 		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
 	default:
-		if accessKeyID != "" && accessKeySecret != "" {
+		if astAPIKey != "" {
 			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
-		} else if astAPIKey != "" {
+		} else if accessKeyID != "" && accessKeySecret != "" {
 			accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
 		}
 	}
