@@ -38,51 +38,57 @@ else
 fi
 
 # Define test patterns for each group
-# This splits 337 tests into 6 parallel groups (~56 tests each)
+# Strategy: Run ALL tests, coverage merging will handle overlaps
+# This ensures 100% test coverage across all groups
 case "$TEST_GROUP" in
   "fast-validation")
     # Fast tests: auth, configuration, validation (no actual scans)
     # Estimated time: 3-5 minutes
-    TEST_PATTERN="^Test(Auth|Configuration|Tenant|FeatureFlags|Predicate|Logs)"
+    TEST_PATTERN="."  # Run all tests
+    SKIP_PATTERN="Scan|PR|UserCount|Realtime|Project|Result|Import|Bfl|Chat|Learn|Remediation|Triage|Container|Scs|ASCA|Asca"
     TIMEOUT="10m"
     ;;
-  
+
   "scan-core")
-    # Core scan functionality (excluding slow tests)
+    # Core scan functionality - basic scan operations
     # Estimated time: 20-25 minutes
-    TEST_PATTERN="^TestScan(Create|List|Show|Delete|Workflow|Logs|Filter|Threshold|Resubmit|Types)"
-    EXCLUDE_PATTERN="Timeout|Cancel|SlowRepo|Incremental|E2E"
+    TEST_PATTERN="Scan"  # All tests with "Scan" in name
+    SKIP_PATTERN="Realtime|ASCA|Asca|Container.*Scan"
     TIMEOUT="30m"
     ;;
-  
+
   "scan-engines")
-    # Multi-engine scans: SAST, SCA, IaC, Containers, SCS
+    # Multi-engine scans: SAST, SCA, IaC, Containers, SCS, ASCA
     # Estimated time: 25-30 minutes
-    TEST_PATTERN="^Test(Container|Scs|CreateScan_With.*Engine|.*ApiSecurity|.*ExploitablePath)"
+    TEST_PATTERN="ASCA|Asca|Container|Scs|Engine|CodeBashing|RiskManagement|CreateQueryDescription|MaskSecrets"
+    SKIP_PATTERN="Realtime"
     TIMEOUT="35m"
     ;;
-  
+
   "scm-integration")
-    # SCM integrations: GitHub, GitLab, Azure, Bitbucket
+    # SCM integrations: GitHub, GitLab, Azure, Bitbucket, Hooks, Predicates
     # Estimated time: 15-20 minutes
-    TEST_PATTERN="^Test(PR|UserCount)"
+    TEST_PATTERN="PR|UserCount|RateLimit|Hooks|Predicate|PreReceive|PreCommit"
+    SKIP_PATTERN="^$"  # No skip pattern
     TIMEOUT="25m"
     ;;
-  
+
   "realtime-features")
     # Real-time scanning features
     # Estimated time: 10-15 minutes
-    TEST_PATTERN="^Test(Kics|Sca|Oss|Secrets|Containers)Realtime|^TestRun.*Realtime"
+    TEST_PATTERN="Realtime"
+    SKIP_PATTERN="^$"  # No skip pattern
     TIMEOUT="20m"
     ;;
-  
+
   "advanced-features")
-    # Advanced features: projects, results, imports, BFL, ASCA, chat
+    # Advanced features: projects, results, imports, BFL, chat, learn, remediation, triage
     # Estimated time: 15-20 minutes
-    TEST_PATTERN="^Test(Project|Result|Import|Bfl|Asca|Chat|Learn|Telemetry|RateLimit|PreCommit|PreReceive|Remediation)"
+    TEST_PATTERN="Project|Result|Import|Bfl|Chat|Learn|Telemetry|Remediation|Triage|GetProjectName"
+    SKIP_PATTERN="^$"  # No skip pattern
     TIMEOUT="25m"
     ;;
-  
+
   *)
     echo -e "${RED}Unknown test group: $TEST_GROUP${NC}"
     exit 1
@@ -91,6 +97,7 @@ esac
 
 echo -e "${GREEN}Running test group: ${TEST_GROUP}${NC}"
 echo -e "${YELLOW}Test pattern: ${TEST_PATTERN}${NC}"
+echo -e "${YELLOW}Skip pattern: ${SKIP_PATTERN}${NC}"
 echo -e "${YELLOW}Timeout: ${TIMEOUT}${NC}"
 
 # Build the go test command
@@ -99,8 +106,8 @@ TEST_CMD="${TEST_CMD} -coverpkg github.com/checkmarx/ast-cli/internal/commands,g
 TEST_CMD="${TEST_CMD} -coverprofile cover.out"
 TEST_CMD="${TEST_CMD} -run '${TEST_PATTERN}'"
 
-if [ ! -z "$EXCLUDE_PATTERN" ]; then
-  TEST_CMD="${TEST_CMD} -skip '${EXCLUDE_PATTERN}'"
+if [ ! -z "$SKIP_PATTERN" ] && [ "$SKIP_PATTERN" != "^$" ]; then
+  TEST_CMD="${TEST_CMD} -skip '${SKIP_PATTERN}'"
 fi
 
 TEST_CMD="${TEST_CMD} github.com/checkmarx/ast-cli/test/integration"
