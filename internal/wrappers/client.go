@@ -978,4 +978,5 @@ func extractAZPFromToken(astToken string) (string, error) {
 		return "ast-app", nil // default value in case of error
 	}
 	return azp, nil
+
 }
