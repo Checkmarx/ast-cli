@@ -7,6 +7,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -137,11 +138,15 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 	return nil
 }
 
-func checkEnginePresentInPath(engineName string) (string, error) {
+func engineNameResolution(engineName string) (string, error) {
+	if _, err := exec.LookPath(engineName); err == nil {
+		return engineName, nil
+	}
+
 	fallbackPath := filepath.Join("/usr/local/bin", engineName)
 	info, err := os.Stat(fallbackPath)
 	if err == nil && !info.IsDir() {
 		return fallbackPath, nil
 	}
-	return "", fmt.Errorf(engineName + " not found in PATH or /usr/local/bin")
+	return "", fmt.Errorf(engineName + " not found in PATH or in /usr/local/bin")
 }
