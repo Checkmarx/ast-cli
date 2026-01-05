@@ -599,7 +599,6 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
-
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
@@ -614,15 +613,9 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	}
 
 	if astAPIKey != "" {
-		accessToken, err = getNewToken(
-			getAPIKeyPayload(astAPIKey),
-			authURI,
-		)
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
 	} else {
-		accessToken, err = getNewToken(
-			getCredentialsPayload(accessKeyID, accessKeySecret),
-			authURI,
-		)
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 	}
 
 	if err != nil {
@@ -630,6 +623,7 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	}
 
 	writeCredentialsToCache(accessToken)
+
 	return accessToken, nil
 }
 
