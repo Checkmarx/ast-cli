@@ -626,9 +626,9 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
 	default:
 		if astAPIKey != "" {
-			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
-		} else if accessKeyID != "" && accessKeySecret != "" {
 			accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+		} else if accessKeyID != "" && accessKeySecret != "" {
+			accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 		}
 	}
 
