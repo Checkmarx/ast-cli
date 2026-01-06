@@ -128,6 +128,13 @@ jobs:
             cover.out
             coverage.html
 
+      - name: Upload test output
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        if: always()
+        with:
+          name: test-output-${{ matrix.group }}
+          path: test_output.log
+
   # Merge coverage from all parallel test groups
   integration-coverage:
     runs-on: ubuntu-latest
@@ -148,6 +155,80 @@ jobs:
         with:
           pattern: coverage-*
           merge-multiple: false
+
+      - name: Download all test outputs
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: test-output-*
+          merge-multiple: false
+
+      - name: Generate test summary
+        shell: bash
+        run: |
+          echo "## 🧪 Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Group | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | Pass Rate |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|-----------|-----------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
+
+          GRAND_TOTAL=0
+          GRAND_PASSED=0
+          GRAND_FAILED=0
+          GRAND_SKIPPED=0
+
+          for group in scan containers scm git-hooks core; do
+            LOG_FILE="test-output-${group}/test_output.log"
+            if [ -f "$LOG_FILE" ]; then
+              PASSED=$(grep -c "^--- PASS:" "$LOG_FILE" 2>/dev/null || echo "0")
+              FAILED=$(grep -c "^--- FAIL:" "$LOG_FILE" 2>/dev/null || echo "0")
+              SKIPPED=$(grep -c "^--- SKIP:" "$LOG_FILE" 2>/dev/null || echo "0")
+              TOTAL=$((PASSED + FAILED + SKIPPED))
+
+              if [ "$TOTAL" -gt 0 ]; then
+                RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED/$TOTAL)*100}")
+              else
+                RATE="0.0"
+              fi
+
+              GRAND_TOTAL=$((GRAND_TOTAL + TOTAL))
+              GRAND_PASSED=$((GRAND_PASSED + PASSED))
+              GRAND_FAILED=$((GRAND_FAILED + FAILED))
+              GRAND_SKIPPED=$((GRAND_SKIPPED + SKIPPED))
+
+              echo "| **${group}** | ${TOTAL} | ${PASSED} | ${FAILED} | ${SKIPPED} | ${RATE}% |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| **${group}** | - | - | - | - | N/A |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          # Calculate grand total pass rate
+          if [ "$GRAND_TOTAL" -gt 0 ]; then
+            GRAND_RATE=$(awk "BEGIN {printf \"%.1f\", ($GRAND_PASSED/$GRAND_TOTAL)*100}")
+          else
+            GRAND_RATE="0.0"
+          fi
+
+          echo "|-------|-------|-----------|-----------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **TOTAL** | **${GRAND_TOTAL}** | **${GRAND_PASSED}** | **${GRAND_FAILED}** | **${GRAND_SKIPPED}** | **${GRAND_RATE}%** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # List failed tests if any
+          if [ "$GRAND_FAILED" -gt 0 ]; then
+            echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for group in scan containers scm git-hooks core; do
+              LOG_FILE="test-output-${group}/test_output.log"
+              if [ -f "$LOG_FILE" ]; then
+                FAILED_TESTS=$(grep "^--- FAIL:" "$LOG_FILE" | awk '{print $3}' | head -10)
+                if [ -n "$FAILED_TESTS" ]; then
+                  echo "**${group}:**" >> $GITHUB_STEP_SUMMARY
+                  echo "$FAILED_TESTS" | while read test; do
+                    echo "- \`${test}\`" >> $GITHUB_STEP_SUMMARY
+                  done
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                fi
+              fi
+            done
+          fi
 
       - name: Merge coverage reports
         shell: bash
