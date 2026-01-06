@@ -1,3 +1,6 @@
+# Accept optional test filter as first argument (regex pattern for -run flag)
+TEST_FILTER=${1:-""}
+
 # Start the Squid proxy in a Docker container
 docker run \
   --name squid \
@@ -12,6 +15,13 @@ wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.g
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
 
+# Build the test filter argument if provided
+RUN_ARG=""
+if [ -n "$TEST_FILTER" ]; then
+    RUN_ARG="-run $TEST_FILTER"
+    echo "Running tests matching filter: $TEST_FILTER"
+fi
+
 # Step 1: Check if the failedTests file exists
 FAILED_TESTS_FILE="failedTests"
 
@@ -25,6 +35,7 @@ go test \
     -tags integration \
     -v \
     -timeout 210m \
+    $RUN_ARG \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
     -coverprofile cover.out \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log

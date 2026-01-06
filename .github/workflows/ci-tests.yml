@@ -33,6 +33,25 @@ jobs:
           fi
   integration-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: scan
+            filter: "^TestScan"
+            timeout: 60
+          - group: containers
+            filter: "^Test.*(Container|IacRealtime|SecretsRealtime).*"
+            timeout: 30
+          - group: scm
+            filter: "^Test.*(UserCount|Azure|Bitbucket|Github|Gitlab|PR).*"
+            timeout: 30
+          - group: git-hooks
+            filter: "^Test.*(PreCommit|PreReceive).*"
+            timeout: 30
+          - group: core
+            filter: "^Test(Auth|Config|Project|Result|Root|Tenant|Feature|Chat|Log|Import|Predicate|Telemetry|Learn|Rate|Bfl|Asca|Oss).*"
+            timeout: 45
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -49,8 +68,9 @@ jobs:
         run: |
           pip install pre-commit
           pre-commit install
-      - name: Go Integration test
+      - name: Go Integration test - ${{ matrix.group }}
         shell: bash
+        timeout-minutes: ${{ matrix.timeout }}
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
           CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
@@ -96,27 +116,74 @@ jobs:
           PR_BITBUCKET_ID: 1
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_up.sh "${{ matrix.filter }}"
           ./internal/commands/.scripts/integration_down.sh
 
-      - name: Coverage report
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.group }}
+          path: |
+            cover.out
+            coverage.html
+
+  # Merge coverage from all parallel test groups
+  integration-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+
+      - name: Merge coverage reports
+        shell: bash
+        run: |
+          # Find all cover.out files and merge them
+          find . -name "cover.out" -type f > coverage_files.txt
+          if [ -s coverage_files.txt ]; then
+            gocovmerge $(cat coverage_files.txt | tr '\n' ' ') > merged-cover.out
+            go tool cover -html=merged-cover.out -o merged-coverage.html
+          fi
+
+      - name: Upload merged coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: ${{ runner.os }}-coverage-latest
-          path: coverage.html
+          name: ${{ runner.os }}-coverage-merged
+          path: |
+            merged-cover.out
+            merged-coverage.html
 
       - name: Check if total coverage is greater then 75
         shell: bash
         run: |
-          CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          EXPECTED_CODE_COV=75
-          var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
-          if [ "$var" -eq 1 ];then
-            echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
-            exit 1
+          if [ -f merged-cover.out ]; then
+            CODE_COV=$(go tool cover -func merged-cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+            EXPECTED_CODE_COV=75
+            var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
+            if [ "$var" -eq 1 ];then
+              echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+              exit 1
+            else
+              echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+              exit 0
+            fi
           else
-            echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
-            exit 0
+            echo "No coverage file found - tests may have failed"
+            exit 1
           fi
   lint:
     name: lint
