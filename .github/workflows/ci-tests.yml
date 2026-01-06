@@ -233,11 +233,34 @@ jobs:
       - name: Merge coverage reports
         shell: bash
         run: |
+          # Debug: Show downloaded artifact structure
+          echo "=== Downloaded artifacts structure ==="
+          ls -la
+          find . -name "cover.out" -type f -exec ls -la {} \;
+
           # Find all cover.out files and merge them
           find . -name "cover.out" -type f > coverage_files.txt
+
+          echo "=== Coverage files found ==="
+          cat coverage_files.txt
+          echo "=== File count: $(wc -l < coverage_files.txt) ==="
+
           if [ -s coverage_files.txt ]; then
+            # Show individual coverage before merge
+            echo "=== Individual coverage percentages ==="
+            while read -r file; do
+              COV=$(go tool cover -func "$file" | grep total | awk '{print $3}')
+              echo "$file: $COV"
+            done < coverage_files.txt
+
+            # Merge all coverage files
             gocovmerge $(cat coverage_files.txt | tr '\n' ' ') > merged-cover.out
             go tool cover -html=merged-cover.out -o merged-coverage.html
+
+            echo "=== Merged coverage ==="
+            go tool cover -func merged-cover.out | grep total
+          else
+            echo "ERROR: No coverage files found!"
           fi
 
       - name: Upload merged coverage report

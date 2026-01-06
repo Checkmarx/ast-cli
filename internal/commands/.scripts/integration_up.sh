@@ -98,10 +98,26 @@ echo "=============================================="
 echo "           TEST EXECUTION SUMMARY             "
 echo "=============================================="
 
-# Parse test results from log
-TOTAL_PASSED=$(grep -c "^--- PASS:" test_output.log 2>/dev/null || echo "0")
-TOTAL_FAILED=$(grep -c "^--- FAIL:" test_output.log 2>/dev/null || echo "0")
-TOTAL_SKIPPED=$(grep -c "^--- SKIP:" test_output.log 2>/dev/null || echo "0")
+# Parse test results from log (use tr to remove any newlines/carriage returns)
+TOTAL_PASSED=$(grep -c "^--- PASS:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+TOTAL_FAILED=$(grep -c "^--- FAIL:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+TOTAL_SKIPPED=$(grep -c "^--- SKIP:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+
+# Ensure values are valid integers (default to 0 if empty or invalid)
+TOTAL_PASSED=${TOTAL_PASSED:-0}
+TOTAL_FAILED=${TOTAL_FAILED:-0}
+TOTAL_SKIPPED=${TOTAL_SKIPPED:-0}
+
+# Remove any non-numeric characters
+TOTAL_PASSED=$(echo "$TOTAL_PASSED" | tr -cd '0-9')
+TOTAL_FAILED=$(echo "$TOTAL_FAILED" | tr -cd '0-9')
+TOTAL_SKIPPED=$(echo "$TOTAL_SKIPPED" | tr -cd '0-9')
+
+# Default to 0 if empty after cleaning
+TOTAL_PASSED=${TOTAL_PASSED:-0}
+TOTAL_FAILED=${TOTAL_FAILED:-0}
+TOTAL_SKIPPED=${TOTAL_SKIPPED:-0}
+
 TOTAL_TESTS=$((TOTAL_PASSED + TOTAL_FAILED + TOTAL_SKIPPED))
 
 # Calculate pass rate
@@ -111,15 +127,18 @@ else
     PASS_RATE="0.0"
 fi
 
-# Extract duration from test output
-DURATION=$(grep -E "^(ok|FAIL)\s+github.com/checkmarx/ast-cli/test/integration" test_output.log | awk '{print $NF}' | head -1)
+# Extract duration from test output (look for the integration test package line)
+DURATION=$(grep -E "(ok|FAIL)\s+github.com/checkmarx/ast-cli/test/integration\s+" test_output.log | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+s$/) print $i}' | head -1)
 if [ -z "$DURATION" ]; then
     DURATION="N/A"
 fi
 
-# Get test filter info
+# Get test filter info (truncate if too long for table)
 if [ -n "$TEST_FILTER" ]; then
-    FILTER_INFO="$TEST_FILTER"
+    FILTER_INFO=$(echo "$TEST_FILTER" | cut -c1-18)
+    if [ ${#TEST_FILTER} -gt 18 ]; then
+        FILTER_INFO="${FILTER_INFO}..."
+    fi
 else
     FILTER_INFO="All tests"
 fi
@@ -144,8 +163,10 @@ if [ "$TOTAL_FAILED" -gt 0 ]; then
     echo "Failed Tests:"
     echo "-------------"
     grep "^--- FAIL:" test_output.log | awk '{print "  [X] " $3}' | head -20
-    if [ "$TOTAL_FAILED" -gt 20 ]; then
-        echo "  ... and $((TOTAL_FAILED - 20)) more"
+    FAIL_COUNT=$(grep -c "^--- FAIL:" test_output.log 2>/dev/null | tr -cd '0-9')
+    FAIL_COUNT=${FAIL_COUNT:-0}
+    if [ "$FAIL_COUNT" -gt 20 ]; then
+        echo "  ... and $((FAIL_COUNT - 20)) more"
     fi
 fi
 
