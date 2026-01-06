@@ -27,7 +27,7 @@ go test \
     -timeout 210m \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
     -coverprofile cover.out \
-    github.com/checkmarx/ast-cli/test/integration/auth_test.go 2>&1 | tee test_output.log
+    github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
 
 # Generate the initial HTML coverage report
 go tool cover -html=cover.out -o coverage.html
