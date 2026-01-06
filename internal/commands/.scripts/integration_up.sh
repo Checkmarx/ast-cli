@@ -26,9 +26,10 @@ fi
 FAILED_TESTS_FILE="failedTests"
 rerun_status=0
 
-# Step 1: Create the failedTests file
-echo "Creating $FAILED_TESTS_FILE..."
+# Step 1: Create tracking files (ensure they exist for CI artifact upload)
+echo "Creating tracking files..."
 touch "$FAILED_TESTS_FILE"
+touch test_output.log
 
 # Step 3: Run all tests and write failed test names to failedTests file
 echo "Running all tests..."
