@@ -99,6 +99,32 @@ jobs:
           ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_down.sh
 
+      - name: Display Test Summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f test_summary.txt ]; then
+            source test_summary.txt
+
+            echo "## 📊 Integration Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ **Passed** | $PASSED_TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ **Failed** | $FAILED_TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ **Skipped** | $SKIPPED_TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📝 **Total** | $TOTAL_TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$FAILED_TESTS" -eq 0 ]; then
+              echo "### ✅ All tests passed!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### ⚠️ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test summary file not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
       - name: Coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:

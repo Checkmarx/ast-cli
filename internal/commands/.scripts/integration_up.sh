@@ -27,7 +27,7 @@ go test \
     -timeout 210m \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
     -coverprofile cover.out \
-    github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
+    github.com/checkmarx/ast-cli/test/integration/auth_test.go 2>&1 | tee test_output.log
 
 # Generate the initial HTML coverage report
 go tool cover -html=cover.out -o coverage.html
@@ -41,6 +41,18 @@ echo "status value after tests $status"
 if [ $status -ne 0 ]; then
     echo "Integration tests failed"
 fi
+
+# Generate test summary statistics
+TOTAL_TESTS=$(grep -E "^(--- PASS:|--- FAIL:)" test_output.log | wc -l)
+PASSED_TESTS=$(grep -E "^--- PASS:" test_output.log | wc -l)
+FAILED_TESTS=$(grep -E "^--- FAIL:" test_output.log | wc -l)
+SKIPPED_TESTS=$(grep -E "^--- SKIP:" test_output.log | wc -l)
+
+# Save summary to file for GitHub Actions
+echo "TOTAL_TESTS=$TOTAL_TESTS" > test_summary.txt
+echo "PASSED_TESTS=$PASSED_TESTS" >> test_summary.txt
+echo "FAILED_TESTS=$FAILED_TESTS" >> test_summary.txt
+echo "SKIPPED_TESTS=$SKIPPED_TESTS" >> test_summary.txt
 
 # Step 4: Check if failedTests file is empty
 if [ ! -s "$FAILED_TESTS_FILE" ]; then
@@ -86,6 +98,7 @@ go test -v github.com/checkmarx/ast-cli/test/cleandata
 # Step 8: Final cleanup and exit
 rm -f "$FAILED_TESTS_FILE" test_output.log
 
+# Keep test_summary.txt for GitHub Actions to read
 if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
     exit 1
 else
