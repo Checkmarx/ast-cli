@@ -22,10 +22,11 @@ if [ -n "$TEST_FILTER" ]; then
     echo "Running tests matching filter: $TEST_FILTER"
 fi
 
-# Step 1: Check if the failedTests file exists
+# Initialize variables
 FAILED_TESTS_FILE="failedTests"
+rerun_status=0
 
-# Step 2: Create the failedTests file
+# Step 1: Create the failedTests file
 echo "Creating $FAILED_TESTS_FILE..."
 touch "$FAILED_TESTS_FILE"
 
@@ -57,7 +58,7 @@ fi
 if [ ! -s "$FAILED_TESTS_FILE" ]; then
     # If the file is empty, all tests passed
     echo "All tests passed."
-    rm -f "$FAILED_TESTS_FILE" test_output.log
+    rm -f "$FAILED_TESTS_FILE"
 else
     # If the file is not empty, rerun the failed tests
     echo "Rerunning failed tests..."
@@ -122,26 +123,26 @@ else
     FILTER_INFO="All tests"
 fi
 
-# Print summary table
+# Print summary table (no ANSI colors for CI compatibility)
 printf "\n"
-printf "┌─────────────────────┬─────────────────────┐\n"
-printf "│ %-19s │ %-19s │\n" "Metric" "Value"
-printf "├─────────────────────┼─────────────────────┤\n"
-printf "│ %-19s │ %-19s │\n" "Test Filter" "$FILTER_INFO"
-printf "│ %-19s │ %-19s │\n" "Total Tests" "$TOTAL_TESTS"
-printf "│ %-19s │ \033[32m%-19s\033[0m │\n" "Passed" "$TOTAL_PASSED"
-printf "│ %-19s │ \033[31m%-19s\033[0m │\n" "Failed" "$TOTAL_FAILED"
-printf "│ %-19s │ \033[33m%-19s\033[0m │\n" "Skipped" "$TOTAL_SKIPPED"
-printf "│ %-19s │ %-19s │\n" "Pass Rate" "${PASS_RATE}%"
-printf "│ %-19s │ %-19s │\n" "Duration" "$DURATION"
-printf "└─────────────────────┴─────────────────────┘\n"
+printf "+---------------------+---------------------+\n"
+printf "| %-19s | %-19s |\n" "Metric" "Value"
+printf "+---------------------+---------------------+\n"
+printf "| %-19s | %-19s |\n" "Test Filter" "$FILTER_INFO"
+printf "| %-19s | %-19s |\n" "Total Tests" "$TOTAL_TESTS"
+printf "| %-19s | %-19s |\n" "Passed" "$TOTAL_PASSED"
+printf "| %-19s | %-19s |\n" "Failed" "$TOTAL_FAILED"
+printf "| %-19s | %-19s |\n" "Skipped" "$TOTAL_SKIPPED"
+printf "| %-19s | %-19s |\n" "Pass Rate" "${PASS_RATE}%"
+printf "| %-19s | %-19s |\n" "Duration" "$DURATION"
+printf "+---------------------+---------------------+\n"
 
 # Print failed test names if any
 if [ "$TOTAL_FAILED" -gt 0 ]; then
     echo ""
     echo "Failed Tests:"
-    echo "─────────────"
-    grep "^--- FAIL:" test_output.log | awk '{print "  ✗ " $3}' | head -20
+    echo "-------------"
+    grep "^--- FAIL:" test_output.log | awk '{print "  [X] " $3}' | head -20
     if [ "$TOTAL_FAILED" -gt 20 ]; then
         echo "  ... and $((TOTAL_FAILED - 20)) more"
     fi
@@ -155,7 +156,8 @@ echo "Running cleandata to clean up projects..."
 go test -v github.com/checkmarx/ast-cli/test/cleandata
 
 # Step 9: Final cleanup and exit
-rm -f "$FAILED_TESTS_FILE" test_output.log
+# Note: Keep test_output.log for CI artifact upload
+rm -f "$FAILED_TESTS_FILE"
 
 if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
     exit 1

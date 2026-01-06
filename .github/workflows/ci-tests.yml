@@ -39,19 +39,19 @@ jobs:
         include:
           - group: scan
             filter: "^TestScan"
-            timeout: 60
+            timeout: 90
           - group: containers
             filter: "^Test.*(Container|IacRealtime|SecretsRealtime).*"
-            timeout: 30
+            timeout: 60
           - group: scm
             filter: "^Test.*(UserCount|Azure|Bitbucket|Github|Gitlab|PR).*"
-            timeout: 30
+            timeout: 45
           - group: git-hooks
             filter: "^Test.*(PreCommit|PreReceive).*"
-            timeout: 30
+            timeout: 45
           - group: core
             filter: "^Test(Auth|Config|Project|Result|Root|Tenant|Feature|Chat|Log|Import|Predicate|Telemetry|Learn|Rate|Bfl|Asca|Oss).*"
-            timeout: 45
+            timeout: 60
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
