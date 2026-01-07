@@ -21,10 +21,11 @@ import (
 )
 
 const (
-	fileName         = "result-test"
-	resultsDirectory = "output-results-folder/"
-	fileExtention    = "report.json"
-
+	fileName               = "result-test"
+	resultsDirectory       = "output-results-folder/"
+	fileExtention          = "report.json"
+	queryIDWrongValueValue = "11666704984804998184"
+	queryIDValue           = "8481125285487743346"
 	//----------------------------------------------------------------------------------------------------------------------
 	// This ScanIDWithDevAndTestDep is associated with the CXOne project: ASTCLI/HideDevAndTestsVulnerabilities/Test (DEU, Galactica tenant).
 	// All vulnerable packages in this project have been snoozed or muted, so no vulnerabilities should appear in this scan.
@@ -192,7 +193,7 @@ func TestCodeBashingParamFailed(t *testing.T) {
 	}
 
 	err, _ := executeCommand(t, args...)
-	assertError(t, err, "required flag(s) \"cwe-id\", \"language\", \"vulnerability-type\" not set")
+	assertError(t, err, "required flag(s) \"query-id\" not set")
 }
 
 func TestCodeBashingList(t *testing.T) {
@@ -201,9 +202,8 @@ func TestCodeBashingList(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79")
+		"--debug",
+		flag(params.QueryIDFlag), queryIDValue)
 
 	codebashing := []wrappers.CodeBashingCollection{}
 
@@ -218,9 +218,8 @@ func TestCodeBashingListJson(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79",
+		"--debug",
+		flag(params.QueryIDFlag), queryIDValue,
 		flag(params.FormatFlag), "json")
 
 	codebashing := []wrappers.CodeBashingCollection{}
@@ -236,34 +235,35 @@ func TestCodeBashingListTable(t *testing.T) {
 		"Getting results should pass",
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "79",
+		"--debug",
+		flag(params.QueryIDFlag), queryIDValue,
 		flag(params.FormatFlag), "table")
 
 	assert.Assert(t, outputBuffer != nil, "Should exist codebashing link")
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
-	args := []string{
+	outputBuffer := executeCmdNilAssertion(
+		t,
+		"Getting results should pass",
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "11",
-	}
+		"--debug",
+		flag(params.QueryIDFlag), queryIDWrongValueValue)
 
-	err, _ := executeCommand(t, args...)
-	assertError(t, err, "No codebashing link available")
+	assert.Assert(t, outputBuffer != nil, "Output buffer should not be nil")
+	output := outputBuffer.String()
+	assert.Assert(t,
+		strings.Contains(output, "lessonUrl") &&
+			strings.Contains(output, "/app/home"),
+		"Output should contain expected codebashing lesson information")
 }
 
 func TestCodeBashingFailedListingAuth(t *testing.T) {
 	args := []string{
 		"results",
 		"codebashing",
-		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
-		flag(params.CweIDFlag), "11",
+		flag(params.QueryIDFlag), queryIDValue,
 		flag(params.AccessKeySecretFlag), "mock",
 		flag(params.AccessKeyIDFlag), "mock",
 		flag(params.AstAPIKeyFlag), "mock",
