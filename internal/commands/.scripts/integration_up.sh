@@ -51,15 +51,26 @@ else
     # If the file is not empty, rerun the failed tests
     echo "Rerunning failed tests..."
     rerun_status=0
+    STILL_FAILING_TESTS_FILE="stillFailingTests"
+    touch "$STILL_FAILING_TESTS_FILE"
+
     while IFS= read -r testName; do
-        go test \
+        echo "Retrying: $testName"
+        if go test \
             -tags integration \
             -v \
+            -run "TestAuth" \
             -timeout 30m \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
             -coverprofile cover_rerun.out \
             -run "^$testName$" \
-            github.com/checkmarx/ast-cli/test/integration || rerun_status=1
+            github.com/checkmarx/ast-cli/test/integration; then
+            echo "  ✓ $testName passed on retry"
+        else
+            echo "  ✗ $testName still failing"
+            echo "$testName" >> "$STILL_FAILING_TESTS_FILE"
+            rerun_status=1
+        fi
     done < "$FAILED_TESTS_FILE"
 
     # Step 5: Merge the original and rerun coverage profiles
@@ -83,8 +94,44 @@ fi
 echo "Running cleandata to clean up projects..."
 go test -v github.com/checkmarx/ast-cli/test/cleandata
 
-# Step 8: Final cleanup and exit
-rm -f "$FAILED_TESTS_FILE" test_output.log
+# Step 8: Print summary of failed tests (if any)
+echo ""
+echo "=========================================="
+echo "          TEST EXECUTION SUMMARY          "
+echo "=========================================="
+
+if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
+    echo "Status: FAILED ✗"
+    echo ""
+
+    if [ -f "$STILL_FAILING_TESTS_FILE" ] && [ -s "$STILL_FAILING_TESTS_FILE" ]; then
+        echo "The following tests FAILED even after retry:"
+        echo "------------------------------------------"
+        cat "$STILL_FAILING_TESTS_FILE" | while IFS= read -r testName; do
+            echo "  ✗ $testName"
+        done
+        echo ""
+        echo "Total failed tests: $(wc -l < "$STILL_FAILING_TESTS_FILE")"
+        echo ""
+        echo "To rerun these tests individually:"
+        cat "$STILL_FAILING_TESTS_FILE" | while IFS= read -r testName; do
+            echo "  go test -tags integration -v -run \"^$testName$\" github.com/checkmarx/ast-cli/test/integration"
+        done
+    else
+        echo "Tests failed on initial run but details not available."
+        echo "Check test_output.log for more information."
+    fi
+else
+    echo "Status: SUCCESS ✓"
+    echo ""
+    echo "All integration tests passed!"
+fi
+
+echo "=========================================="
+echo ""
+
+# Step 9: Final cleanup and exit
+rm -f "$FAILED_TESTS_FILE" "$STILL_FAILING_TESTS_FILE" test_output.log
 
 if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
     exit 1
