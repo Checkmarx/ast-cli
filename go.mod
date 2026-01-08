@@ -1,9 +1,9 @@
 module github.com/checkmarx/ast-cli
 
-go 1.25.0
+go 1.24.11
 
 require (
-	github.com/Checkmarx/containers-resolver v1.0.29
+	github.com/Checkmarx/containers-resolver v1.0.30
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
@@ -301,13 +301,13 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm/v3 v3.19.3 // indirect
-	k8s.io/api v0.35.0 // indirect
+	k8s.io/api v0.34.0 // indirect
 	k8s.io/apiextensions-apiserver v0.34.0 // indirect
-	k8s.io/apimachinery v0.35.0 // indirect
-	k8s.io/apiserver v0.35.0 // indirect
+	k8s.io/apimachinery v0.34.0 // indirect
+	k8s.io/apiserver v0.34.0 // indirect
 	k8s.io/cli-runtime v0.34.0 // indirect
-	k8s.io/client-go v0.35.0 // indirect
-	k8s.io/component-base v0.35.0 // indirect
+	k8s.io/client-go v0.34.0 // indirect
+	k8s.io/component-base v0.34.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250910181357-589584f1c912 // indirect
 	k8s.io/kubectl v0.34.0 // indirect
