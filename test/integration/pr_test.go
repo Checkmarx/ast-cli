@@ -144,6 +144,7 @@ func TestPRGithubDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 }
 
 func TestPRGithubDecorationFailure(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"utils",
 		"pr",
@@ -229,6 +230,7 @@ func TestPRGitlabDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T
 }
 
 func TestPRGitlabDecorationFailure(t *testing.T) {
+	t.Parallel()
 
 	args := []string{
 		"utils",
@@ -312,6 +314,7 @@ func TestPRAzureDecoration_WhenUseCodeRepositoryFlag_ShouldSuccess(t *testing.T)
 }
 
 func TestPRAzureDecorationFailure(t *testing.T) {
+	t.Parallel()
 
 	args := []string{
 		"utils",
@@ -447,6 +450,7 @@ func TestPRBBOnCloudDecorationSuccessCase(t *testing.T) {
 }
 
 func TestPRBBBDecorationFailure(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"utils",
 		"pr",

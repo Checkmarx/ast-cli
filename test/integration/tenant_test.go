@@ -10,6 +10,7 @@ import (
 )
 
 func TestGetTenantConfigurationSuccessCaseJson(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "utils", "tenant",
 		flag(params.FormatFlag), "json",
@@ -18,6 +19,7 @@ func TestGetTenantConfigurationSuccessCaseJson(t *testing.T) {
 }
 
 func TestGetTenantConfigurationSuccessCaseList(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "utils", "tenant")
 	assert.NilError(t, err, "Must not fail")
 }

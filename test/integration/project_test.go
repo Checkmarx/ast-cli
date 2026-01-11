@@ -34,6 +34,7 @@ const SSHKeyFilePath = "ssh-key-file.txt"
 // - Delete the created project
 // - Get and assert the project was deleted
 func TestProjectsE2E(t *testing.T) {
+	t.Parallel()
 	projectID, _ := createProject(t, Tags, Groups)
 
 	response := listProjectByID(t, projectID)
@@ -54,6 +55,7 @@ func TestProjectsE2E(t *testing.T) {
 }
 
 func TestGetProjectByTagsFilter_whenProjectHasNoneTags_shouldReturnProjectWithNoTags(t *testing.T) {
+	t.Parallel()
 	projectID, _ := createProject(t, nil, nil)
 	defer deleteProject(t, projectID)
 
@@ -82,6 +84,7 @@ func assertTagsAndGroups(t *testing.T, project wrappers.ProjectResponseModel, gr
 
 // Create a project with empty project name should fail
 func TestCreateEmptyProjectName(t *testing.T) {
+	t.Parallel()
 
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
@@ -103,6 +106,7 @@ func TestCreateAlreadyExistingProject(t *testing.T) {
 }
 
 func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testing.T) {
+	t.Parallel()
 
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
@@ -114,6 +118,7 @@ func TestProjectCreate_ApplicationDoesntExist_FailAndReturnErrorMessage(t *testi
 }
 
 func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T) {
+	t.Parallel()
 
 	err, outBuffer := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
@@ -129,6 +134,7 @@ func TestProjectCreate_ApplicationExists_CreateProjectSuccessfully(t *testing.T)
 }
 
 func TestCreateWithInvalidGroup(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "project", "create", flag(params.FormatFlag),
 		printer.FormatJSON, flag(params.ProjectName), "project", flag(params.GroupList), "invalidGroup",
@@ -159,6 +165,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission(t *testing.T) {
 }
 
 func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t *testing.T) {
+	t.Parallel()
 	if !isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED") || (isFFEnabled(t, "GROUPS_VALIDATION_ENABLED") && isFFEnabled(t, "ACCESS_MANAGEMENT_ENABLED")) {
 		t.Skip("ACCESS_MANAGEMENT_ENABLED FFs are not enabled... Skipping test")
 	}
@@ -185,6 +192,7 @@ func TestCreateProjectWhenUserdoes_not_have_groups_permission_butonlyAM1_is_On(t
 }
 
 func TestProjectCreate_WhenCreatingProjectWithExistingName_FailProjectCreation(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "project", "create",
 		flag(params.FormatFlag),
@@ -313,6 +321,7 @@ func showProject(t *testing.T, projectID string) wrappers.ProjectResponseModel {
 }
 
 func TestCreateProjectWithSSHKey(t *testing.T) {
+	t.Parallel()
 	projectName := fmt.Sprintf("ast-cli-tests_%s", uuid.New().String()) + "_for_project"
 	tagsStr := formatTags(Tags)
 
@@ -368,6 +377,7 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 }
 
 func TestProjectShow_MainBranch_Exist(t *testing.T) {
+	t.Parallel()
 
 	projectID, projectName := createProject(t, Tags, Groups)
 	defer deleteProject(t, projectID)

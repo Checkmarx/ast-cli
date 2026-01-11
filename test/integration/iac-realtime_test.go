@@ -32,6 +32,7 @@ func safeRemoveFile(path string) {
 }
 
 func TestIacRealtimeScan_TerraformFile_Success(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -61,6 +62,7 @@ func TestIacRealtimeScan_TerraformFile_Success(t *testing.T) {
 }
 
 func TestIacRealtimeScan_DockerFile_Success(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -94,6 +96,7 @@ func TestIacRealtimeScan_DockerFile_Success(t *testing.T) {
 }
 
 func TestIacRealtimeScan_YamlConfigFile_Success(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -116,6 +119,7 @@ func TestIacRealtimeScan_YamlConfigFile_Success(t *testing.T) {
 }
 
 func TestIacRealtimeScan_EmptyDockerFile_Success(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -137,6 +141,7 @@ func TestIacRealtimeScan_EmptyDockerFile_Success(t *testing.T) {
 }
 
 func TestIacRealtimeScan_NonExistentFile_ShouldFail(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -151,6 +156,7 @@ func TestIacRealtimeScan_NonExistentFile_ShouldFail(t *testing.T) {
 }
 
 func TestIacRealtimeScan_UnsupportedFileExtension_ShouldFail(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	// Create a temporary file with unsupported extension
@@ -174,6 +180,7 @@ func TestIacRealtimeScan_UnsupportedFileExtension_ShouldFail(t *testing.T) {
 }
 
 func TestIacRealtimeScan_MissingSourceFlag_ShouldFail(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{
@@ -187,6 +194,7 @@ func TestIacRealtimeScan_MissingSourceFlag_ShouldFail(t *testing.T) {
 }
 
 func TestIacRealtimeScan_WithIgnoredFilePath_Success(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	// Create a temporary ignored file
@@ -217,6 +225,7 @@ func TestIacRealtimeScan_WithIgnoredFilePath_Success(t *testing.T) {
 }
 
 func TestIacRealtimeScan_ResultsValidation_DetailedCheck(t *testing.T) {
+	t.Parallel()
 	configuration.LoadConfiguration()
 
 	args := []string{

@@ -10,6 +10,7 @@ import (
 )
 
 func Test_DownloadScan_Logs_Success(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(commonParams.ProjectName), GenerateRandomProjectNameForScan(),
@@ -28,6 +29,7 @@ func Test_DownloadScan_Logs_Success(t *testing.T) {
 }
 
 func Test_DownloadScan_Logs_Failed(t *testing.T) {
+	t.Parallel()
 	args1 := []string{
 		"scan", "logs", flag(commonParams.ScanIDFlag), "fake-scan-id", flag(commonParams.ScanTypeFlag), commonParams.SastType,
 	}

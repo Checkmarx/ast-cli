@@ -24,6 +24,7 @@ const (
 )
 
 func TestBitbucketUserCountWorkspace(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -54,6 +55,7 @@ func TestBitbucketUserCountWorkspace(t *testing.T) {
 }
 
 func TestBitbucketUserCountRepos(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -86,6 +88,7 @@ func TestBitbucketUserCountRepos(t *testing.T) {
 }
 
 func TestBitbucketUserCountReposDebug(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -119,6 +122,7 @@ func TestBitbucketUserCountReposDebug(t *testing.T) {
 }
 
 func TestBitbucketCountWorkspaceFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -133,6 +137,7 @@ func TestBitbucketCountWorkspaceFailed(t *testing.T) {
 }
 
 func TestBitbucketCountRepoFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -149,6 +154,7 @@ func TestBitbucketCountRepoFailed(t *testing.T) {
 }
 
 func TestBitbucketCountMultipleWorkspaceFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
