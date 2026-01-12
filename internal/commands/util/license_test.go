@@ -2,11 +2,13 @@ package util
 
 import (
 	"bytes"
-	"strings"
+	"encoding/json"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"gotest.tools/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLicenseCommandDefaultListFormat(t *testing.T) {
@@ -17,20 +19,22 @@ func TestLicenseCommandDefaultListFormat(t *testing.T) {
 	}
 
 	cmd := NewLicenseCommand(mockJWT)
+	cmd.SetArgs([]string{"--" + params.FormatFlag, "json"})
 
 	// Capture output
 	var buf bytes.Buffer
 	cmd.SetOut(&buf)
 
 	err := cmd.Execute()
-	assert.NilError(t, err, "License command should run with no errors")
+	require.NoError(t, err)
 
-	output := buf.String()
+	// Parse JSON output
+	var result wrappers.JwtClaims
+	err = json.Unmarshal(buf.Bytes(), &result)
+	require.NoError(t, err)
 
-	// Verify output contains expected fields in list format
-	assert.Assert(t, strings.Contains(output, "TenantName"), "Output should contain TenantName")
-	assert.Assert(t, strings.Contains(output, "test-tenant"), "Output should contain test-tenant value")
-	assert.Assert(t, strings.Contains(output, "DastEnabled"), "Output should contain DastEnabled")
-	assert.Assert(t, strings.Contains(output, "false"), "Output should contain false for DastEnabled")
-	assert.Assert(t, strings.Contains(output, "AllowedEngines"), "Output should contain AllowedEngines")
+	// Verify structured output
+	require.Equal(t, "test-tenant", result.TenantName)
+	require.Equal(t, false, result.DastEnabled)
+	require.ElementsMatch(t, result.AllowedEngines, []string{"sast", "sca"})
 }
