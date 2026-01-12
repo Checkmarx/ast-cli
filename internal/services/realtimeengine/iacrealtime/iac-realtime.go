@@ -3,13 +3,13 @@ package iacrealtime
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 )
