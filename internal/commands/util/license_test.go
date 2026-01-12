@@ -8,7 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLicenseCommandDefaultListFormat(t *testing.T) {
@@ -26,15 +26,15 @@ func TestLicenseCommandDefaultListFormat(t *testing.T) {
 	cmd.SetOut(&buf)
 
 	err := cmd.Execute()
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Parse JSON output
 	var result wrappers.JwtClaims
 	err = json.Unmarshal(buf.Bytes(), &result)
-	require.NoError(t, err)
+	assert.NoError(t, err)
 
 	// Verify structured output
-	require.Equal(t, "test-tenant", result.TenantName)
-	require.Equal(t, false, result.DastEnabled)
-	require.ElementsMatch(t, result.AllowedEngines, []string{"sast", "sca"})
+	assert.Equal(t, "test-tenant", result.TenantName)
+	assert.Equal(t, false, result.DastEnabled)
+	assert.ElementsMatch(t, []string{"sast", "sca"}, result.AllowedEngines)
 }
