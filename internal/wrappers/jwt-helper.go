@@ -21,8 +21,8 @@ type JWTStruct struct {
 	AstLicense struct {
 		LicenseData struct {
 			AllowedEngines []string `json:"allowedEngines"`
+			DastEnabled    bool     `json:"dastEnabled"`
 		} `json:"LicenseData"`
-		DastEnabled bool `json:"dastEnabled"`
 	} `json:"ast-license"`
 	ASTRoles             []string `json:"roles_ast"`
 	jwt.RegisteredClaims          // Embedding the standard claims
@@ -150,7 +150,7 @@ func (*JWTStruct) IsDastEnabled() (bool, error) {
 		return false, err
 	}
 
-	return jwtStruct.AstLicense.DastEnabled, nil
+	return jwtStruct.AstLicense.LicenseData.DastEnabled, nil
 }
 
 // GetAllJwtClaims returns all license-related information from the JWT token
@@ -162,7 +162,7 @@ func (*JWTStruct) GetAllJwtClaims() (*JwtClaims, error) {
 
 	return &JwtClaims{
 		TenantName:     jwtStruct.Tenant,
-		DastEnabled:    jwtStruct.AstLicense.DastEnabled,
+		DastEnabled:    jwtStruct.AstLicense.LicenseData.DastEnabled,
 		AllowedEngines: jwtStruct.AstLicense.LicenseData.AllowedEngines,
 	}, nil
 }
