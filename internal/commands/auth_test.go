@@ -29,7 +29,15 @@ func TestAuthValidateMissingFlagsTogether(t *testing.T) {
 
 func TestAuthValidateInvalidAPIKey(t *testing.T) {
 	err := executeTestCommand(createASTTestCommand(), "auth", "validate", "--apikey", "invalidApiKey")
-	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
+	if err == nil {
+		t.Log("TestAuthValidateInvalidAPIKey:error is  nil")
+	} else {
+		t.Logf("TestAuthValidateInvalidAPIKey:error is  %q", err.Error())
+	}
+	expectedMsg := fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, "")
+	t.Logf("TestAuthValidateInvalidAPIKey: expected message fragment = %q", expectedMsg)
+
+	assertError(t, err, expectedMsg)
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {

@@ -207,6 +207,12 @@ func execCmdNotNilAssertion(t *testing.T, args ...string) error {
 }
 
 func assertError(t *testing.T, err error, expectedMessage string) {
+	if err == nil {
+		t.Log("assetError:err is nil")
+	} else {
+		t.Logf("assetError:actual error =%q", err.Error())
+	}
+	t.Logf("asseetError:expected error =%q", expectedMessage)
 	assert.Assert(t, err != nil)
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), strings.ToLower(expectedMessage)))
 }
