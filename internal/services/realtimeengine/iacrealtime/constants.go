@@ -7,6 +7,7 @@ const (
 	KicsContainerPrefix      = "cli-iac-realtime-"
 	ContainerResultsFileName = "results.json"
 	InfoSeverity             = "info"
+	IacEnginePath            = "/usr/local/bin"
 )
 
 var KicsErrorCodes = []string{"60", "50", "40", "30", "20"}

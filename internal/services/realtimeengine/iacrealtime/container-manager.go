@@ -1,11 +1,12 @@
 package iacrealtime
 
 import (
+	"os/exec"
+
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
-	"os/exec"
 )
 
 // IContainerManager interface for container operations

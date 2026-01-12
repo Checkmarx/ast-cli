@@ -3,12 +3,14 @@ package iacrealtime
 import (
 	"encoding/json"
 	"fmt"
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 )
 
 type IacRealtimeService struct {
@@ -142,11 +144,10 @@ func engineNameResolution(engineName string) (string, error) {
 	if _, err := exec.LookPath(engineName); err == nil {
 		return engineName, nil
 	}
-
-	fallbackPath := filepath.Join("/usr/local/bin", engineName)
+	fallbackPath := filepath.Join(IacEnginePath, engineName)
 	info, err := os.Stat(fallbackPath)
 	if err == nil && !info.IsDir() {
 		return fallbackPath, nil
 	}
-	return "", fmt.Errorf(engineName + " not found in PATH or in /usr/local/bin")
+	return "", errors.New(engineName + " not found in PATH or in " + IacEnginePath)
 }
