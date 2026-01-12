@@ -13,6 +13,7 @@ type JWTMockWrapper struct {
 	EnterpriseSecretsEnabled  int
 	SecretDetectionEnabled    int
 	CheckmarxOneAssistEnabled int
+	DastEnabled               bool
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
 }
 
@@ -77,6 +78,20 @@ func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 
 func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error) {
 	return true, nil
+}
+
+// IsDastEnabled mock for tests
+func (j *JWTMockWrapper) IsDastEnabled() (bool, error) {
+	return j.DastEnabled, nil
+}
+
+// GetAllJwtClaims mock for tests
+func (j *JWTMockWrapper) GetAllJwtClaims() (*wrappers.JwtClaims, error) {
+	return &wrappers.JwtClaims{
+		TenantName:     "test-tenant",
+		DastEnabled:    j.DastEnabled,
+		AllowedEngines: engines,
+	}, nil
 }
 
 func (j *JWTMockWrapper) GetLicenseDetails() (licenseDetails map[string]string, err error) {
