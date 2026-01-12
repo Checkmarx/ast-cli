@@ -14,6 +14,8 @@ type JWTMockWrapper struct {
 	SecretDetectionEnabled    int
 	CheckmarxOneAssistEnabled int
 	DastEnabled               bool
+	TenantName                string
+	AllowedEngines            []string
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
 }
 
@@ -33,15 +35,19 @@ func (j *JWTMockWrapper) GetAllowedEngines(featureFlagsWrapper wrappers.FeatureF
 		return allowedEngines, err
 	}
 	allowedEngines = make(map[string]bool)
+	enginesToCopy := engines
+	if j.AllowedEngines != nil {
+		enginesToCopy = j.AllowedEngines
+	}
 
-	for _, value := range engines {
+	for _, value := range enginesToCopy {
 		allowedEngines[strings.ToLower(value)] = true
 	}
 	return allowedEngines, nil
 }
 
-func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
-	return "test-tenant", nil
+func (j *JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
+	return j.TenantName, nil
 }
 
 // IsAllowedEngine mock for tests
@@ -88,9 +94,9 @@ func (j *JWTMockWrapper) IsDastEnabled() (bool, error) {
 // GetAllJwtClaims mock for tests
 func (j *JWTMockWrapper) GetAllJwtClaims() (*wrappers.JwtClaims, error) {
 	return &wrappers.JwtClaims{
-		TenantName:     "test-tenant",
+		TenantName:     j.TenantName,
 		DastEnabled:    j.DastEnabled,
-		AllowedEngines: engines,
+		AllowedEngines: j.AllowedEngines,
 	}, nil
 }
 
