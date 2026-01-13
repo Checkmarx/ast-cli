@@ -118,68 +118,68 @@ func TestGetUniqueID(t *testing.T) {
 
 func TestBuildLicenseDetailsFromJWT(t *testing.T) {
 	tests := []struct {
-		name                 string
-		allowedEngines       []string
-		dastEnabled          bool
-		expectedCxOneAssist  string
-		expectedCxDevAssist  string
-		expectedDast         string
+		name                string
+		allowedEngines      []string
+		dastEnabled         bool
+		expectedCxOneAssist string
+		expectedCxDevAssist string
+		expectedDast        string
 	}{
 		{
-			name:                 "all features enabled",
-			allowedEngines:       []string{"sast", "sca", commonParams.CheckmarxOneAssistType, commonParams.CheckmarxDevAssistType},
-			dastEnabled:          true,
-			expectedCxOneAssist:  "true",
-			expectedCxDevAssist:  "true",
-			expectedDast:         "true",
+			name:                "all features enabled",
+			allowedEngines:      []string{"sast", "sca", commonParams.CheckmarxOneAssistType, commonParams.CheckmarxDevAssistType},
+			dastEnabled:         true,
+			expectedCxOneAssist: "true",
+			expectedCxDevAssist: "true",
+			expectedDast:        "true",
 		},
 		{
-			name:                 "all features enabled - AIProtection",
-			allowedEngines:       []string{"sast", "sca", commonParams.CheckmarxOneAssistType, commonParams.AIProtectionType},
-			dastEnabled:          true,
-			expectedCxOneAssist:  "true",
-			expectedCxDevAssist:  "false",
-			expectedDast:         "true",
+			name:                "all features enabled - AIProtection",
+			allowedEngines:      []string{"sast", "sca", commonParams.CheckmarxOneAssistType, commonParams.AIProtectionType},
+			dastEnabled:         true,
+			expectedCxOneAssist: "true",
+			expectedCxDevAssist: "false",
+			expectedDast:        "true",
 		},
 		{
-			name:                 "only dev assist enabled",
-			allowedEngines:       []string{"sast", commonParams.CheckmarxDevAssistType},
-			dastEnabled:          false,
-			expectedCxOneAssist:  "false",
-			expectedCxDevAssist:  "true",
-			expectedDast:         "false",
+			name:                "only dev assist enabled",
+			allowedEngines:      []string{"sast", commonParams.CheckmarxDevAssistType},
+			dastEnabled:         false,
+			expectedCxOneAssist: "false",
+			expectedCxDevAssist: "true",
+			expectedDast:        "false",
 		},
 		{
-			name:                 "no assist features enabled",
-			allowedEngines:       []string{"sast", "sca", "iac-security"},
-			dastEnabled:          false,
-			expectedCxOneAssist:  "false",
-			expectedCxDevAssist:  "false",
-			expectedDast:         "false",
+			name:                "no assist features enabled",
+			allowedEngines:      []string{"sast", "sca", "iac-security"},
+			dastEnabled:         false,
+			expectedCxOneAssist: "false",
+			expectedCxDevAssist: "false",
+			expectedDast:        "false",
 		},
 		{
-			name:                 "only dast enabled",
-			allowedEngines:       []string{"sast"},
-			dastEnabled:          true,
-			expectedCxOneAssist:  "false",
-			expectedCxDevAssist:  "false",
-			expectedDast:         "true",
+			name:                "only dast enabled",
+			allowedEngines:      []string{"sast"},
+			dastEnabled:         true,
+			expectedCxOneAssist: "false",
+			expectedCxDevAssist: "false",
+			expectedDast:        "true",
 		},
 		{
-			name:                 "case insensitive matching",
-			allowedEngines:       []string{"checkmarx one assist", "checkmarx developer assist"},
-			dastEnabled:          false,
-			expectedCxOneAssist:  "true",
-			expectedCxDevAssist:  "true",
-			expectedDast:         "false",
+			name:                "case insensitive matching",
+			allowedEngines:      []string{"checkmarx one assist", "checkmarx developer assist"},
+			dastEnabled:         false,
+			expectedCxOneAssist: "true",
+			expectedCxDevAssist: "true",
+			expectedDast:        "false",
 		},
 		{
-			name:                 "empty allowed engines",
-			allowedEngines:       []string{},
-			dastEnabled:          false,
-			expectedCxOneAssist:  "false",
-			expectedCxDevAssist:  "false",
-			expectedDast:         "false",
+			name:                "empty allowed engines",
+			allowedEngines:      []string{},
+			dastEnabled:         false,
+			expectedCxOneAssist: "false",
+			expectedCxDevAssist: "false",
+			expectedDast:        "false",
 		},
 	}
 
