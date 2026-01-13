@@ -291,6 +291,13 @@ const (
 	ResultPolicyDefaultTimeout = 1
 )
 
+// License
+const (
+	CxOneAssistEnabledKey = "scan.config.plugins.cxoneassist"
+	CxDevAssistEnabledKey = "scan.config.plugins.cxdevassist"
+	DastEnabledKey = "scan.config.plugins.dastenabled"
+)
+
 // Results
 const (
 	SastType                       = "sast"

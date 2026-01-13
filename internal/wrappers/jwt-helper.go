@@ -28,19 +28,10 @@ type JWTStruct struct {
 	jwt.RegisteredClaims          // Embedding the standard claims
 }
 
-// JwtClaims represents all license-related information extracted from the JWT token
-type JwtClaims struct {
-	TenantName     string   `json:"tenantName"`
-	DastEnabled    bool     `json:"dastEnabled"`
-	AllowedEngines []string `json:"allowedEngines"`
-}
-
 type JWTWrapper interface {
 	GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error)
 	GetLicenseDetails() (licenseDetails map[string]string, err error)
-	GetAllJwtClaims() (*JwtClaims, error)
 	IsAllowedEngine(engine string) (bool, error)
-	IsDastEnabled() (bool, error)
 	ExtractTenantFromToken() (tenant string, err error)
 	CheckPermissionByAccessToken(requiredPermission string) (permission bool, err error)
 }
@@ -105,8 +96,9 @@ func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err err
 		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
 	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxDevAssistType)
 
-	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
-	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(devAssistEnabled)
+	licenseDetails[commonParams.CxOneAssistEnabledKey] = strconv.FormatBool(assistEnabled)
+	licenseDetails[commonParams.CxDevAssistEnabledKey] = strconv.FormatBool(devAssistEnabled)
+	licenseDetails[commonParams.DastEnabledKey] = strconv.FormatBool(jwtStruct.AstLicense.LicenseData.DastEnabled)
 	return licenseDetails, nil
 }
 
@@ -141,30 +133,6 @@ func (*JWTStruct) IsAllowedEngine(engine string) (bool, error) {
 		}
 	}
 	return false, nil
-}
-
-// IsDastEnabled will return if DAST is enabled in the user license
-func (*JWTStruct) IsDastEnabled() (bool, error) {
-	jwtStruct, err := getJwtStruct()
-	if err != nil {
-		return false, err
-	}
-
-	return jwtStruct.AstLicense.LicenseData.DastEnabled, nil
-}
-
-// GetAllJwtClaims returns all license-related information from the JWT token
-func (*JWTStruct) GetAllJwtClaims() (*JwtClaims, error) {
-	jwtStruct, err := getJwtStruct()
-	if err != nil {
-		return nil, err
-	}
-
-	return &JwtClaims{
-		TenantName:     jwtStruct.Tenant,
-		DastEnabled:    jwtStruct.AstLicense.LicenseData.DastEnabled,
-		AllowedEngines: jwtStruct.AstLicense.LicenseData.AllowedEngines,
-	}, nil
 }
 
 func prepareEngines(engines []string, scsLicensingV2 bool) map[string]bool {

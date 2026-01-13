@@ -86,28 +86,15 @@ func (j *JWTMockWrapper) CheckPermissionByAccessToken(requiredPermission string)
 	return true, nil
 }
 
-// IsDastEnabled mock for tests
-func (j *JWTMockWrapper) IsDastEnabled() (bool, error) {
-	return j.DastEnabled, nil
-}
-
-// GetAllJwtClaims mock for tests
-func (j *JWTMockWrapper) GetAllJwtClaims() (*wrappers.JwtClaims, error) {
-	return &wrappers.JwtClaims{
-		TenantName:     j.TenantName,
-		DastEnabled:    j.DastEnabled,
-		AllowedEngines: j.AllowedEngines,
-	}, nil
-}
-
 func (j *JWTMockWrapper) GetLicenseDetails() (licenseDetails map[string]string, err error) {
 	licenseDetails = make(map[string]string)
 
 	assistEnabled := (j.CheckmarxOneAssistEnabled != CheckmarxOneAssistDisabled) || (j.AIEnabled != AIProtectionDisabled)
-	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
+	licenseDetails[params.CxOneAssistEnabledKey] = strconv.FormatBool(assistEnabled)
 
 	standaloneEnabled := true
-	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails[params.CxDevAssistEnabledKey] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails[params.DastEnabledKey] = strconv.FormatBool(j.DastEnabled)
 
 	for _, engine := range engines {
 		licenseDetails[engine] = licenseEnabledValue
