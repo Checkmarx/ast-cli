@@ -82,6 +82,7 @@ var EnvVarsBinds = []struct {
 	{RiskManagementPathKey, RiskManagementPathEnv, "api/risk-management/projects/%s/results?scanID=%s"},
 	{ConfigFilePathKey, ConfigFilePathEnv, ""},
 	{RealtimeScannerPathKey, RealtimeScannerPathEnv, "api/realtime-scanner"},
+	{EnvironmentsPathKey, EnvironmentsPathEnv, "api/dast/scans/environments"},
 	{StartMultiPartUploadPathKey, StartMultiPartUploadPathEnv, "api/uploads/start-multipart-upload"},
 	{MultipartPresignedPathKey, MultipartPresignedPathEnv, "api/uploads/multipart-presigned"},
 	{CompleteMultiPartUploadPathKey, CompleteMultipartUploadPathEnv, "api/uploads/complete-multipart-upload"},

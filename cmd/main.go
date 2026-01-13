@@ -59,6 +59,7 @@ func main() {
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
 	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
+	environmentsPath := viper.GetString(params.EnvironmentsPathKey)
 
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -97,6 +98,7 @@ func main() {
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
+	environmentsWrapper := wrappers.NewHTTPEnvironmentsWrapper(environmentsPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -136,6 +138,7 @@ func main() {
 		containerResolverWrapper,
 		realTimeWrapper,
 		telemetryWrapper,
+		environmentsWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

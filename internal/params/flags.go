@@ -282,6 +282,7 @@ const (
 	NodeIDsQueryParam          = "node-ids"
 	IncludeNodesQueryParam     = "include-nodes"
 	SortQueryParam             = "sort"
+	SearchQueryParam           = "search"
 	Profile                    = "default"
 	BaseURI                    = ""
 	BaseIAMURI                 = ""
