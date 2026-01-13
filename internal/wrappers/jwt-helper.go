@@ -85,12 +85,15 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 }
 
 func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
-	licenseDetails = make(map[string]string)
-
 	jwtStruct, err := getJwtStruct()
 	if err != nil {
 		return nil, err
 	}
+	return buildLicenseDetailsFromJWT(jwtStruct), nil
+}
+
+func buildLicenseDetailsFromJWT(jwtStruct *JWTStruct) map[string]string {
+	licenseDetails := make(map[string]string)
 
 	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
 		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
@@ -99,7 +102,8 @@ func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err err
 	licenseDetails[commonParams.CxOneAssistEnabledKey] = strconv.FormatBool(assistEnabled)
 	licenseDetails[commonParams.CxDevAssistEnabledKey] = strconv.FormatBool(devAssistEnabled)
 	licenseDetails[commonParams.DastEnabledKey] = strconv.FormatBool(jwtStruct.AstLicense.LicenseData.DastEnabled)
-	return licenseDetails, nil
+
+	return licenseDetails
 }
 
 // containsIgnoreCase returns true if target exists in arr using case-insensitive comparison
@@ -112,7 +116,15 @@ func containsIgnoreCase(arr []string, target string) bool {
 	return false
 }
 
+// getJwtStructFunc is a variable that holds the function to get JWT struct
+// This allows for dependency injection in tests
+var getJwtStructFunc = getJwtStructImpl
+
 func getJwtStruct() (*JWTStruct, error) {
+	return getJwtStructFunc()
+}
+
+func getJwtStructImpl() (*JWTStruct, error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return nil, err
