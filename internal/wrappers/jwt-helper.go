@@ -116,15 +116,7 @@ func containsIgnoreCase(arr []string, target string) bool {
 	return false
 }
 
-// getJwtStructFunc is a variable that holds the function to get JWT struct
-// This allows for dependency injection in tests
-var getJwtStructFunc = getJwtStructImpl
-
 func getJwtStruct() (*JWTStruct, error) {
-	return getJwtStructFunc()
-}
-
-func getJwtStructImpl() (*JWTStruct, error) {
 	accessToken, err := GetAccessToken()
 	if err != nil {
 		return nil, err
