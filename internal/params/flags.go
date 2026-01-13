@@ -295,7 +295,7 @@ const (
 const (
 	CxOneAssistEnabledKey = "scan.config.plugins.cxoneassist"
 	CxDevAssistEnabledKey = "scan.config.plugins.cxdevassist"
-	DastEnabledKey = "scan.config.plugins.dastenabled"
+	DastEnabledKey        = "scan.config.plugins.dastenabled"
 )
 
 // Results
