@@ -81,8 +81,6 @@ func NewUtilsCommand(
 
 	maskSecretsCmd := NewMaskSecretsCommand(chatWrapper)
 
-	licenseCmd := NewLicenseCommand(jwtWrapper)
-
 	utilsCmd.AddCommand(
 		completionCmd,
 		envCheckCmd,
@@ -98,7 +96,6 @@ func NewUtilsCommand(
 		remediationCmd,
 		tenantCmd,
 		maskSecretsCmd,
-		licenseCmd,
 		importCmd,
 	)
 
