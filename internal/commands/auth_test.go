@@ -24,7 +24,7 @@ func TestAuthValidate(t *testing.T) {
 }
 
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
-	_ = execCmdNotNilAssertion(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret", "--debug")
+	_ = execCmdNotNilAssertion(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
 }
 
 func TestAuthValidateInvalidAPIKey(t *testing.T) {
