@@ -1,15 +1,14 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -23,10 +22,8 @@ var (
 		"Filter the list of environments. Use ';' as the delimiter for arrays. Available filters are: %s",
 		strings.Join(
 			[]string{
-				commonParams.LimitQueryParam,
-				commonParams.OffsetQueryParam,
-				commonParams.FromDateQueryParam,
-				commonParams.ToDateQueryParam,
+				commonParams.FromQueryParam,
+				commonParams.ToQueryParam,
 				commonParams.SearchQueryParam,
 				commonParams.SortQueryParam,
 			}, ",",
@@ -43,7 +40,7 @@ func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *c
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.com/resource/documents/en/34965-68634-environments.html
+				https://checkmarx.com/resource/documents/en/todo
 			`,
 			),
 		},
@@ -55,14 +52,14 @@ func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *c
 		Example: heredoc.Doc(
 			`
 			$ cx environments list --format list
-			$ cx environments list --filter "from=2024-01-01,to=2024-12-31"
+			$ cx environments list --filter "from=1,to=10"
 			$ cx environments list --filter "search=production,sort=created"
 		`,
 		),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(
 				`
-				https://checkmarx.com/resource/documents/en/34965-68634-environments.html
+				https://checkmarx.com/resource/documents/en/todo
 			`,
 			),
 		},
@@ -91,25 +88,8 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 			return errors.Wrapf(err, "%s", failedGettingEnvironments)
 		}
 
-		// Map filter parameters to API query parameters
 		// The API expects: from, to, search, sort
-		if from, ok := params[commonParams.FromDateQueryParam]; ok {
-			params["from"] = from
-			delete(params, commonParams.FromDateQueryParam)
-		}
-		if to, ok := params[commonParams.ToDateQueryParam]; ok {
-			params["to"] = to
-			delete(params, commonParams.ToDateQueryParam)
-		}
-		if search, ok := params[commonParams.SearchQueryParam]; ok {
-			params["search"] = search
-			delete(params, commonParams.SearchQueryParam)
-		}
-		if sort, ok := params[commonParams.SortQueryParam]; ok {
-			params["sort"] = sort
-			delete(params, commonParams.SortQueryParam)
-		}
-
+		// from and to are pagination parameters (e.g., from=1, to=10 for first page)
 		allEnvironmentsModel, errorModel, err = environmentsWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingEnvironments)

@@ -275,6 +275,8 @@ const (
 	ProjectIDQueryParam        = "project-id"
 	FromDateQueryParam         = "from-date"
 	ToDateQueryParam           = "to-date"
+	FromQueryParam             = "from"
+	ToQueryParam               = "to"
 	SeverityQueryParam         = "severity"
 	StateQueryParam            = "state"
 	GroupQueryParam            = "group"
