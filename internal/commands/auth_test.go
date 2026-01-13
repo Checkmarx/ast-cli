@@ -24,20 +24,12 @@ func TestAuthValidate(t *testing.T) {
 }
 
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
-	_ = execCmdNotNilAssertion(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret")
+	_ = execCmdNotNilAssertion(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret", "--debug")
 }
 
 func TestAuthValidateInvalidAPIKey(t *testing.T) {
 	err := executeTestCommand(createASTTestCommand(), "auth", "validate", "--apikey", "invalidApiKey")
-	if err == nil {
-		t.Log("TestAuthValidateInvalidAPIKey:error is  nil")
-	} else {
-		t.Logf("TestAuthValidateInvalidAPIKey:error is  %q", err.Error())
-	}
-	expectedMsg := fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, "")
-	t.Logf("TestAuthValidateInvalidAPIKey: expected message fragment = %q", expectedMsg)
-
-	assertError(t, err, expectedMsg)
+	assertError(t, err, fmt.Sprintf(wrappers.APIKeyDecodeErrorFormat, ""))
 }
 
 func TestRunCreateOath2ClientCommand(t *testing.T) {
