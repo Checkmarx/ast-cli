@@ -46,7 +46,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.
 		Long:  "Validate authentication and create OAuth2 credentials",
 		Example: heredoc.Doc(
 			`
-			$ cx auth validate
+			$ cx auth validatee
 			Successfully authenticated to Checkmarx One server!
 			$ cx auth register -u <Username> -p <Password> --base-uri https://<Keycloak server URI>
 			CX_CLIENT_ID=XX
