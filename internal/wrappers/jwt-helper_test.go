@@ -167,7 +167,7 @@ func TestBuildLicenseDetailsFromJWT(t *testing.T) {
 		},
 		{
 			name:                 "case insensitive matching",
-			allowedEngines:       []string{"checkmarx one assist", "ai protection"},
+			allowedEngines:       []string{"checkmarx one assist", "checkmarx developer assist"},
 			dastEnabled:          false,
 			expectedCxOneAssist:  "true",
 			expectedCxDevAssist:  "true",
