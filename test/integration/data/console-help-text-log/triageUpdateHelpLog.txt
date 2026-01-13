@@ -1,0 +1,56 @@
+The update command enables the ability to triage the results in Checkmarx One
+
+USAGE
+  cx triage update [flags]
+
+FLAGS
+      --comment string         Optional comment
+  -h, --help                   help for update
+      --project-id string      Project ID
+      --scan-type string       Scan Type
+      --severity string        Severity
+      --similarity-id string   Similarity ID
+      --state string           Specify the state that you would like to apply. Can be a pre-configured state (e.g., not_exploitable) or a custom state created in your account
+      --state-id int           Specify the ID of the states that you would like to apply to this result (default -1)
+
+GLOBAL FLAGS
+  --agent string                      Scan origin name (default "ASTCLI")
+  --apikey string                     The API Key to login to Checkmarx One
+  --base-auth-uri string              The base system IAM URI
+  --base-uri string                   The base system URI
+  --client-id string                  The OAuth2 client ID
+  --client-secret string              The OAuth2 client secret
+  --config-file-path string           Path to the configuration file
+  --debug                             Debug mode with detailed logs
+  --ignore-proxy                      Ignore proxy configuration
+  --insecure                          Ignore TLS certificate validations
+  --log-file string                   Saves logs to the specified file path only
+  --log-file-console string           Saves logs to the specified file path as well as to the console
+  --proxy string                      Proxy server to send communication through
+  --proxy-auth-type string            Proxy authentication type (supported types: basic, ntlm, kerberos or kerberos-native)
+  --proxy-kerberos-ccache string      Path to Kerberos credential cache (optional, default uses KRB5CCNAME env or OS default)
+  --proxy-kerberos-krb5-conf string   Path to Kerberos configuration file(default: /etc/krb5.conf on linux and C:\Windows\krb5.ini on windows)
+  --proxy-kerberos-spn string         Service Principal Name (SPN) for Kerberos proxy authentication
+  --proxy-ntlm-domain string          Window domain when using NTLM proxy
+  --retry uint                        Retry requests to Checkmarx One on connection failure (default 3)
+  --retry-delay uint                  Time between retries in seconds, use with --retry (default 20)
+  --tenant string                     Checkmarx tenant
+  --timeout string                    Timeout for network activity, (default 5 seconds)
+
+EXAMPLES
+  $ cx triage update
+  --similarity-id <SimilarityID>
+  --project-id <ProjectID>
+  --state <TO_VERIFY|NOT_EXPLOITABLE|PROPOSED_NOT_EXPLOITABLE|CONFIRMED|URGENT|custom state>
+  --state-id <custom state ID>
+  --severity <CRITICAL|HIGH|MEDIUM|LOW|INFO>
+  --comment <Comment(Optional)>
+  --scan-type <SAST|IAC-SECURITY>
+
+QUICK START GUIDE
+  https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html
+
+LEARN MORE
+  Use 'cx <command> <subcommand> --help' for more information about a command.
+  Read the manual at https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
+
