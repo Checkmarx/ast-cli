@@ -173,7 +173,6 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 // Create a test command by calling createASTIntegrationTestCommand
 // Redirect stdout of the command to a buffer and return the buffer with the command
 func createRedirectedTestCommand(t *testing.T) (*cobra.Command, *bytes.Buffer) {
-	defer viper.Reset()
 	outputBuffer := bytes.NewBufferString("")
 	cmd := createASTIntegrationTestCommand(t)
 	cmd.SetOut(outputBuffer)
@@ -197,7 +196,6 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 	cmd, buffer := createRedirectedTestCommand(t)
 
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
-
 	return err, buffer
 }
 
