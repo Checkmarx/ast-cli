@@ -23,4 +23,3 @@ func (e *EnvironmentsMockWrapper) Get(params map[string]string) (*wrappers.Envir
 		TotalItems: 1,
 	}, nil, nil
 }
-

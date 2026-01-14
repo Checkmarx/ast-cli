@@ -33,4 +33,3 @@ func TestEnvironmentsListWithSearch(t *testing.T) {
 func TestEnvironmentsListWithSort(t *testing.T) {
 	execCmdNilAssertion(t, "environments", "list", "--filter", "sort=domain:asc")
 }
-

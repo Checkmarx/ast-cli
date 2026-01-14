@@ -139,4 +139,3 @@ type environmentView struct {
 	LastScanTime  string `format:"name:Last Scan Time"`
 	LastStatus    string `format:"name:Last Status"`
 }
-
