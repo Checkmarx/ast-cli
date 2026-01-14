@@ -20,18 +20,18 @@ rerun_status=0
 echo "Creating $FAILED_TESTS_FILE..."
 touch "$FAILED_TESTS_FILE"
 
-# Step 3: Run only TestAuthValidate for quick testing
-echo "Running TestAuthValidate test..."
+# Step 3: Run all tests and write failed test names to failedTests file
+echo "Running all tests..."
 go test \
     -tags integration \
     -v \
-    -timeout 5m \
-    -run "^TestAuthValidate$" \
+    -timeout 210m \
+    -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+    -coverprofile cover.out \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
 
-# Skip coverage for quick test
-touch cover.out
-echo "" > coverage.html
+# Generate the initial HTML coverage report
+go tool cover -html=cover.out -o coverage.html
 
 # Extract names of failed tests and save them in the failedTests file
 grep -E "^--- FAIL: " test_output.log | awk '{print $3}' > "$FAILED_TESTS_FILE"
