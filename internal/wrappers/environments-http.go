@@ -59,4 +59,3 @@ func (e *EnvironmentsHTTPWrapper) Get(params map[string]string) (*EnvironmentsCo
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
 }
-

@@ -111,12 +111,12 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 func toEnvironmentViews(models []wrappers.EnvironmentResponseModel) []environmentView {
 	result := make([]environmentView, len(models))
 	for i := 0; i < len(models); i++ {
-		result[i] = toEnvironmentView(models[i])
+		result[i] = toEnvironmentView(&models[i])
 	}
 	return result
 }
 
-func toEnvironmentView(model wrappers.EnvironmentResponseModel) environmentView {
+func toEnvironmentView(model *wrappers.EnvironmentResponseModel) environmentView {
 	return environmentView{
 		EnvironmentID: model.EnvironmentID,
 		Domain:        model.Domain,
