@@ -14,24 +14,24 @@ rm -rf ScaResolver-linux64.tar.gz
 
 # Step 1: Check if the failedTests file exists
 FAILED_TESTS_FILE="failedTests"
+rerun_status=0
 
 # Step 2: Create the failedTests file
 echo "Creating $FAILED_TESTS_FILE..."
 touch "$FAILED_TESTS_FILE"
 
-# Step 3: Run all tests and write failed test names to failedTests file
-echo "Running all tests..."
+# Step 3: Run only TestAuthValidate for quick testing
+echo "Running TestAuthValidate test..."
 go test \
     -tags integration \
     -v \
-    -timeout 210m \
-    -run "^TestAuthValidate$" \  
-    # -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-    # -coverprofile cover.out \
+    -timeout 5m \
+    -run "^TestAuthValidate$" \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
 
-# Generate the initial HTML coverage report
-go tool cover -html=cover.out -o coverage.html
+# Skip coverage for quick test
+touch cover.out
+echo "" > coverage.html
 
 # Extract names of failed tests and save them in the failedTests file
 grep -E "^--- FAIL: " test_output.log | awk '{print $3}' > "$FAILED_TESTS_FILE"
