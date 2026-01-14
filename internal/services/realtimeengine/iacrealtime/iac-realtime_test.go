@@ -450,7 +450,7 @@ func TestFilterIgnoredFindings_WithOneIgnored(t *testing.T) {
 	}
 }
 
-func createExecutable(t *testing.T, tempDir string, name string) string {
+func createExecutable(t *testing.T, tempDir, name string) string {
 	t.Helper()
 	path := filepath.Join(tempDir, name)
 	if runtime.GOOS == "windows" {
@@ -462,7 +462,6 @@ func createExecutable(t *testing.T, tempDir string, name string) string {
 		t.Fatalf("failed to create executable: %v", err)
 	}
 	return filepath.Base(path)
-
 }
 
 func TestEngineName_Resolution_FoundInPATH(t *testing.T) {
@@ -475,10 +474,8 @@ func TestEngineName_Resolution_FoundInPATH(t *testing.T) {
 		t.Fatalf("Failed to set the PATH in env")
 	}
 	defer func(key, value string) {
-		err := os.Setenv(key, value)
-		if err != nil {
+		_ = os.Setenv(key, value)
 
-		}
 	}("PATH", previousPath)
 
 	res, err := engineNameResolution(engineName, IacEnginePath)
