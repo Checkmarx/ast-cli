@@ -473,11 +473,9 @@ func TestEngineName_Resolution_FoundInPATH(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to set the PATH in env")
 	}
-	defer func(key, value string) {
-		_ = os.Setenv(key, value)
-
-	}("PATH", previousPath)
-
+	defer func() {
+		_ = os.Setenv("PATH", previousPath)
+	}()
 	res, err := engineNameResolution(engineName, IacEnginePath)
 	if err != nil || res != engineName {
 		t.Fatalf("Expected enginename in return , got %v , err %d", res, err)
@@ -510,5 +508,4 @@ func TestEngineName_Resolution_check_fallBackPath(t *testing.T) {
 	if result != expected {
 		t.Fatalf("expected %q, got %q", expected, result)
 	}
-
 }
