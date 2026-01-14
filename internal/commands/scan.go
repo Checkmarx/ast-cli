@@ -2309,20 +2309,11 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 }
 
 // isTarFileReference checks if a container image reference points to a tar file.
-// Container-security scan-type related function.
+// Handles both Unix and Windows paths (e.g., C:\path\file.tar).
 func isTarFileReference(imageRef string) bool {
-	// Known prefixes that might precede the actual file path
-	knownPrefixes := []string{
-		dockerArchivePrefix,
-		ociArchivePrefix,
-		filePrefix,
-		ociDirPrefix,
-	}
+	knownPrefixes := []string{dockerArchivePrefix, ociArchivePrefix, filePrefix, ociDirPrefix}
 
-	// First, trim quotes from the entire input
 	actualRef := strings.Trim(imageRef, "'\"")
-
-	// Strip known prefixes to get the actual reference
 	for _, prefix := range knownPrefixes {
 		if strings.HasPrefix(actualRef, prefix) {
 			actualRef = strings.TrimPrefix(actualRef, prefix)
@@ -2331,29 +2322,33 @@ func isTarFileReference(imageRef string) bool {
 		}
 	}
 
-	// Check if the reference ends with .tar (case-insensitive)
 	lowerRef := strings.ToLower(actualRef)
-
-	// If it ends with .tar, it's a tar file (no tag suffix allowed)
 	if strings.HasSuffix(lowerRef, ".tar") {
 		return true
 	}
 
-	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
-	// A tar file cannot have a tag suffix like file.tar:tag
+	if isWindowsAbsolutePath(actualRef) {
+		return strings.Contains(lowerRef, ".tar")
+	}
+
 	if strings.Contains(actualRef, ":") {
 		parts := strings.Split(actualRef, ":")
-		const minPartsForTaggedImage = 2
-		if len(parts) >= minPartsForTaggedImage {
-			firstPart := strings.ToLower(parts[0])
-			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
-			if strings.HasSuffix(firstPart, ".tar") {
-				return false
-			}
+		if len(parts) >= 2 && strings.HasSuffix(strings.ToLower(parts[0]), ".tar") {
+			return false
 		}
 	}
 
 	return false
+}
+
+// isWindowsAbsolutePath checks for Windows drive letter paths (e.g., C:\, D:/).
+func isWindowsAbsolutePath(path string) bool {
+	if len(path) < 3 {
+		return false
+	}
+	firstChar := path[0]
+	isLetter := (firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z')
+	return isLetter && path[1] == ':' && (path[2] == '\\' || path[2] == '/')
 }
 
 func runCreateScanCommand(
@@ -3573,7 +3568,7 @@ const (
 // Container-security scan-type related function.
 // This function implements comprehensive validation logic for all supported container image formats:
 // - Standard image:tag format
-// - Tar files (.tar)
+// - Tar files (.tar) - including full file paths on Windows (C:\path\file.tar) and Unix (/path/file.tar)
 // - Prefixed formats (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)
 // It provides helpful error messages and hints for common user mistakes.
 func validateContainerImageFormat(containerImage string) error {
@@ -3611,6 +3606,11 @@ func validateContainerImageFormat(containerImage string) error {
 	// If no known source found, use the original input
 	if !hasKnownSource {
 		sanitizedInput = containerImage
+	}
+
+	// Check if this looks like a file path before parsing colons
+	if looksLikeFilePath(sanitizedInput) {
+		return validateFilePath(sanitizedInput)
 	}
 
 	// Step 2: Look for the last colon (:) in the sanitized input
@@ -3682,6 +3682,63 @@ func validateContainerImageFormat(containerImage string) error {
 
 	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
 	return errors.Errorf("--container-images flag error: image does not have a tag")
+}
+
+// looksLikeFilePath checks if input looks like a file path rather than image:tag.
+func looksLikeFilePath(input string) bool {
+	lowerInput := strings.ToLower(input)
+
+	if isWindowsAbsolutePath(input) {
+		return true
+	}
+
+	// If colon exists and part before it looks like a prefix (no separators/dots), it's not a file path
+	if colonIndex := strings.Index(input, ":"); colonIndex > 0 {
+		beforeColon := input[:colonIndex]
+		if !strings.Contains(beforeColon, "/") && !strings.Contains(beforeColon, "\\") && !strings.Contains(beforeColon, ".") {
+			return false
+		}
+	}
+
+	if strings.HasSuffix(lowerInput, ".tar") {
+		return true
+	}
+
+	if strings.HasSuffix(lowerInput, ".tar.gz") || strings.HasSuffix(lowerInput, ".tar.bz2") ||
+		strings.HasSuffix(lowerInput, ".tar.xz") || strings.HasSuffix(lowerInput, ".tgz") {
+		return true
+	}
+
+	hasPathSeparators := strings.Contains(input, "/") || strings.Contains(input, "\\")
+	if hasPathSeparators && strings.Contains(lowerInput, ".tar") {
+		return true
+	}
+
+	return false
+}
+
+// validateFilePath validates file path input for tar files.
+func validateFilePath(filePath string) error {
+	lowerPath := strings.ToLower(filePath)
+
+	if strings.HasSuffix(lowerPath, ".tar.gz") || strings.HasSuffix(lowerPath, ".tar.bz2") ||
+		strings.HasSuffix(lowerPath, ".tar.xz") || strings.HasSuffix(lowerPath, ".tgz") {
+		return errors.Errorf("--container-images flag error: file '%s' is compressed, use non-compressed format (tar)", filePath)
+	}
+
+	if !strings.HasSuffix(lowerPath, ".tar") {
+		return errors.Errorf("--container-images flag error: file '%s' is not a valid tar file. Expected .tar extension", filePath)
+	}
+
+	exists, err := osinstaller.FileExists(filePath)
+	if err != nil {
+		return errors.Errorf("--container-images flag error: %v", err)
+	}
+	if !exists {
+		return errors.Errorf("--container-images flag error: file '%s' does not exist", filePath)
+	}
+
+	return nil
 }
 
 // getPrefixFromInput extracts the prefix from a container image reference.
