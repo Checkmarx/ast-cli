@@ -30,7 +30,7 @@ func (dm *ContainerManager) GenerateContainerID() string {
 }
 
 func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
-	engine, err := engineNameResolution(engine)
+	engine, err := engineNameResolution(engine, IacEnginePath)
 	if err != nil {
 		return err
 	}

@@ -141,11 +141,11 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 	return nil
 }
 
-func engineNameResolution(engineName string) (string, error) {
+func engineNameResolution(engineName string, fallBackDir string) (string, error) {
 	if _, err := exec.LookPath(engineName); err == nil {
 		return engineName, nil
 	}
-	fallbackPath := filepath.Join(IacEnginePath, engineName)
+	fallbackPath := filepath.Join(fallBackDir, engineName)
 	info, err := os.Stat(fallbackPath)
 	if err == nil && !info.IsDir() {
 		return fallbackPath, nil

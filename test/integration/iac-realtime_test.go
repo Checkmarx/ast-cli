@@ -258,4 +258,47 @@ func TestIacRealtimeScan_ResultsValidation_DetailedCheck(t *testing.T) {
 				"EndIndex should be >= StartIndex")
 		}
 	}
+
+}
+
+func TestEngineNameResolution_engine_NotFound(t *testing.T) {
+	oldPath := os.Getenv("PATH")
+	t.Cleanup(func() {
+		_ = os.Setenv("PATH", oldPath)
+	})
+	_ = os.Setenv("PATH", "")
+
+	args := []string{
+		"scan", "iac-realtime",
+		flag(commonParams.SourcesFlag), "data/positive1.tf",
+		flag(commonParams.EngineFlag), "docker",
+	}
+	err, _ := executeCommand(t, args...)
+
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	assert.NotNil(t, err, "docker executables not set in PATH or usr/local/bin")
+}
+
+func TestEngineNameResolution_containerEngine_Found_inPATH_exists(t *testing.T) {
+	path := "/usr/local/bin"
+	testFile := filepath.Join(path, "docker.exe")
+
+	err := os.WriteFile(testFile, []byte("#!/bin/sh\necho test"), 0755)
+	if err != nil {
+		t.Skipf("skipping test , cannot write the file %s", err)
+	}
+	defer func() {
+		_ = os.Remove(testFile)
+	}()
+
+	args := []string{
+		"scan", "iac-realtime",
+		flag(commonParams.SourcesFlag), "data/positive1.tf",
+		flag(commonParams.EngineFlag), "docker",
+	}
+	err, _ = executeCommand(t, args...)
+
+	assert.Nil(t, err, "docker executables are found in PATH or usr/local/bin")
 }
