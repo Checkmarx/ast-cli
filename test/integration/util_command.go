@@ -127,6 +127,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realtimeScannerWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
+	environmentsWrapper := wrappers.NewHTTPEnvironmentsWrapper(environmentsPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -166,6 +167,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		containerResolverWrapper,
 		realtimeScannerWrapper,
 		telemetryWrapper,
+		environmentsWrapper,
 	)
 	return astCli
 }
