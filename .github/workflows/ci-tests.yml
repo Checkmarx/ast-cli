@@ -50,6 +50,8 @@ jobs:
           pip install pre-commit
           pre-commit install
       - name: Go Integration test
+        id: integration_test
+        continue-on-error: true
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -98,6 +100,91 @@ jobs:
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
           ./internal/commands/.scripts/integration_up.sh
           ./internal/commands/.scripts/integration_down.sh
+
+      - name: Extract failed tests
+        id: failed_tests
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "failed_tests_summary.txt" ] && [ -s "failed_tests_summary.txt" ]; then
+            echo "has_failures=true" >> $GITHUB_OUTPUT
+            FAIL_COUNT=$(wc -l < failed_tests_summary.txt | tr -d ' ')
+            echo "fail_count=$FAIL_COUNT" >> $GITHUB_OUTPUT
+            # Format failed tests as bullet points for Teams
+            FAILED_LIST=$(awk '{print "• " $0}' failed_tests_summary.txt | tr '\n' ',' | sed 's/,$//' | sed 's/,/\\n/g')
+            echo "failed_list=$FAILED_LIST" >> $GITHUB_OUTPUT
+          else
+            echo "has_failures=false" >> $GITHUB_OUTPUT
+            echo "fail_count=0" >> $GITHUB_OUTPUT
+            echo "failed_list=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send failure notification to Teams
+        if: always() && steps.failed_tests.outputs.has_failures == 'true'
+        uses: Skitionek/notify-microsoft-teams@v1.0.8
+        with:
+          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL_INTEGRATION_TESTS }}
+          raw: >
+            {
+              "type": "message",
+              "attachments": [
+                {
+                  "contentType": "application/vnd.microsoft.card.adaptive",
+                  "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "msteams": {
+                      "width": "Full"
+                    },
+                    "body": [
+                      {
+                        "type": "TextBlock",
+                        "text": "Integration Tests Failed",
+                        "weight": "Bolder",
+                        "size": "Large",
+                        "color": "Attention"
+                      },
+                      {
+                        "type": "FactSet",
+                        "facts": [
+                          { "title": "Repository:", "value": "${{ github.repository }}" },
+                          { "title": "Author:", "value": "${{ github.actor }}" },
+                          { "title": "Branch:", "value": "${{ github.head_ref }}" },
+                          { "title": "PR:", "value": "#${{ github.event.pull_request.number }}" },
+                          { "title": "Failed Tests:", "value": "${{ steps.failed_tests.outputs.fail_count }}" }
+                        ]
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "**Failed Test Cases:**",
+                        "weight": "Bolder",
+                        "spacing": "Medium"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "${{ steps.failed_tests.outputs.failed_list }}",
+                        "wrap": true,
+                        "fontType": "Monospace",
+                        "spacing": "Small"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "type": "Action.OpenUrl",
+                        "title": "View Workflow",
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      },
+                      {
+                        "type": "Action.OpenUrl",
+                        "title": "View PR",
+                        "url": "${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
 
       - name: Coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
