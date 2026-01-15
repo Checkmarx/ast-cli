@@ -55,6 +55,7 @@ flask==3.1.2
 werkzeug>=3.0.6
 
 
+
 # Range: greater than or equal and less than
 
 Django>=3.0,<6.0
