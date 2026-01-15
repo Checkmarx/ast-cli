@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -269,6 +270,9 @@ func TestCreateScanWithScaResolver(t *testing.T) {
 }
 
 func TestCreateScanWithScaResolverFailed(t *testing.T) {
+	setupMockAccessToken()
+	defer cleanupMockAccessToken()
+
 	baseArgs := []string{
 		"scan",
 		"create",
@@ -315,6 +319,9 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			setupMockAccessToken()
+			defer cleanupMockAccessToken()
+
 			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
 			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
 		})
@@ -4942,4 +4949,19 @@ func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
 				"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
 		})
 	}
+}
+
+func setupMockAccessToken() {
+	wrappers.CachedAccessToken = "mock-token-for-testing"
+	wrappers.CachedAccessTime = time.Now()
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
+}
+
+func cleanupMockAccessToken() {
+	wrappers.CachedAccessToken = ""
+	wrappers.CachedAccessTime = time.Time{}
+
+	wrappers.ClearCache()
+	// Reset to default value (300 seconds as per params/binds.go)
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
 }
