@@ -49,4 +49,3 @@ func TestDastEnvironmentsListWithSort(t *testing.T) {
 	err := createTestCommand("list", "--filter", "sort=domain:asc")
 	assert.NilError(t, err)
 }
-
