@@ -40,8 +40,8 @@ func TestDastScansListWithFilters(t *testing.T) {
 	assert.NilError(t, err)
 }
 
-func TestDastScansListWithSearch(t *testing.T) {
-	err := createDastScansTestCommand("list", "--environment-id", "test-env-id", "--filter", "search=test")
+func TestDastScansListWithScanID(t *testing.T) {
+	err := createDastScansTestCommand("list", "--environment-id", "test-env-id", "--scan-id", "test-scan-id")
 	assert.NilError(t, err)
 }
 
