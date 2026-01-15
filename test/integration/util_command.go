@@ -196,6 +196,7 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 	cmd, buffer := createRedirectedTestCommand(t)
 
 	err := executeWithTimeout(cmd, 5*time.Minute, args...)
+
 	return err, buffer
 }
 
