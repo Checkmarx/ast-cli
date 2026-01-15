@@ -84,7 +84,7 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 		var allEnvironmentsModel *wrappers.EnvironmentsCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
 
-		params, err := getFilters(cmd)
+		params, err := commandutils.GetFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingEnvironments)
 		}
