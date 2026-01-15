@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	filterEnvironmentsListFlagUsage = fmt.Sprintf(
-		"Filter the list of environments. Use ';' as the delimiter for arrays. Available filters are: %s",
+	filterDastEnvironmentsListFlagUsage = fmt.Sprintf(
+		"Filter the list of DAST environments. Use ';' as the delimiter for arrays. Available filters are: %s",
 		strings.Join(
 			[]string{
 				commonParams.FromQueryParam,
@@ -66,7 +66,7 @@ func NewDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnvironment
 		},
 		RunE: runListDastEnvironmentsCommand(dastEnvironmentsWrapper),
 	}
-	listDastEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterEnvironmentsListFlagUsage)
+	listDastEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastEnvironmentsListFlagUsage)
 
 	commandutils.AddFormatFlagToMultipleCommands(
 		[]*cobra.Command{listDastEnvironmentsCmd},
