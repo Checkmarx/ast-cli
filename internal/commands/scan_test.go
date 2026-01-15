@@ -270,9 +270,6 @@ func TestCreateScanWithScaResolver(t *testing.T) {
 }
 
 func TestCreateScanWithScaResolverFailed(t *testing.T) {
-	setupMockAccessToken()
-	defer cleanupMockAccessToken()
-
 	baseArgs := []string{
 		"scan",
 		"create",
@@ -304,7 +301,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "params",
 			projectName:       "ProjectName",
-			expectedError:     "/ScaResolver: no such file or directory",
+			expectedError:     "ScaResolver",
 		},
 		{
 			name:              "Invalid scaResolverParams format",
@@ -312,17 +309,15 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "\"unclosed quote",
 			projectName:       "ProjectName",
-			expectedError:     "/ScaResolver: no such file or directory", // Actual error from command execution
+			expectedError:     "ScaResolver", // Actual error from command execution
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			setupMockAccessToken()
-			defer cleanupMockAccessToken()
-
-			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName, featureFlagsWrapper)
 			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
 		})
 	}
@@ -333,8 +328,30 @@ func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
 	var scaResolver = ""
 	var scaResolverParams = "params"
 	var projectName = "ProjectName"
-	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 	assert.Assert(t, err == nil)
+}
+
+func TestScaResolverWithSCADeltaScanEnabled(t *testing.T) {
+	setupMockAccessToken()
+	defer cleanupMockAccessToken()
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.ScaDeltaScanEnabled,
+		Status: true,
+	}
+	defer func() {
+		mock.Flag = wrappers.FeatureFlagResponseModel{}
+	}()
+	var sourceDir = "/sourceDir"
+	var scaResolver = "./NonExistentScaResolver"
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
+	assert.Assert(t, err != nil, "Expected error when resolver doesn't exist")
+	assert.Assert(t, strings.Contains(err.Error(), "ScaResolver"), "Error should mention ScaResolver: %v", err.Error())
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {

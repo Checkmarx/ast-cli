@@ -1868,7 +1868,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1889,14 +1889,17 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			args = append(args, parsedscaResolverParams...)
 		}
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-		accessToken, err := wrappers.GetAccessToken()
-		if err != nil {
-			return err
-		}
 		cmd := exec.Command(scaResolver, args...)
-		if accessToken != "" {
-			logger.PrintIfVerbose("Setting authorization token for SCA resolver")
-			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+		scaDeltaScanEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScaDeltaScanEnabled)
+		if scaDeltaScanEnabled.Status {
+			accessToken, err := wrappers.GetAccessToken()
+			if err != nil {
+				return err
+			}
+			if accessToken != "" {
+				logger.PrintIfVerbose("Setting authorization token for SCA Delta Scan")
+				cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+			}
 		}
 		out, err := cmd.Output()
 		logger.PrintIfVerbose(string(out))
@@ -2011,7 +2014,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// execute scaResolver only in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 			if scaErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
