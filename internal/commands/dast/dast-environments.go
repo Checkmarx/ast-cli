@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	failedGettingEnvironments = "Failed getting environments"
+	failedGettingDastEnvironments = "Failed getting DAST environments"
 )
 
 var (
@@ -86,19 +86,19 @@ func runListDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnviron
 
 		params, err := commandutils.GetFilters(cmd)
 		if err != nil {
-			return errors.Wrapf(err, "%s", failedGettingEnvironments)
+			return errors.Wrapf(err, "%s", failedGettingDastEnvironments)
 		}
 
 		// The API expects: from, to, search, sort
 		// from and to are pagination parameters (e.g., from=1, to=10 for first page)
 		allEnvironmentsModel, errorModel, err = dastEnvironmentsWrapper.Get(params)
 		if err != nil {
-			return errors.Wrapf(err, "%s\n", failedGettingEnvironments)
+			return errors.Wrapf(err, "%s\n", failedGettingDastEnvironments)
 		}
 
 		// Checking the response
 		if errorModel != nil {
-			return errors.Errorf(services.ErrorCodeFormat, failedGettingEnvironments, errorModel.Code, errorModel.Message)
+			return errors.Errorf(services.ErrorCodeFormat, failedGettingDastEnvironments, errorModel.Code, errorModel.Message)
 		} else if allEnvironmentsModel != nil && allEnvironmentsModel.Environments != nil {
 			err = commandutils.PrintByFormat(cmd, toEnvironmentViews(allEnvironmentsModel.Environments))
 			if err != nil {
