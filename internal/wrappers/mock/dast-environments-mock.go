@@ -2,13 +2,13 @@ package mock
 
 import "github.com/checkmarx/ast-cli/internal/wrappers"
 
-// EnvironmentsMockWrapper is a mock implementation of EnvironmentsWrapper
-type EnvironmentsMockWrapper struct{}
+// DastEnvironmentsMockWrapper is a mock implementation of DastEnvironmentsWrapper
+type DastEnvironmentsMockWrapper struct{}
 
 // Get mocks the Get method
-func (e *EnvironmentsMockWrapper) Get(params map[string]string) (*wrappers.EnvironmentsCollectionResponseModel, *wrappers.ErrorModel, error) {
-	return &wrappers.EnvironmentsCollectionResponseModel{
-		Environments: []wrappers.EnvironmentResponseModel{
+func (e *DastEnvironmentsMockWrapper) Get(params map[string]string) (*wrappers.DastEnvironmentsCollectionResponseModel, *wrappers.ErrorModel, error) {
+	return &wrappers.DastEnvironmentsCollectionResponseModel{
+		Environments: []wrappers.DastEnvironmentResponseModel{
 			{
 				EnvironmentID: "test-env-id",
 				Domain:        "test-domain",

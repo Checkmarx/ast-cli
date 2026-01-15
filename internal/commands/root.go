@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -61,7 +62,7 @@ func NewAstCLI(
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
 	telemetryWrapper wrappers.TelemetryWrapper,
-	environmentsWrapper wrappers.EnvironmentsWrapper,
+	dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -188,7 +189,7 @@ func NewAstCLI(
 		realTimeWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
-	environmentsCmd := NewEnvironmentsCommand(environmentsWrapper)
+	dastEnvironmentsCmd := dast.NewDastEnvironmentsCommand(dastEnvironmentsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -239,7 +240,7 @@ func NewAstCLI(
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
-		environmentsCmd,
+		dastEnvironmentsCmd,
 		resultsCmd,
 		triageCmd,
 		versionCmd,

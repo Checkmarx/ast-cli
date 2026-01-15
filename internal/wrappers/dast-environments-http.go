@@ -10,23 +10,23 @@ import (
 )
 
 const (
-	failedToParseEnvironments = "Failed to parse environments"
+	failedToParseDastEnvironments = "Failed to parse DAST environments"
 )
 
-// EnvironmentsHTTPWrapper implements the EnvironmentsWrapper interface
-type EnvironmentsHTTPWrapper struct {
+// DastEnvironmentsHTTPWrapper implements the DastEnvironmentsWrapper interface
+type DastEnvironmentsHTTPWrapper struct {
 	path string
 }
 
-// NewHTTPEnvironmentsWrapper creates a new HTTP environments wrapper
-func NewHTTPEnvironmentsWrapper(path string) EnvironmentsWrapper {
-	return &EnvironmentsHTTPWrapper{
+// NewHTTPDastEnvironmentsWrapper creates a new HTTP DAST environments wrapper
+func NewHTTPDastEnvironmentsWrapper(path string) DastEnvironmentsWrapper {
+	return &DastEnvironmentsHTTPWrapper{
 		path: path,
 	}
 }
 
-// Get retrieves environments with optional query parameters
-func (e *EnvironmentsHTTPWrapper) Get(params map[string]string) (*EnvironmentsCollectionResponseModel, *ErrorModel, error) {
+// Get retrieves DAST environments with optional query parameters
+func (e *DastEnvironmentsHTTPWrapper) Get(params map[string]string) (*DastEnvironmentsCollectionResponseModel, *ErrorModel, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 
 	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, e.path, params, nil, clientTimeout)
@@ -45,14 +45,14 @@ func (e *EnvironmentsHTTPWrapper) Get(params map[string]string) (*EnvironmentsCo
 		errorModel := ErrorModel{}
 		err = decoder.Decode(&errorModel)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseEnvironments)
+			return nil, nil, errors.Wrapf(err, failedToParseDastEnvironments)
 		}
 		return nil, &errorModel, nil
 	case http.StatusOK:
-		model := EnvironmentsCollectionResponseModel{}
+		model := DastEnvironmentsCollectionResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseEnvironments)
+			return nil, nil, errors.Wrapf(err, failedToParseDastEnvironments)
 		}
 		return &model, nil, nil
 	default:

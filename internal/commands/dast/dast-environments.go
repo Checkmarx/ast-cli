@@ -1,4 +1,4 @@
-package commands
+package dast
 
 import (
 	"fmt"
@@ -32,10 +32,10 @@ var (
 	)
 )
 
-// NewEnvironmentsCommand creates the environments command
-func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *cobra.Command {
+// NewDastEnvironmentsCommand creates the DAST environments command
+func NewDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper) *cobra.Command {
 	environmentsCmd := &cobra.Command{
-		Use:   "environments",
+		Use:   "dast-environments",
 		Short: "Manage DAST environments",
 		Long:  "The environments command enables the ability to manage DAST environments in Checkmarx One",
 		Annotations: map[string]string{
@@ -47,14 +47,14 @@ func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *c
 		},
 	}
 
-	listEnvironmentsCmd := &cobra.Command{
+	listDastEnvironmentsCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all DAST environments in the system",
 		Example: heredoc.Doc(
 			`
-			$ cx environments list --format list
-			$ cx environments list --filter "from=1,to=10"
-			$ cx environments list --filter "search=production,sort=created"
+			$ cx dast-environments list --format list
+			$ cx dast-environments list --filter "from=1,to=10"
+			$ cx dast-environments list --filter "search=production,sort=created"
 		`,
 		),
 		Annotations: map[string]string{
@@ -64,24 +64,24 @@ func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *c
 			`,
 			),
 		},
-		RunE: runListEnvironmentsCommand(environmentsWrapper),
+		RunE: runListDastEnvironmentsCommand(dastEnvironmentsWrapper),
 	}
-	listEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterEnvironmentsListFlagUsage)
+	listDastEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterEnvironmentsListFlagUsage)
 
 	commandutils.AddFormatFlagToMultipleCommands(
-		[]*cobra.Command{listEnvironmentsCmd},
+		[]*cobra.Command{listDastEnvironmentsCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
 		printer.FormatList,
 	)
 
-	environmentsCmd.AddCommand(listEnvironmentsCmd)
+	environmentsCmd.AddCommand(listDastEnvironmentsCmd)
 	return environmentsCmd
 }
 
-func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) func(cmd *cobra.Command, args []string) error {
+func runListDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		var allEnvironmentsModel *wrappers.EnvironmentsCollectionResponseModel
+		var allEnvironmentsModel *wrappers.DastEnvironmentsCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
 
 		params, err := commandutils.GetFilters(cmd)
@@ -91,7 +91,7 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 
 		// The API expects: from, to, search, sort
 		// from and to are pagination parameters (e.g., from=1, to=10 for first page)
-		allEnvironmentsModel, errorModel, err = environmentsWrapper.Get(params)
+		allEnvironmentsModel, errorModel, err = dastEnvironmentsWrapper.Get(params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingEnvironments)
 		}
@@ -109,7 +109,7 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 	}
 }
 
-func toEnvironmentViews(models []wrappers.EnvironmentResponseModel) []environmentView {
+func toEnvironmentViews(models []wrappers.DastEnvironmentResponseModel) []environmentView {
 	result := make([]environmentView, len(models))
 	for i := 0; i < len(models); i++ {
 		result[i] = toEnvironmentView(&models[i])
@@ -117,7 +117,7 @@ func toEnvironmentViews(models []wrappers.EnvironmentResponseModel) []environmen
 	return result
 }
 
-func toEnvironmentView(model *wrappers.EnvironmentResponseModel) environmentView {
+func toEnvironmentView(model *wrappers.DastEnvironmentResponseModel) environmentView {
 	return environmentView{
 		EnvironmentID: model.EnvironmentID,
 		Domain:        model.Domain,
