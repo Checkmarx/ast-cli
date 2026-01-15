@@ -301,7 +301,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "params",
 			projectName:       "ProjectName",
-			expectedError:     "ScaResolver",
+			expectedError:     "/ScaResolver: no such file or directory",
 		},
 		{
 			name:              "Invalid scaResolverParams format",
@@ -309,7 +309,7 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 			scaResolver:       "./ScaResolver",
 			scaResolverParams: "\"unclosed quote",
 			projectName:       "ProjectName",
-			expectedError:     "ScaResolver", // Actual error from command execution
+			expectedError:     "/ScaResolver: no such file or directory", // Actual error from command execution
 		},
 	}
 
