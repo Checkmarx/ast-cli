@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -67,7 +68,7 @@ func NewEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper) *c
 	}
 	listEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterEnvironmentsListFlagUsage)
 
-	addFormatFlagToMultipleCommands(
+	commandutils.AddFormatFlagToMultipleCommands(
 		[]*cobra.Command{listEnvironmentsCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
@@ -99,7 +100,7 @@ func runListEnvironmentsCommand(environmentsWrapper wrappers.EnvironmentsWrapper
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, failedGettingEnvironments, errorModel.Code, errorModel.Message)
 		} else if allEnvironmentsModel != nil && allEnvironmentsModel.Environments != nil {
-			err = printByFormat(cmd, toEnvironmentViews(allEnvironmentsModel.Environments))
+			err = commandutils.PrintByFormat(cmd, toEnvironmentViews(allEnvironmentsModel.Environments))
 			if err != nil {
 				return err
 			}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -196,7 +197,7 @@ func NewProjectCommand(applicationsWrapper wrappers.ApplicationsWrapper, project
 		RunE: runGetProjectsTagsCommand(projectsWrapper),
 	}
 
-	addFormatFlagToMultipleCommands(
+	commandutils.AddFormatFlagToMultipleCommands(
 		[]*cobra.Command{showProjectCmd, listProjectsCmd, createProjCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
@@ -281,7 +282,7 @@ func runCreateProjectCommand(
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, services.FailedCreatingProj, errorModel.Code, errorModel.Message)
 		} else if projResponseModel != nil {
-			err = printByFormat(cmd, toProjectView(*projResponseModel))
+			err = commandutils.PrintByFormat(cmd, toProjectView(*projResponseModel))
 			if err != nil {
 				return errors.Wrapf(err, "%s", services.FailedCreatingProj)
 			}
@@ -414,7 +415,7 @@ func runListProjectsCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd *
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, failedGettingAll, errorModel.Code, errorModel.Message)
 		} else if allProjectsModel != nil && allProjectsModel.Projects != nil {
-			err = printByFormat(cmd, toProjectViews(allProjectsModel.Projects))
+			err = commandutils.PrintByFormat(cmd, toProjectViews(allProjectsModel.Projects))
 			if err != nil {
 				return err
 			}
@@ -484,7 +485,7 @@ func runGetProjectByIDCommand(projectsWrapper wrappers.ProjectsWrapper) func(cmd
 			resp := GetProjectByName(projectResponseModel.Name, projectsWrapper)
 
 			projectResponseModel.Groups = resp.Groups
-			err = printByFormat(cmd, toProjectView(*projectResponseModel))
+			err = commandutils.PrintByFormat(cmd, toProjectView(*projectResponseModel))
 			if err != nil {
 				return err
 			}
