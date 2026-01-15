@@ -83,6 +83,7 @@ var EnvVarsBinds = []struct {
 	{ConfigFilePathKey, ConfigFilePathEnv, ""},
 	{RealtimeScannerPathKey, RealtimeScannerPathEnv, "api/realtime-scanner"},
 	{DastEnvironmentsPathKey, DastEnvironmentsPathEnv, "api/dast/scans/environments"},
+	{DastScansPathKey, DastScansPathEnv, "api/dast/scans/scans"},
 	{StartMultiPartUploadPathKey, StartMultiPartUploadPathEnv, "api/uploads/start-multipart-upload"},
 	{MultipartPresignedPathKey, MultipartPresignedPathEnv, "api/uploads/multipart-presigned"},
 	{CompleteMultiPartUploadPathKey, CompleteMultipartUploadPathEnv, "api/uploads/complete-multipart-upload"},
