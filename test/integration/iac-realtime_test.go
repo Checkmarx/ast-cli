@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -282,6 +283,14 @@ func TestEngineNameResolution_engine_NotFound(t *testing.T) {
 }
 
 func TestEngineNameResolution_containerEngine_Found_inPATH_exists(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on windows")
+	}
+	oldPath := os.Getenv("PATH")
+	t.Cleanup(func() {
+		_ = os.Setenv("PATH", oldPath)
+	})
+	_ = os.Setenv("PATH", "/usr/local/bin:"+os.Getenv("PATH"))
 	path := "/usr/local/bin"
 	testFile := filepath.Join(path, "docker.exe")
 

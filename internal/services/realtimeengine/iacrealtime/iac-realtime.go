@@ -6,12 +6,17 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
 
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+)
+
+const (
+	osWindows = "windows"
 )
 
 type IacRealtimeService struct {
@@ -142,8 +147,12 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 }
 
 func engineNameResolution(engineName, fallBackDir string) (string, error) {
-	if _, err := exec.LookPath(engineName); err == nil {
+	var err error
+	if _, err = exec.LookPath(engineName); err == nil {
 		return engineName, nil
+	}
+	if err != nil && getOS() == osWindows {
+		return "", errors.New(engineName + ": executable file not found in PATH")
 	}
 	fallbackPath := filepath.Join(fallBackDir, engineName)
 	info, err := os.Stat(fallbackPath)
@@ -151,4 +160,8 @@ func engineNameResolution(engineName, fallBackDir string) (string, error) {
 		return fallbackPath, nil
 	}
 	return "", errors.New(engineName + " not found in PATH or in " + IacEnginePath)
+}
+
+var getOS = func() string {
+	return runtime.GOOS
 }

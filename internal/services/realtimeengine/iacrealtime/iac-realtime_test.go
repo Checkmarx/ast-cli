@@ -482,23 +482,24 @@ func TestEngineName_Resolution_FoundInPATH(t *testing.T) {
 	}
 }
 
-func TestEngineName_Resolution_check_fallBackPath(t *testing.T) {
+func TestEngineName_Resolution_check_fallBackPath_for_MAC_Linux(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return "darwin" } // or "linux"
+
 	testPath := IacEnginePath
 	testFile := filepath.Join(testPath, "docker")
 
 	err := os.WriteFile(testFile, []byte("#!/bin/sh\necho test"), 0755)
 	if err != nil {
-		t.Skipf("skippin test , cannot write the file %s", err)
+		t.Skipf("skipping test, cannot write file: %v", err)
 	}
+	defer func() { _ = os.Remove(testFile) }()
 
-	defer func() {
-		_ = os.Remove(testFile)
-	}()
 	oldPATH := os.Getenv("PATH")
-	defer func() {
-		_ = os.Setenv("PATH", oldPATH)
-	}()
+	defer func() { _ = os.Setenv("PATH", oldPATH) }()
 	_ = os.Setenv("PATH", "")
+
 	result, err := engineNameResolution("docker", IacEnginePath)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
