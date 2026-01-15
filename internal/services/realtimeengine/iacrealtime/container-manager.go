@@ -30,6 +30,10 @@ func (dm *ContainerManager) GenerateContainerID() string {
 }
 
 func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
+	engine, err := engineNameResolution(engine, IacEnginePath)
+	if err != nil {
+		return err
+	}
 	args := []string{
 		"run", "--rm",
 		"-v", volumeMap,
@@ -40,7 +44,7 @@ func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
 		"-o", ContainerPath,
 		"--report-formats", ContainerFormat,
 	}
+	_, err = exec.Command(engine, args...).CombinedOutput()
 
-	_, err := exec.Command(engine, args...).CombinedOutput()
 	return err
 }

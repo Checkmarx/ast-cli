@@ -176,6 +176,13 @@ func TestMockContainerManager_RunKicsContainer(t *testing.T) {
 			volumeMap: "/tmp/test:/path",
 			expectErr: false, // Mock doesn't validate parameters
 		},
+		{
+			name:      "FallBack engine Path verification",
+			engine:    "/usr/local/bin/docker",
+			volumeMap: "/tmp/test:/path",
+			expectErr: false, // Mock doesn't validate parameters
+
+		},
 	}
 
 	for _, tt := range tests {
