@@ -136,6 +136,7 @@ const (
 	BranchPrimaryPrefix          = "--branch-primary="
 	OverridePolicyManagement     = "override-policy-management"
 	defaultScanEnqueueRetryDelay = 5
+	scaResolverCxOneAuthToken    = "CXONE_AUTH_TOKEN"
 )
 
 var (
@@ -1888,7 +1889,16 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			args = append(args, parsedscaResolverParams...)
 		}
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-		out, err := exec.Command(scaResolver, args...).Output()
+		accessToken, err := wrappers.GetAccessToken()
+		if err != nil {
+			return err
+		}
+		cmd := exec.Command(scaResolver, args...)
+		if accessToken != "" {
+			logger.PrintIfVerbose("Setting authorization token for SCA resolver")
+			cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+		}
+		out, err := cmd.Output()
 		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
