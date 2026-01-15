@@ -599,31 +599,50 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+
 	var accessToken string
 
-	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(FailedToAuth, "access key ID")
-	} else if accessKeySecret == "" && astAPIKey == "" {
+	if accessKeyID == "" && accessKeySecret == "" && astAPIKey == "" {
+		return "", errors.Errorf(FailedToAuth, "provide credentials")
+	}
+
+	// Prefer client credentials over API key
+	if accessKeyID != "" && accessKeySecret != "" {
+		if accessKeyID == "" {
+			return "", errors.Errorf(FailedToAuth, "access key ID")
+		}
+		if accessKeySecret == "" {
+			return "", errors.Errorf(FailedToAuth, "access key secret")
+		}
+
+		authURI, err := GetAuthURI()
+		if err != nil {
+			return "", err
+		}
+
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+		if err != nil {
+			return "", errors.Errorf("%s", err)
+		}
+	} else if astAPIKey != "" {
+		authURI, err := GetAuthURI()
+		if err != nil {
+			return "", err
+		}
+
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+		if err != nil {
+			return "", errors.Errorf("%s", err)
+		}
+	} else if accessKeyID != "" || accessKeySecret != "" {
+		// One is provided but not both
+		if accessKeyID == "" {
+			return "", errors.Errorf(FailedToAuth, "access key ID")
+		}
 		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
-	authURI, err := GetAuthURI()
-	if err != nil {
-		return "", err
-	}
-
-	if astAPIKey != "" {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
-	} else {
-		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
-	}
-
-	if err != nil {
-		return "", errors.Errorf("%s", err)
-	}
-
 	writeCredentialsToCache(accessToken)
-
 	return accessToken, nil
 }
 
