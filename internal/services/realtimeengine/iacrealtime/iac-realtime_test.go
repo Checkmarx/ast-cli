@@ -3,6 +3,7 @@ package iacrealtime
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -446,5 +447,66 @@ func TestFilterIgnoredFindings_WithOneIgnored(t *testing.T) {
 
 	if filtered[0].Title != "Memory Not Limited" {
 		t.Errorf("Unexpected result after filtering: got %s, expected 'Memory Not Limited'", filtered[0].Title)
+	}
+}
+
+func createExecutable(t *testing.T, tempDir, name string) string {
+	t.Helper()
+	path := filepath.Join(tempDir, name)
+	if runtime.GOOS == "windows" {
+		path += ".exe"
+	}
+
+	err := os.WriteFile(path, []byte("#!/bin/sh\necho test"), 0755)
+	if err != nil {
+		t.Fatalf("failed to create executable: %v", err)
+	}
+	return filepath.Base(path)
+}
+
+func TestEngineName_Resolution_FoundInPATH(t *testing.T) {
+	tmpDir := t.TempDir()
+	engineName := createExecutable(t, tmpDir, "docker")
+	previousPath := os.Getenv("PATH")
+
+	err := os.Setenv("PATH", tmpDir+string(os.PathListSeparator)+previousPath)
+	if err != nil {
+		t.Fatalf("Failed to set the PATH in env")
+	}
+	defer func() {
+		_ = os.Setenv("PATH", previousPath)
+	}()
+	res, err := engineNameResolution(engineName, IacEnginePath)
+	if err != nil || res != engineName {
+		t.Fatalf("Expected enginename in return , got %v , err %d", res, err)
+	}
+}
+
+func TestEngineName_Resolution_check_fallBackPath_for_MAC_Linux(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return "darwin" } // or "linux"
+
+	testPath := IacEnginePath
+	testFile := filepath.Join(testPath, "docker")
+
+	err := os.WriteFile(testFile, []byte("#!/bin/sh\necho test"), 0755)
+	if err != nil {
+		t.Skipf("skipping test, cannot write file: %v", err)
+	}
+	defer func() { _ = os.Remove(testFile) }()
+
+	oldPATH := os.Getenv("PATH")
+	defer func() { _ = os.Setenv("PATH", oldPATH) }()
+	_ = os.Setenv("PATH", "")
+
+	result, err := engineNameResolution("docker", IacEnginePath)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	expected := filepath.Join(IacEnginePath, "docker")
+	if result != expected {
+		t.Fatalf("expected %q, got %q", expected, result)
 	}
 }
