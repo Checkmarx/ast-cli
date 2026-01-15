@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	failedGettingDastScans   = "Failed getting DAST scans"
-	environmentIDFlag        = "environment-id"
-	environmentIDFlagUsage   = "Environment ID to list scans for (required)"
-	environmentIDQueryParam  = "environmentId"
-	scanIDFlagUsage          = "Filter by scan ID"
-	filterScanIDQueryParam   = "filter[scanId]"
+	failedGettingDastScans  = "Failed getting DAST scans"
+	environmentIDFlag       = "environment-id"
+	environmentIDFlagUsage  = "Environment ID to list scans for (required)"
+	environmentIDQueryParam = "environmentId"
+	scanIDFilterKey         = "scanId"
+	filterScanIDQueryParam  = "filter[scanId]"
 )
 
 var (
@@ -31,6 +31,7 @@ var (
 				commonParams.FromQueryParam,
 				commonParams.ToQueryParam,
 				commonParams.SortQueryParam,
+				scanIDFilterKey,
 			}, ",",
 		),
 	)
@@ -59,7 +60,7 @@ func NewDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) *cobra.Comm
 			$ cx dast-scans list --environment-id <environment-id>
 			$ cx dast-scans list --environment-id <environment-id> --format list
 			$ cx dast-scans list --environment-id <environment-id> --filter "from=1,to=10"
-			$ cx dast-scans list --environment-id <environment-id> --scan-id <scan-id>
+			$ cx dast-scans list --environment-id <environment-id> --filter "scanId=<scan-id>"
 		`,
 		),
 		Annotations: map[string]string{
@@ -73,7 +74,6 @@ func NewDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) *cobra.Comm
 	}
 	listDastScansCmd.PersistentFlags().String(environmentIDFlag, "", environmentIDFlagUsage)
 	_ = listDastScansCmd.MarkPersistentFlagRequired(environmentIDFlag)
-	listDastScansCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", scanIDFlagUsage)
 	listDastScansCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastScansListFlagUsage)
 
 	commandutils.AddFormatFlagToMultipleCommands(
@@ -97,11 +97,6 @@ func runListDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) func(cm
 			return errors.Wrapf(err, "%s", failedGettingDastScans)
 		}
 
-		scanID, err := cmd.Flags().GetString(commonParams.ScanIDFlag)
-		if err != nil {
-			return errors.Wrapf(err, "%s", failedGettingDastScans)
-		}
-
 		params, err := commandutils.GetFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingDastScans)
@@ -110,9 +105,10 @@ func runListDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) func(cm
 		// Add the required environmentId parameter
 		params[environmentIDQueryParam] = environmentID
 
-		// Add optional scanId filter
-		if scanID != "" {
+		// Transform scanId filter to filter[scanId] format for the API
+		if scanID, exists := params[scanIDFilterKey]; exists {
 			params[filterScanIDQueryParam] = scanID
+			delete(params, scanIDFilterKey)
 		}
 
 		// The API expects: environmentId (required), from, to, sort, filter[scanId]
