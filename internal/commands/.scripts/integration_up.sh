@@ -54,7 +54,7 @@ else
     rerun_status=0
     while IFS= read -r testName; do
         go test \
-            -tags integration \
+            -tags integration-check \
             -v \
             -timeout 30m \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
