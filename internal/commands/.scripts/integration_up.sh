@@ -23,7 +23,7 @@ touch "$FAILED_TESTS_FILE"
 # Step 3: Run all tests and write failed test names to failedTests file
 echo "Running all tests..."
 go test \
-    -tags integration-check \
+    -tags integration \
     -v \
     -timeout 210m \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
@@ -54,7 +54,7 @@ else
     rerun_status=0
     while IFS= read -r testName; do
         go test \
-            -tags integration-check \
+            -tags integration \
             -v \
             -timeout 30m \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
