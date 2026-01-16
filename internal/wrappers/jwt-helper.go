@@ -21,6 +21,7 @@ type JWTStruct struct {
 	AstLicense struct {
 		LicenseData struct {
 			AllowedEngines []string `json:"allowedEngines"`
+			DastEnabled    bool     `json:"dastEnabled"`
 		} `json:"LicenseData"`
 	} `json:"ast-license"`
 	ASTRoles             []string `json:"roles_ast"`
@@ -84,20 +85,25 @@ func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (al
 }
 
 func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
-	licenseDetails = make(map[string]string)
-
 	jwtStruct, err := getJwtStruct()
 	if err != nil {
 		return nil, err
 	}
+	return buildLicenseDetailsFromJWT(jwtStruct), nil
+}
+
+func buildLicenseDetailsFromJWT(jwtStruct *JWTStruct) map[string]string {
+	licenseDetails := make(map[string]string)
 
 	assistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxOneAssistType) ||
 		containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.AIProtectionType)
 	devAssistEnabled := containsIgnoreCase(jwtStruct.AstLicense.LicenseData.AllowedEngines, commonParams.CheckmarxDevAssistType)
 
-	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
-	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(devAssistEnabled)
-	return licenseDetails, nil
+	licenseDetails[commonParams.CxOneAssistEnabledKey] = strconv.FormatBool(assistEnabled)
+	licenseDetails[commonParams.CxDevAssistEnabledKey] = strconv.FormatBool(devAssistEnabled)
+	licenseDetails[commonParams.DastEnabledKey] = strconv.FormatBool(jwtStruct.AstLicense.LicenseData.DastEnabled)
+
+	return licenseDetails
 }
 
 // containsIgnoreCase returns true if target exists in arr using case-insensitive comparison
