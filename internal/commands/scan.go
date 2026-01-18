@@ -63,7 +63,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.18"
+	containerImage                          = "checkmarx/kics:v2.1.19"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -137,6 +137,7 @@ const (
 	BranchPrimaryPrefix          = "--branch-primary="
 	OverridePolicyManagement     = "override-policy-management"
 	defaultScanEnqueueRetryDelay = 5
+	scaResolverCxOneAuthToken    = "CXONE_AUTH_TOKEN"
 )
 
 var (
@@ -1868,7 +1869,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1889,7 +1890,19 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			args = append(args, parsedscaResolverParams...)
 		}
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-		out, err := exec.Command(scaResolver, args...).Output()
+		cmd := exec.Command(scaResolver, args...)
+		scaDeltaScanEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScaDeltaScanEnabled)
+		if scaDeltaScanEnabled.Status {
+			accessToken, err := wrappers.GetAccessToken()
+			if err != nil {
+				return err
+			}
+			if accessToken != "" {
+				logger.PrintIfVerbose("Setting authorization token for SCA Delta Scan")
+				cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+			}
+		}
+		out, err := cmd.Output()
 		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -2002,7 +2015,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// execute scaResolver only in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 			if scaErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)

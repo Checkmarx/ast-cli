@@ -26,9 +26,9 @@ const (
 	prGitlabNamespace             = "PR_GITLAB_NAMESPACE"
 	prGitlabProjectId             = "PR_GITLAB_PROJECT_ID"
 	prGitlabIid                   = "PR_GITLAB_IID"
-	prAzureToken                  = "AZURE_NEW_TOKEN"
-	prAzureOrganization           = "AZURE_NEW_ORG"
-	prAzureProject                = "AZURE_PROJECT_NAME"
+	prAzureToken                  = "AZURE_TOKEN"
+	prAzureOrganization           = "AZURE_ORG"
+	prAzureProject                = "AZURE_PROJECT"
 	prAzureNumber                 = "AZURE_PR_NUMBER"
 	prBBToken                     = "PR_BITBUCKET_TOKEN"
 	prBBNamespace                 = "PR_BITBUCKET_NAMESPACE"
@@ -252,7 +252,6 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 }
 
 func TestPRAzureDecorationSuccessCase(t *testing.T) {
-	t.Skip("Skipping this test for now")
 	args := []string{
 		"utils",
 		"pr",
