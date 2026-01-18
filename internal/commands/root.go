@@ -123,6 +123,20 @@ func NewAstCLI(
 		if err != nil {
 			return err
 		}
+		if cmd.Flags().Changed(params.AccessKeyIDFlag) {
+			keyID, _ := cmd.Flags().GetString(params.AccessKeyIDFlag)
+			viper.Set(params.AccessKeyIDConfigKey, keyID)
+		}
+
+		if cmd.Flags().Changed(params.AccessKeySecretFlag) {
+			keySecret, _ := cmd.Flags().GetString(params.AccessKeySecretFlag)
+			viper.Set(params.AccessKeySecretConfigKey, keySecret)
+		}
+
+		if cmd.Flags().Changed(params.AstAPIKeyFlag) {
+			apiKey, _ := cmd.Flags().GetString(params.AstAPIKeyFlag)
+			viper.Set(params.AstAPIKey, apiKey)
+		}
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
 			_ = cmd.Help()
