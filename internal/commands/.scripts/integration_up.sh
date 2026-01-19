@@ -14,6 +14,7 @@ rm -rf ScaResolver-linux64.tar.gz
 
 # Step 1: Check if the failedTests file exists
 FAILED_TESTS_FILE="failedTests"
+rerun_status=0
 
 # Step 2: Create the failedTests file
 echo "Creating $FAILED_TESTS_FILE..."
@@ -83,7 +84,27 @@ fi
 echo "Running cleandata to clean up projects..."
 go test -v github.com/checkmarx/ast-cli/test/cleandata
 
-# Step 8: Final cleanup and exit
+# Step 8: Generate failed tests summary for CI/CD consumption
+FINAL_FAILED_FILE="failed_tests_summary.txt"
+if [ -s "$FAILED_TESTS_FILE" ] && [ $rerun_status -eq 1 ]; then
+    cp "$FAILED_TESTS_FILE" "$FINAL_FAILED_FILE"
+
+    echo ""
+    echo "========================================================"
+    echo "         FAILED INTEGRATION TESTS SUMMARY"
+    echo "========================================================"
+    echo "The following tests failed after retry:"
+    echo "--------------------------------------------------------"
+    while IFS= read -r testName; do
+        echo "  - $testName"
+    done < "$FINAL_FAILED_FILE"
+    echo "--------------------------------------------------------"
+    echo "Total failed tests: $(wc -l < "$FINAL_FAILED_FILE" | tr -d ' ')"
+    echo "========================================================"
+    echo ""
+fi
+
+# Step 9: Final cleanup and exit
 rm -f "$FAILED_TESTS_FILE" test_output.log
 
 if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
