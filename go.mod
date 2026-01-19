@@ -10,9 +10,9 @@ require (
 	github.com/Checkmarx/manifest-parser v0.1.1
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms/v3 v3.21.0
+	github.com/checkmarx/sspi v0.0.0-20251229100441-c615dae018f8
 	github.com/gofrs/flock v0.12.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gomarkdown/markdown v0.0.0-20241102151059-6bc1ffdc6e8c
