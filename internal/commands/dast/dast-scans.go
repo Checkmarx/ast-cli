@@ -7,6 +7,7 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/params"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -16,8 +17,6 @@ import (
 
 const (
 	failedGettingDastScans  = "Failed getting DAST scans"
-	environmentIDFlag       = "environment-id"
-	environmentIDFlagUsage  = "Environment ID to list scans for (required)"
 	environmentIDQueryParam = "environmentId"
 	scanIDFilterKey         = "scanId"
 	filterScanIDQueryParam  = "filter[scanId]"
@@ -72,8 +71,8 @@ func NewDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) *cobra.Comm
 		},
 		RunE: runListDastScansCommand(dastScansWrapper),
 	}
-	listDastScansCmd.PersistentFlags().String(environmentIDFlag, "", environmentIDFlagUsage)
-	_ = listDastScansCmd.MarkPersistentFlagRequired(environmentIDFlag)
+	listDastScansCmd.PersistentFlags().String(params.EnvironmentIDFlag, "", params.EnvironmentIDFlagUsage)
+	_ = listDastScansCmd.MarkPersistentFlagRequired(params.EnvironmentIDFlag)
 	listDastScansCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastScansListFlagUsage)
 
 	commandutils.AddFormatFlagToMultipleCommands(
@@ -92,7 +91,7 @@ func runListDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) func(cm
 		var allScansModel *wrappers.DastScansCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
 
-		environmentID, err := cmd.Flags().GetString(environmentIDFlag)
+		environmentID, err := cmd.Flags().GetString(params.EnvironmentIDFlag)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingDastScans)
 		}
