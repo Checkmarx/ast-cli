@@ -1,9 +1,13 @@
 package dast
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -16,16 +20,26 @@ const (
 	// Flag names
 	environmentIDFlag = "environment-id"
 	scanIDFlag        = "scan-id"
-	pageFlag          = "page"
-	perPageFlag       = "per-page"
-	searchFlag        = "search"
-	sortFlag          = "sort"
 
 	// API query param names
 	pageQueryParam    = "page"
 	perPageQueryParam = "per_page"
 	searchQueryParam  = "search"
 	sortByQueryParam  = "sort_by"
+)
+
+var (
+	filterDastAlertsListFlagUsage = fmt.Sprintf(
+		"Filter the list of DAST alerts. Use ';' as the delimiter for arrays. Available filters are: %s",
+		strings.Join(
+			[]string{
+				pageQueryParam,
+				perPageQueryParam,
+				searchQueryParam,
+				sortByQueryParam,
+			}, ",",
+		),
+	)
 )
 
 // NewDastAlertsCommand creates the DAST alerts command
@@ -50,8 +64,8 @@ func NewDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) *cobra.C
 			`
 			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id>
 			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id> --format json
-			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id> --page 1 --per-page 10
-			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id> --search "PII" --sort "severity:desc"
+			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id> --filter "page=1,per_page=10"
+			$ cx dast-alerts list --environment-id <env-id> --scan-id <scan-id> --filter "search=PII,sort_by=severity:desc"
 		`,
 		),
 		Annotations: map[string]string{
@@ -70,11 +84,8 @@ func NewDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) *cobra.C
 	_ = listDastAlertsCmd.MarkFlagRequired(environmentIDFlag)
 	_ = listDastAlertsCmd.MarkFlagRequired(scanIDFlag)
 
-	// Optional flags
-	listDastAlertsCmd.Flags().Int(pageFlag, 0, "Page number for pagination")
-	listDastAlertsCmd.Flags().Int(perPageFlag, 0, "Number of results per page")
-	listDastAlertsCmd.Flags().String(searchFlag, "", "Search term to filter alerts")
-	listDastAlertsCmd.Flags().String(sortFlag, "", "Sort order (e.g., 'severity:desc')")
+	// Optional filter flag
+	listDastAlertsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastAlertsListFlagUsage)
 
 	commandutils.AddFormatFlagToMultipleCommands(
 		[]*cobra.Command{listDastAlertsCmd},
@@ -95,9 +106,12 @@ func runListDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) func
 		environmentID, _ := cmd.Flags().GetString(environmentIDFlag)
 		scanID, _ := cmd.Flags().GetString(scanIDFlag)
 
-		params := buildQueryParams(cmd)
+		params, err := commandutils.GetFilters(cmd)
+		if err != nil {
+			return errors.Wrapf(err, "%s", failedGettingDastAlerts)
+		}
 
-		alertsModel, errorModel, err := dastAlertsWrapper.GetAlerts(environmentID, scanID, params)
+		alertsModel, errorModel, err = dastAlertsWrapper.GetAlerts(environmentID, scanID, params)
 		if err != nil {
 			return errors.Wrapf(err, "%s\n", failedGettingDastAlerts)
 		}
@@ -113,28 +127,6 @@ func runListDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) func
 		}
 		return nil
 	}
-}
-
-func buildQueryParams(cmd *cobra.Command) map[string]string {
-	params := make(map[string]string)
-
-	if page, _ := cmd.Flags().GetInt(pageFlag); page > 0 {
-		params[pageQueryParam] = cmd.Flag(pageFlag).Value.String()
-	}
-
-	if perPage, _ := cmd.Flags().GetInt(perPageFlag); perPage > 0 {
-		params[perPageQueryParam] = cmd.Flag(perPageFlag).Value.String()
-	}
-
-	if search, _ := cmd.Flags().GetString(searchFlag); search != "" {
-		params[searchQueryParam] = search
-	}
-
-	if sort, _ := cmd.Flags().GetString(sortFlag); sort != "" {
-		params[sortByQueryParam] = sort
-	}
-
-	return params
 }
 
 func toAlertViews(models []wrappers.DastAlertResponseModel) []alertView {
@@ -168,4 +160,3 @@ type alertView struct {
 	NumNotes          int  `format:"name:Notes"`
 	Systemic          bool
 }
-

@@ -36,17 +36,17 @@ func TestDastAlertsListWithFormat(t *testing.T) {
 }
 
 func TestDastAlertsListWithPagination(t *testing.T) {
-	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--page", "1", "--per-page", "10")
+	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--filter", "page=1,per_page=10")
 	assert.NilError(t, err)
 }
 
 func TestDastAlertsListWithSearch(t *testing.T) {
-	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--search", "PII")
+	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--filter", "search=PII")
 	assert.NilError(t, err)
 }
 
 func TestDastAlertsListWithSort(t *testing.T) {
-	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--sort", "severity:desc")
+	err := createAlertsTestCommand("list", "--environment-id", "test-env", "--scan-id", "test-scan", "--filter", "sort_by=severity:desc")
 	assert.NilError(t, err)
 }
 
@@ -59,4 +59,3 @@ func TestDastAlertsListMissingScanID(t *testing.T) {
 	err := createAlertsTestCommand("list", "--environment-id", "test-env")
 	assert.ErrorContains(t, err, "required flag")
 }
-
