@@ -125,6 +125,7 @@ func toEnvironmentView(model *wrappers.DastEnvironmentResponseModel) environment
 		ScanType:      model.ScanType,
 		Created:       model.Created,
 		RiskRating:    model.RiskRating,
+		LastScanID:    model.LastScanID,
 		LastScanTime:  model.LastScanTime,
 		LastStatus:    model.LastStatus,
 	}
@@ -137,6 +138,7 @@ type environmentView struct {
 	ScanType      string `format:"name:Scan Type"`
 	Created       string
 	RiskRating    string `format:"name:Risk Rating"`
+	LastScanID    string `format:"name:Last Scan ID"`
 	LastScanTime  string `format:"name:Last Scan Time"`
 	LastStatus    string `format:"name:Last Status"`
 }
