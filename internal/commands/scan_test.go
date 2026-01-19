@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -315,7 +316,8 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName, featureFlagsWrapper)
 			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
 		})
 	}
@@ -326,8 +328,30 @@ func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
 	var scaResolver = ""
 	var scaResolverParams = "params"
 	var projectName = "ProjectName"
-	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 	assert.Assert(t, err == nil)
+}
+
+func TestScaResolverWithSCADeltaScanEnabled(t *testing.T) {
+	setupMockAccessToken()
+	defer cleanupMockAccessToken()
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.ScaDeltaScanEnabled,
+		Status: true,
+	}
+	defer func() {
+		mock.Flag = wrappers.FeatureFlagResponseModel{}
+	}()
+	var sourceDir = "/sourceDir"
+	var scaResolver = "./NonExistentScaResolver"
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
+	assert.Assert(t, err != nil, "Expected error when resolver doesn't exist")
+	assert.Assert(t, strings.Contains(err.Error(), "ScaResolver"), "Error should mention ScaResolver: %v", err.Error())
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
@@ -5057,4 +5081,19 @@ func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
 				"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
 		})
 	}
+}
+
+func setupMockAccessToken() {
+	wrappers.CachedAccessToken = "mock-token-for-testing"
+	wrappers.CachedAccessTime = time.Now()
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
+}
+
+func cleanupMockAccessToken() {
+	wrappers.CachedAccessToken = ""
+	wrappers.CachedAccessTime = time.Time{}
+
+	wrappers.ClearCache()
+	// Reset to default value (300 seconds as per params/binds.go)
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
 }
