@@ -26,7 +26,7 @@ const (
 
 // Test validate with credentials used in test env
 func TestAuthValidate(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate")
+	err, buffer := executeCommand(t, "auth", "validatee")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
