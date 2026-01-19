@@ -63,6 +63,7 @@ func NewAstCLI(
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
 	telemetryWrapper wrappers.TelemetryWrapper,
 	dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper,
+	dastAlertsWrapper wrappers.DastAlertsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -190,6 +191,7 @@ func NewAstCLI(
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 	dastEnvironmentsCmd := dast.NewDastEnvironmentsCommand(dastEnvironmentsWrapper)
+	dastAlertsCmd := dast.NewDastAlertsCommand(dastAlertsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -241,6 +243,7 @@ func NewAstCLI(
 		scanCmd,
 		projectCmd,
 		dastEnvironmentsCmd,
+		dastAlertsCmd,
 		resultsCmd,
 		triageCmd,
 		versionCmd,

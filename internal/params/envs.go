@@ -85,6 +85,7 @@ const (
 	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 	RealtimeScannerPathEnv              = "CX_REALTIME_SCANNER_PATH"
 	DastEnvironmentsPathEnv             = "CX_DAST_ENVIRONMENTS_PATH"
+	DastAlertsPathEnv                   = "CX_DAST_ALERTS_PATH"
 	UniqueIDEnv                         = "CX_UNIQUE_ID"
 	StartMultiPartUploadPathEnv         = "CX_START_MULTIPART_UPLOAD_PATH"
 	MultipartPresignedPathEnv           = "CX_MULTIPART_PRESIGNED_URL_PATH"

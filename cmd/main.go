@@ -60,6 +60,7 @@ func main() {
 	byorPath := viper.GetString(params.ByorPathKey)
 	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
 	dastEnvironmentsPath := viper.GetString(params.DastEnvironmentsPathKey)
+	dastAlertsPath := viper.GetString(params.DastAlertsPathKey)
 
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -99,6 +100,7 @@ func main() {
 	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
 	dastEnvironmentsWrapper := wrappers.NewHTTPDastEnvironmentsWrapper(dastEnvironmentsPath)
+	dastAlertsWrapper := wrappers.NewHTTPDastAlertsWrapper(dastAlertsPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -139,6 +141,7 @@ func main() {
 		realTimeWrapper,
 		telemetryWrapper,
 		dastEnvironmentsWrapper,
+		dastAlertsWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()
