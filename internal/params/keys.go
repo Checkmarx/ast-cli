@@ -84,6 +84,7 @@ var (
 	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 	RealtimeScannerPathKey              = strings.ToLower(RealtimeScannerPathEnv)
 	DastEnvironmentsPathKey             = strings.ToLower(DastEnvironmentsPathEnv)
+	DastScansPathKey                    = strings.ToLower(DastScansPathEnv)
 	DastAlertsPathKey                   = strings.ToLower(DastAlertsPathEnv)
 	UniqueIDConfigKey                   = strings.ToLower(UniqueIDEnv)
 	StartMultiPartUploadPathKey         = strings.ToLower(StartMultiPartUploadPathEnv)
