@@ -32,6 +32,7 @@ const (
 )
 
 func TestScaRemediation(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	executeCmdNilAssertion(
 		t,
@@ -49,6 +50,7 @@ func TestScaRemediation(t *testing.T) {
 }
 
 func TestScaRemediationUnsupported(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		utilsCommand,
 		remediationCommand,
@@ -66,6 +68,7 @@ func TestScaRemediationUnsupported(t *testing.T) {
 }
 
 func TestScaRemediationNotFound(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		utilsCommand,
 		remediationCommand,
@@ -83,6 +86,7 @@ func TestScaRemediationNotFound(t *testing.T) {
 }
 
 func TestKicsRemediation(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	abs, _ := filepath.Abs(kicsFileValue)
 	executeCmdNilAssertion(
@@ -99,6 +103,7 @@ func TestKicsRemediation(t *testing.T) {
 }
 
 func TestKicsRemediationSimilarityFilter(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	abs, _ := filepath.Abs(kicsFileValue)
 	executeCmdNilAssertion(
@@ -117,6 +122,7 @@ func TestKicsRemediationSimilarityFilter(t *testing.T) {
 }
 
 func TestKicsRemediationInvalidResults(t *testing.T) {
+	t.Parallel()
 	abs, _ := filepath.Abs(kicsFileValue)
 	args := []string{
 		utilsCommand,
@@ -135,6 +141,7 @@ func TestKicsRemediationInvalidResults(t *testing.T) {
 }
 
 func TestKicsRemediationEngineFlag(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	abs, _ := filepath.Abs(kicsFileValue)
 	executeCmdNilAssertion(
@@ -153,6 +160,7 @@ func TestKicsRemediationEngineFlag(t *testing.T) {
 }
 
 func TestKicsRemediationInvalidEngine(t *testing.T) {
+	t.Parallel()
 	abs, _ := filepath.Abs(kicsFileValue)
 	args := []string{
 		utilsCommand,

@@ -19,6 +19,7 @@ const (
 )
 
 func TestChatKicsInvalidAPIKey(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"chat", "kics",
 		"--conversation-id", uuid.New().String(),
@@ -37,6 +38,7 @@ func TestChatKicsInvalidAPIKey(t *testing.T) {
 }
 
 func TestChatSastInvalidAPIKey(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"chat", "sast",
 		"--chat-apikey", "invalidApiKey",
@@ -52,6 +54,7 @@ func TestChatSastInvalidAPIKey(t *testing.T) {
 }
 
 func TestChatKicsAzureAIInvalidAPIKey(t *testing.T) {
+	t.Parallel()
 	t.Skip("Skipping this test since not all services are deployed to production yet")
 	createASTIntegrationTestCommand(t)
 	mockConfig := []*wrappers.TenantConfigurationResponse{

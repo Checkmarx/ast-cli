@@ -14,6 +14,7 @@ import (
 
 // TestContainerScan_ErrorHandling_InvalidAndValidScenarios tests error handling improvements
 func TestContainerScan_ErrorHandling_InvalidAndValidScenarios(t *testing.T) {
+	t.Parallel()
 	t.Run("ValidScanWithAllParameters", func(t *testing.T) {
 		createASTIntegrationTestCommand(t)
 		testArgs := []string{
@@ -47,6 +48,7 @@ func TestContainerScan_ErrorHandling_InvalidAndValidScenarios(t *testing.T) {
 
 // TestContainerScan_TarFileValidation tests .tar file validation scenarios
 func TestContainerScan_TarFileValidation(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 
 	t.Run("EmptyTarFile", func(t *testing.T) {
@@ -112,6 +114,7 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 
 // TestContainerScan_SpecialCharactersInImageNames tests handling of special characters
 func TestContainerScan_SpecialCharactersInImageNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		imageName     string
@@ -177,6 +180,7 @@ func TestContainerScan_SpecialCharactersInImageNames(t *testing.T) {
 
 // TestContainerScan_ImageTagVariations tests different tag formats
 func TestContainerScan_ImageTagVariations(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		imageName     string
@@ -254,6 +258,7 @@ func TestContainerScan_ImageTagVariations(t *testing.T) {
 
 // TestContainerScan_BoundaryConditions tests boundary conditions
 func TestContainerScan_BoundaryConditions(t *testing.T) {
+	t.Parallel()
 	t.Run("SingleCharacterImageName", func(t *testing.T) {
 		createASTIntegrationTestCommand(t)
 		testArgs := []string{
@@ -308,6 +313,7 @@ func TestContainerScan_BoundaryConditions(t *testing.T) {
 
 // TestContainerScan_CombinedWithOtherScanTypes tests container scans combined with other scan types
 func TestContainerScan_CombinedWithOtherScanTypes(t *testing.T) {
+	t.Parallel()
 	t.Run("ContainerAndIaC", func(t *testing.T) {
 		createASTIntegrationTestCommand(t)
 		testArgs := []string{

@@ -16,6 +16,7 @@ import (
 )
 
 func TestGitHubUserCount(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdWithTimeOutNilAssertion(
 		t,
@@ -45,6 +46,7 @@ func TestGitHubUserCount(t *testing.T) {
 }
 
 func TestGitHubUserCountRepos(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -75,6 +77,7 @@ func TestGitHubUserCountRepos(t *testing.T) {
 }
 
 func TestGitHubUserCountFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,

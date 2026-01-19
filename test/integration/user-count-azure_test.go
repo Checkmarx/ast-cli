@@ -24,6 +24,7 @@ const (
 )
 
 func TestAzureUserCountOrgs(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -52,6 +53,7 @@ func TestAzureUserCountOrgs(t *testing.T) {
 }
 
 func TestAzureUserCountProjects(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -82,6 +84,7 @@ func TestAzureUserCountProjects(t *testing.T) {
 }
 
 func TestAzureUserCountRepos(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -114,6 +117,7 @@ func TestAzureUserCountRepos(t *testing.T) {
 }
 
 func TestAzureUserCountOrgsFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -129,6 +133,7 @@ func TestAzureUserCountOrgsFailed(t *testing.T) {
 }
 
 func TestAzureUserCountReposFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -148,6 +153,7 @@ func TestAzureUserCountReposFailed(t *testing.T) {
 }
 
 func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -169,6 +175,7 @@ func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
 }
 
 func TestAzureUserCountWrongToken(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,
@@ -186,6 +193,7 @@ func TestAzureUserCountWrongToken(t *testing.T) {
 }
 
 func TestAzureUserCountWrongOrg(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,

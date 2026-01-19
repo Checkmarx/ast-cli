@@ -15,6 +15,7 @@ import (
 
 // TestContainerImageValidation_ValidFormats tests that valid container image formats are accepted
 func TestContainerImageValidation_ValidFormats(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		imageFormat string
@@ -68,6 +69,7 @@ func TestContainerImageValidation_ValidFormats(t *testing.T) {
 
 // TestContainerImageValidation_InvalidFormats tests that invalid container image formats are rejected
 func TestContainerImageValidation_InvalidFormats(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		imageFormat   string
@@ -123,6 +125,7 @@ func TestContainerImageValidation_InvalidFormats(t *testing.T) {
 
 // TestContainerImageValidation_MultipleImagesValidation tests validation with multiple container images
 func TestContainerImageValidation_MultipleImagesValidation(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		imageList     string
@@ -182,6 +185,7 @@ func TestContainerImageValidation_MultipleImagesValidation(t *testing.T) {
 
 // TestContainerImageValidation_TarFiles tests validation of .tar file references
 func TestContainerImageValidation_TarFiles(t *testing.T) {
+	t.Parallel()
 	// Create a temporary .tar file for testing
 	tempDir := t.TempDir()
 	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
@@ -239,6 +243,7 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 
 // TestContainerImageValidation_MixedTarAndRegularImages tests mixing .tar files with regular images
 func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
+	t.Parallel()
 	// Create a temporary .tar file for testing
 	// Note: An empty tar file is NOT a valid container image
 	tempDir := t.TempDir()

@@ -283,6 +283,7 @@ func setEnvVars(envVars map[string]string) {
 // Create a scan with an empty project name
 // Assert the scan fails with correct message
 func TestScanCreateEmptyProjectName(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "",
@@ -296,6 +297,7 @@ func TestScanCreateEmptyProjectName(t *testing.T) {
 }
 
 func TestScanCreate_ExistingApplicationAndExistingProject_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 	args := []string{
 		"scan", "create",
@@ -323,6 +325,7 @@ func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfull
 }
 
 func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 
 	// The createPreset(...) function requires these feature flags to be ON.
@@ -383,6 +386,7 @@ func TestScanCreate_FolderWithSymbolicLinkWithRelativePath_CreateScanSuccessfull
 }
 
 func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectAndCreateScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "my-application",
@@ -398,6 +402,7 @@ func TestScanCreate_ExistingApplicationAndNotExistingProject_CreatingNewProjectA
 }
 
 func TestScanCreate_WithNewProjectAndApplicationDoesntExist_ShouldFailScanWithError(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ApplicationName), "application-that-doesnt-exist",
@@ -583,6 +588,7 @@ func TestInvalidSource(t *testing.T) {
 }
 
 func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "show", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Failed showing a scan: Please provide a scan ID"))
@@ -592,6 +598,7 @@ func TestScanShowRequiredOrInvalidScanId(t *testing.T) {
 }
 
 func TestRequiredScanIdToGetScanShow(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "workflow", flag(params.ScanIDQueryParam), ""}
 	err, _ := executeCommand(t, args...)
 	assert.Assert(t, strings.Contains(err.Error(), "Please provide a scan ID"))
@@ -1110,6 +1117,7 @@ func pollScanUntilStatus(t *testing.T, scanID string, requiredStatus wrappers.Sc
 
 // Get a scan workflow and assert it fails
 func TestScanWorkflow(t *testing.T) {
+	t.Parallel()
 	scanID := "fake-scan-id"
 	args := []string{
 		"scan", "workflow",
@@ -1313,6 +1321,7 @@ func TestCreateScanFilterZipFile(t *testing.T) {
 }
 
 func TestRunKicsScan(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1323,6 +1332,7 @@ func TestRunKicsScan(t *testing.T) {
 }
 
 func TestRunKicsScanWithouResults(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1332,6 +1342,7 @@ func TestRunKicsScanWithouResults(t *testing.T) {
 }
 
 func TestRunKicsScanWithoutFileSources(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 	}
@@ -1340,6 +1351,7 @@ func TestRunKicsScanWithoutFileSources(t *testing.T) {
 }
 
 func TestRunKicsScanWithEngine(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with engine command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1351,6 +1363,7 @@ func TestRunKicsScanWithEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithInvalidEngine(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		scanCommand, kicsRealtimeCommand,
 		flag(params.KicsRealtimeFile), fileSourceValueVul,
@@ -1362,6 +1375,7 @@ func TestRunKicsScanWithInvalidEngine(t *testing.T) {
 }
 
 func TestRunKicsScanWithAdditionalParams(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t, "Runing KICS real-time with additional params command should pass",
 		scanCommand, kicsRealtimeCommand,
@@ -1392,6 +1406,7 @@ func TestRunScaRealtimeScan(t *testing.T) {
 }
 
 func TestScaRealtimeRequiredAndWrongProjectDir(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "sca-realtime"}
 
 	err, _ := executeCommand(t, args...)
@@ -1815,6 +1830,7 @@ func TestCreateScanSBOMReportFormatWithoutSCA(t *testing.T) {
 }
 
 func TestScanWithPolicy(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -1826,6 +1842,7 @@ func TestScanWithPolicy(t *testing.T) {
 }
 
 func TestScanWithPolicyTimeout(t *testing.T) {
+	t.Parallel()
 	args := []string{scanCommand, "create",
 		flag(params.ProjectName), "TiagoBaptista/testingCli/testingCli",
 		flag(params.SourcesFlag), Zip,
@@ -2025,6 +2042,7 @@ func TestCreateScan_WithScanTypesScsAndScorecardEngineAndOnlyScorecardMissingRep
 }
 
 func TestScanListWithFilters(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=100",
@@ -2035,6 +2053,7 @@ func TestScanListWithFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=10000,project-id=6cd7afbd-3d21-44b9-a72f-8a7eb351b5a5,branch=develop",
@@ -2045,6 +2064,7 @@ func TestScanListWithBigLimitAndOtherFilters(t *testing.T) {
 }
 
 func TestScanListWithBigLimit(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "list",
 		flag(params.FilterFlag), "limit=5000",
@@ -2075,6 +2095,7 @@ func validateCheckmarxDomains(t *testing.T, usedDomainsInTests []string) {
 }
 
 func TestCreateScan_TwoScansWithSameBranchNameWithWhiteSpace_Success(t *testing.T) {
+	t.Parallel()
 	projectName := GenerateRandomProjectNameForScan()
 	args := []string{
 		scanCommand, "create",
@@ -2135,6 +2156,7 @@ func TestCreateAsyncScan_CallExportServiceBeforeScanFinishWithRetry_Success(t *t
 }
 
 func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithDefaultConfig(t *testing.T) {
+	t.Parallel()
 	projectName := GenerateRandomProjectNameForScan()
 	args := []string{
 		scanCommand, "create",
@@ -2172,6 +2194,7 @@ func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testi
 }
 
 func TestScanCreate_WithContainerFilterFlags_CreatingScanSuccessfully(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	var createdScan wrappers.ScanResponseModel
 	var createdScanConfig wrappers.Config
@@ -2213,6 +2236,7 @@ func TestScanCreate_WithContainerFilterFlags_CreatingScanSuccessfully(t *testing
 }
 
 func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLatestScanConfigurationSuccessfully(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 
 	var createdScan wrappers.ScanResponseModel
@@ -2273,6 +2297,7 @@ func TestScanCreate_WithContainerFilterFlagsAndResubmitFlag_CreatingScanWithLate
 }
 
 func TestScanCreate_GitScanWithContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	var createdScan wrappers.ScanResponseModel
 	var createdScanConfig wrappers.Config
@@ -2312,6 +2337,7 @@ func TestScanCreate_GitScanWithContainerResolveLocallyAndCustomImages_ShouldIncl
 }
 
 func TestScanCreate_UploadScanWithContainerResolveLocallyAndCustomImages_ShouldNotIncludeUserCustomImages(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	var createdScan wrappers.ScanResponseModel
 	var createdScanConfig wrappers.Config
@@ -2350,6 +2376,7 @@ func TestScanCreate_UploadScanWithContainerResolveLocallyAndCustomImages_ShouldN
 }
 
 func TestScanCreate_GitScanWithoutContainerResolveLocallyAndCustomImages_ShouldIncludeUserCustomImages(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	var createdScan wrappers.ScanResponseModel
 	var createdScanConfig wrappers.Config
@@ -2629,6 +2656,7 @@ func TestContainerScan_DirectoryWithFilesAndFilters(t *testing.T) {
 }
 
 func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "random_proj",
@@ -2644,6 +2672,7 @@ func TestCreateScan_SbomScanForInvalidScanTypes(t *testing.T) {
 }
 
 func TestCreateScan_SbomScanForInvalidFileExtension(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "random_proj",
@@ -2659,6 +2688,7 @@ func TestCreateScan_SbomScanForInvalidFileExtension(t *testing.T) {
 }
 
 func TestCreateScan_SbomScanForNotExistingFile(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), "random_proj",
@@ -2699,6 +2729,7 @@ func TestCreateScanFilterGitIgnoreFile_GitIgnoreExist(t *testing.T) {
 }
 
 func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
+	t.Parallel()
 	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
 
 	args := []string{

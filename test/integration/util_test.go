@@ -15,6 +15,7 @@ const (
 )
 
 func TestMaskSecrets(t *testing.T) {
+	t.Parallel()
 	executeCmdNilAssertion(
 		t,
 		"Remediating kics result",
@@ -26,6 +27,7 @@ func TestMaskSecrets(t *testing.T) {
 }
 
 func TestFailedMaskSecrets(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		utilsCommand,
 		maskCommand,

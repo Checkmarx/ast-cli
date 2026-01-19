@@ -126,16 +126,19 @@ func isFFEnabled(t *testing.T, featureFlag string) bool {
 }
 
 func TestSetLogOutputFromFlag_InvalidDir(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "auth", "validate", "--log-file", "/custom/path")
 	assert.ErrorContains(t, err, "the specified directory path does not exist.")
 }
 
 func TestSetLogOutputFromFlag_EmptyDirPath(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "auth", "validate", "--log-file", "")
 	assert.ErrorContains(t, err, "flag needs an argument")
 }
 
 func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
+	t.Parallel()
 	tempFile, _ := os.CreateTemp("", "ast-cli.txt")
 	defer func(path string) {
 		_ = os.Remove(path)
@@ -145,6 +148,7 @@ func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
 }
 
 func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
+	t.Parallel()
 	tempDir, _ := os.MkdirTemp("", "tempdir")
 	_ = os.Chmod(tempDir, 0000)
 	defer func(path string) {
@@ -155,6 +159,7 @@ func TestSetLogOutputFromFlag_DirPathPermissionDenied(t *testing.T) {
 }
 
 func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
+	t.Parallel()
 	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func(path string) {
 		_ = os.RemoveAll(path)
@@ -164,6 +169,7 @@ func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
 }
 
 func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
+	t.Parallel()
 	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func(path string) {
 		_ = os.RemoveAll(path)

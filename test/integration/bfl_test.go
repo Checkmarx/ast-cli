@@ -29,6 +29,7 @@ func TestRunGetBflByScanIdAndQueryId(t *testing.T) {
 }
 
 func TestRunGetBflWithInvalidScanIDandQueryID(t *testing.T) {
+	t.Parallel()
 
 	err, _ := executeCommand(
 		t, "results", "bfl",

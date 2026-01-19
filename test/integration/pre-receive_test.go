@@ -271,6 +271,7 @@ func TestPreReceive_IgnoreFolderExclusion_ConfigFile(t *testing.T) {
 }
 
 func TestPre_Receive_Validate_Command_success(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"hooks",
 		"pre-receive",

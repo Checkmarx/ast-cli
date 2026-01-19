@@ -15,6 +15,7 @@ import (
 const filePath = "data/config.yaml"
 
 func TestLoadConfiguration_EnvVarConfigFilePath(t *testing.T) {
+	t.Parallel()
 	os.Setenv("CX_CONFIG_FILE_PATH", filePath)
 	defer os.Unsetenv("CX_CONFIG_FILE_PATH")
 
@@ -24,6 +25,7 @@ func TestLoadConfiguration_EnvVarConfigFilePath(t *testing.T) {
 }
 
 func TestLoadConfiguration_FileNotFound(t *testing.T) {
+	t.Parallel()
 	os.Setenv("CX_CONFIG_FILE_PATH", "data/nonexistent_config.yaml")
 	defer os.Unsetenv("CX_CONFIG_FILE_PATH")
 
@@ -33,6 +35,7 @@ func TestLoadConfiguration_FileNotFound(t *testing.T) {
 	assert.ErrorContains(t, err, "The specified file does not exist")
 }
 func TestLoadConfiguration_ValidDirectory(t *testing.T) {
+	t.Parallel()
 	validDirPath := "data"
 	os.Setenv("CX_CONFIG_FILE_PATH", validDirPath)
 	defer os.Unsetenv("CX_CONFIG_FILE_PATH")
@@ -76,16 +79,19 @@ func TestSetConfigProperty_EnvVarConfigFilePath(t *testing.T) {
 }
 
 func TestLoadConfiguration_ConfigFilePathFlag(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "configure", "show", "--config-file-path", filePath)
 	assert.NilError(t, err)
 }
 
 func TestLoadConfiguration_ConfigFilePathFlagValidDirectory(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "configure", "show", "--config-file-path", "data")
 	assert.ErrorContains(t, err, "The specified path points to a directory, not a file.")
 }
 
 func TestLoadConfiguration_ConfigFilePathFlagFileNotFound(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "configure", "show", "--config-file-path", "data/nonexistent_config.yaml")
 	assert.ErrorContains(t, err, "The specified file does not exist.")
 }

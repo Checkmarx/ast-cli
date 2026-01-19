@@ -9,6 +9,7 @@ import (
 )
 
 func TestSecrets_RealtimeScan_TextFile_Success(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt", flag(commonParams.IgnoredFilePathFlag), "",
 	}
@@ -17,6 +18,7 @@ func TestSecrets_RealtimeScan_TextFile_Success(t *testing.T) {
 }
 
 func TestSecrets_RealtimeScan_Empty_filePath_Fail(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"scan", "secrets-realtime", "-s", "", flag(commonParams.IgnoredFilePathFlag), "",
 	}

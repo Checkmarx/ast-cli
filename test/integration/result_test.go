@@ -35,6 +35,7 @@ const (
 )
 
 func TestResultsExitCode_OnSendingFakeScanId_ShouldReturnNotFoundError(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	scansPath := viper.GetString(params.ScansPathKey)
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
@@ -58,6 +59,7 @@ func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "exit-code",
@@ -69,6 +71,7 @@ func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
 }
 
 func TestResultsExitCode_FakeScanIdSent_FailCommandWithError(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "exit-code",
@@ -176,6 +179,7 @@ func assertGlResultFilesCreated(t *testing.T) {
 }
 
 func TestResultsShowParamFailed(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"results",
 		"show",
@@ -186,6 +190,7 @@ func TestResultsShowParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingParamFailed(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -196,6 +201,7 @@ func TestCodeBashingParamFailed(t *testing.T) {
 }
 
 func TestCodeBashingList(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -213,6 +219,7 @@ func TestCodeBashingList(t *testing.T) {
 }
 
 func TestCodeBashingListJson(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -231,6 +238,7 @@ func TestCodeBashingListJson(t *testing.T) {
 }
 
 func TestCodeBashingListTable(t *testing.T) {
+	t.Parallel()
 	outputBuffer := executeCmdNilAssertion(
 		t,
 		"Getting results should pass",
@@ -245,6 +253,7 @@ func TestCodeBashingListTable(t *testing.T) {
 }
 
 func TestCodeBashingListEmpty(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -258,6 +267,7 @@ func TestCodeBashingListEmpty(t *testing.T) {
 }
 
 func TestCodeBashingFailedListingAuth(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"results",
 		"codebashing",
@@ -416,6 +426,7 @@ func TestResultsGeneratingSBOM(t *testing.T) {
 }
 
 func TestResultsWrongScanID(t *testing.T) {
+	t.Parallel()
 	args := []string{
 		"results", "show",
 		flag(params.ScanIDFlag), "wrong",
@@ -538,6 +549,7 @@ func TestResultsGeneratingJsonReportWithSeverityHighAndWithoutNotExploitable(t *
 }
 
 func TestResultExcludeNotExploitableFailScanId(t *testing.T) {
+	t.Parallel()
 	bindKeysToEnvAndDefault(t)
 	args := []string{
 		"results", "show",
@@ -655,6 +667,7 @@ func readAndUnmarshalFile(t *testing.T, path string, v interface{}) {
 }
 
 func TestRiskManagementResults_ReturnResults(t *testing.T) {
+	t.Parallel()
 	projectName := GenerateRandomProjectNameForScan()
 	_ = executeCmdNilAssertion(
 		t, "Create project should pass",

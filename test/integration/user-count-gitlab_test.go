@@ -19,6 +19,7 @@ const (
 )
 
 func TestGitLabUserCountOnlyUserProjects(t *testing.T) {
+	t.Parallel()
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab user projects should pass",
 		"utils", usercount.UcCommand,
@@ -40,6 +41,7 @@ func TestGitLabUserCountOnlyUserProjects(t *testing.T) {
 }
 
 func TestGitLabUserCountOnlyGroup(t *testing.T) {
+	t.Parallel()
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab group should pass",
 		"utils", usercount.UcCommand,
@@ -62,6 +64,7 @@ func TestGitLabUserCountOnlyGroup(t *testing.T) {
 }
 
 func TestGitLabUserCountOnlyProject(t *testing.T) {
+	t.Parallel()
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab project should pass",
 		"utils", usercount.UcCommand,
@@ -84,6 +87,7 @@ func TestGitLabUserCountOnlyProject(t *testing.T) {
 }
 
 func TestGitLabUserCountBothProjectAndGroup(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t,
 		"utils", usercount.UcCommand, usercount.GitLabCommand,
@@ -97,6 +101,7 @@ func TestGitLabUserCountBothProjectAndGroup(t *testing.T) {
 }
 
 func TestGitLabUserCountInvalidProject(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t,
 		"utils", usercount.UcCommand, usercount.GitLabCommand,
@@ -109,6 +114,7 @@ func TestGitLabUserCountInvalidProject(t *testing.T) {
 }
 
 func TestGitLabUserCountInvalidGroup(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t,
 		"utils", usercount.UcCommand, usercount.GitLabCommand,
@@ -121,6 +127,7 @@ func TestGitLabUserCountInvalidGroup(t *testing.T) {
 }
 
 func TestGitLabUserCountBlankGroupValue(t *testing.T) {
+	t.Parallel()
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab group should pass",
 		"utils", usercount.UcCommand,
@@ -143,6 +150,7 @@ func TestGitLabUserCountBlankGroupValue(t *testing.T) {
 }
 
 func TestGitLabUserCountBlankProjectValue(t *testing.T) {
+	t.Parallel()
 	buffer := executeCmdNilAssertion(
 		t, "Counting contributors from gitlab group should pass",
 		"utils", usercount.UcCommand,
