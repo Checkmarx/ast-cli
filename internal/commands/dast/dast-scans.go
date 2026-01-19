@@ -139,27 +139,32 @@ func toScanViews(models []wrappers.DastScanResponseModel) []scanView {
 
 func toScanView(model *wrappers.DastScanResponseModel) scanView {
 	return scanView{
-		ScanID:       model.ScanID,
-		Initiator:    model.Initiator,
-		ScanType:     model.ScanType,
-		Created:      model.Created,
-		RiskRating:   model.RiskRating,
-		StartTime:    model.StartTime,
-		ScanDuration: model.ScanDuration,
-		LastStatus:   model.LastStatus,
-		Statistics:   model.Statistics,
+		ScanID:            model.ScanID,
+		Initiator:         model.Initiator,
+		ScanType:          model.ScanType,
+		Created:           model.Created,
+		RiskRating:        model.RiskRating,
+		AlertRiskLevel:    model.AlertRiskLevel,
+		StartTime:         model.StartTime,
+		ScanDuration:      model.ScanDuration,
+		LastStatus:        model.LastStatus,
+		Statistics:        model.Statistics,
+		ScannedPathsCount: model.ScannedPathsCount,
+		Source:            model.Source,
 	}
 }
 
 type scanView struct {
-	ScanID       string `format:"name:Scan ID"`
-	Initiator    string
-	ScanType     string `format:"name:Scan Type"`
-	Created      string
-	RiskRating   string `format:"name:Risk Rating"`
-	StartTime    string `format:"name:Start Time"`
-	ScanDuration int    `format:"name:Scan Duration"`
-	LastStatus   string `format:"name:Last Status"`
-	Statistics   string
+	ScanID            string `format:"name:Scan ID"`
+	Initiator         string
+	ScanType          string `format:"name:Scan Type"`
+	Created           string
+	RiskRating        string             `format:"name:Risk Rating"`
+	AlertRiskLevel    wrappers.RiskLevel `format:"name:Alert Risk Level"`
+	StartTime         string             `format:"name:Start Time"`
+	ScanDuration      int                `format:"name:Scan Duration"`
+	LastStatus        string             `format:"name:Last Status"`
+	Statistics        string             `format:"name:Statistics"`
+	ScannedPathsCount int                `format:"name:Scanned Paths Count"`
+	Source            string             `format:"name:Source"`
 }
-
