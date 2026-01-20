@@ -4,9 +4,6 @@ on:
   schedule:
     - cron: '30 21 * * *'  # Run daily at 3:00 AM IST (21:30 UTC)
   workflow_dispatch:  # Allow manual trigger
-  push:
-    branches:
-      - feature/nightly-integration-tests  # TODO: Remove after testing
 
 concurrency:
   group: nightly-integration-${{ github.ref }}
@@ -110,10 +107,20 @@ jobs:
             # Format failed tests as bullet points for Teams
             FAILED_LIST=$(awk '{print "• " $0}' failed_tests_summary.txt | tr '\n' ',' | sed 's/,$//' | sed 's/,/\\n/g')
             echo "failed_list=$FAILED_LIST" >> $GITHUB_OUTPUT
+
+            # Extract error details from failed_tests_errors.txt for Teams notification
+            if [ -f "failed_tests_errors.txt" ] && [ -s "failed_tests_errors.txt" ]; then
+              # Get error messages, escape special characters for JSON, limit to 1000 chars
+              ERROR_DETAILS=$(cat failed_tests_errors.txt | head -50 | sed 's/"/\\"/g' | sed 's/\t/  /g' | tr '\n' ',' | sed 's/,$//' | sed 's/,/\\n/g' | cut -c1-1000)
+              echo "error_details=$ERROR_DETAILS" >> $GITHUB_OUTPUT
+            else
+              echo "error_details=Error details not available" >> $GITHUB_OUTPUT
+            fi
           else
             echo "has_failures=false" >> $GITHUB_OUTPUT
             echo "fail_count=0" >> $GITHUB_OUTPUT
             echo "failed_list=" >> $GITHUB_OUTPUT
+            echo "error_details=" >> $GITHUB_OUTPUT
           fi
 
       - name: Send failure notification to Teams
@@ -164,6 +171,20 @@ jobs:
                         "wrap": true,
                         "fontType": "Monospace",
                         "spacing": "Small"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "**Error Details (Root Cause):**",
+                        "weight": "Bolder",
+                        "spacing": "Medium"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "${{ steps.failed_tests.outputs.error_details }}",
+                        "wrap": true,
+                        "fontType": "Monospace",
+                        "spacing": "Small",
+                        "size": "Small"
                       }
                     ],
                     "actions": [

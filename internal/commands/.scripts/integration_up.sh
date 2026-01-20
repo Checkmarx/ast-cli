@@ -86,8 +86,18 @@ go test -v github.com/checkmarx/ast-cli/test/cleandata
 
 # Step 8: Generate failed tests summary for CI/CD consumption
 FINAL_FAILED_FILE="failed_tests_summary.txt"
+FAILED_TESTS_ERRORS_FILE="failed_tests_errors.txt"
 if [ -s "$FAILED_TESTS_FILE" ] && [ $rerun_status -eq 1 ]; then
     cp "$FAILED_TESTS_FILE" "$FINAL_FAILED_FILE"
+
+    # Extract error messages for each failed test from the log
+    > "$FAILED_TESTS_ERRORS_FILE"
+    while IFS= read -r testName; do
+        echo "=== $testName ===" >> "$FAILED_TESTS_ERRORS_FILE"
+        # Extract the error output between test start and FAIL line
+        awk "/=== RUN   $testName\$/,/--- FAIL: $testName/" test_output.log | tail -20 >> "$FAILED_TESTS_ERRORS_FILE"
+        echo "" >> "$FAILED_TESTS_ERRORS_FILE"
+    done < "$FINAL_FAILED_FILE"
 
     echo ""
     echo "========================================================"
@@ -102,6 +112,7 @@ if [ -s "$FAILED_TESTS_FILE" ] && [ $rerun_status -eq 1 ]; then
     echo "Total failed tests: $(wc -l < "$FINAL_FAILED_FILE" | tr -d ' ')"
     echo "========================================================"
     echo ""
+    echo "Error details saved to: $FAILED_TESTS_ERRORS_FILE"
 fi
 
 # Step 9: Final cleanup and exit
