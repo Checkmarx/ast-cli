@@ -1,9 +1,9 @@
 name: Nightly Integration Tests
 
 on:
+  workflow_dispatch:  # Allow manual trigger
   schedule:
     - cron: '30 21 * * *'  # Run daily at 3:00 AM IST (21:30 UTC)
-  workflow_dispatch:  # Allow manual trigger
 
 concurrency:
   group: nightly-integration-${{ github.ref }}
