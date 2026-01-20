@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '30 21 * * *'  # Run daily at 3:00 AM IST (21:30 UTC)
   workflow_dispatch:  # Allow manual trigger
+  push:
+    branches:
+      - feature/nightly-integration-tests  # TODO: Remove after testing
 
 concurrency:
   group: nightly-integration-${{ github.ref }}
