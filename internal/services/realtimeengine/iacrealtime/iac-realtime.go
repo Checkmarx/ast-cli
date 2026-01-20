@@ -3,6 +3,7 @@ package iacrealtime
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -149,17 +150,21 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 func engineNameResolution(engineName, fallBackDir string) (string, error) {
 	var err error
 	if _, err = exec.LookPath(engineName); err == nil {
+		logger.Print("LookPath detected the engine. Returning")
 		return engineName, nil
 	}
 	if err != nil && getOS() == osWindows {
+		logger.Print("Executable not found in windows")
 		return "", errors.New(engineName + ": executable file not found in PATH")
 	}
 	fallbackPath := filepath.Join(fallBackDir, engineName)
+	logger.Printf("fallBackPath  %s", fallbackPath)
 	info, err := os.Stat(fallbackPath)
 	if err == nil && !info.IsDir() {
+		logger.Print("Error is not nil for fallback")
 		return fallbackPath, nil
 	}
-	return "", errors.New(engineName + " not found in PATH or in " + IacEnginePath)
+	return "", errors.New(engineName + "not found in PATH or in " + IacEnginePath)
 }
 
 var getOS = func() string {
