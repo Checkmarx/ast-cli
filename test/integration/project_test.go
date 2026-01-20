@@ -368,8 +368,9 @@ func TestCreateProjectWithSSHKey(t *testing.T) {
 }
 
 func TestProjectShow_MainBranch_Exist(t *testing.T) {
-
-	projectID, projectName := createProject(t, Tags, Groups)
+	// Use unique project name to avoid conflicts with other tests using getRootProject()
+	projectName := GenerateRandomProjectNameForScan()
+	projectID, _ := createNewProject(t, Tags, Groups, projectName)
 	defer deleteProject(t, projectID)
 
 	args := []string{
