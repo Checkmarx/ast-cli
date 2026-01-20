@@ -599,6 +599,8 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
+	oauthOverride := viper.GetBool(commonParams.OAuthOverrideFlag)
 	var accessToken string
 
 	if accessKeyID == "" && astAPIKey == "" {
@@ -612,12 +614,17 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 		return "", err
 	}
 
-	if astAPIKey != "" {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
-	} else {
+	if astAPIKey != "" && override {
 		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	} else if accessKeyID != "" && accessKeySecret != "" && oauthOverride {
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+	} else if astAPIKey != "" {
+		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
+	} else if accessKeyID != "" && accessKeySecret != "" {
+		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	} else {
+		return "", errors.Errorf(FailedToAuth, "insufficient credentials")
 	}
-
 	if err != nil {
 		return "", errors.Errorf("%s", err)
 	}
