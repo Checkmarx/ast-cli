@@ -55,6 +55,9 @@ const (
 	notExploitable    = "NOT_EXPLOITABLE"
 	ignored           = "IGNORED"
 
+	// minWindowsDrivePathLength is the minimum length for a Windows drive path (e.g., C:)
+	minWindowsDrivePathLength = 2
+
 	git                                     = "git"
 	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 	errorUnzippingFile                      = "an error occurred while unzipping file. Reason: "
@@ -3824,13 +3827,13 @@ func extractPathAndTag(imageRef string) (string, string) {
 
 	// Check for Windows absolute path (e.g., C:\, D:\)
 	// Windows drive letter pattern: single letter followed by :\
-	if len(imageRef) >= 2 && imageRef[1] == ':' && isLetter(imageRef[0]) {
+	if len(imageRef) >= minWindowsDrivePathLength && imageRef[1] == ':' && isLetter(imageRef[0]) {
 		// This is a Windows absolute path
 		// Check if there's a tag after the path (another colon after the drive letter)
-		restOfPath := imageRef[2:] // Skip "C:"
+		restOfPath := imageRef[minWindowsDrivePathLength:] // Skip "C:"
 		if colonIdx := strings.LastIndex(restOfPath, ":"); colonIdx != -1 {
 			// There's another colon - the part after it is the tag
-			return imageRef[:2+colonIdx], restOfPath[colonIdx+1:]
+			return imageRef[:minWindowsDrivePathLength+colonIdx], restOfPath[colonIdx+1:]
 		}
 		// No additional colon, the entire string is the path
 		return imageRef, ""
