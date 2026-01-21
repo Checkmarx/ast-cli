@@ -2266,8 +2266,9 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
-// enforceLocalResolutionForTarFiles checks if any container image is a tar file
-// and enforces local resolution by setting the --containers-local-resolution flag.
+// enforceLocalResolutionForTarFiles checks if any container image is a local file reference
+// (tar file, oci-dir, docker-archive, oci-archive, or file: prefix) and enforces local resolution
+// by setting the --containers-local-resolution flag.
 // Container-security scan-type related function.
 func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
@@ -2287,7 +2288,7 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 
 	// Parse container images list
 	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
-	hasTarFile := false
+	hasLocalFile := false
 
 	for _, containerImageName := range containerImagesList {
 		// Normalize input: trim spaces and quotes
@@ -2299,17 +2300,17 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 			continue
 		}
 
-		// Check if this is a tar file by checking if it contains a tar file reference
-		if isTarFileReference(containerImageName) {
-			hasTarFile = true
+		// Check if this is a local file reference (tar file, oci-dir, etc.)
+		if isLocalFileReference(containerImageName) {
+			hasLocalFile = true
 			break
 		}
 	}
 
-	// If at least one tar file is found, enforce local resolution
-	if hasTarFile {
-		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
-		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+	// If at least one local file reference is found, enforce local resolution
+	if hasLocalFile {
+		logger.PrintIfVerbose("Detected local file reference(s) in --container-images flag")
+		fmt.Println("Warning: Local file reference(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
 
 		// Set the flag to true
 		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
@@ -2321,8 +2322,43 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 	return nil
 }
 
+// isLocalFileReference checks if a container image reference points to a local file or directory.
+// This includes tar files, oci-dir directories, and other local file prefixes.
+// Container-security scan-type related function.
+func isLocalFileReference(imageRef string) bool {
+	// First, trim quotes from the entire input
+	actualRef := strings.Trim(imageRef, "'\"")
+
+	// Check for prefixes that always indicate local file references
+	// These prefixes ALWAYS require local resolution
+	localPrefixes := []string{
+		ociDirPrefix,        // oci-dir: always references local directories
+		dockerArchivePrefix, // docker-archive: always references local tar files
+		ociArchivePrefix,    // oci-archive: always references local tar files
+		filePrefix,          // file: always references local files
+	}
+
+	for _, prefix := range localPrefixes {
+		if strings.HasPrefix(actualRef, prefix) {
+			return true
+		}
+	}
+
+	// Check if the reference ends with .tar (case-insensitive)
+	lowerRef := strings.ToLower(actualRef)
+
+	// If it ends with .tar, it's a tar file (no tag suffix allowed)
+	if strings.HasSuffix(lowerRef, ".tar") {
+		return true
+	}
+
+	return false
+}
+
 // isTarFileReference checks if a container image reference points to a tar file.
 // Container-security scan-type related function.
+// Note: This function is kept for backward compatibility and specific tar file detection.
+// For general local file detection (including oci-dir), use isLocalFileReference instead.
 func isTarFileReference(imageRef string) bool {
 	// Known prefixes that might precede the actual file path
 	knownPrefixes := []string{
@@ -2344,26 +2380,19 @@ func isTarFileReference(imageRef string) bool {
 		}
 	}
 
-	// Check if the reference ends with .tar (case-insensitive)
-	lowerRef := strings.ToLower(actualRef)
+	// Extract path and tag, handling Windows paths correctly
+	path, tag := extractPathAndTag(actualRef)
 
-	// If it ends with .tar, it's a tar file (no tag suffix allowed)
-	if strings.HasSuffix(lowerRef, ".tar") {
-		return true
-	}
+	// Check if the path ends with .tar (case-insensitive)
+	lowerPath := strings.ToLower(path)
 
-	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
-	// A tar file cannot have a tag suffix like file.tar:tag
-	if strings.Contains(actualRef, ":") {
-		parts := strings.Split(actualRef, ":")
-		const minPartsForTaggedImage = 2
-		if len(parts) >= minPartsForTaggedImage {
-			firstPart := strings.ToLower(parts[0])
-			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
-			if strings.HasSuffix(firstPart, ".tar") {
-				return false
-			}
+	// If it ends with .tar, it's a tar file
+	if strings.HasSuffix(lowerPath, ".tar") {
+		// If there's a tag, it's invalid (tar files don't have tags)
+		if tag != "" {
+			return false
 		}
+		return true
 	}
 
 	return false
@@ -3765,13 +3794,9 @@ func validateOCIDirPrefix(imageRef string) error {
 	// 3. Can have optional :tag suffix
 
 	pathToCheck := imageRef
-	if strings.Contains(imageRef, ":") {
-		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
-		pathParts := strings.Split(imageRef, ":")
-		if len(pathParts) > 0 && pathParts[0] != "" {
-			pathToCheck = pathParts[0]
-		}
-	}
+
+	// Extract path and optional tag, handling Windows absolute paths (e.g., C:\Users\...)
+	pathToCheck, _ = extractPathAndTag(imageRef)
 
 	exists, err := osinstaller.FileExists(pathToCheck)
 	if err != nil {
@@ -3781,6 +3806,57 @@ func validateOCIDirPrefix(imageRef string) error {
 		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
 	}
 	return nil
+}
+
+// extractPathAndTag separates a path from an optional tag suffix.
+// It correctly handles Windows absolute paths (e.g., C:\Users\...) by detecting drive letters.
+// Returns the path and the tag (empty string if no tag).
+// Examples:
+//   - "my-image:latest" -> ("my-image", "latest")
+//   - "C:\Users\test\alpine" -> ("C:\Users\test\alpine", "")
+//   - "C:\Users\test\alpine:v1" -> ("C:\Users\test\alpine", "v1")
+//   - "/path/to/dir:tag" -> ("/path/to/dir", "tag")
+//   - "../relative/path" -> ("../relative/path", "")
+func extractPathAndTag(imageRef string) (string, string) {
+	if !strings.Contains(imageRef, ":") {
+		return imageRef, ""
+	}
+
+	// Check for Windows absolute path (e.g., C:\, D:\)
+	// Windows drive letter pattern: single letter followed by :\
+	if len(imageRef) >= 2 && imageRef[1] == ':' && isLetter(imageRef[0]) {
+		// This is a Windows absolute path
+		// Check if there's a tag after the path (another colon after the drive letter)
+		restOfPath := imageRef[2:] // Skip "C:"
+		if colonIdx := strings.LastIndex(restOfPath, ":"); colonIdx != -1 {
+			// There's another colon - the part after it is the tag
+			return imageRef[:2+colonIdx], restOfPath[colonIdx+1:]
+		}
+		// No additional colon, the entire string is the path
+		return imageRef, ""
+	}
+
+	// For non-Windows paths, use LastIndex to find the tag separator
+	// This handles cases like "/path/to/dir:tag" or "my-image:latest"
+	lastColonIdx := strings.LastIndex(imageRef, ":")
+	if lastColonIdx == -1 {
+		return imageRef, ""
+	}
+
+	path := imageRef[:lastColonIdx]
+	tag := imageRef[lastColonIdx+1:]
+
+	// If path is empty, return the original (invalid input, let caller handle)
+	if path == "" {
+		return imageRef, ""
+	}
+
+	return path, tag
+}
+
+// isLetter checks if a byte is an ASCII letter (a-z or A-Z)
+func isLetter(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 // validateRegistryPrefix validates registry prefix which must specify a single image.

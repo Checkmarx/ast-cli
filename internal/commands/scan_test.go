@@ -4376,6 +4376,11 @@ func TestIsTarFileReference(t *testing.T) {
 		{"file prefix tar", "file:myimage.tar", true},
 		{"oci-dir tar", "oci-dir:image.tar", true},
 
+		// Windows paths with tar files
+		{"Windows tar path", `C:\Users\test\image.tar`, true},
+		{"Windows tar with prefix", `oci-dir:C:\Users\test\image.tar`, true},
+		{"Windows tar with prefix docker-archive", `docker-archive:D:\Downloads\alpine.tar`, true},
+
 		// Non-tar images
 		{"Image with tag", "nginx:latest", false},
 		{"Image with registry", "registry.io/namespace/image:v1.0", false},
@@ -4400,7 +4405,104 @@ func TestIsTarFileReference(t *testing.T) {
 	}
 }
 
-// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// TestExtractPathAndTag tests the path and tag extraction logic, including Windows path handling.
+// Container-security scan-type related test function.
+func TestExtractPathAndTag(t *testing.T) {
+	testCases := []struct {
+		name         string
+		imageRef     string
+		expectedPath string
+		expectedTag  string
+	}{
+		// Simple cases without colons
+		{"Simple path", "my-image", "my-image", ""},
+		{"Relative path", "../path/to/dir", "../path/to/dir", ""},
+		{"Absolute Unix path", "/path/to/dir", "/path/to/dir", ""},
+
+		// Unix paths with tags
+		{"Unix path with tag", "/path/to/dir:latest", "/path/to/dir", "latest"},
+		{"Relative path with tag", "../docker.io/library/alpine:v1", "../docker.io/library/alpine", "v1"},
+		{"Simple name with tag", "my-image:latest", "my-image", "latest"},
+
+		// Windows absolute paths (AST-130779 fix)
+		{"Windows path C drive", `C:\Users\test\alpine`, `C:\Users\test\alpine`, ""},
+		{"Windows path D drive", `D:\Downloads\docker.io\library\alpine`, `D:\Downloads\docker.io\library\alpine`, ""},
+		{"Windows path with tag", `C:\Users\test\alpine:v1`, `C:\Users\test\alpine`, "v1"},
+		{"Windows path lowercase drive", `c:\users\test\alpine`, `c:\users\test\alpine`, ""},
+		{"Windows path with spaces", `C:\Users\My User\alpine`, `C:\Users\My User\alpine`, ""},
+
+		// Edge cases
+		{"Empty string", "", "", ""},
+		{"Only colon", ":", ":", ""},
+		{"Colon at start", ":tag", ":tag", ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			path, tag := extractPathAndTag(tc.imageRef)
+			if path != tc.expectedPath {
+				t.Errorf("Expected path='%s', got='%s'", tc.expectedPath, path)
+			}
+			if tag != tc.expectedTag {
+				t.Errorf("Expected tag='%s', got='%s'", tc.expectedTag, tag)
+			}
+		})
+	}
+}
+
+// TestIsLocalFileReference tests the local file reference detection logic.
+// Container-security scan-type related test function.
+func TestIsLocalFileReference(t *testing.T) {
+	testCases := []struct {
+		name     string
+		imageRef string
+		expected bool
+	}{
+		// Tar files (should return true)
+		{"Simple tar", "alpine.tar", true},
+		{"Tar with path", "/path/to/image.tar", true},
+		{"Tar case insensitive", "image.TAR", true},
+
+		// Prefixed local files (should return true)
+		{"docker-archive tar", "docker-archive:alpine.tar", true},
+		{"oci-archive tar", "oci-archive:image.tar", true},
+		{"file prefix tar", "file:myimage.tar", true},
+		{"oci-dir tar", "oci-dir:image.tar", true},
+
+		// oci-dir directories (AST-130781 fix - should return true)
+		{"oci-dir directory", "oci-dir:/path/to/alpine", true},
+		{"oci-dir relative path", "oci-dir:../docker.io/library/alpine", true},
+		{"oci-dir with tag", "oci-dir:/path/to/dir:latest", true},
+		{"oci-dir Windows path", "oci-dir:C:\\Users\\test\\alpine", true},
+
+		// Other local prefixes (should return true)
+		{"docker-archive prefix", "docker-archive:/path/to/file", true},
+		{"oci-archive prefix", "oci-archive:/path/to/file", true},
+		{"file prefix", "file:/path/to/file", true},
+
+		// Non-local images (should return false)
+		{"Image with tag", "nginx:latest", false},
+		{"Image with registry", "registry.io/namespace/image:v1.0", false},
+		{"docker daemon image", "docker:nginx:latest", false},
+		{"podman daemon image", "podman:alpine:3.18", false},
+		{"containerd daemon image", "containerd:ubuntu:22.04", false},
+		{"registry prefix", "registry:ubuntu:20.04", false},
+
+		// Compressed files (not supported, should return false)
+		{"Compressed tar.gz", "image.tar.gz", false},
+		{"Compressed tgz", "image.tgz", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if result := isLocalFileReference(tc.imageRef); result != tc.expected {
+				t.Errorf("Expected %v for '%s', got %v", tc.expected, tc.imageRef, result)
+			}
+		})
+	}
+}
+
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when local files are detected.
 // Container-security scan-type related test function.
 func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 	testCases := []struct {
@@ -4414,16 +4516,27 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 		{"Empty images", "", false, false, false},
 		{"Already enabled", "alpine.tar", true, true, false},
 		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
-		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
-		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
+		{"Non-local prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
 
-		// Should enable local resolution
+		// Should enable local resolution - tar files
 		{"Single tar", "alpine.tar", false, true, true},
 		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
 		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
 		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
 		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
 		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+
+		// Should enable local resolution - oci-dir directories (AST-130781 fix)
+		{"oci-dir directory", "oci-dir:/path/to/alpine", false, true, true},
+		{"oci-dir relative path", "oci-dir:../docker.io/library/alpine", false, true, true},
+		{"oci-dir with tag", "oci-dir:/path/to/dir:latest", false, true, true},
+		{"oci-dir Windows path", "oci-dir:C:\\Users\\test\\alpine", false, true, true},
+		{"Mixed oci-dir+image", "nginx:latest,oci-dir:/path/to/alpine", false, true, true},
+
+		// Should enable local resolution - other local prefixes
+		{"docker-archive prefix", "docker-archive:/path/to/file", false, true, true},
+		{"oci-archive prefix", "oci-archive:/path/to/file", false, true, true},
+		{"file prefix", "file:/path/to/file", false, true, true},
 	}
 
 	for _, tc := range testCases {
@@ -4463,7 +4576,8 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
 			}
 
-			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			// Check for warning message (updated to match new message format)
+			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Local file reference")
 			if tc.expectWarning && !hasWarning {
 				t.Errorf("Expected warning but got: %s", output)
 			} else if !tc.expectWarning && hasWarning {
@@ -4513,7 +4627,8 @@ func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
 
 			var buf bytes.Buffer
 			_, _ = io.Copy(&buf, r)
-			hasWarning := strings.Contains(buf.String(), "Warning:") && strings.Contains(buf.String(), "Tar file")
+			// Check for warning message (updated to match new message format)
+			hasWarning := strings.Contains(buf.String(), "Warning:") && strings.Contains(buf.String(), "Local file reference")
 
 			if tc.expectWarn != hasWarning {
 				t.Errorf("Expected warning=%v, got=%v", tc.expectWarn, hasWarning)
