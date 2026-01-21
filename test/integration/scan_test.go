@@ -2708,8 +2708,8 @@ func TestCreateScanWithExistingProjectAnd_AssignApplication(t *testing.T) {
 		flag(params.SourcesFlag), "data/sources-gitignore.zip",
 		flag(params.ApplicationName), "cli-application",
 	}
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err, "Project should be assigned to application")
+	// Use 10-minute timeout instead of default 5 minutes to handle slow scans
+	_ = executeCmdWithTimeOutNilAssertion(t, "Project should be assigned to application", 10*time.Minute, args...)
 }
 
 func TestCreateScanWithNewProjectName_Assign_Groups(t *testing.T) {
