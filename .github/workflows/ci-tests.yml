@@ -156,6 +156,7 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
+          set -o pipefail  # Preserve exit code from go test, not tee
           echo "Running test group: ${{ matrix.name }}"
           echo "Pattern: ${{ matrix.pattern }}"
           
