@@ -106,10 +106,8 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.ConfigFilePathFlag, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
-	rootCmd.PersistentFlags().Bool(params.OAuthOverrideFlag, false, "")
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
-	_ = rootCmd.PersistentFlags().MarkHidden(params.OAuthOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
 	rootCmd.PersistentFlags().String(params.LogFileConsoleFlag, "", params.LogFileConsoleUsage)
 

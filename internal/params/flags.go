@@ -164,7 +164,6 @@ const (
 	IacsPresetIDFlag             = "iac-security-preset-id"
 	IacsPresetIDUsage            = "The ID of the IaC Security Preset to use (must be a valid UUID)"
 	ApikeyOverrideFlag           = "apikey-override"
-	OAuthOverrideFlag            = "oauth-override"
 	ExploitablePathFlag          = "sca-exploitable-path"
 	LastSastScanTime             = "sca-last-sast-scan-time"
 	ProjecPrivatePackageFlag     = "project-private-package"
