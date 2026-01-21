@@ -4,7 +4,10 @@ on:
   workflow_dispatch:  # Allow manual trigger
   schedule:
     - cron: '30 21 * * *'  # Run daily at 3:00 AM IST (21:30 UTC)
-
+  push:
+    branches:
+      - feature/nightly-integration-tests  # Trigger on pushes to this branch
+      
 concurrency:
   group: nightly-integration-${{ github.ref }}
   cancel-in-progress: true

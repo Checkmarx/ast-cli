@@ -26,6 +26,7 @@ const (
 
 // Test validate with credentials used in test env
 func TestAuthValidate(t *testing.T) {
+	t.Fatal("Intentional failure to test Teams notification")
 	err, buffer := executeCommand(t, "auth", "validate")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
