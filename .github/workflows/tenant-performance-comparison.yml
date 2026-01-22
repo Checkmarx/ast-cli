@@ -1,0 +1,450 @@
+name: Tenant Performance Comparison (3 Tenants)
+
+# Runs scan_test.go integration tests against 3 different Checkmarx One tenants
+# in parallel to compare scan performance across environments.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'main'
+        type: string
+      test_pattern:
+        description: 'Test pattern to run from scan_test.go'
+        required: false
+        default: 'TestScaResolverArg|TestIncrementalScan|TestScanCreateIncludeFilter'
+        type: choice
+        options:
+          - 'TestScaResolverArg|TestIncrementalScan|TestScanCreateIncludeFilter'
+          - 'TestScaResolverArg'
+          - 'TestIncrementalScan'
+          - 'TestCancelScan|TestScanTimeout'
+          - '.*'  # Run ALL tests in scan_test.go (45-90+ minutes)
+
+env:
+  GO_VERSION: '1.21'
+  CX_ORIGIN: "cli-perf-tests"
+  PROXY_HOST: localhost
+  PROXY_PORT: 3128
+
+jobs:
+  # ==============================================================================
+  # TENANT A - Parallel Execution
+  # ==============================================================================
+  tenant-a:
+    name: "Tenant A"
+    runs-on: ubuntu-latest
+    timeout-minutes: 150  # 2.5 hours for full scan_test.go
+    outputs:
+      duration: ${{ steps.timing.outputs.duration }}
+      duration_seconds: ${{ steps.timing.outputs.duration_seconds }}
+      status: ${{ steps.test.outcome }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI
+        run: go build -o ./bin/cx ./cmd
+
+      - name: Download SCA Resolver
+        run: |
+          wget -q https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Start Squid Proxy
+        run: |
+          docker run --name squid -d -p $PROXY_PORT:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Record start time
+        id: start
+        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Run scan_test.go - Tenant A
+        id: test
+        continue-on-error: true
+        env:
+          # ===== TENANT A CREDENTIALS =====
+          CX_BASE_URI: ${{ secrets.TENANT_A_BASE_URI }}
+          CX_BASE_AUTH_URI: ${{ secrets.TENANT_A_BASE_AUTH_URI }}
+          CX_CLIENT_ID: ${{ secrets.TENANT_A_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.TENANT_A_CLIENT_SECRET }}
+          CX_APIKEY: ${{ secrets.TENANT_A_APIKEY }}
+          CX_TENANT: ${{ secrets.TENANT_A_TENANT }}
+          CX_AST_USERNAME: ${{ secrets.TENANT_A_AST_USERNAME }}
+          CX_AST_PASSWORD: ${{ secrets.TENANT_A_AST_PASSWORD }}
+          CX_SCAN_SSH_KEY: ${{ secrets.TENANT_A_SCAN_SSH_KEY }}
+          # ===== PROXY & OTHER =====
+          PROXY_USERNAME: ${{ secrets.PROXY_USER }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_NAMESPACE: "checkmarx"
+          PR_GITHUB_REPO_NAME: "ast-cli"
+          PR_GITHUB_NUMBER: 983
+        run: |
+          echo "=== TENANT A: Starting tests at $(date) ==="
+          echo "Test pattern: ${{ github.event.inputs.test_pattern }}"
+
+          go test \
+            -tags integration \
+            -v \
+            -timeout 120m \
+            -run "${{ github.event.inputs.test_pattern }}" \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee tenant_a_output.log
+
+          echo "=== TENANT A: Completed at $(date) ==="
+
+      - name: Calculate duration
+        id: timing
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          START_TIME=${{ steps.start.outputs.time }}
+          DURATION=$((END_TIME - START_TIME))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          echo "duration=${MINUTES}m ${SECONDS}s" >> $GITHUB_OUTPUT
+          echo "duration_seconds=${DURATION}" >> $GITHUB_OUTPUT
+          echo "Tenant A completed in ${MINUTES}m ${SECONDS}s"
+
+      - name: Extract test summary
+        if: always()
+        run: |
+          echo "### Tenant A Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          grep -E "^(--- PASS|--- FAIL|PASS|FAIL|ok|=== RUN)" tenant_a_output.log | tail -100 >> $GITHUB_STEP_SUMMARY || echo "No test output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenant-a-logs
+          path: tenant_a_output.log
+          retention-days: 30
+
+  # ==============================================================================
+  # TENANT B - Parallel Execution
+  # ==============================================================================
+  tenant-b:
+    name: "Tenant B"
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    outputs:
+      duration: ${{ steps.timing.outputs.duration }}
+      duration_seconds: ${{ steps.timing.outputs.duration_seconds }}
+      status: ${{ steps.test.outcome }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI
+        run: go build -o ./bin/cx ./cmd
+
+      - name: Download SCA Resolver
+        run: |
+          wget -q https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Start Squid Proxy
+        run: |
+          docker run --name squid -d -p $PROXY_PORT:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Record start time
+        id: start
+        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Run scan_test.go - Tenant B
+        id: test
+        continue-on-error: true
+        env:
+          # ===== TENANT B CREDENTIALS =====
+          CX_BASE_URI: ${{ secrets.TENANT_B_BASE_URI }}
+          CX_BASE_AUTH_URI: ${{ secrets.TENANT_B_BASE_AUTH_URI }}
+          CX_CLIENT_ID: ${{ secrets.TENANT_B_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.TENANT_B_CLIENT_SECRET }}
+          CX_APIKEY: ${{ secrets.TENANT_B_APIKEY }}
+          CX_TENANT: ${{ secrets.TENANT_B_TENANT }}
+          CX_AST_USERNAME: ${{ secrets.TENANT_B_AST_USERNAME }}
+          CX_AST_PASSWORD: ${{ secrets.TENANT_B_AST_PASSWORD }}
+          CX_SCAN_SSH_KEY: ${{ secrets.TENANT_B_SCAN_SSH_KEY }}
+          # ===== PROXY & OTHER =====
+          PROXY_USERNAME: ${{ secrets.PROXY_USER }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_NAMESPACE: "checkmarx"
+          PR_GITHUB_REPO_NAME: "ast-cli"
+          PR_GITHUB_NUMBER: 983
+        run: |
+          echo "=== TENANT B: Starting tests at $(date) ==="
+          echo "Test pattern: ${{ github.event.inputs.test_pattern }}"
+
+          go test \
+            -tags integration \
+            -v \
+            -timeout 120m \
+            -run "${{ github.event.inputs.test_pattern }}" \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee tenant_b_output.log
+
+          echo "=== TENANT B: Completed at $(date) ==="
+
+      - name: Calculate duration
+        id: timing
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          START_TIME=${{ steps.start.outputs.time }}
+          DURATION=$((END_TIME - START_TIME))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          echo "duration=${MINUTES}m ${SECONDS}s" >> $GITHUB_OUTPUT
+          echo "duration_seconds=${DURATION}" >> $GITHUB_OUTPUT
+          echo "Tenant B completed in ${MINUTES}m ${SECONDS}s"
+
+      - name: Extract test summary
+        if: always()
+        run: |
+          echo "### Tenant B Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          grep -E "^(--- PASS|--- FAIL|PASS|FAIL|ok|=== RUN)" tenant_b_output.log | tail -100 >> $GITHUB_STEP_SUMMARY || echo "No test output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenant-b-logs
+          path: tenant_b_output.log
+          retention-days: 30
+
+  # ==============================================================================
+  # TENANT C - Parallel Execution
+  # ==============================================================================
+  tenant-c:
+    name: "Tenant C"
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    outputs:
+      duration: ${{ steps.timing.outputs.duration }}
+      duration_seconds: ${{ steps.timing.outputs.duration_seconds }}
+      status: ${{ steps.test.outcome }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI
+        run: go build -o ./bin/cx ./cmd
+
+      - name: Download SCA Resolver
+        run: |
+          wget -q https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Start Squid Proxy
+        run: |
+          docker run --name squid -d -p $PROXY_PORT:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Record start time
+        id: start
+        run: echo "time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Run scan_test.go - Tenant C
+        id: test
+        continue-on-error: true
+        env:
+          # ===== TENANT C CREDENTIALS =====
+          CX_BASE_URI: ${{ secrets.TENANT_C_BASE_URI }}
+          CX_BASE_AUTH_URI: ${{ secrets.TENANT_C_BASE_AUTH_URI }}
+          CX_CLIENT_ID: ${{ secrets.TENANT_C_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.TENANT_C_CLIENT_SECRET }}
+          CX_APIKEY: ${{ secrets.TENANT_C_APIKEY }}
+          CX_TENANT: ${{ secrets.TENANT_C_TENANT }}
+          CX_AST_USERNAME: ${{ secrets.TENANT_C_AST_USERNAME }}
+          CX_AST_PASSWORD: ${{ secrets.TENANT_C_AST_PASSWORD }}
+          CX_SCAN_SSH_KEY: ${{ secrets.TENANT_C_SCAN_SSH_KEY }}
+          # ===== PROXY & OTHER =====
+          PROXY_USERNAME: ${{ secrets.PROXY_USER }}
+          PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PR_GITHUB_NAMESPACE: "checkmarx"
+          PR_GITHUB_REPO_NAME: "ast-cli"
+          PR_GITHUB_NUMBER: 983
+        run: |
+          echo "=== TENANT C: Starting tests at $(date) ==="
+          echo "Test pattern: ${{ github.event.inputs.test_pattern }}"
+
+          go test \
+            -tags integration \
+            -v \
+            -timeout 120m \
+            -run "${{ github.event.inputs.test_pattern }}" \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee tenant_c_output.log
+
+          echo "=== TENANT C: Completed at $(date) ==="
+
+      - name: Calculate duration
+        id: timing
+        if: always()
+        run: |
+          END_TIME=$(date +%s)
+          START_TIME=${{ steps.start.outputs.time }}
+          DURATION=$((END_TIME - START_TIME))
+          MINUTES=$((DURATION / 60))
+          SECONDS=$((DURATION % 60))
+          echo "duration=${MINUTES}m ${SECONDS}s" >> $GITHUB_OUTPUT
+          echo "duration_seconds=${DURATION}" >> $GITHUB_OUTPUT
+          echo "Tenant C completed in ${MINUTES}m ${SECONDS}s"
+
+      - name: Extract test summary
+        if: always()
+        run: |
+          echo "### Tenant C Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          grep -E "^(--- PASS|--- FAIL|PASS|FAIL|ok|=== RUN)" tenant_c_output.log | tail -100 >> $GITHUB_STEP_SUMMARY || echo "No test output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenant-c-logs
+          path: tenant_c_output.log
+          retention-days: 30
+
+  # ==============================================================================
+  # COMPARISON REPORT - Runs after all 3 tenants complete
+  # ==============================================================================
+  comparison-report:
+    name: "Generate Comparison Report"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [tenant-a, tenant-b, tenant-c]
+    steps:
+      - name: Generate Performance Comparison Report
+        run: |
+          echo "# Performance Comparison Report - 3 Tenants" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** \`${{ github.event.inputs.branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Pattern:** \`${{ github.event.inputs.test_pattern }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Run Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Execution Mode:** Parallel (all 3 tenants ran simultaneously)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Execution Time Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tenant | Duration | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tenant A** | ${{ needs.tenant-a.outputs.duration }} | ${{ needs.tenant-a.outputs.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tenant B** | ${{ needs.tenant-b.outputs.duration }} | ${{ needs.tenant-b.outputs.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Tenant C** | ${{ needs.tenant-c.outputs.duration }} | ${{ needs.tenant-c.outputs.status }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Calculate rankings
+        run: |
+          # Get durations in seconds
+          A_SECS="${{ needs.tenant-a.outputs.duration_seconds }}"
+          B_SECS="${{ needs.tenant-b.outputs.duration_seconds }}"
+          C_SECS="${{ needs.tenant-c.outputs.duration_seconds }}"
+
+          # Default to large number if empty
+          A_SECS=${A_SECS:-999999}
+          B_SECS=${B_SECS:-999999}
+          C_SECS=${C_SECS:-999999}
+
+          echo "## Performance Ranking" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Create array and sort
+          echo "| Rank | Tenant | Time (seconds) |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|----------------|" >> $GITHUB_STEP_SUMMARY
+
+          # Simple comparison
+          if [ "$A_SECS" -le "$B_SECS" ] && [ "$A_SECS" -le "$C_SECS" ]; then
+            FIRST="Tenant A"
+            FIRST_TIME=$A_SECS
+            if [ "$B_SECS" -le "$C_SECS" ]; then
+              SECOND="Tenant B"; SECOND_TIME=$B_SECS
+              THIRD="Tenant C"; THIRD_TIME=$C_SECS
+            else
+              SECOND="Tenant C"; SECOND_TIME=$C_SECS
+              THIRD="Tenant B"; THIRD_TIME=$B_SECS
+            fi
+          elif [ "$B_SECS" -le "$A_SECS" ] && [ "$B_SECS" -le "$C_SECS" ]; then
+            FIRST="Tenant B"
+            FIRST_TIME=$B_SECS
+            if [ "$A_SECS" -le "$C_SECS" ]; then
+              SECOND="Tenant A"; SECOND_TIME=$A_SECS
+              THIRD="Tenant C"; THIRD_TIME=$C_SECS
+            else
+              SECOND="Tenant C"; SECOND_TIME=$C_SECS
+              THIRD="Tenant A"; THIRD_TIME=$A_SECS
+            fi
+          else
+            FIRST="Tenant C"
+            FIRST_TIME=$C_SECS
+            if [ "$A_SECS" -le "$B_SECS" ]; then
+              SECOND="Tenant A"; SECOND_TIME=$A_SECS
+              THIRD="Tenant B"; THIRD_TIME=$B_SECS
+            else
+              SECOND="Tenant B"; SECOND_TIME=$B_SECS
+              THIRD="Tenant A"; THIRD_TIME=$A_SECS
+            fi
+          fi
+
+          echo "| 1st | $FIRST | ${FIRST_TIME}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2nd | $SECOND | ${SECOND_TIME}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3rd | $THIRD | ${THIRD_TIME}s |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Calculate differences
+          if [ "$FIRST_TIME" != "999999" ] && [ "$THIRD_TIME" != "999999" ]; then
+            DIFF=$((THIRD_TIME - FIRST_TIME))
+            echo "**Fastest vs Slowest:** ${DIFF} seconds difference" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Add artifact links
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Logs" >> $GITHUB_STEP_SUMMARY
+          echo "Download detailed logs from the Artifacts section below:" >> $GITHUB_STEP_SUMMARY
+          echo "- tenant-a-logs" >> $GITHUB_STEP_SUMMARY
+          echo "- tenant-b-logs" >> $GITHUB_STEP_SUMMARY
+          echo "- tenant-c-logs" >> $GITHUB_STEP_SUMMARY

@@ -12,11 +12,14 @@ import (
 
 // MockContainerManager for testing - does not execute real container commands
 type MockContainerManager struct {
-	GeneratedContainerIDs []string
-	RunKicsContainerCalls []RunKicsContainerCall
-	ShouldFailGenerate    bool
-	ShouldFailRun         bool
-	RunError              error
+	GeneratedContainerIDs       []string
+	RunKicsContainerCalls       []RunKicsContainerCall
+	EnsureImageAvailableCalls   []string
+	ShouldFailGenerate          bool
+	ShouldFailRun               bool
+	ShouldFailEnsureImage       bool
+	RunError                    error
+	EnsureImageError            error
 }
 
 type RunKicsContainerCall struct {
@@ -26,8 +29,9 @@ type RunKicsContainerCall struct {
 
 func NewMockContainerManager() *MockContainerManager {
 	return &MockContainerManager{
-		GeneratedContainerIDs: make([]string, 0),
-		RunKicsContainerCalls: make([]RunKicsContainerCall, 0),
+		GeneratedContainerIDs:     make([]string, 0),
+		RunKicsContainerCalls:     make([]RunKicsContainerCall, 0),
+		EnsureImageAvailableCalls: make([]string, 0),
 	}
 }
 
@@ -41,6 +45,20 @@ func (m *MockContainerManager) GenerateContainerID() string {
 	m.GeneratedContainerIDs = append(m.GeneratedContainerIDs, containerName)
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
 	return containerName
+}
+
+// EnsureImageAvailable mock implementation
+func (m *MockContainerManager) EnsureImageAvailable(engine string) error {
+	m.EnsureImageAvailableCalls = append(m.EnsureImageAvailableCalls, engine)
+
+	if m.ShouldFailEnsureImage {
+		if m.EnsureImageError != nil {
+			return m.EnsureImageError
+		}
+		return &exec.Error{Name: engine, Err: nil}
+	}
+
+	return nil
 }
 
 func (m *MockContainerManager) RunKicsContainer(engine, volumeMap string) error {
