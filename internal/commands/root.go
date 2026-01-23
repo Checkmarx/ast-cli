@@ -114,6 +114,7 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		CheckPreferredCredentials(cmd)
 		err := customLogConfiguration(rootCmd)
 		if err != nil {
 			return err
@@ -415,4 +416,18 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 	}
 	log.SetOutput(multiWriter)
 	return nil
+}
+func CheckPreferredCredentials(cmd *cobra.Command) string {
+	if cmd.Flags().Changed(params.AccessKeyIDFlag) &&
+		cmd.Flags().Changed(params.AccessKeySecretFlag) {
+		viper.Set(params.PreferredCredentialTypeKey, "access_key")
+		return "access_key"
+	} else if cmd.Flags().Changed(params.AstAPIKeyFlag) {
+		viper.Set(params.PreferredCredentialTypeKey, "apikey")
+		return "apikey"
+	} else {
+		viper.Set(params.PreferredCredentialTypeKey, "")
+	}
+	result := viper.GetString(params.PreferredCredentialTypeKey)
+	return result
 }
