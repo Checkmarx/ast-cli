@@ -73,6 +73,7 @@ func createASTTestCommand() *cobra.Command {
 	customStatesMockWrapper := &mock.CustomStatesMockWrapper{}
 	realTimeWrapper := &mock.RealtimeScannerMockWrapper{}
 	telemetryWrapper := &mock.TelemetryMockWrapper{}
+	dastEnvironmentsWrapper := &mock.DastEnvironmentsMockWrapper{}
 	return NewAstCLI(
 		applicationWrapper,
 		scansMockWrapper,
@@ -111,6 +112,7 @@ func createASTTestCommand() *cobra.Command {
 		containerResolverMockWrapper,
 		realTimeWrapper,
 		telemetryWrapper,
+		dastEnvironmentsWrapper,
 	)
 }
 

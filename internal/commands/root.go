@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -61,6 +62,7 @@ func NewAstCLI(
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
 	telemetryWrapper wrappers.TelemetryWrapper,
+	dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -187,6 +189,7 @@ func NewAstCLI(
 		realTimeWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
+	dastEnvironmentsCmd := dast.NewDastEnvironmentsCommand(dastEnvironmentsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -237,6 +240,7 @@ func NewAstCLI(
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
+		dastEnvironmentsCmd,
 		resultsCmd,
 		triageCmd,
 		versionCmd,
@@ -354,6 +358,7 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
+
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
