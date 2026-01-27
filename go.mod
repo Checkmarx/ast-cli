@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.24.11
+go 1.25.0
 
 require (
 	github.com/Checkmarx/containers-resolver v1.0.30
@@ -49,6 +49,7 @@ require (
 	github.com/onsi/gomega v1.38.1 // indirect
 	github.com/opencontainers/runc v1.2.8 // indirect
 	github.com/seccomp/libseccomp-golang v0.10.0 // indirect
+	github.com/sigstore/sigstore v1.10.4-0.20251215182513-626b82b5d8bb // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/urfave/cli v1.22.16 // indirect
 	github.com/vishvananda/netlink v1.3.1-0.20250303224720-0e7078ed04c8 // indirect
