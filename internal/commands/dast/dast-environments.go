@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -68,7 +67,7 @@ func NewDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnvironment
 	}
 	listDastEnvironmentsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastEnvironmentsListFlagUsage)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listDastEnvironmentsCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
@@ -84,7 +83,7 @@ func runListDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnviron
 		var allEnvironmentsModel *wrappers.DastEnvironmentsCollectionResponseModel
 		var errorModel *wrappers.ErrorModel
 
-		params, err := commandutils.GetFilters(cmd)
+		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingDastEnvironments)
 		}
@@ -100,7 +99,7 @@ func runListDastEnvironmentsCommand(dastEnvironmentsWrapper wrappers.DastEnviron
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, failedGettingDastEnvironments, errorModel.Code, errorModel.Message)
 		} else if allEnvironmentsModel != nil && allEnvironmentsModel.Environments != nil {
-			err = commandutils.PrintByFormat(cmd, toEnvironmentViews(allEnvironmentsModel.Environments))
+			err = printByFormat(cmd, toEnvironmentViews(allEnvironmentsModel.Environments))
 			if err != nil {
 				return err
 			}

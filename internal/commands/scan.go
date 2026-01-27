@@ -23,7 +23,6 @@ import (
 	"unicode"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -247,7 +246,7 @@ func NewScanCommand(
 
 	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
@@ -3061,7 +3060,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 			if err != nil {
 				return err
 			}
-			err = commandutils.PrintByFormat(cmd, views)
+			err = printByFormat(cmd, views)
 			if err != nil {
 				return err
 			}
@@ -3087,7 +3086,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = commandutils.PrintByFormat(cmd, toScanView(scanResponseModel))
+			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -3113,7 +3112,7 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if taskResponseModel != nil {
-			err = commandutils.PrintByFormat(cmd, taskResponseModel)
+			err = printByFormat(cmd, taskResponseModel)
 			if err != nil {
 				return err
 			}
