@@ -23,7 +23,6 @@ import (
 	"unicode"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -63,7 +62,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.18"
+	containerImage                          = "checkmarx/kics:v2.1.19"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -137,6 +136,7 @@ const (
 	BranchPrimaryPrefix          = "--branch-primary="
 	OverridePolicyManagement     = "override-policy-management"
 	defaultScanEnqueueRetryDelay = 5
+	scaResolverCxOneAuthToken    = "CXONE_AUTH_TOKEN"
 )
 
 var (
@@ -246,7 +246,7 @@ func NewScanCommand(
 
 	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
 		printer.FormatTable, printer.FormatList, printer.FormatJSON,
 	)
@@ -1868,7 +1868,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1889,7 +1889,19 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			args = append(args, parsedscaResolverParams...)
 		}
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-		out, err := exec.Command(scaResolver, args...).Output()
+		cmd := exec.Command(scaResolver, args...)
+		scaDeltaScanEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScaDeltaScanEnabled)
+		if scaDeltaScanEnabled.Status {
+			accessToken, err := wrappers.GetAccessToken()
+			if err != nil {
+				return err
+			}
+			if accessToken != "" {
+				logger.PrintIfVerbose("Setting authorization token for SCA Delta Scan")
+				cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+			}
+		}
+		out, err := cmd.Output()
 		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -2002,7 +2014,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// execute scaResolver only in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 			if scaErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
@@ -3048,7 +3060,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 			if err != nil {
 				return err
 			}
-			err = commandutils.PrintByFormat(cmd, views)
+			err = printByFormat(cmd, views)
 			if err != nil {
 				return err
 			}
@@ -3074,7 +3086,7 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
-			err = commandutils.PrintByFormat(cmd, toScanView(scanResponseModel))
+			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err
 			}
@@ -3100,7 +3112,7 @@ func runScanWorkflowByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *co
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if taskResponseModel != nil {
-			err = commandutils.PrintByFormat(cmd, taskResponseModel)
+			err = printByFormat(cmd, taskResponseModel)
 			if err != nil {
 				return err
 			}

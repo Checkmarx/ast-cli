@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -36,7 +35,7 @@ func NewResultsPredicatesCommand(resultsPredicatesWrapper wrappers.ResultsPredic
 	triageUpdateCmd := triageUpdateSubCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 	triageGetStatesCmd := triageGetStatesSubCommand(customStatesWrapper, featureFlagsWrapper)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{triageShowCmd},
 		printer.FormatList, printer.FormatTable, printer.FormatJSON,
 	)
@@ -185,7 +184,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 			if err != nil {
 				return errors.Wrapf(err, "%s", "Failed showing the predicate")
 			}
-			err = commandutils.PrintByFormat(cmd, toScaPredicateResultView(scaPredicates))
+			err = printByFormat(cmd, toScaPredicateResultView(scaPredicates))
 			if err != nil {
 				return err
 			}
@@ -204,7 +203,7 @@ func runTriageShow(resultsPredicatesWrapper wrappers.ResultsPredicatesWrapper) f
 					errorModel.Message,
 				)
 			} else if predicatesCollection != nil {
-				err = commandutils.PrintByFormat(cmd, toPredicatesView(*predicatesCollection))
+				err = printByFormat(cmd, toPredicatesView(*predicatesCollection))
 				if err != nil {
 					return err
 				}

@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -251,7 +250,7 @@ func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, fea
 	riskManagementCmd.PersistentFlags().String(commonParams.ScanIDFlag, "", "Scan ID")
 	riskManagementCmd.PersistentFlags().Int(commonParams.LimitFlag, -1, "Limit")
 
-	commandutils.AddFormatFlag(riskManagementCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
+	addFormatFlag(riskManagementCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
 
 	return riskManagementCmd
 }
@@ -335,7 +334,7 @@ func resultBflSubCommand(bflWrapper wrappers.BflWrapper) *cobra.Command {
 	}
 	addScanIDFlag(resultBflCmd, "ID to report on")
 	addQueryIDFlag(resultBflCmd, "Query Id from the result")
-	commandutils.AddFormatFlag(resultBflCmd, printer.FormatList, printer.FormatJSON)
+	addFormatFlag(resultBflCmd, printer.FormatList, printer.FormatJSON)
 
 	markFlagAsRequired(resultBflCmd, commonParams.ScanIDFlag)
 	markFlagAsRequired(resultBflCmd, commonParams.QueryIDFlag)
@@ -381,7 +380,7 @@ func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, fea
 			return err
 		}
 		results.Results = utils.LimitSlice(results.Results, limit)
-		err = commandutils.PrintByFormat(cmd, results)
+		err = printByFormat(cmd, results)
 		return err
 	}
 }
@@ -514,7 +513,7 @@ func runGetBestFixLocationCommand(bflWrapper wrappers.BflWrapper) func(cmd *cobr
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGettingBfl, errorModel.Code, errorModel.Message)
 		} else if bflResponseModel != nil {
-			err = commandutils.PrintByFormat(cmd, toBflView(*bflResponseModel))
+			err = printByFormat(cmd, toBflView(*bflResponseModel))
 			if err != nil {
 				return err
 			}
@@ -575,7 +574,7 @@ func resultCodeBashing(codeBashingWrapper wrappers.CodeBashingWrapper) *cobra.Co
 	if err != nil {
 		log.Fatal(err)
 	}
-	commandutils.AddFormatFlag(resultCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
+	addFormatFlag(resultCmd, printer.FormatJSON, printer.FormatTable, printer.FormatList)
 	return resultCmd
 }
 
@@ -1133,7 +1132,7 @@ func runGetCodeBashingCommand(
 		if webError != nil {
 			return errors.New(webError.Message)
 		}
-		err = commandutils.PrintByFormat(cmd, *CodeBashingModel)
+		err = printByFormat(cmd, *CodeBashingModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedListingCodeBashing)
 		}
