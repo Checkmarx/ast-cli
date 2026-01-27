@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -75,7 +74,7 @@ func NewDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) *cobra.Comm
 	_ = listDastScansCmd.MarkPersistentFlagRequired(params.EnvironmentIDFlag)
 	listDastScansCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastScansListFlagUsage)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listDastScansCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
@@ -96,7 +95,7 @@ func runListDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) func(cm
 			return errors.Wrapf(err, "%s", failedGettingDastScans)
 		}
 
-		params, err := commandutils.GetFilters(cmd)
+		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingDastScans)
 		}
@@ -120,7 +119,7 @@ func runListDastScansCommand(dastScansWrapper wrappers.DastScansWrapper) func(cm
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, failedGettingDastScans, errorModel.Code, errorModel.Message)
 		} else if allScansModel != nil && allScansModel.Scans != nil {
-			err = commandutils.PrintByFormat(cmd, toScanViews(allScansModel.Scans))
+			err = printByFormat(cmd, toScanViews(allScansModel.Scans))
 			if err != nil {
 				return err
 			}

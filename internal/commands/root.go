@@ -314,6 +314,19 @@ func validateExtraFilters(filterKeyVal []string) []string {
 	return filterKeyVal
 }
 
+func addFormatFlagToMultipleCommands(commands []*cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	for _, c := range commands {
+		addFormatFlag(c, defaultFormat, otherAvailableFormats...)
+	}
+}
+
+func addFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
+	cmd.PersistentFlags().String(
+		params.FormatFlag, defaultFormat,
+		fmt.Sprintf(params.FormatFlagUsageFormat, append(otherAvailableFormats, defaultFormat)),
+	)
+}
+
 func addScanInfoFormatFlag(cmd *cobra.Command, defaultFormat string, otherAvailableFormats ...string) {
 	cmd.PersistentFlags().String(
 		params.ScanInfoFormatFlag, defaultFormat,
@@ -345,6 +358,11 @@ func addProjectIDFlag(cmd *cobra.Command, helpMsg string) {
 
 func addQueryIDFlag(cmd *cobra.Command, helpMsg string) {
 	cmd.PersistentFlags().String(params.QueryIDFlag, "", helpMsg)
+}
+
+func printByFormat(cmd *cobra.Command, view interface{}) error {
+	f, _ := cmd.Flags().GetString(params.FormatFlag)
+	return printer.Print(cmd.OutOrStdout(), view, f)
 }
 
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
