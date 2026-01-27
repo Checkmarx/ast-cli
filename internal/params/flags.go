@@ -46,8 +46,6 @@ const (
 	BranchFlag                     = "branch"
 	BranchFlagSh                   = "b"
 	ScanIDFlag                     = "scan-id"
-	EnvironmentIDFlag              = "environment-id"
-	EnvironmentIDFlagUsage         = "Environment ID to list scans for (required)"
 	CodeRepositoryFlag             = "code-repository-url"
 	CodeRepositoryFlagUsage        = "Code repository URL (required for self-hosted SCMs)"
 	BranchFlagUsage                = "Branch to scan"
@@ -256,6 +254,10 @@ const (
 
 	// SBOM - flag
 	SbomFlag = "sbom-only"
+
+	// DAST Flags
+	EnvironmentIDFlag      = "environment-id"
+	EnvironmentIDFlagUsage = "Environment ID to list scans for (required)"
 )
 
 // Parameter values
