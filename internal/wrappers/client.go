@@ -605,6 +605,7 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	if accessKeyID == "" && astAPIKey == "" {
 		return "", errors.Errorf(FailedToAuth, "access key ID")
 	} else if accessKeySecret == "" && astAPIKey == "" {
+
 		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
@@ -616,7 +617,7 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	if astAPIKey != "" && credType == "apikey" {
 		accessToken, err = getNewToken(
 			getAPIKeyPayload(astAPIKey), authURI)
-	} else if accessKeyID != "" && accessKeySecret != "" && credType == "access_key" {
+	} else if accessKeyID != "" && accessKeySecret != "" && credType == "oauth" {
 		accessToken, err = getNewToken(
 			getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 	} else if astAPIKey != "" {

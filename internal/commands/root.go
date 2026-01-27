@@ -420,7 +420,7 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 func CheckPreferredCredentials(cmd *cobra.Command) string {
 	if cmd.Flags().Changed(params.AccessKeyIDFlag) &&
 		cmd.Flags().Changed(params.AccessKeySecretFlag) {
-		viper.Set(params.PreferredCredentialTypeKey, "access_key")
+		viper.Set(params.PreferredCredentialTypeKey, "oauth")
 		return "access_key"
 	} else if cmd.Flags().Changed(params.AstAPIKeyFlag) {
 		viper.Set(params.PreferredCredentialTypeKey, "apikey")
