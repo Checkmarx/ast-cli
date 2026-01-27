@@ -421,7 +421,7 @@ func CheckPreferredCredentials(cmd *cobra.Command) string {
 	if cmd.Flags().Changed(params.AccessKeyIDFlag) &&
 		cmd.Flags().Changed(params.AccessKeySecretFlag) {
 		viper.Set(params.PreferredCredentialTypeKey, "oauth")
-		return "access_key"
+		return "oauth"
 	} else if cmd.Flags().Changed(params.AstAPIKeyFlag) {
 		viper.Set(params.PreferredCredentialTypeKey, "apikey")
 		return "apikey"
