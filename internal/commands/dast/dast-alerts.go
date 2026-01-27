@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/commands/commandutils"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/params"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -84,7 +83,7 @@ func NewDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) *cobra.C
 	// Optional filter flag
 	listDastAlertsCmd.PersistentFlags().StringSlice(commonParams.FilterFlag, []string{}, filterDastAlertsListFlagUsage)
 
-	commandutils.AddFormatFlagToMultipleCommands(
+	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listDastAlertsCmd},
 		printer.FormatTable,
 		printer.FormatJSON,
@@ -103,7 +102,7 @@ func runListDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) func
 		environmentID, _ := cmd.Flags().GetString(params.EnvironmentIDFlag)
 		scanID, _ := cmd.Flags().GetString(params.ScanIDFlag)
 
-		params, err := commandutils.GetFilters(cmd)
+		params, err := getFilters(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedGettingDastAlerts)
 		}
@@ -117,7 +116,7 @@ func runListDastAlertsCommand(dastAlertsWrapper wrappers.DastAlertsWrapper) func
 		if errorModel != nil {
 			return errors.Errorf(services.ErrorCodeFormat, failedGettingDastAlerts, errorModel.Code, errorModel.Message)
 		} else if alertsModel != nil && alertsModel.Results != nil {
-			err = commandutils.PrintByFormat(cmd, toAlertViews(alertsModel.Results))
+			err = printByFormat(cmd, toAlertViews(alertsModel.Results))
 			if err != nil {
 				return err
 			}
