@@ -37,52 +37,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Group 1: Scan creation and management tests (largest group, uses getRootProject)
-          # - group: scan-create
-          #   name: "Scan Creation"
-          #   pattern: "^Test(CreateScan|ScanCreate|Scan_|ScanTypeApi|ValidateScanTypes|ScanGenerating|ScanWithPolicy|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan)"
-          # # Group 2: Scan operations - E2E, incremental, cancel, filters
-          # - group: scan-ops
-          #   name: "Scan Operations"
-          #   pattern: "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateWith|ScanCreateIgnore|ScanCreateFilter|ScanWorkflow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport)"
-          # # Group 3: Results and reports tests (uses getRootScan - read-only)
-          # - group: results
-          #   name: "Results & Reports"
-          #   pattern: "^Test(Result|CodeBashing|RiskManagement)"
-          # # Group 4: PR decoration tests (uses getRootScan)
-          # - group: pr-decoration
-          #   name: "PR Decoration"
-          #   pattern: "^TestPR"
-          # # Group 5: Project management tests
-          # - group: projects
-          #   name: "Projects"
-          #   pattern: "^Test(Project|CreateEmpty|CreateAlready)"
-          # # Group 6: Predicates and BFL tests (uses getRootScan)
-          # - group: predicates
-          #   name: "Predicates & BFL"
-          #   pattern: "^Test(Predicate|Bfl|Triage)"
+        tenant: [tenant1, tenant2]
+        group:
           # Group 7: Container-specific tests (from scan_test.go and container files)
-          - group: containers
+          - id: containers
             name: "Container Tests"
             pattern: "^Test(Container|EmptyFolder|ImagesValidation|EdgeCase)"
-          # Group 8: Realtime scanning tests (IaC, OSS, Secrets, ASCA) and engine tests
-          # - group: realtime
-          #   name: "Realtime Scanning"
-          #   pattern: "^Test(IacRealtime|OssRealtime|Secrets_Realtime|Containers_Realtime|EngineNameResolution)"
-          # # Group 9: Auth, config, tenant, root tests
-          # - group: auth-config
-          #   name: "Auth & Config"
-          #   pattern: "^Test(Auth|Config|Tenant|Root|Log|SetLog|FeatureFlag|RateLimit|FailProxy)"
-          # # Group 10: SCM user count tests (GitHub, GitLab, Azure, Bitbucket)
-          # - group: user-count
-          #   name: "User Count"
-          #   pattern: "^Test(GitHub|GitLab|Azure|Bitbucket)(UserCount|Count)"
-          # # Group 11: Misc tests (chat, import, telemetry, remediation, pre-commit, pre-receive)
-          # - group: misc
-          #   name: "Miscellaneous"
-          #   pattern: "^Test(Chat|Import|Learn|Telemetry|Mask|Sca?Remediation|Kics?Remediation|PreCommit|Pre_?Receive|Pre_Receive|Get)"
-    name: Integration - ${{ matrix.name }}
+            
+    name: Integration - ${{ matrix.group.name }} (${{ matrix.tenant }})
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -111,19 +73,22 @@ jobs:
           wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
           tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
           rm -rf ScaResolver-linux64.tar.gz
-      - name: Run ${{ matrix.name }} tests
+      - name: Run ${{ matrix.group.name }} tests on ${{ matrix.tenant }}
         shell: bash
         env:
-          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
-          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
-          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
-          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
-          CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
-          CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
-          CX_APIKEY: ${{ secrets.CX_APIKEY }}
-          CX_TENANT: ${{ secrets.CX_TENANT }}
+          # Tenant-specific secrets (create these for each tenant)
+          CX_BASE_URI: ${{ secrets[format('CX_BASE_URI_{0}', matrix.tenant)] }}
+          CX_CLIENT_ID: ${{ secrets[format('CX_CLIENT_ID_{0}', matrix.tenant)] }}
+          CX_CLIENT_SECRET: ${{ secrets[format('CX_CLIENT_SECRET_{0}', matrix.tenant)] }}
+          CX_BASE_AUTH_URI: ${{ secrets[format('CX_BASE_AUTH_URI_{0}', matrix.tenant)] }}
+          CX_APIKEY: ${{ secrets[format('CX_APIKEY_{0}', matrix.tenant)] }}
+          CX_TENANT: ${{ secrets[format('CX_TENANT_{0}', matrix.tenant)] }}
+          # Optional tenant-specific secrets (if needed)
+          CX_AST_USERNAME: ${{ secrets[format('CX_AST_USERNAME_{0}', matrix.tenant)] }}
+          CX_AST_PASSWORD: ${{ secrets[format('CX_AST_PASSWORD_{0}', matrix.tenant)] }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           CX_ORIGIN: "cli-tests"
+          # Shared secrets (not tenant-specific)
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128
@@ -155,23 +120,40 @@ jobs:
           PR_BITBUCKET_ID: 1
         run: |
           set -o pipefail  # Preserve exit code from go test, not tee
-          echo "Running test group: ${{ matrix.name }}"
-          echo "Pattern: ${{ matrix.pattern }}"
-          
+          echo "========================================"
+          echo "Running test group: ${{ matrix.group.name }}"
+          echo "Tenant: ${{ matrix.tenant }}"
+          echo "Pattern: ${{ matrix.group.pattern }}"
+          echo "========================================"
+
+          # Record start time for performance measurement
+          START_TIME=$(date +%s)
+
           # Run tests matching the pattern with coverage
           go test \
             -tags integration \
             -v \
             -timeout 90m \
-            -run "${{ matrix.pattern }}" \
+            -run "${{ matrix.group.pattern }}" \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-            -coverprofile cover-${{ matrix.group }}.out \
-            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}.log
-          
+            -coverprofile cover-${{ matrix.group.id }}-${{ matrix.tenant }}.out \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log
+
+          # Record end time and calculate duration
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "========================================"
+          echo "PERFORMANCE SUMMARY"
+          echo "Tenant: ${{ matrix.tenant }}"
+          echo "Test Group: ${{ matrix.group.name }}"
+          echo "Duration: ${DURATION} seconds"
+          echo "========================================"
+          echo "duration_seconds=${DURATION}" >> test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log
+
           # Check for failed tests and rerun them once
-          if grep -q "^--- FAIL:" test_output_${{ matrix.group }}.log; then
+          if grep -q "^--- FAIL:" test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log; then
             echo "Some tests failed, attempting rerun..."
-            FAILED_TESTS=$(grep -E "^--- FAIL: " test_output_${{ matrix.group }}.log | awk '{print $3}' | tr '\n' '|' | sed 's/|$//')
+            FAILED_TESTS=$(grep -E "^--- FAIL: " test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log | awk '{print $3}' | tr '\n' '|' | sed 's/|$//')
             if [ -n "$FAILED_TESTS" ]; then
               echo "Rerunning failed tests: $FAILED_TESTS"
               go test \
@@ -180,7 +162,7 @@ jobs:
                 -timeout 30m \
                 -run "^($FAILED_TESTS)$" \
                 -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-                -coverprofile cover-${{ matrix.group }}-rerun.out \
+                -coverprofile cover-${{ matrix.group.id }}-${{ matrix.tenant }}-rerun.out \
                 github.com/checkmarx/ast-cli/test/integration
             fi
           fi
@@ -191,14 +173,14 @@ jobs:
       - name: Upload coverage artifact
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: coverage-${{ matrix.group }}
+          name: coverage-${{ matrix.group.id }}-${{ matrix.tenant }}
           path: cover-*.out
 
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: test-logs-${{ matrix.group }}
+          name: test-logs-${{ matrix.group.id }}-${{ matrix.tenant }}
           path: test_output_*.log
 
   merge-coverage:
@@ -222,6 +204,27 @@ jobs:
           pattern: coverage-*
           path: coverage-files
           merge-multiple: true
+
+      - name: Download all test logs for performance comparison
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: test-logs-*
+          path: test-logs
+          merge-multiple: true
+
+      - name: Performance Comparison Report
+        run: |
+          echo "========================================"
+          echo "PERFORMANCE COMPARISON REPORT"
+          echo "========================================"
+          for log in test-logs/test_output_*.log; do
+            if [ -f "$log" ]; then
+              filename=$(basename "$log")
+              duration=$(grep "duration_seconds=" "$log" 2>/dev/null | tail -1 | cut -d'=' -f2 || echo "N/A")
+              echo "$filename: ${duration}s"
+            fi
+          done
+          echo "========================================"
 
       - name: Merge coverage files
         run: |
@@ -248,15 +251,28 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
-      - name: Run cleandata to clean up projects
+      - name: Run cleandata for tenant1
         env:
-          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
-          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
-          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
-          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
-          CX_APIKEY: ${{ secrets.CX_APIKEY }}
-          CX_TENANT: ${{ secrets.CX_TENANT }}
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant1 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant1 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant1 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant1 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant1 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant1 }}
         run: |
+          echo "Cleaning up projects on tenant1..."
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+
+      - name: Run cleandata for tenant2
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant2 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant2 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant2 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant2 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant2 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant2 }}
+        run: |
+          echo "Cleaning up projects on tenant2..."
           go test -v github.com/checkmarx/ast-cli/test/cleandata || true
   
   lint:
