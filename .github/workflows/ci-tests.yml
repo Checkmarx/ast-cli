@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tenant: [tenant1, tenant2]
+        tenant: [tenant1, tenant2, tenant3]
         group:
           # Group 7: Container-specific tests (from scan_test.go and container files)
           - id: containers
@@ -274,7 +274,19 @@ jobs:
         run: |
           echo "Cleaning up projects on tenant2..."
           go test -v github.com/checkmarx/ast-cli/test/cleandata || true
-  
+
+      - name: Run cleandata for tenant3
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant3 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant3 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant3 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant3 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant3 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant3 }}
+        run: |
+          echo "Cleaning up projects on tenant3..."
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+
   lint:
     name: lint
     runs-on: ubuntu-latest
