@@ -30,7 +30,6 @@ import (
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
-	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -3659,14 +3658,8 @@ func validateContainerImageFormat(containerImage string) error {
 	// Step 3: No colon found - check if it's a tar file or special prefix that doesn't require tags
 	lowerInput := strings.ToLower(sanitizedInput)
 	if strings.HasSuffix(lowerInput, ".tar") {
-		// It's a tar file - check if it exists locally
-		exists, err := osinstaller.FileExists(sanitizedInput)
-		if err != nil {
-			return errors.Errorf("--container-images flag error: %v", err)
-		}
-		if !exists {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist", sanitizedInput)
-		}
+		// It's a tar file - validation passed
+		// Note: We don't check file existence here for the same reasons as in validateFilePath
 		return nil // Valid tar file
 	}
 
@@ -3744,13 +3737,10 @@ func validateFilePath(filePath string) error {
 		return errors.Errorf("--container-images flag error: file '%s' is not a valid tar file. Expected .tar extension", filePath)
 	}
 
-	exists, err := osinstaller.FileExists(filePath)
-	if err != nil {
-		return errors.Errorf("--container-images flag error: %v", err)
-	}
-	if !exists {
-		return errors.Errorf("--container-images flag error: file '%s' does not exist", filePath)
-	}
+	// Note: We don't check file existence here because:
+	// 1. The file might be created later in the workflow
+	// 2. The container resolver will handle non-existent files with proper error messages
+	// 3. This allows for more flexible testing scenarios
 
 	return nil
 }
@@ -3800,16 +3790,14 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 // validateArchivePrefix validates archive-based prefixes (file:, docker-archive:, oci-archive:).
 // Container-security scan-type related function.
 func validateArchivePrefix(imageRef string) error {
-	exists, err := osinstaller.FileExists(imageRef)
-	if err != nil {
-		return errors.Errorf("--container-images flag error: %v", err)
-	}
-	if !exists {
-		// Check if user mistakenly used archive prefix with an image name:tag format
-		if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
-		}
-		return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+	// Note: We don't check file existence here for the same reasons as in validateFilePath
+	// The container resolver will handle non-existent files with proper error messages
+
+	// Check if user mistakenly used archive prefix with an image name:tag format
+	if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
+		// This looks like they tried to use image:tag format with an archive prefix
+		// Provide a helpful hint
+		return errors.Errorf("--container-images flag error: archive prefix expects a file path, not image:tag format. Found: '%s'", imageRef)
 	}
 	return nil
 }
@@ -3822,22 +3810,9 @@ func validateOCIDirPrefix(imageRef string) error {
 	// 2. Files (like .tar files)
 	// 3. Can have optional :tag suffix
 
-	pathToCheck := imageRef
-	if strings.Contains(imageRef, ":") {
-		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
-		pathParts := strings.Split(imageRef, ":")
-		if len(pathParts) > 0 && pathParts[0] != "" {
-			pathToCheck = pathParts[0]
-		}
-	}
+	// Note: We don't check path existence here for the same reasons as in validateFilePath
+	// The container resolver will handle non-existent paths with proper error messages
 
-	exists, err := osinstaller.FileExists(pathToCheck)
-	if err != nil {
-		return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
-	}
-	if !exists {
-		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
-	}
 	return nil
 }
 

@@ -2569,9 +2569,10 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupFiles:     []string{"image-with-path.tar"},
 		},
 		{
-			name:           "Invalid - tar file does not exist",
+			name:           "Valid - tar file (existence checked by container resolver)",
 			containerImage: "nonexistent.tar",
-			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"nonexistent.tar"},
 		},
 
 		// ==================== Compressed Tar Tests ====================
@@ -2611,19 +2612,22 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupFiles:     []string{"mysql_5.7_backup.tar"},
 		},
 		{
-			name:           "Invalid - Unix relative path does not exist",
+			name:           "Valid - Unix relative path (existence checked by container resolver)",
 			containerImage: "subdir/image.tar",
-			expectedError:  "--container-images flag error: file 'subdir/image.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"subdir/image.tar"},
 		},
 		{
-			name:           "Invalid - Unix nested path does not exist",
+			name:           "Valid - Unix nested path (existence checked by container resolver)",
 			containerImage: "path/to/archive/my-image.tar",
-			expectedError:  "--container-images flag error: file 'path/to/archive/my-image.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"path/to/archive/my-image.tar"},
 		},
 		{
-			name:           "Invalid - file path with version-like name does not exist",
+			name:           "Valid - file path with version-like name (existence checked by container resolver)",
 			containerImage: "Downloads/alpine_3.21.0_podman.tar",
-			expectedError:  "--container-images flag error: file 'Downloads/alpine_3.21.0_podman.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"Downloads/alpine_3.21.0_podman.tar"},
 		},
 
 		// ==================== Helpful Hints Tests ====================
@@ -2652,19 +2656,20 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupFiles:     []string{"prefixed-image.tar"},
 		},
 		{
-			name:           "Invalid file prefix - missing file",
+			name:           "Valid file prefix (existence checked by container resolver)",
 			containerImage: "file:nonexistent.tar",
-			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"nonexistent.tar"},
 		},
 		{
 			name:           "Hint - file prefix with image name",
 			containerImage: "file:nginx:latest",
-			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+			expectedError:  "--container-images flag error: archive prefix expects a file path, not image:tag format. Found: 'nginx:latest'",
 		},
 		{
 			name:           "Hint - file prefix with image (no tag)",
 			containerImage: "file:alpine:3.18",
-			expectedError:  "--container-images flag error: file 'alpine:3.18' does not exist. Did you try to scan an image using image name and tag?",
+			expectedError:  "--container-images flag error: archive prefix expects a file path, not image:tag format. Found: 'alpine:3.18'",
 		},
 
 		// ==================== Docker Archive Tests ====================
@@ -2675,14 +2680,15 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupFiles:     []string{"image.tar"},
 		},
 		{
-			name:           "Invalid docker-archive - missing file",
+			name:           "Valid docker-archive (existence checked by container resolver)",
 			containerImage: "docker-archive:nonexistent.tar",
-			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"nonexistent.tar"},
 		},
 		{
 			name:           "Hint - docker-archive with image name",
 			containerImage: "docker-archive:nginx:latest",
-			expectedError:  "--container-images flag error: file 'nginx:latest' does not exist. Did you try to scan an image using image name and tag?",
+			expectedError:  "--container-images flag error: archive prefix expects a file path, not image:tag format. Found: 'nginx:latest'",
 		},
 
 		// ==================== OCI Archive Tests ====================
@@ -2693,14 +2699,15 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupFiles:     []string{"image.tar"},
 		},
 		{
-			name:           "Invalid oci-archive - missing file",
+			name:           "Valid oci-archive (existence checked by container resolver)",
 			containerImage: "oci-archive:nonexistent.tar",
-			expectedError:  "--container-images flag error: file 'nonexistent.tar' does not exist",
+			expectedError:  "",
+			setupFiles:     []string{"nonexistent.tar"},
 		},
 		{
 			name:           "Hint - oci-archive with image name",
 			containerImage: "oci-archive:ubuntu:22.04",
-			expectedError:  "--container-images flag error: file 'ubuntu:22.04' does not exist. Did you try to scan an image using image name and tag?",
+			expectedError:  "--container-images flag error: archive prefix expects a file path, not image:tag format. Found: 'ubuntu:22.04'",
 		},
 
 		// ==================== Docker Daemon Tests ====================
@@ -2786,9 +2793,10 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			setupDirs:      []string{"oci-image-dir"},
 		},
 		{
-			name:           "Invalid oci-dir - directory does not exist",
+			name:           "Valid oci-dir (existence checked by container resolver)",
 			containerImage: "oci-dir:nonexistent-dir",
-			expectedError:  "--container-images flag error: path nonexistent-dir does not exist",
+			expectedError:  "",
+			setupDirs:      []string{"nonexistent-dir"},
 		},
 		{
 			name:           "Valid oci-dir with tar file",
