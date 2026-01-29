@@ -59,9 +59,7 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	additionalPaths = append(additionalPaths, engineDir)
 
 	// Add common Docker-related directories that may contain credential helpers
-	additionalPaths = append(additionalPaths, "/usr/local/bin")
-	additionalPaths = append(additionalPaths, "/opt/homebrew/bin")
-	additionalPaths = append(additionalPaths, "/Applications/Docker.app/Contents/Resources/bin")
+	additionalPaths = append(additionalPaths, macOSDockerFallbackPaths...)
 
 	// Add user home-based paths
 	if homeDir, err := os.UserHomeDir(); err == nil {
@@ -69,11 +67,18 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 		additionalPaths = append(additionalPaths, filepath.Join(homeDir, ".rd", "bin"))
 	}
 
+	// Build a set of existing PATH entries for accurate duplicate detection
+	pathParts := strings.Split(currentPath, string(os.PathListSeparator))
+	pathSet := make(map[string]bool)
+	for _, part := range pathParts {
+		pathSet[part] = true
+	}
+
 	// Build enhanced PATH (prepend additional paths to ensure they take priority)
 	var enhancedPathParts []string
 	for _, p := range additionalPaths {
 		// Only add if not already in PATH and directory exists
-		if !strings.Contains(currentPath, p) {
+		if !pathSet[p] {
 			if _, err := os.Stat(p); err == nil {
 				enhancedPathParts = append(enhancedPathParts, p)
 			}
@@ -82,8 +87,15 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	enhancedPathParts = append(enhancedPathParts, currentPath)
 	enhancedPath := strings.Join(enhancedPathParts, string(os.PathListSeparator))
 
-	// Set the enhanced PATH in the command's environment
-	cmd.Env = append(os.Environ(), "PATH="+enhancedPath)
+	// Set the enhanced PATH in the command's environment (replace existing PATH)
+	env := os.Environ()
+	for i, e := range env {
+		if strings.HasPrefix(e, "PATH=") {
+			env[i] = "PATH=" + enhancedPath
+			break
+		}
+	}
+	cmd.Env = env
 
 	logger.PrintIfVerbose("Enhanced PATH for container command: " + enhancedPath)
 
