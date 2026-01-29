@@ -11,6 +11,11 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 )
 
+const (
+	testFallbackDir          = "/test/fallback"
+	testDifferentFallbackDir = "/different/fallback"
+)
+
 func TestNewIacRealtimeService(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFlags := &mock.FeatureFlagsMockWrapper{}
@@ -516,7 +521,7 @@ func TestGetFallbackPaths_Docker_Darwin(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return osDarwin }
 
-	fallbackDir := "/test/fallback"
+	fallbackDir := testFallbackDir
 	paths := getFallbackPaths(engineDocker, fallbackDir)
 
 	// Should contain primary fallback path
@@ -556,7 +561,7 @@ func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return osDarwin }
 
-	fallbackDir := "/test/fallback"
+	fallbackDir := testFallbackDir
 	paths := getFallbackPaths(enginePodman, fallbackDir)
 
 	// Should contain primary fallback path
@@ -596,7 +601,7 @@ func TestGetFallbackPaths_NonDarwin(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return "linux" }
 
-	fallbackDir := "/test/fallback"
+	fallbackDir := testFallbackDir
 	paths := getFallbackPaths(engineDocker, fallbackDir)
 
 	// On non-darwin, should only contain primary fallback path
@@ -615,7 +620,7 @@ func TestGetFallbackPaths_UnknownEngine_Darwin(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return osDarwin }
 
-	fallbackDir := "/test/fallback"
+	fallbackDir := testFallbackDir
 	paths := getFallbackPaths("unknown-engine", fallbackDir)
 
 	// Should only contain primary fallback path for unknown engine
@@ -648,7 +653,7 @@ func TestGetFallbackPaths_Docker_Darwin_IncludesHomePaths(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return osDarwin }
 
-	fallbackDir := "/different/fallback"
+	fallbackDir := testDifferentFallbackDir
 	paths := getFallbackPaths(engineDocker, fallbackDir)
 
 	// Get user home directory
@@ -685,7 +690,7 @@ func TestGetFallbackPaths_Podman_Darwin_IncludesHomePaths(t *testing.T) {
 	defer func() { getOS = origGOOS }()
 	getOS = func() string { return osDarwin }
 
-	fallbackDir := "/different/fallback"
+	fallbackDir := testDifferentFallbackDir
 	paths := getFallbackPaths(enginePodman, fallbackDir)
 
 	// Get user home directory
