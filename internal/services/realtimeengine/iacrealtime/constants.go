@@ -10,6 +10,25 @@ const (
 	IacEnginePath            = "/usr/local/bin"
 )
 
+// macOSDockerFallbackPaths contains additional paths to check for Docker on macOS
+// These paths cover various Docker installation methods:
+// - /usr/local/bin/docker: Standard location (Intel Macs)
+// - /opt/homebrew/bin/docker: Homebrew on Apple Silicon
+// - /Applications/Docker.app/Contents/Resources/bin/docker: Docker Desktop app bundle
+// - ~/.docker/bin/docker: Docker Desktop CLI tools (resolved at runtime)
+// - ~/.rd/bin/docker: Rancher Desktop (resolved at runtime)
+var macOSDockerFallbackPaths = []string{
+	"/usr/local/bin",
+	"/opt/homebrew/bin",
+	"/Applications/Docker.app/Contents/Resources/bin",
+}
+
+// macOSPodmanFallbackPaths contains additional paths to check for Podman on macOS
+var macOSPodmanFallbackPaths = []string{
+	"/usr/local/bin",
+	"/opt/homebrew/bin",
+}
+
 var KicsErrorCodes = []string{"60", "50", "40", "30", "20"}
 
 type LineIndex struct {
