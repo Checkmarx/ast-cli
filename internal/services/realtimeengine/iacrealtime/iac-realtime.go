@@ -189,6 +189,8 @@ func getFallbackPaths(engineName, fallBackDir string) []string {
 			additionalPaths = macOSDockerFallbackPaths
 		case enginePodman:
 			additionalPaths = macOSPodmanFallbackPaths
+		default:
+			// Unknown engine, no additional paths
 		}
 
 		for _, dir := range additionalPaths {
@@ -208,6 +210,8 @@ func getFallbackPaths(engineName, fallBackDir string) []string {
 					filepath.Join(homeDir, ".rd", "bin", engineDocker))
 			case enginePodman:
 				paths = append(paths, filepath.Join(homeDir, ".local", "bin", enginePodman))
+			default:
+				// Unknown engine, no home-based paths
 			}
 		}
 	}

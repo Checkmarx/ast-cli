@@ -12,14 +12,14 @@ import (
 
 // MockContainerManager for testing - does not execute real container commands
 type MockContainerManager struct {
-	GeneratedContainerIDs      []string
-	RunKicsContainerCalls      []RunKicsContainerCall
-	EnsureImageAvailableCalls  []string
-	ShouldFailGenerate         bool
-	ShouldFailRun              bool
-	ShouldFailEnsureImage      bool
-	RunError                   error
-	EnsureImageError           error
+	GeneratedContainerIDs     []string
+	RunKicsContainerCalls     []RunKicsContainerCall
+	EnsureImageAvailableCalls []string
+	ShouldFailGenerate        bool
+	ShouldFailRun             bool
+	ShouldFailEnsureImage     bool
+	RunError                  error
+	EnsureImageError          error
 }
 
 type RunKicsContainerCall struct {
