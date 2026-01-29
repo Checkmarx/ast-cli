@@ -43,18 +43,19 @@ import (
 )
 
 const (
-	failedCreating       = "Failed creating a scan"
-	failedGetting        = "Failed showing a scan"
-	failedGettingTags    = "Failed getting tags"
-	failedDeleting       = "Failed deleting a scan"
-	failedCanceling      = "Failed canceling a scan"
-	failedGettingAll     = "Failed listing"
-	thresholdLog         = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog      = "Threshold check finished with status %s : %s"
-	mbBytes              = 1024.0 * 1024.0
-	notExploitable       = "NOT_EXPLOITABLE"
-	ignored              = "IGNORED"
-	minWindowsPathLength = 3
+	failedCreating           = "Failed creating a scan"
+	failedGetting            = "Failed showing a scan"
+	failedGettingTags        = "Failed getting tags"
+	failedDeleting           = "Failed deleting a scan"
+	failedCanceling          = "Failed canceling a scan"
+	failedGettingAll         = "Failed listing"
+	thresholdLog             = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog          = "Threshold check finished with status %s : %s"
+	mbBytes                  = 1024.0 * 1024.0
+	notExploitable           = "NOT_EXPLOITABLE"
+	ignored                  = "IGNORED"
+	minWindowsPathLength     = 3
+	containerImagesFlagError = "--container-images flag error"
 
 	git                                     = "git"
 	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
@@ -1263,7 +1264,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 				continue
 			}
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
-				errorMsg := strings.TrimPrefix(containerImagesErr.Error(), "--container-images flag error: ")
+				errorMsg := strings.TrimPrefix(containerImagesErr.Error(), containerImagesFlagError+": ")
 				validationErrors = append(validationErrors, fmt.Sprintf("User input: '%s' error: %s", containerImageName, errorMsg))
 			}
 		}
@@ -3662,23 +3663,22 @@ func validateContainerImageFormat(containerImage string) error {
 		// It's a tar file - check if it exists locally
 		exists, err := osinstaller.FileExists(sanitizedInput)
 		if err != nil {
-			return errors.Errorf("--container-images flag error: %v", err)
+			return errors.Errorf("%s: %v", containerImagesFlagError, err)
 		}
 		if !exists {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist", sanitizedInput)
+			return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, sanitizedInput)
 		}
 		return nil // Valid tar file
 	}
 
 	// Check for compressed tar files
-	if strings.HasSuffix(lowerInput, ".tar.gz") || strings.HasSuffix(lowerInput, ".tar.bz2") ||
-		strings.HasSuffix(lowerInput, ".tar.xz") || strings.HasSuffix(lowerInput, ".tgz") {
-		return errors.Errorf("--container-images flag error: file '%s' is compressed, use non-compressed format (tar)", sanitizedInput)
+	if isCompressedTarFile(sanitizedInput) {
+		return errors.Errorf("%s: file '%s' is compressed, use non-compressed format (tar)", containerImagesFlagError, sanitizedInput)
 	}
 
 	// Check if it looks like a tar file extension (contains ".tar." but not a valid extension)
 	if strings.Contains(lowerInput, ".tar.") {
-		return errors.Errorf("--container-images flag error: image does not have a tag. Did you try to scan a tar file?")
+		return errors.Errorf("%s: image does not have a tag. Did you try to scan a tar file?", containerImagesFlagError)
 	}
 
 	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
@@ -3695,7 +3695,14 @@ func validateContainerImageFormat(containerImage string) error {
 	}
 
 	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
-	return errors.Errorf("--container-images flag error: image does not have a tag")
+	return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+}
+
+// isCompressedTarFile checks if the given path has a compressed tar file extension.
+func isCompressedTarFile(path string) bool {
+	lowerPath := strings.ToLower(path)
+	return strings.HasSuffix(lowerPath, ".tar.gz") || strings.HasSuffix(lowerPath, ".tar.bz2") ||
+		strings.HasSuffix(lowerPath, ".tar.xz") || strings.HasSuffix(lowerPath, ".tgz")
 }
 
 // looksLikeFilePath checks if input looks like a file path rather than image:tag.
@@ -3718,8 +3725,7 @@ func looksLikeFilePath(input string) bool {
 		return true
 	}
 
-	if strings.HasSuffix(lowerInput, ".tar.gz") || strings.HasSuffix(lowerInput, ".tar.bz2") ||
-		strings.HasSuffix(lowerInput, ".tar.xz") || strings.HasSuffix(lowerInput, ".tgz") {
+	if isCompressedTarFile(input) {
 		return true
 	}
 
@@ -3735,21 +3741,20 @@ func looksLikeFilePath(input string) bool {
 func validateFilePath(filePath string) error {
 	lowerPath := strings.ToLower(filePath)
 
-	if strings.HasSuffix(lowerPath, ".tar.gz") || strings.HasSuffix(lowerPath, ".tar.bz2") ||
-		strings.HasSuffix(lowerPath, ".tar.xz") || strings.HasSuffix(lowerPath, ".tgz") {
-		return errors.Errorf("--container-images flag error: file '%s' is compressed, use non-compressed format (tar)", filePath)
+	if isCompressedTarFile(filePath) {
+		return errors.Errorf("%s: file '%s' is compressed, use non-compressed format (tar)", containerImagesFlagError, filePath)
 	}
 
 	if !strings.HasSuffix(lowerPath, ".tar") {
-		return errors.Errorf("--container-images flag error: file '%s' is not a valid tar file. Expected .tar extension", filePath)
+		return errors.Errorf("%s: file '%s' is not a valid tar file. Expected .tar extension", containerImagesFlagError, filePath)
 	}
 
 	exists, err := osinstaller.FileExists(filePath)
 	if err != nil {
-		return errors.Errorf("--container-images flag error: %v", err)
+		return errors.Errorf("%s: %v", containerImagesFlagError, err)
 	}
 	if !exists {
-		return errors.Errorf("--container-images flag error: file '%s' does not exist", filePath)
+		return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, filePath)
 	}
 
 	return nil
@@ -3802,14 +3807,14 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 func validateArchivePrefix(imageRef string) error {
 	exists, err := osinstaller.FileExists(imageRef)
 	if err != nil {
-		return errors.Errorf("--container-images flag error: %v", err)
+		return errors.Errorf("%s: %v", containerImagesFlagError, err)
 	}
 	if !exists {
 		// Check if user mistakenly used archive prefix with an image name:tag format
 		if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
+			return errors.Errorf("%s: file '%s' does not exist. Did you try to scan an image using image name and tag?", containerImagesFlagError, imageRef)
 		}
-		return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+		return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, imageRef)
 	}
 	return nil
 }
@@ -3833,10 +3838,10 @@ func validateOCIDirPrefix(imageRef string) error {
 
 	exists, err := osinstaller.FileExists(pathToCheck)
 	if err != nil {
-		return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+		return errors.Errorf("%s: path %s does not exist: %v", containerImagesFlagError, pathToCheck, err)
 	}
 	if !exists {
-		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+		return errors.Errorf("%s: path %s does not exist", containerImagesFlagError, pathToCheck)
 	}
 	return nil
 }
