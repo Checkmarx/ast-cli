@@ -8,6 +8,13 @@ const (
 	ContainerResultsFileName = "results.json"
 	InfoSeverity             = "info"
 	IacEnginePath            = "/usr/local/bin"
+
+	// Container engine names
+	engineDocker = "docker"
+	enginePodman = "podman"
+
+	// engineVerifyTimeout is the timeout in seconds for verifying container engine availability
+	engineVerifyTimeout = 5
 )
 
 // macOSDockerFallbackPaths contains additional paths to check for Docker on macOS

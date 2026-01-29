@@ -44,7 +44,7 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	cmd := exec.Command(enginePath, args...)
 
 	// Only enhance PATH on macOS
-	if runtime.GOOS != "darwin" {
+	if runtime.GOOS != osDarwin {
 		return cmd
 	}
 
@@ -63,8 +63,9 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 
 	// Add user home-based paths
 	if homeDir, err := os.UserHomeDir(); err == nil {
-		additionalPaths = append(additionalPaths, filepath.Join(homeDir, ".docker", "bin"))
-		additionalPaths = append(additionalPaths, filepath.Join(homeDir, ".rd", "bin"))
+		additionalPaths = append(additionalPaths,
+			filepath.Join(homeDir, ".docker", "bin"),
+			filepath.Join(homeDir, ".rd", "bin"))
 	}
 
 	// Build a set of existing PATH entries for accurate duplicate detection

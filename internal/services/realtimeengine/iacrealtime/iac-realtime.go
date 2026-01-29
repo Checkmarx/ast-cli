@@ -184,9 +184,10 @@ func getFallbackPaths(engineName, fallBackDir string) []string {
 	// On macOS, add additional paths based on engine type
 	if getOS() == osDarwin {
 		var additionalPaths []string
-		if engineName == "docker" {
+		switch engineName {
+		case engineDocker:
 			additionalPaths = macOSDockerFallbackPaths
-		} else if engineName == "podman" {
+		case enginePodman:
 			additionalPaths = macOSPodmanFallbackPaths
 		}
 
@@ -200,11 +201,13 @@ func getFallbackPaths(engineName, fallBackDir string) []string {
 
 		// Add user home-based paths
 		if homeDir, err := os.UserHomeDir(); err == nil {
-			if engineName == "docker" {
-				paths = append(paths, filepath.Join(homeDir, ".docker", "bin", "docker"))
-				paths = append(paths, filepath.Join(homeDir, ".rd", "bin", "docker"))
-			} else if engineName == "podman" {
-				paths = append(paths, filepath.Join(homeDir, ".local", "bin", "podman"))
+			switch engineName {
+			case engineDocker:
+				paths = append(paths,
+					filepath.Join(homeDir, ".docker", "bin", engineDocker),
+					filepath.Join(homeDir, ".rd", "bin", engineDocker))
+			case enginePodman:
+				paths = append(paths, filepath.Join(homeDir, ".local", "bin", enginePodman))
 			}
 		}
 	}
@@ -220,7 +223,7 @@ func verifyEnginePath(enginePath string) bool {
 	}
 
 	// Verify the engine can be executed with a timeout to prevent hanging
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), engineVerifyTimeout*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, enginePath, "--version")
