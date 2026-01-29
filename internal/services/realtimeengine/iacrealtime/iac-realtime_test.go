@@ -510,3 +510,220 @@ func TestEngineName_Resolution_check_fallBackPath_for_MAC_Linux(t *testing.T) {
 		t.Fatalf("expected %q, got %q", expected, result)
 	}
 }
+
+func TestGetFallbackPaths_Docker_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/test/fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// Should contain primary fallback path
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	found := false
+	for _, p := range paths {
+		if p == expectedPrimary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
+	}
+
+	// Should contain macOS Docker fallback paths
+	for _, macPath := range macOSDockerFallbackPaths {
+		expectedPath := filepath.Join(macPath, engineDocker)
+		if expectedPath == expectedPrimary {
+			continue // Skip if same as primary
+		}
+		found = false
+		for _, p := range paths {
+			if p == expectedPath {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
+		}
+	}
+}
+
+func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/test/fallback"
+	paths := getFallbackPaths(enginePodman, fallbackDir)
+
+	// Should contain primary fallback path
+	expectedPrimary := filepath.Join(fallbackDir, enginePodman)
+	found := false
+	for _, p := range paths {
+		if p == expectedPrimary {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
+	}
+
+	// Should contain macOS Podman fallback paths
+	for _, macPath := range macOSPodmanFallbackPaths {
+		expectedPath := filepath.Join(macPath, enginePodman)
+		if expectedPath == expectedPrimary {
+			continue // Skip if same as primary
+		}
+		found = false
+		for _, p := range paths {
+			if p == expectedPath {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
+		}
+	}
+}
+
+func TestGetFallbackPaths_NonDarwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return "linux" }
+
+	fallbackDir := "/test/fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// On non-darwin, should only contain primary fallback path
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path on non-darwin, got %d", len(paths))
+	}
+
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+func TestGetFallbackPaths_UnknownEngine_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/test/fallback"
+	paths := getFallbackPaths("unknown-engine", fallbackDir)
+
+	// Should only contain primary fallback path for unknown engine
+	expectedPrimary := filepath.Join(fallbackDir, "unknown-engine")
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path for unknown engine, got %d", len(paths))
+	}
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+func TestVerifyEnginePath_NonExistentPath(t *testing.T) {
+	result := verifyEnginePath("/non/existent/path/to/engine")
+	if result {
+		t.Error("verifyEnginePath should return false for non-existent path")
+	}
+}
+
+func TestVerifyEnginePath_Directory(t *testing.T) {
+	tempDir := t.TempDir()
+	result := verifyEnginePath(tempDir)
+	if result {
+		t.Error("verifyEnginePath should return false for directory")
+	}
+}
+
+func TestGetFallbackPaths_Docker_Darwin_IncludesHomePaths(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/different/fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// Get user home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Skipf("Cannot get user home directory: %v", err)
+	}
+
+	// Should contain home-based Docker paths
+	expectedDockerHome := filepath.Join(homeDir, ".docker", "bin", engineDocker)
+	expectedRdHome := filepath.Join(homeDir, ".rd", "bin", engineDocker)
+
+	foundDockerHome := false
+	foundRdHome := false
+	for _, p := range paths {
+		if p == expectedDockerHome {
+			foundDockerHome = true
+		}
+		if p == expectedRdHome {
+			foundRdHome = true
+		}
+	}
+
+	if !foundDockerHome {
+		t.Errorf("Expected Docker home path %s in paths", expectedDockerHome)
+	}
+	if !foundRdHome {
+		t.Errorf("Expected Rancher Desktop home path %s in paths", expectedRdHome)
+	}
+}
+
+func TestGetFallbackPaths_Podman_Darwin_IncludesHomePaths(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/different/fallback"
+	paths := getFallbackPaths(enginePodman, fallbackDir)
+
+	// Get user home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Skipf("Cannot get user home directory: %v", err)
+	}
+
+	// Should contain home-based Podman path
+	expectedPodmanHome := filepath.Join(homeDir, ".local", "bin", enginePodman)
+
+	foundPodmanHome := false
+	for _, p := range paths {
+		if p == expectedPodmanHome {
+			foundPodmanHome = true
+		}
+	}
+
+	if !foundPodmanHome {
+		t.Errorf("Expected Podman home path %s in paths", expectedPodmanHome)
+	}
+}
+
+func TestGetFallbackPaths_Windows(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osWindows }
+
+	fallbackDir := "C:\\test\\fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// On Windows, should only contain primary fallback path
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path on Windows, got %d", len(paths))
+	}
+
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}

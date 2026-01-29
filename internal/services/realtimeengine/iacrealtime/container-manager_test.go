@@ -282,3 +282,77 @@ func TestMockContainerManager_Integration(t *testing.T) {
 		t.Errorf("Mock should record correct call parameters: %+v", call)
 	}
 }
+
+func TestMockContainerManager_EnsureImageAvailable(t *testing.T) {
+	dm := NewMockContainerManager()
+
+	err := dm.EnsureImageAvailable("docker")
+	if err != nil {
+		t.Errorf("EnsureImageAvailable should not fail by default: %v", err)
+	}
+
+	if len(dm.EnsureImageAvailableCalls) != 1 {
+		t.Error("Mock should record EnsureImageAvailable call")
+	}
+
+	if dm.EnsureImageAvailableCalls[0] != "docker" {
+		t.Errorf("Mock should record correct engine, got %s", dm.EnsureImageAvailableCalls[0])
+	}
+}
+
+func TestMockContainerManager_EnsureImageAvailable_Failure(t *testing.T) {
+	dm := NewMockContainerManager()
+	dm.ShouldFailEnsureImage = true
+
+	err := dm.EnsureImageAvailable("docker")
+	if err == nil {
+		t.Error("EnsureImageAvailable should fail when configured to fail")
+	}
+
+	// Verify call was still recorded
+	if len(dm.EnsureImageAvailableCalls) != 1 {
+		t.Error("Mock should record the call even when configured to fail")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_ReturnsCommand(t *testing.T) {
+	cmd := createCommandWithEnhancedPath("/usr/bin/docker", "run", "--rm", "hello-world")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	if cmd.Path == "" {
+		t.Error("Command should have a path set")
+	}
+
+	// Verify args are passed correctly
+	expectedArgs := []string{"/usr/bin/docker", "run", "--rm", "hello-world"}
+	if len(cmd.Args) != len(expectedArgs) {
+		t.Errorf("Expected %d args, got %d", len(expectedArgs), len(cmd.Args))
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_NoArgs(t *testing.T) {
+	cmd := createCommandWithEnhancedPath("/usr/bin/docker")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	if len(cmd.Args) != 1 {
+		t.Errorf("Expected 1 arg, got %d", len(cmd.Args))
+	}
+}
+
+func TestMockContainerManager_EnsureImageAvailable_CustomError(t *testing.T) {
+	dm := NewMockContainerManager()
+	dm.ShouldFailEnsureImage = true
+	customErr := &exec.Error{Name: "custom", Err: nil}
+	dm.EnsureImageError = customErr
+
+	err := dm.EnsureImageAvailable("docker")
+	if err != customErr {
+		t.Error("EnsureImageAvailable should return custom error when set")
+	}
+}
