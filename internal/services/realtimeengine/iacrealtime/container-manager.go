@@ -77,11 +77,13 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	// Build enhanced PATH (prepend additional paths to ensure they take priority)
 	var enhancedPathParts []string
 	for _, p := range additionalPaths {
-		// Only add if not already in PATH and directory exists
-		if !pathSet[p] {
-			if _, err := os.Stat(p); err == nil {
-				enhancedPathParts = append(enhancedPathParts, p)
-			}
+		// Skip if already in PATH
+		if pathSet[p] {
+			continue
+		}
+		// Only add if directory exists
+		if _, err := os.Stat(p); err == nil {
+			enhancedPathParts = append(enhancedPathParts, p)
 		}
 	}
 	enhancedPathParts = append(enhancedPathParts, currentPath)
