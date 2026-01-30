@@ -195,10 +195,11 @@ func getFallbackPaths(engineName, fallBackDir string) []string {
 
 		for _, dir := range additionalPaths {
 			enginePath := filepath.Join(dir, engineName)
-			// Avoid duplicates
-			if enginePath != filepath.Join(fallBackDir, engineName) {
-				paths = append(paths, enginePath)
+			// Skip duplicates
+			if enginePath == filepath.Join(fallBackDir, engineName) {
+				continue
 			}
+			paths = append(paths, enginePath)
 		}
 
 		// Add user home-based paths
