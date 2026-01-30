@@ -73,6 +73,9 @@ func TestSetConfigProperty_EnvVarConfigFilePath(t *testing.T) {
 
 	err, _ = executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "example_client_id")
 	assert.NilError(t, err)
+	defer func() {
+		executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "")
+	}()
 }
 
 func TestLoadConfiguration_ConfigFilePathFlag(t *testing.T) {
@@ -100,6 +103,9 @@ func TestSetConfigProperty_ConfigFilePathFlag(t *testing.T) {
 
 	err, _ = executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "example_client_id", "--config-file-path", filePath)
 	assert.NilError(t, err)
+	defer func() {
+		executeCommand(t, "configure", "set", "--prop-name", "cx_client_id", "--prop-value", "")
+	}()
 }
 
 func TestLoadConfiguration_ConfigFilePathFlagFileWithoutPermission(t *testing.T) {
