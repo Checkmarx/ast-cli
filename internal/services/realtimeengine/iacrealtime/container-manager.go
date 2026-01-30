@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -44,7 +43,7 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	cmd := exec.Command(enginePath, args...)
 
 	// Only enhance PATH on macOS
-	if runtime.GOOS != osDarwin {
+	if getOS() != osDarwin {
 		return cmd
 	}
 

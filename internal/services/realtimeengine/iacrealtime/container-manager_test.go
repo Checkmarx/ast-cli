@@ -1,7 +1,9 @@
 package iacrealtime
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -542,5 +544,135 @@ func TestCreateCommandWithEnhancedPath_EnvIsSet(t *testing.T) {
 		if !foundPath {
 			t.Error("If Env is set, it should contain PATH")
 		}
+	}
+}
+
+// ============================================================================
+// Tests for createCommandWithEnhancedPath on macOS (mocked)
+// ============================================================================
+
+func TestCreateCommandWithEnhancedPath_MacOS_EnhancesPath(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	// Create a temp directory that exists (to be added to PATH)
+	tempDir := t.TempDir()
+	enginePath := filepath.Join(tempDir, "docker")
+
+	cmd := createCommandWithEnhancedPath(enginePath, "run", "--rm")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// On macOS, Env should be set
+	if cmd.Env == nil {
+		t.Error("On macOS, cmd.Env should be set with enhanced PATH")
+	}
+
+	// Verify PATH is in the environment
+	foundPath := false
+	for _, e := range cmd.Env {
+		if strings.HasPrefix(e, "PATH=") {
+			foundPath = true
+			// Verify the engine directory is in the PATH
+			if !strings.Contains(e, tempDir) {
+				t.Errorf("Enhanced PATH should contain engine directory %s, got %s", tempDir, e)
+			}
+			break
+		}
+	}
+	if !foundPath {
+		t.Error("Enhanced PATH should contain PATH= entry")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_MacOS_AddsDockerPaths(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	cmd := createCommandWithEnhancedPath("/usr/local/bin/docker", "--version")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// On macOS, Env should be set
+	if cmd.Env == nil {
+		t.Error("On macOS, cmd.Env should be set")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_MacOS_DeduplicatesPaths(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	// Set PATH to include one of the fallback paths
+	oldPath := os.Getenv("PATH")
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
+	_ = os.Setenv("PATH", "/usr/local/bin:/usr/bin")
+
+	cmd := createCommandWithEnhancedPath("/usr/local/bin/docker", "--version")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// Verify PATH doesn't have duplicates
+	for _, e := range cmd.Env {
+		if strings.HasPrefix(e, "PATH=") {
+			pathValue := strings.TrimPrefix(e, "PATH=")
+			parts := strings.Split(pathValue, string(os.PathListSeparator))
+			seen := make(map[string]int)
+			for _, p := range parts {
+				seen[p]++
+				if seen[p] > 1 {
+					t.Errorf("PATH contains duplicate entry: %s", p)
+				}
+			}
+			break
+		}
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_NonMacOS_NoEnhancement(t *testing.T) {
+	// Mock OS to be Linux
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osLinux }
+
+	cmd := createCommandWithEnhancedPath("/usr/bin/docker", "run")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// On non-macOS, Env should be nil (uses parent environment)
+	if cmd.Env != nil {
+		t.Error("On non-macOS, cmd.Env should be nil")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_Windows_NoEnhancement(t *testing.T) {
+	// Mock OS to be Windows
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osWindows }
+
+	cmd := createCommandWithEnhancedPath("C:\\Program Files\\Docker\\docker.exe", "run")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// On Windows, Env should be nil (uses parent environment)
+	if cmd.Env != nil {
+		t.Error("On Windows, cmd.Env should be nil")
 	}
 }

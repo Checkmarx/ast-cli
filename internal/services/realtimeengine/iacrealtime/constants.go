@@ -15,6 +15,9 @@ const (
 
 	// engineVerifyTimeout is the timeout in seconds for verifying container engine availability
 	engineVerifyTimeout = 5
+
+	// OS constants
+	osLinux = "linux"
 )
 
 // macOSDockerFallbackPaths contains additional paths to check for Docker on macOS

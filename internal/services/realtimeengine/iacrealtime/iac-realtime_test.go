@@ -600,7 +600,7 @@ func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
 func TestGetFallbackPaths_NonDarwin(t *testing.T) {
 	origGOOS := getOS
 	defer func() { getOS = origGOOS }()
-	getOS = func() string { return "linux" }
+	getOS = func() string { return osLinux }
 
 	fallbackDir := testFallbackDir
 	paths := getFallbackPaths(engineDocker, fallbackDir)
@@ -778,7 +778,7 @@ func TestGetFallbackPaths_PrimaryPathFirst(t *testing.T) {
 func TestGetFallbackPaths_EmptyFallbackDir(t *testing.T) {
 	origGOOS := getOS
 	defer func() { getOS = origGOOS }()
-	getOS = func() string { return "linux" }
+	getOS = func() string { return osLinux }
 
 	paths := getFallbackPaths(engineDocker, "")
 
@@ -876,7 +876,7 @@ func TestEngineNameResolution_FallbackPathsChecked(t *testing.T) {
 
 	origGOOS := getOS
 	defer func() { getOS = origGOOS }()
-	getOS = func() string { return "linux" }
+	getOS = func() string { return osLinux }
 
 	// Save and clear PATH
 	oldPath := os.Getenv("PATH")
@@ -899,7 +899,7 @@ func TestEngineNameResolution_FallbackPathsChecked(t *testing.T) {
 func TestEngineNameResolution_EmptyEngineName(t *testing.T) {
 	origGOOS := getOS
 	defer func() { getOS = origGOOS }()
-	getOS = func() string { return "linux" }
+	getOS = func() string { return osLinux }
 
 	// Save and clear PATH
 	oldPath := os.Getenv("PATH")
@@ -1077,5 +1077,131 @@ func TestFilterIgnoredFindings_PreservesOrder(t *testing.T) {
 		if filtered[i].Title != expected {
 			t.Errorf("Position %d: expected %s, got %s", i, expected, filtered[i].Title)
 		}
+	}
+}
+
+// ============================================================================
+// Tests for loadIgnoredIacFindings function
+// ============================================================================
+
+func TestLoadIgnoredIacFindings_ValidFile(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	// Create valid JSON file
+	content := `[
+		{"title": "Finding1", "similarityId": "id1"},
+		{"title": "Finding2", "similarityId": "id2"}
+	]`
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	findings, err := loadIgnoredIacFindings(testFile)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(findings) != 2 {
+		t.Errorf("Expected 2 findings, got %d", len(findings))
+	}
+
+	if findings[0].Title != "Finding1" || findings[0].SimilarityID != "id1" {
+		t.Errorf("First finding mismatch: %+v", findings[0])
+	}
+}
+
+func TestLoadIgnoredIacFindings_EmptyArray(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte("[]"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	findings, err := loadIgnoredIacFindings(testFile)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(findings) != 0 {
+		t.Errorf("Expected 0 findings, got %d", len(findings))
+	}
+}
+
+func TestLoadIgnoredIacFindings_InvalidJSON(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte("not valid json"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err = loadIgnoredIacFindings(testFile)
+
+	if err == nil {
+		t.Error("Expected error for invalid JSON, got nil")
+	}
+}
+
+func TestLoadIgnoredIacFindings_FileNotFound(t *testing.T) {
+	_, err := loadIgnoredIacFindings("/non/existent/file.json")
+
+	if err == nil {
+		t.Error("Expected error for non-existent file, got nil")
+	}
+}
+
+func TestLoadIgnoredIacFindings_EmptyFile(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte(""), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err = loadIgnoredIacFindings(testFile)
+
+	if err == nil {
+		t.Error("Expected error for empty file, got nil")
+	}
+}
+
+// ============================================================================
+// Additional tests for verifyEnginePath function - testing with real executable
+// ============================================================================
+
+func TestVerifyEnginePath_DirectoryInsteadOfFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	result := verifyEnginePath(tempDir)
+	if result {
+		t.Error("verifyEnginePath should return false for directory path")
+	}
+}
+
+func TestVerifyEnginePath_ValidSystemExecutable(t *testing.T) {
+	// Test with a known system executable
+	var execPath string
+	if runtime.GOOS == osWindows {
+		execPath = "C:\\Windows\\System32\\cmd.exe"
+	} else {
+		execPath = "/bin/sh"
+	}
+
+	// Check if the executable exists first
+	if _, err := os.Stat(execPath); err != nil {
+		t.Skipf("System executable not found: %s", execPath)
+	}
+
+	result := verifyEnginePath(execPath)
+	if !result {
+		t.Errorf("verifyEnginePath should return true for valid executable: %s", execPath)
 	}
 }
