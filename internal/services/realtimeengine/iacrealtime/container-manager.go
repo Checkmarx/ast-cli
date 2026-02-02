@@ -81,10 +81,11 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 		if pathSet[p] {
 			continue
 		}
-		// Only add if directory exists
-		if _, err := os.Stat(p); err == nil {
-			enhancedPathParts = append(enhancedPathParts, p)
+		// Skip if directory doesn't exist
+		if _, err := os.Stat(p); err != nil {
+			continue
 		}
+		enhancedPathParts = append(enhancedPathParts, p)
 	}
 	enhancedPathParts = append(enhancedPathParts, currentPath)
 	enhancedPath := strings.Join(enhancedPathParts, string(os.PathListSeparator))
