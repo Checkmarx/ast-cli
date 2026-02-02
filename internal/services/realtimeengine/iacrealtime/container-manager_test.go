@@ -536,10 +536,11 @@ func TestCreateCommandWithEnhancedPath_EnvIsSet(t *testing.T) {
 	if cmd.Env != nil {
 		foundPath := false
 		for _, e := range cmd.Env {
-			if strings.HasPrefix(e, "PATH=") {
-				foundPath = true
-				break
+			if !strings.HasPrefix(e, "PATH=") {
+				continue
 			}
+			foundPath = true
+			break
 		}
 		if !foundPath {
 			t.Error("If Env is set, it should contain PATH")
@@ -575,14 +576,15 @@ func TestCreateCommandWithEnhancedPath_MacOS_EnhancesPath(t *testing.T) {
 	// Verify PATH is in the environment
 	foundPath := false
 	for _, e := range cmd.Env {
-		if strings.HasPrefix(e, "PATH=") {
-			foundPath = true
-			// Verify the engine directory is in the PATH
-			if !strings.Contains(e, tempDir) {
-				t.Errorf("Enhanced PATH should contain engine directory %s, got %s", tempDir, e)
-			}
-			break
+		if !strings.HasPrefix(e, "PATH=") {
+			continue
 		}
+		foundPath = true
+		// Verify the engine directory is in the PATH
+		if !strings.Contains(e, tempDir) {
+			t.Errorf("Enhanced PATH should contain engine directory %s, got %s", tempDir, e)
+		}
+		break
 	}
 	if !foundPath {
 		t.Error("Enhanced PATH should contain PATH= entry")
@@ -626,18 +628,19 @@ func TestCreateCommandWithEnhancedPath_MacOS_DeduplicatesPaths(t *testing.T) {
 
 	// Verify PATH doesn't have duplicates
 	for _, e := range cmd.Env {
-		if strings.HasPrefix(e, "PATH=") {
-			pathValue := strings.TrimPrefix(e, "PATH=")
-			parts := strings.Split(pathValue, string(os.PathListSeparator))
-			seen := make(map[string]int)
-			for _, p := range parts {
-				seen[p]++
-				if seen[p] > 1 {
-					t.Errorf("PATH contains duplicate entry: %s", p)
-				}
-			}
-			break
+		if !strings.HasPrefix(e, "PATH=") {
+			continue
 		}
+		pathValue := strings.TrimPrefix(e, "PATH=")
+		parts := strings.Split(pathValue, string(os.PathListSeparator))
+		seen := make(map[string]int)
+		for _, p := range parts {
+			seen[p]++
+			if seen[p] > 1 {
+				t.Errorf("PATH contains duplicate entry: %s", p)
+			}
+		}
+		break
 	}
 }
 

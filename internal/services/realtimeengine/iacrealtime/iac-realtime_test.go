@@ -529,10 +529,11 @@ func TestGetFallbackPaths_Docker_Darwin(t *testing.T) {
 	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
 	found := false
 	for _, p := range paths {
-		if p == expectedPrimary {
-			found = true
-			break
+		if p != expectedPrimary {
+			continue
 		}
+		found = true
+		break
 	}
 	if !found {
 		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
@@ -546,10 +547,11 @@ func TestGetFallbackPaths_Docker_Darwin(t *testing.T) {
 		}
 		found = false
 		for _, p := range paths {
-			if p == expectedPath {
-				found = true
-				break
+			if p != expectedPath {
+				continue
 			}
+			found = true
+			break
 		}
 		if !found {
 			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
@@ -569,10 +571,11 @@ func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
 	expectedPrimary := filepath.Join(fallbackDir, enginePodman)
 	found := false
 	for _, p := range paths {
-		if p == expectedPrimary {
-			found = true
-			break
+		if p != expectedPrimary {
+			continue
 		}
+		found = true
+		break
 	}
 	if !found {
 		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
@@ -586,10 +589,11 @@ func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
 		}
 		found = false
 		for _, p := range paths {
-			if p == expectedPath {
-				found = true
-				break
+			if p != expectedPath {
+				continue
 			}
+			found = true
+			break
 		}
 		if !found {
 			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
