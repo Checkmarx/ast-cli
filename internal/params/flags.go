@@ -55,6 +55,7 @@ const (
 	AccessKeyIDFlag                = "client-id"
 	AccessKeySecretFlag            = "client-secret"
 	AccessKeyIDFlagUsage           = "The OAuth2 client ID"
+	PreferredCredentialTypeKey     = "preferred-credential-type"
 	AccessKeySecretFlagUsage       = "The OAuth2 client secret"
 	InsecureFlag                   = "insecure"
 	InsecureFlagUsage              = "Ignore TLS certificate validations"
