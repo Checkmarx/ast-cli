@@ -66,17 +66,17 @@ func (m *MockContainerManager) RunKicsContainer(engine, volumeMap string) error 
 	return nil
 }
 
-func (m *MockContainerManager) EnsureImageAvailable(engine string) error {
+func (m *MockContainerManager) EnsureImageAvailable(engine string) (string, error) {
 	m.EnsureImageAvailableCalls = append(m.EnsureImageAvailableCalls, engine)
 
 	if m.ShouldFailEnsureImage {
 		if m.EnsureImageError != nil {
-			return m.EnsureImageError
+			return "", m.EnsureImageError
 		}
-		return &exec.Error{Name: engine, Err: nil}
+		return "", &exec.Error{Name: engine, Err: nil}
 	}
 
-	return nil
+	return engine, nil
 }
 
 func TestNewMockContainerManager(t *testing.T) {
@@ -288,7 +288,7 @@ func TestMockContainerManager_Integration(t *testing.T) {
 func TestMockContainerManager_EnsureImageAvailable(t *testing.T) {
 	dm := NewMockContainerManager()
 
-	err := dm.EnsureImageAvailable("docker")
+	_, err := dm.EnsureImageAvailable("docker")
 	if err != nil {
 		t.Errorf("EnsureImageAvailable should not fail by default: %v", err)
 	}
@@ -306,7 +306,7 @@ func TestMockContainerManager_EnsureImageAvailable_Failure(t *testing.T) {
 	dm := NewMockContainerManager()
 	dm.ShouldFailEnsureImage = true
 
-	err := dm.EnsureImageAvailable("docker")
+	_, err := dm.EnsureImageAvailable("docker")
 	if err == nil {
 		t.Error("EnsureImageAvailable should fail when configured to fail")
 	}
@@ -353,7 +353,7 @@ func TestMockContainerManager_EnsureImageAvailable_CustomError(t *testing.T) {
 	customErr := &exec.Error{Name: "custom", Err: nil}
 	dm.EnsureImageError = customErr
 
-	err := dm.EnsureImageAvailable("docker")
+	_, err := dm.EnsureImageAvailable("docker")
 	if err != customErr {
 		t.Error("EnsureImageAvailable should return custom error when set")
 	}
