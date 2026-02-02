@@ -93,10 +93,11 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	// Set the enhanced PATH in the command's environment (replace existing PATH)
 	env := os.Environ()
 	for i, e := range env {
-		if strings.HasPrefix(e, "PATH=") {
-			env[i] = "PATH=" + enhancedPath
-			break
+		if !strings.HasPrefix(e, "PATH=") {
+			continue
 		}
+		env[i] = "PATH=" + enhancedPath
+		break
 	}
 	cmd.Env = env
 
