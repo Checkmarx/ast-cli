@@ -106,7 +106,7 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	return cmd
 }
 
-// EnsureImageAvailable checks if the KICS Docker image exists locally and pulls it if not available.
+// EnsureImageAvailable checks if the KICS image exists locally and pulls it if not available.
 // Returns the resolved engine path on success.
 func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) {
 	logger.PrintIfVerbose("Resolving container engine: " + engine)
@@ -114,8 +114,8 @@ func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) 
 	resolvedEngine, err := engineNameResolution(engine, IacEnginePath)
 	if err != nil {
 		logger.PrintIfVerbose("Failed to resolve container engine '" + engine + "': " + err.Error())
-		return "", errors.Wrapf(err, "container engine '%s' not found. On macOS, if Docker is installed but not found, "+
-			"try launching the IDE from terminal or ensure Docker Desktop is running", engine)
+		return "", errors.Wrapf(err, "container engine '%s' not found. On macOS, if Docker/Podman is installed but not found, "+
+			"try launching the IDE from terminal or ensure Docker/Podman is running", engine)
 	}
 
 	logger.PrintIfVerbose("Using container engine at: " + resolvedEngine)
@@ -125,12 +125,12 @@ func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) 
 
 	inspectCmd := createCommandWithEnhancedPath(resolvedEngine, "image", "inspect", util.ContainerImage)
 	if err := inspectCmd.Run(); err == nil {
-		logger.PrintIfVerbose("KICS Docker image found locally: " + util.ContainerImage)
+		logger.PrintIfVerbose("KICS image found locally: " + util.ContainerImage)
 		return resolvedEngine, nil
 	}
 
 	// Image not found locally, attempt to pull
-	logger.PrintIfVerbose("KICS Docker image not found locally. Attempting to pull: " + util.ContainerImage)
+	logger.PrintIfVerbose("KICS image not found locally. Attempting to pull: " + util.ContainerImage)
 
 	pullCmd := createCommandWithEnhancedPath(resolvedEngine, "pull", util.ContainerImage)
 	output, pullErr := pullCmd.CombinedOutput()
@@ -139,14 +139,14 @@ func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) 
 		logger.PrintIfVerbose("Failed to pull KICS image. Output: " + outputStr)
 
 		if outputStr != "" {
-			return "", errors.Errorf("Failed to pull KICS Docker image '%s': %s. Please check your network connectivity or pull the image manually using: %s pull %s",
+			return "", errors.Errorf("Failed to pull KICS image '%s': %s. Please check your network connectivity or pull the image manually using: %s pull %s",
 				util.ContainerImage, outputStr, resolvedEngine, util.ContainerImage)
 		}
-		return "", errors.Errorf("Failed to pull KICS Docker image '%s': %v. Please check your network connectivity or pull the image manually using: %s pull %s",
+		return "", errors.Errorf("Failed to pull KICS image '%s': %v. Please check your network connectivity or pull the image manually using: %s pull %s",
 			util.ContainerImage, pullErr, resolvedEngine, util.ContainerImage)
 	}
 
-	logger.PrintIfVerbose("Successfully pulled KICS Docker image: " + util.ContainerImage)
+	logger.PrintIfVerbose("Successfully pulled KICS image: " + util.ContainerImage)
 	return resolvedEngine, nil
 }
 
