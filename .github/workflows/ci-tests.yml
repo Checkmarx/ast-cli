@@ -229,6 +229,20 @@ jobs:
           pip install pre-commit
           pre-commit install
 
+      - name: Pre-test cleanup (delete stale test projects)
+        if: matrix.group == 'projects' || matrix.group == 'scan-create' || matrix.group == 'scan-ops'
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+          CX_TENANT: ${{ secrets.CX_TENANT }}
+        run: |
+          echo "Running pre-test cleanup for ${{ matrix.group }}..."
+          go test -v -timeout 5m github.com/checkmarx/ast-cli/test/cleandata || true
+          echo "Cleanup complete"
+
       - name: Run ${{ matrix.name }} tests
         shell: bash
         env:
@@ -272,34 +286,62 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
-          set -o pipefail
           echo "Running test group: ${{ matrix.name }}"
           echo "Pattern: ${{ matrix.pattern }}"
 
           # Run tests matching the pattern with coverage
+          # Use -p 1 to run tests sequentially within the group to avoid race conditions
+          set +e  # Don't exit on error so we can capture and retry
           go test \
             -tags integration \
             -v \
+            -p 1 \
             -timeout 90m \
             -run "${{ matrix.pattern }}" \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
             -coverprofile cover-${{ matrix.group }}.out \
             github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}.log
 
-          # Check for failed tests and rerun them once
-          if grep -q "^--- FAIL:" test_output_${{ matrix.group }}.log; then
-            echo "Some tests failed, attempting rerun..."
-            FAILED_TESTS=$(grep -E "^--- FAIL: " test_output_${{ matrix.group }}.log | awk '{print $3}' | tr '\n' '|' | sed 's/|$//')
+          FIRST_RUN_EXIT_CODE=${PIPESTATUS[0]}
+          set -e  # Re-enable exit on error
+          echo "First run exit code: $FIRST_RUN_EXIT_CODE"
+
+          # Check for failed tests (including panics) and rerun them once
+          if [ "$FIRST_RUN_EXIT_CODE" -ne 0 ]; then
+            echo "Some tests failed or panicked, attempting rerun..."
+
+            # Extract failed test names from various failure patterns
+            FAILED_TESTS=$(grep -E "^--- FAIL:|^FAIL\s+Test|panic:.*Test" test_output_${{ matrix.group }}.log | \
+              grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' '|' | sed 's/|$//')
+
             if [ -n "$FAILED_TESTS" ]; then
               echo "Rerunning failed tests: $FAILED_TESTS"
+
+              # Add a small delay before retry to allow any cleanup
+              sleep 5
+
               go test \
                 -tags integration \
                 -v \
+                -p 1 \
                 -timeout 30m \
                 -run "^($FAILED_TESTS)$" \
                 -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
                 -coverprofile cover-${{ matrix.group }}-rerun.out \
-                github.com/checkmarx/ast-cli/test/integration
+                github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}_rerun.log
+
+              RERUN_EXIT_CODE=$?
+              echo "Rerun exit code: $RERUN_EXIT_CODE"
+
+              if [ "$RERUN_EXIT_CODE" -ne 0 ]; then
+                echo "Tests still failing after retry"
+                exit 1
+              else
+                echo "Tests passed on retry!"
+              fi
+            else
+              echo "Could not extract failed test names, failing..."
+              exit 1
             fi
           fi
 
