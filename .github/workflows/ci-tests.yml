@@ -308,23 +308,30 @@ jobs:
 
           # Check for failed tests (including panics) and rerun them once
           if [ "$FIRST_RUN_EXIT_CODE" -ne 0 ]; then
-            echo "Some tests failed or panicked, attempting rerun..."
+            echo "Some tests failed or panicked, checking failure type..."
+
+            # Check for infrastructure/server failures that shouldn't be retried
+            if grep -qE "Could not reach provided Checkmarx server|connection refused|no such host|timeout exceeded" test_output_${{ matrix.group }}.log; then
+              echo "Infrastructure/server connectivity issue detected. This is not a test logic failure."
+              echo "Failing the job - please check Checkmarx server availability."
+              exit 1
+            fi
 
             # Extract failed test names from various failure patterns
-            FAILED_TESTS=$(grep -E "^--- FAIL:|^FAIL\s+Test|panic:.*Test" test_output_${{ matrix.group }}.log | \
+            FAILED_TESTS=$(grep -E "^--- FAIL:|panic:.*Test" test_output_${{ matrix.group }}.log | \
               grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' '|' | sed 's/|$//')
 
             if [ -n "$FAILED_TESTS" ]; then
               echo "Rerunning failed tests: $FAILED_TESTS"
 
-              # Add a small delay before retry to allow any cleanup
-              sleep 5
+              # Add a delay before retry to allow any cleanup and server recovery
+              sleep 10
 
               go test \
                 -tags integration \
                 -v \
                 -p 1 \
-                -timeout 30m \
+                -timeout 60m \
                 -run "^($FAILED_TESTS)$" \
                 -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
                 -coverprofile cover-${{ matrix.group }}-rerun.out \
@@ -340,7 +347,10 @@ jobs:
                 echo "Tests passed on retry!"
               fi
             else
-              echo "Could not extract failed test names, failing..."
+              echo "Could not extract failed test names from log, checking for timeout..."
+              if grep -q "test timed out" test_output_${{ matrix.group }}.log; then
+                echo "Test timed out - this may be a long-running test or infrastructure issue"
+              fi
               exit 1
             fi
           fi
