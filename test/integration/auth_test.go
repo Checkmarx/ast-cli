@@ -30,7 +30,7 @@ func TestAuthValidate(t *testing.T) {
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
-func AmolTestAuthValidate(t *testing.T) {
+func TestAmolTestAuthValidate(t *testing.T) {
 	err, buffer := executeCommand(t, "auth", "validate")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
