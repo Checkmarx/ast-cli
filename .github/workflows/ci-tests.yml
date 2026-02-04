@@ -31,25 +31,205 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
-  integration-tests:
+
+  # Validate that all integration tests are covered by the matrix patterns
+  validate-test-coverage:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
+      - name: Validate all tests are covered by CI patterns
+        shell: bash
+        run: |
+          echo "Validating that all integration tests are covered by CI matrix patterns..."
+
+          # Extract all test function names
+          all_tests=$(grep -rh "^func Test" test/integration/*_test.go | sed 's/func \(Test[^(]*\).*/\1/' | sort -u)
+
+          # Define all patterns from the matrix (must match the patterns below)
+          patterns=(
+            "^Test(CreateScan|CreateAsyncScan|CreateQueryDescriptionLink|ScanCreate[^I]|ScanTypeApi|ScanTypesValidation|ValidateScanTypes|ScanGenerating|ScanWith|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan|ScansAPISecThreshold)"
+            "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+            "^Test(Result|CodeBashing|RiskManagement)"
+            "^TestPR"
+            "^Test(Project|CreateEmpty|CreateAlready|CreateWith|CreateProject|GetProjectByTagsFilter)"
+            "^Test(Predicate|Bfl|RunGetBfl|SastUpdate|GetAndUpdate|Triage|ScaUpdate)"
+            "^Test(ContainerScan|ContainerImage|EmptyFolder)"
+            "^Test(IacRealtime|OssRealtime|Secrets_Realtime|ContainersRealtime|EngineNameResolution|ScaRealtime)"
+            "^Test(Auth|LoadConfiguration|SetConfigProperty|GetTenant|FailProxy)"
+            "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
+            "^Test(GitHub|GitLab|Azure|Bitbucket)(RateLimit|UserCount|Count)"
+            "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
+          )
+
+          uncovered=""
+          covered_count=0
+          total_count=0
+
+          for test in $all_tests; do
+            total_count=$((total_count + 1))
+            matched=false
+            for pattern in "${patterns[@]}"; do
+              if echo "$test" | grep -qE "$pattern"; then
+                matched=true
+                covered_count=$((covered_count + 1))
+                break
+              fi
+            done
+            if [ "$matched" = false ]; then
+              uncovered="$uncovered\n  - $test"
+            fi
+          done
+
+          echo "Total tests found: $total_count"
+          echo "Tests covered by patterns: $covered_count"
+
+          if [ -n "$uncovered" ]; then
+            echo ""
+            echo "ERROR: The following tests are NOT covered by any CI matrix pattern:"
+            echo -e "$uncovered"
+            echo ""
+            echo "Please update the matrix patterns in .github/workflows/ci-tests.yml"
+            echo "or rename the test functions to match existing patterns."
+            exit 1
+          else
+            echo "SUCCESS: All $total_count tests are covered by CI matrix patterns!"
+          fi
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: validate-test-coverage
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Group 1: Scan creation tests - basic scan creation and configuration
+          # Covers: TestCreateScan_*, TestCreateAsyncScan_*, TestCreateQueryDescriptionLink*,
+          #         TestScanCreate*, TestScanTypeApi*, TestScanTypesValidation*, TestValidateScanTypes*,
+          #         TestScanGenerating*, TestScanWith*, TestScanList*, TestScanTimeout*,
+          #         TestScanASCA*, TestExecuteASCAScan*, TestScansAPISecThresholdShouldBlock*
+          - group: scan-create
+            name: "Scan Creation"
+            pattern: "^Test(CreateScan|CreateAsyncScan|CreateQueryDescriptionLink|ScanCreate[^I]|ScanTypeApi|ScanTypesValidation|ValidateScanTypes|ScanGenerating|ScanWith|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan|ScansAPISecThreshold)"
+
+          # Group 2: Scan operations - E2E, workflow, incremental, cancel, filters
+          # Covers: TestScansE2E*, TestScansUpdate*, TestFastScan*, TestLightQueries*,
+          #         TestRecommendedExclusions*, TestIncrementalScan*, TestBranchPrimary*,
+          #         TestCancelScan*, TestScanCreateInclude*, TestScanCreateIgnore*,
+          #         TestScanWorkflow*, TestScanLogs*, TestInvalidSource*, TestScanShow*,
+          #         TestRequiredScan*, TestScaResolver*, TestBrokenLink*, TestPartialScan*,
+          #         TestFailedScan*, TestRunKics*, TestRunSca*, TestScanGLReport*, TestContainerEngineScan*
+          - group: scan-ops
+            name: "Scan Operations"
+            pattern: "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+
+          # Group 3: Results and reports tests
+          # Covers: TestResult*, TestCodeBashing*, TestRiskManagement*
+          - group: results
+            name: "Results & Reports"
+            pattern: "^Test(Result|CodeBashing|RiskManagement)"
+
+          # Group 4: PR decoration tests
+          # Covers: TestPR*
+          - group: pr-decoration
+            name: "PR Decoration"
+            pattern: "^TestPR"
+
+          # Group 5: Project management tests
+          # Covers: TestProject*, TestCreateEmpty*, TestCreateAlready*, TestCreateWith*,
+          #         TestCreateProjectWhen*, TestCreateProjectWith*, TestGetProjectByTagsFilter*
+          - group: projects
+            name: "Projects"
+            pattern: "^Test(Project|CreateEmpty|CreateAlready|CreateWith|CreateProject|GetProjectByTagsFilter)"
+
+          # Group 6: Predicates, BFL, and Triage tests
+          # Covers: TestPredicate*, TestBfl*, TestRunGetBfl*, TestSastUpdate*,
+          #         TestGetAndUpdate*, TestTriage*, TestScaUpdate*
+          - group: predicates
+            name: "Predicates & BFL"
+            pattern: "^Test(Predicate|Bfl|RunGetBfl|SastUpdate|GetAndUpdate|Triage|ScaUpdate)"
+
+          # Group 7: Container-specific tests
+          # Covers: TestContainerScan*, TestContainerImage*, TestEmptyFolder*
+          - group: containers
+            name: "Container Tests"
+            pattern: "^Test(ContainerScan|ContainerImage|EmptyFolder)"
+
+          # Group 8: Realtime scanning tests (IaC, OSS, Secrets, Containers)
+          # Covers: TestIacRealtime*, TestOssRealtime*, TestSecrets_Realtime*,
+          #         TestContainersRealtime*, TestEngineNameResolution*, TestScaRealtime*
+          - group: realtime
+            name: "Realtime Scanning"
+            pattern: "^Test(IacRealtime|OssRealtime|Secrets_Realtime|ContainersRealtime|EngineNameResolution|ScaRealtime)"
+
+          # Group 9: Auth and configuration tests
+          # Covers: TestAuth*, TestLoadConfiguration*, TestSetConfigProperty*,
+          #         TestGetTenant*, TestFailProxy*
+          - group: auth-config
+            name: "Auth & Config"
+            pattern: "^Test(Auth|LoadConfiguration|SetConfigProperty|GetTenant|FailProxy)"
+
+          # Group 10: Root, logs, and feature flags tests
+          # Covers: TestRootVersion*, TestSetLogOutput*, Test_DownloadScan*,
+          #         Test_HandleFeatureFlags*, TestMain*
+          - group: root-logs
+            name: "Root & Logs"
+            pattern: "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
+
+          # Group 11: SCM rate limiting and user count tests
+          # Covers: TestGitHub*, TestGitLab*, TestAzure*, TestBitbucket*
+          #         (with RateLimit, UserCount, or Count suffix)
+          - group: scm-tests
+            name: "SCM Rate Limit & User Count"
+            pattern: "^Test(GitHub|GitLab|Azure|Bitbucket)(RateLimit|UserCount|Count)"
+
+          # Group 12: Miscellaneous tests - chat, import, telemetry, remediation, hooks, masking
+          # Covers: TestChat*, TestImport*, TestGetLearnMore*, TestGetProjectName*,
+          #         TestTelemetry*, TestMask*, TestFailedMaskSecrets*, TestScaRemediation*,
+          #         TestKicsRemediation*, TestHooksPreCommit*, TestPreReceive*, TestPre_Receive*
+          - group: misc
+            name: "Miscellaneous"
+            pattern: "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
+
+    name: Integration - ${{ matrix.name }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
       - name: Set up Go version
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:
           go-version-file: go.mod
+
       - run: go version
+
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
-      - name: Install gocovmerge
-        run: go install github.com/wadey/gocovmerge@latest
-      - name: Install pre-commit
+
+      - name: Start Squid proxy
+        run: |
+          docker run \
+            --name squid \
+            -d \
+            -p 3128:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Download ScaResolver
+        run: |
+          wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Install pre-commit (for pre-commit tests)
+        if: matrix.group == 'misc'
         run: |
           pip install pre-commit
           pre-commit install
-      - name: Go Integration test
+
+      - name: Run ${{ matrix.name }} tests
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -92,9 +272,82 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
-          ./internal/commands/.scripts/integration_down.sh
+          set -o pipefail
+          echo "Running test group: ${{ matrix.name }}"
+          echo "Pattern: ${{ matrix.pattern }}"
+
+          # Run tests matching the pattern with coverage
+          go test \
+            -tags integration \
+            -v \
+            -timeout 90m \
+            -run "${{ matrix.pattern }}" \
+            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+            -coverprofile cover-${{ matrix.group }}.out \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}.log
+
+          # Check for failed tests and rerun them once
+          if grep -q "^--- FAIL:" test_output_${{ matrix.group }}.log; then
+            echo "Some tests failed, attempting rerun..."
+            FAILED_TESTS=$(grep -E "^--- FAIL: " test_output_${{ matrix.group }}.log | awk '{print $3}' | tr '\n' '|' | sed 's/|$//')
+            if [ -n "$FAILED_TESTS" ]; then
+              echo "Rerunning failed tests: $FAILED_TESTS"
+              go test \
+                -tags integration \
+                -v \
+                -timeout 30m \
+                -run "^($FAILED_TESTS)$" \
+                -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+                -coverprofile cover-${{ matrix.group }}-rerun.out \
+                github.com/checkmarx/ast-cli/test/integration
+            fi
+          fi
+
+      - name: Stop Squid proxy
+        if: always()
+        run: docker stop squid || true && docker rm squid || true
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: coverage-${{ matrix.group }}
+          path: cover-*.out
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: test-logs-${{ matrix.group }}
+          path: test_output_*.log
+
+  merge-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          path: coverage-files
+          merge-multiple: true
+
+      - name: Merge coverage files
+        run: |
+          echo "Merging coverage files..."
+          ls -la coverage-files/
+          gocovmerge coverage-files/cover-*.out > cover.out
+          go tool cover -html=cover.out -o coverage.html
 
       - name: Coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
@@ -115,6 +368,17 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
+
+      - name: Run cleandata to clean up projects
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+          CX_TENANT: ${{ secrets.CX_TENANT }}
+        run: |
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
   lint:
     name: lint
     runs-on: ubuntu-latest
