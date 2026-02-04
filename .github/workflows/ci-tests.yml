@@ -33,13 +33,18 @@ jobs:
           fi
 
   # Validate that all integration tests are covered by the matrix patterns
+  # and generate a list of uncovered tests for the catch-all group
   validate-test-coverage:
     runs-on: ubuntu-latest
+    outputs:
+      uncovered_tests: ${{ steps.validate.outputs.uncovered_tests }}
+      has_uncovered: ${{ steps.validate.outputs.has_uncovered }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
 
       - name: Validate all tests are covered by CI patterns
+        id: validate
         shell: bash
         run: |
           echo "Validating that all integration tests are covered by CI matrix patterns..."
@@ -63,7 +68,8 @@ jobs:
             "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
           )
 
-          uncovered=""
+          uncovered_list=""
+          uncovered_display=""
           covered_count=0
           total_count=0
 
@@ -78,23 +84,35 @@ jobs:
               fi
             done
             if [ "$matched" = false ]; then
-              uncovered="$uncovered\n  - $test"
+              # Build pipe-separated list for Go test -run pattern
+              if [ -n "$uncovered_list" ]; then
+                uncovered_list="$uncovered_list|$test"
+              else
+                uncovered_list="$test"
+              fi
+              uncovered_display="$uncovered_display\n  - $test"
             fi
           done
 
           echo "Total tests found: $total_count"
           echo "Tests covered by patterns: $covered_count"
 
-          if [ -n "$uncovered" ]; then
+          if [ -n "$uncovered_list" ]; then
+            uncovered_count=$((total_count - covered_count))
             echo ""
-            echo "ERROR: The following tests are NOT covered by any CI matrix pattern:"
-            echo -e "$uncovered"
+            echo "WARNING: The following $uncovered_count tests are NOT covered by any CI matrix pattern:"
+            echo -e "$uncovered_display"
             echo ""
-            echo "Please update the matrix patterns in .github/workflows/ci-tests.yml"
-            echo "or rename the test functions to match existing patterns."
-            exit 1
+            echo "These tests will run in the 'Uncovered Tests' catch-all group."
+            echo "Please consider updating the matrix patterns or renaming the test functions."
+
+            # Output for the catch-all group - create a regex pattern
+            echo "uncovered_tests=^($uncovered_list)$" >> $GITHUB_OUTPUT
+            echo "has_uncovered=true" >> $GITHUB_OUTPUT
           else
             echo "SUCCESS: All $total_count tests are covered by CI matrix patterns!"
+            echo "uncovered_tests=" >> $GITHUB_OUTPUT
+            echo "has_uncovered=false" >> $GITHUB_OUTPUT
           fi
 
   integration-tests:
@@ -192,6 +210,14 @@ jobs:
             name: "Miscellaneous"
             pattern: "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
 
+          # Group 13: Catch-all for uncovered tests
+          # This group runs tests that don't match any of the above patterns.
+          # The pattern is dynamically set from the validate-test-coverage job output.
+          # If no uncovered tests exist, this group will be skipped.
+          - group: uncovered
+            name: "Uncovered Tests (Catch-All)"
+            pattern: ""  # Will be overridden by job output or skipped if empty
+
     name: Integration - ${{ matrix.name }}
     steps:
       - name: Checkout the repository
@@ -243,7 +269,19 @@ jobs:
           go test -v -timeout 5m github.com/checkmarx/ast-cli/test/cleandata || true
           echo "Cleanup complete"
 
+      - name: Warn about uncovered tests
+        if: matrix.group == 'uncovered' && needs.validate-test-coverage.outputs.has_uncovered == 'true'
+        run: |
+          echo "::warning::Some tests are not covered by any CI matrix pattern and will run in this catch-all group."
+          echo "::warning::Please consider updating the matrix patterns or renaming the test functions to match existing patterns."
+          echo "Tests being run in catch-all group:"
+          echo "${{ needs.validate-test-coverage.outputs.uncovered_tests }}" | sed 's/\^(//;s/)$//;s/|/\n/g' | while read test; do
+            echo "  - $test"
+          done
+
       - name: Run ${{ matrix.name }} tests
+        # Skip the uncovered group if there are no uncovered tests
+        if: matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true'
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -287,7 +325,23 @@ jobs:
           PR_BITBUCKET_ID: 1
         run: |
           echo "Running test group: ${{ matrix.name }}"
-          echo "Pattern: ${{ matrix.pattern }}"
+
+          # Determine the pattern to use
+          # For the uncovered group, use the dynamically generated pattern from validate-test-coverage
+          if [ "${{ matrix.group }}" = "uncovered" ]; then
+            TEST_PATTERN="${{ needs.validate-test-coverage.outputs.uncovered_tests }}"
+            echo "Using dynamically generated pattern for uncovered tests"
+          else
+            TEST_PATTERN="${{ matrix.pattern }}"
+          fi
+
+          echo "Pattern: $TEST_PATTERN"
+
+          # Skip if pattern is empty (shouldn't happen, but safety check)
+          if [ -z "$TEST_PATTERN" ]; then
+            echo "No tests to run for this group (empty pattern)"
+            exit 0
+          fi
 
           # Run tests matching the pattern with coverage
           # Use -p 1 to run tests sequentially within the group to avoid race conditions
@@ -297,7 +351,7 @@ jobs:
             -v \
             -p 1 \
             -timeout 90m \
-            -run "${{ matrix.pattern }}" \
+            -run "$TEST_PATTERN" \
             -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
             -coverprofile cover-${{ matrix.group }}.out \
             github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}.log
@@ -355,18 +409,25 @@ jobs:
             fi
           fi
 
+      - name: Skip notification (no uncovered tests)
+        if: matrix.group == 'uncovered' && needs.validate-test-coverage.outputs.has_uncovered != 'true'
+        run: |
+          echo "::notice::No uncovered tests found - all tests are properly categorized!"
+          echo "The 'Uncovered Tests (Catch-All)' group was skipped because all tests match existing patterns."
+
       - name: Stop Squid proxy
         if: always()
         run: docker stop squid || true && docker rm squid || true
 
       - name: Upload coverage artifact
+        if: matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true'
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
           name: coverage-${{ matrix.group }}
           path: cover-*.out
 
       - name: Upload test logs
-        if: always()
+        if: always() && (matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true')
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
           name: test-logs-${{ matrix.group }}
