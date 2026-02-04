@@ -50,7 +50,7 @@ jobs:
           # Define all patterns from the matrix (must match the patterns below)
           patterns=(
             "^Test(CreateScan|CreateAsyncScan|CreateQueryDescriptionLink|ScanCreate[^I]|ScanTypeApi|ScanTypesValidation|ValidateScanTypes|ScanGenerating|ScanWith|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan|ScansAPISecThreshold)"
-            "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+            "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanWorkFlow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
             "^Test(Result|CodeBashing|RiskManagement)"
             "^TestPR"
             "^Test(Project|CreateEmpty|CreateAlready|CreateWith|CreateProject|GetProjectByTagsFilter)"
@@ -59,7 +59,7 @@ jobs:
             "^Test(IacRealtime|OssRealtime|Secrets_Realtime|ContainersRealtime|EngineNameResolution|ScaRealtime)"
             "^Test(Auth|LoadConfiguration|SetConfigProperty|GetTenant|FailProxy)"
             "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
-            "^Test(GitHub|GitLab|Azure|Bitbucket)(RateLimit|UserCount|Count)"
+            "^Test(GitHub|GitLab|Azure|Bitbucket|BitBucket)(RateLimit|UserCount|Count)"
             "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
           )
 
@@ -117,12 +117,12 @@ jobs:
           # Covers: TestScansE2E*, TestScansUpdate*, TestFastScan*, TestLightQueries*,
           #         TestRecommendedExclusions*, TestIncrementalScan*, TestBranchPrimary*,
           #         TestCancelScan*, TestScanCreateInclude*, TestScanCreateIgnore*,
-          #         TestScanWorkflow*, TestScanLogs*, TestInvalidSource*, TestScanShow*,
+          #         TestScanWorkflow*, TestScanWorkFlow*, TestScanLogs*, TestInvalidSource*, TestScanShow*,
           #         TestRequiredScan*, TestScaResolver*, TestBrokenLink*, TestPartialScan*,
           #         TestFailedScan*, TestRunKics*, TestRunSca*, TestScanGLReport*, TestContainerEngineScan*
           - group: scan-ops
             name: "Scan Operations"
-            pattern: "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+            pattern: "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanWorkFlow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
 
           # Group 3: Results and reports tests
           # Covers: TestResult*, TestCodeBashing*, TestRiskManagement*
@@ -178,11 +178,11 @@ jobs:
             pattern: "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
 
           # Group 11: SCM rate limiting and user count tests
-          # Covers: TestGitHub*, TestGitLab*, TestAzure*, TestBitbucket*
+          # Covers: TestGitHub*, TestGitLab*, TestAzure*, TestBitbucket*, TestBitBucket*
           #         (with RateLimit, UserCount, or Count suffix)
           - group: scm-tests
             name: "SCM Rate Limit & User Count"
-            pattern: "^Test(GitHub|GitLab|Azure|Bitbucket)(RateLimit|UserCount|Count)"
+            pattern: "^Test(GitHub|GitLab|Azure|Bitbucket|BitBucket)(RateLimit|UserCount|Count)"
 
           # Group 12: Miscellaneous tests - chat, import, telemetry, remediation, hooks, masking
           # Covers: TestChat*, TestImport*, TestGetLearnMore*, TestGetProjectName*,
