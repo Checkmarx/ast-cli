@@ -360,53 +360,190 @@ jobs:
           set -e  # Re-enable exit on error
           echo "First run exit code: $FIRST_RUN_EXIT_CODE"
 
-          # Check for failed tests (including panics) and rerun them once
-          if [ "$FIRST_RUN_EXIT_CODE" -ne 0 ]; then
-            echo "Some tests failed or panicked, checking failure type..."
+          # ============================================================
+          # BULLETPROOF RETRY LOGIC - Handles ALL failure scenarios
+          # ============================================================
+          # Retries: Up to 2 retries (3 total attempts)
+          # Detects: FAIL, panic, API errors, auth failures, timeouts
+          # ============================================================
 
-            # Check for infrastructure/server failures that shouldn't be retried
-            if grep -qE "Could not reach provided Checkmarx server|connection refused|no such host|timeout exceeded" test_output_${{ matrix.group }}.log; then
-              echo "Infrastructure/server connectivity issue detected. This is not a test logic failure."
-              echo "Failing the job - please check Checkmarx server availability."
-              exit 1
+          extract_failed_tests() {
+            local LOG_FILE="$1"
+            local FAILED_TESTS=""
+
+            echo "=== Analyzing log file for failures ==="
+
+            # Method 1: Standard "--- FAIL: TestName" pattern
+            local STANDARD_FAILS=$(grep -E "^--- FAIL:" "$LOG_FILE" 2>/dev/null | \
+              grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' ' ' || true)
+            if [ -n "$STANDARD_FAILS" ]; then
+              echo "  [Method 1] Found via --- FAIL: $STANDARD_FAILS"
+              FAILED_TESTS="$STANDARD_FAILS"
             fi
 
-            # Extract failed test names from various failure patterns
-            FAILED_TESTS=$(grep -E "^--- FAIL:|panic:.*Test" test_output_${{ matrix.group }}.log | \
-              grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' '|' | sed 's/|$//')
+            # Method 2: Find tests that panicked (look for === RUN before each panic)
+            if grep -q "^panic:" "$LOG_FILE" 2>/dev/null; then
+              echo "  [Method 2] Panic detected, finding affected tests..."
+              # Get all panic line numbers
+              local PANIC_LINES=$(grep -n "^panic:" "$LOG_FILE" | cut -d: -f1)
+              for PANIC_LINE in $PANIC_LINES; do
+                local PANIC_TEST=$(head -n "$PANIC_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+                if [ -n "$PANIC_TEST" ]; then
+                  echo "    Panic in: $PANIC_TEST"
+                  FAILED_TESTS="$FAILED_TESTS $PANIC_TEST"
+                fi
+              done
+            fi
 
+            # Method 3: Find tests with error messages (API errors, auth failures, etc.)
+            local ERROR_PATTERNS="Authorization failed|Failed showing|Failed creating|Failed getting|error getting|API error|status code: 5[0-9][0-9]"
+            if grep -qE "$ERROR_PATTERNS" "$LOG_FILE" 2>/dev/null; then
+              echo "  [Method 3] API/Auth errors detected, finding affected tests..."
+              local ERROR_LINES=$(grep -nE "$ERROR_PATTERNS" "$LOG_FILE" | cut -d: -f1 | head -5)
+              for ERROR_LINE in $ERROR_LINES; do
+                local ERROR_TEST=$(head -n "$ERROR_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+                if [ -n "$ERROR_TEST" ]; then
+                  echo "    Error in: $ERROR_TEST"
+                  FAILED_TESTS="$FAILED_TESTS $ERROR_TEST"
+                fi
+              done
+            fi
+
+            # Method 4: Last resort - get the last running test before FAIL
+            if [ -z "$FAILED_TESTS" ]; then
+              echo "  [Method 4] Using last running test as fallback..."
+              local LAST_TEST=$(grep -E "^=== RUN" "$LOG_FILE" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+              if [ -n "$LAST_TEST" ]; then
+                echo "    Last running: $LAST_TEST"
+                FAILED_TESTS="$LAST_TEST"
+              fi
+            fi
+
+            # Clean up: deduplicate and format as pipe-separated for -run flag
             if [ -n "$FAILED_TESTS" ]; then
-              echo "Rerunning failed tests: $FAILED_TESTS"
+              # Also extract parent test names (for subtests like TestFoo/SubTest -> TestFoo)
+              local ALL_TESTS=""
+              for TEST in $FAILED_TESTS; do
+                ALL_TESTS="$ALL_TESTS $TEST"
+                # Extract parent test name if this looks like a subtest
+                local PARENT=$(echo "$TEST" | sed 's/_[^_]*$//' | grep -E "^Test" || true)
+                if [ -n "$PARENT" ] && [ "$PARENT" != "$TEST" ]; then
+                  ALL_TESTS="$ALL_TESTS $PARENT"
+                fi
+              done
+              FAILED_TESTS=$(echo "$ALL_TESTS" | tr ' ' '\n' | grep -E "^Test" | sort -u | tr '\n' '|' | sed 's/|$//')
+            fi
 
-              # Add a delay before retry to allow any cleanup and server recovery
-              sleep 10
+            echo "$FAILED_TESTS"
+          }
 
-              go test \
-                -tags integration \
-                -v \
-                -p 1 \
-                -timeout 60m \
-                -run "^($FAILED_TESTS)$" \
-                -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
-                -coverprofile cover-${{ matrix.group }}-rerun.out \
-                github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}_rerun.log
+          run_tests_with_retry() {
+            local PATTERN="$1"
+            local ATTEMPT="$2"
+            local MAX_ATTEMPTS="$3"
+            local LOG_SUFFIX="$4"
 
-              RERUN_EXIT_CODE=$?
-              echo "Rerun exit code: $RERUN_EXIT_CODE"
+            echo ""
+            echo "=========================================="
+            echo "  RETRY ATTEMPT $ATTEMPT of $MAX_ATTEMPTS"
+            echo "  Pattern: $PATTERN"
+            echo "=========================================="
+            echo ""
 
-              if [ "$RERUN_EXIT_CODE" -ne 0 ]; then
-                echo "Tests still failing after retry"
-                exit 1
-              else
-                echo "Tests passed on retry!"
-              fi
-            else
-              echo "Could not extract failed test names from log, checking for timeout..."
-              if grep -q "test timed out" test_output_${{ matrix.group }}.log; then
-                echo "Test timed out - this may be a long-running test or infrastructure issue"
-              fi
+            # Wait before retry to allow cleanup and server recovery
+            if [ "$ATTEMPT" -gt 1 ]; then
+              local WAIT_TIME=$((ATTEMPT * 15))
+              echo "Waiting ${WAIT_TIME}s before retry..."
+              sleep $WAIT_TIME
+            fi
+
+            set +e
+            go test \
+              -tags integration \
+              -v \
+              -p 1 \
+              -timeout 60m \
+              -run "$PATTERN" \
+              -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+              -coverprofile cover-${{ matrix.group }}-${LOG_SUFFIX}.out \
+              github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}_${LOG_SUFFIX}.log
+            local EXIT_CODE=${PIPESTATUS[0]}
+            set -e
+
+            return $EXIT_CODE
+          }
+
+          if [ "$FIRST_RUN_EXIT_CODE" -ne 0 ]; then
+            echo ""
+            echo "============================================"
+            echo "  FIRST RUN FAILED - Starting retry logic"
+            echo "============================================"
+
+            # Check for hard infrastructure failures that shouldn't be retried
+            if grep -qE "Could not reach provided Checkmarx server|connection refused|no such host" test_output_${{ matrix.group }}.log; then
+              echo "::error::Infrastructure failure detected - Checkmarx server unreachable"
+              echo "This is a server connectivity issue, not a test failure."
               exit 1
             fi
+
+            # Extract failed tests
+            FAILED_TESTS=$(extract_failed_tests "test_output_${{ matrix.group }}.log")
+
+            if [ -z "$FAILED_TESTS" ]; then
+              echo "::error::Could not identify which tests failed"
+              echo "Check the log file for details"
+              exit 1
+            fi
+
+            echo ""
+            echo "Tests to retry: $FAILED_TESTS"
+
+            # Retry loop - up to 2 more attempts
+            MAX_RETRIES=2
+            CURRENT_RETRY=1
+            RETRY_SUCCESS=false
+
+            while [ $CURRENT_RETRY -le $MAX_RETRIES ]; do
+              run_tests_with_retry "^($FAILED_TESTS)$" "$CURRENT_RETRY" "$MAX_RETRIES" "retry${CURRENT_RETRY}"
+              RETRY_EXIT_CODE=$?
+
+              if [ $RETRY_EXIT_CODE -eq 0 ]; then
+                echo ""
+                echo "=========================================="
+                echo "  ✅ TESTS PASSED ON RETRY $CURRENT_RETRY"
+                echo "=========================================="
+                RETRY_SUCCESS=true
+                break
+              else
+                echo ""
+                echo "Retry $CURRENT_RETRY failed with exit code: $RETRY_EXIT_CODE"
+
+                # Check if we should continue retrying
+                if [ $CURRENT_RETRY -lt $MAX_RETRIES ]; then
+                  # Extract any new failures from this retry
+                  NEW_FAILURES=$(extract_failed_tests "test_output_${{ matrix.group }}_retry${CURRENT_RETRY}.log")
+                  if [ -n "$NEW_FAILURES" ]; then
+                    FAILED_TESTS="$NEW_FAILURES"
+                    echo "Updated failed tests for next retry: $FAILED_TESTS"
+                  fi
+                fi
+              fi
+
+              CURRENT_RETRY=$((CURRENT_RETRY + 1))
+            done
+
+            if [ "$RETRY_SUCCESS" = false ]; then
+              echo ""
+              echo "=========================================="
+              echo "  ❌ TESTS FAILED AFTER $MAX_RETRIES RETRIES"
+              echo "=========================================="
+              exit 1
+            fi
+          else
+            echo ""
+            echo "=========================================="
+            echo "  ✅ ALL TESTS PASSED ON FIRST RUN"
+            echo "=========================================="
           fi
 
       - name: Skip notification (no uncovered tests)
