@@ -631,6 +631,7 @@ jobs:
           CX_TENANT: ${{ secrets.CX_TENANT }}
         run: |
           go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+          
   lint:
     name: lint
     runs-on: ubuntu-latest
