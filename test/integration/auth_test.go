@@ -30,11 +30,6 @@ func TestAuthValidate(t *testing.T) {
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
-func TestAmolTestAuthValidate(t *testing.T) {
-	err, buffer := executeCommand(t, "auth", "validate")
-	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
-}
-
 func TestAuthValidateClientAndSecret(t *testing.T) {
 	err, buffer := executeCommand(t, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
