@@ -4,11 +4,17 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+)
+
+const (
+	testFallbackDir          = "/test/fallback"
+	testDifferentFallbackDir = "/different/fallback"
 )
 
 func TestNewIacRealtimeService(t *testing.T) {
@@ -508,5 +514,700 @@ func TestEngineName_Resolution_check_fallBackPath_for_MAC_Linux(t *testing.T) {
 	expected := filepath.Join(IacEnginePath, "docker")
 	if result != expected {
 		t.Fatalf("expected %q, got %q", expected, result)
+	}
+}
+
+func TestGetFallbackPaths_Docker_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := testFallbackDir
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// Should contain primary fallback path
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	found := false
+	for _, p := range paths {
+		if p != expectedPrimary {
+			continue
+		}
+		found = true
+		break
+	}
+	if !found {
+		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
+	}
+
+	// Should contain macOS Docker fallback paths
+	for _, macPath := range macOSDockerFallbackPaths {
+		expectedPath := filepath.Join(macPath, engineDocker)
+		if expectedPath == expectedPrimary {
+			continue // Skip if same as primary
+		}
+		found = false
+		for _, p := range paths {
+			if p != expectedPath {
+				continue
+			}
+			found = true
+			break
+		}
+		if !found {
+			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
+		}
+	}
+}
+
+func TestGetFallbackPaths_Podman_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := testFallbackDir
+	paths := getFallbackPaths(enginePodman, fallbackDir)
+
+	// Should contain primary fallback path
+	expectedPrimary := filepath.Join(fallbackDir, enginePodman)
+	found := false
+	for _, p := range paths {
+		if p != expectedPrimary {
+			continue
+		}
+		found = true
+		break
+	}
+	if !found {
+		t.Errorf("Expected primary fallback path %s in paths", expectedPrimary)
+	}
+
+	// Should contain macOS Podman fallback paths
+	for _, macPath := range macOSPodmanFallbackPaths {
+		expectedPath := filepath.Join(macPath, enginePodman)
+		if expectedPath == expectedPrimary {
+			continue // Skip if same as primary
+		}
+		found = false
+		for _, p := range paths {
+			if p != expectedPath {
+				continue
+			}
+			found = true
+			break
+		}
+		if !found {
+			t.Errorf("Expected macOS fallback path %s in paths", expectedPath)
+		}
+	}
+}
+
+func TestGetFallbackPaths_NonDarwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osLinux }
+
+	fallbackDir := testFallbackDir
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// On non-darwin, should only contain primary fallback path
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path on non-darwin, got %d", len(paths))
+	}
+
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+func TestGetFallbackPaths_UnknownEngine_Darwin(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := testFallbackDir
+	paths := getFallbackPaths("unknown-engine", fallbackDir)
+
+	// Should only contain primary fallback path for unknown engine
+	expectedPrimary := filepath.Join(fallbackDir, "unknown-engine")
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path for unknown engine, got %d", len(paths))
+	}
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+func TestVerifyEnginePath_NonExistentPath(t *testing.T) {
+	result := verifyEnginePath("/non/existent/path/to/engine")
+	if result {
+		t.Error("verifyEnginePath should return false for non-existent path")
+	}
+}
+
+func TestVerifyEnginePath_Directory(t *testing.T) {
+	tempDir := t.TempDir()
+	result := verifyEnginePath(tempDir)
+	if result {
+		t.Error("verifyEnginePath should return false for directory")
+	}
+}
+
+func TestGetFallbackPaths_Docker_Darwin_IncludesHomePaths(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := testDifferentFallbackDir
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// Get user home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Skipf("Cannot get user home directory: %v", err)
+	}
+
+	// Should contain home-based Docker paths
+	expectedDockerHome := filepath.Join(homeDir, ".docker", "bin", engineDocker)
+	expectedRdHome := filepath.Join(homeDir, ".rd", "bin", engineDocker)
+
+	foundDockerHome := false
+	foundRdHome := false
+	for _, p := range paths {
+		if p == expectedDockerHome {
+			foundDockerHome = true
+		}
+		if p == expectedRdHome {
+			foundRdHome = true
+		}
+	}
+
+	if !foundDockerHome {
+		t.Errorf("Expected Docker home path %s in paths", expectedDockerHome)
+	}
+	if !foundRdHome {
+		t.Errorf("Expected Rancher Desktop home path %s in paths", expectedRdHome)
+	}
+}
+
+func TestGetFallbackPaths_Podman_Darwin_IncludesHomePaths(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := testDifferentFallbackDir
+	paths := getFallbackPaths(enginePodman, fallbackDir)
+
+	// Get user home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Skipf("Cannot get user home directory: %v", err)
+	}
+
+	// Should contain home-based Podman path
+	expectedPodmanHome := filepath.Join(homeDir, ".local", "bin", enginePodman)
+
+	foundPodmanHome := false
+	for _, p := range paths {
+		if p == expectedPodmanHome {
+			foundPodmanHome = true
+		}
+	}
+
+	if !foundPodmanHome {
+		t.Errorf("Expected Podman home path %s in paths", expectedPodmanHome)
+	}
+}
+
+func TestGetFallbackPaths_Windows(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osWindows }
+
+	fallbackDir := "C:\\test\\fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// On Windows, should only contain primary fallback path
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path on Windows, got %d", len(paths))
+	}
+
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	if paths[0] != expectedPrimary {
+		t.Errorf("Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+// ============================================================================
+// Additional tests for getFallbackPaths function
+// ============================================================================
+
+func TestGetFallbackPaths_NoDuplicates(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	// Use /usr/local/bin as fallback dir (same as one of macOSDockerFallbackPaths)
+	fallbackDir := "/usr/local/bin"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	// Check for duplicates
+	seen := make(map[string]bool)
+	for _, p := range paths {
+		if seen[p] {
+			t.Errorf("Duplicate path found: %s", p)
+		}
+		seen[p] = true
+	}
+}
+
+func TestGetFallbackPaths_PrimaryPathFirst(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	fallbackDir := "/custom/fallback"
+	paths := getFallbackPaths(engineDocker, fallbackDir)
+
+	if len(paths) == 0 {
+		t.Fatal("Expected at least one path")
+	}
+
+	expectedPrimary := filepath.Join(fallbackDir, engineDocker)
+	if paths[0] != expectedPrimary {
+		t.Errorf("Primary fallback path should be first. Expected %s, got %s", expectedPrimary, paths[0])
+	}
+}
+
+func TestGetFallbackPaths_EmptyFallbackDir(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osLinux }
+
+	paths := getFallbackPaths(engineDocker, "")
+
+	if len(paths) != 1 {
+		t.Errorf("Expected 1 path with empty fallback dir, got %d", len(paths))
+	}
+
+	// Should just be the engine name
+	if paths[0] != engineDocker {
+		t.Errorf("Expected %s, got %s", engineDocker, paths[0])
+	}
+}
+
+// ============================================================================
+// Additional tests for verifyEnginePath function
+// ============================================================================
+
+func TestVerifyEnginePath_EmptyPath(t *testing.T) {
+	result := verifyEnginePath("")
+	if result {
+		t.Error("verifyEnginePath should return false for empty path")
+	}
+}
+
+func TestVerifyEnginePath_FileWithoutExecutePermission(t *testing.T) {
+	if runtime.GOOS == osWindows {
+		t.Skip("Skipping permission test on Windows")
+	}
+
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "non-executable")
+
+	// Create file without execute permission
+	err := os.WriteFile(testFile, []byte("not executable"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	result := verifyEnginePath(testFile)
+	if result {
+		t.Error("verifyEnginePath should return false for non-executable file")
+	}
+}
+
+func TestVerifyEnginePath_SymlinkToNonExistent(t *testing.T) {
+	if runtime.GOOS == osWindows {
+		t.Skip("Skipping symlink test on Windows")
+	}
+
+	tempDir := t.TempDir()
+	symlinkPath := filepath.Join(tempDir, "broken-symlink")
+
+	// Create symlink to non-existent target
+	err := os.Symlink("/non/existent/target", symlinkPath)
+	if err != nil {
+		t.Skipf("Cannot create symlink: %v", err)
+	}
+
+	result := verifyEnginePath(symlinkPath)
+	if result {
+		t.Error("verifyEnginePath should return false for broken symlink")
+	}
+}
+
+// ============================================================================
+// Additional tests for engineNameResolution function
+// ============================================================================
+
+func TestEngineNameResolution_WindowsNotInPath(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osWindows }
+
+	// Save and clear PATH
+	oldPath := os.Getenv("PATH")
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
+	_ = os.Setenv("PATH", "")
+
+	_, err := engineNameResolution("docker", "/fallback")
+
+	if err == nil {
+		t.Error("engineNameResolution should return error on Windows when engine not in PATH")
+	}
+
+	expectedMsg := "docker: executable file not found in PATH"
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+func TestEngineNameResolution_FallbackPathsChecked(t *testing.T) {
+	if runtime.GOOS == osWindows {
+		t.Skip("Skipping fallback path test on Windows")
+	}
+
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osLinux }
+
+	// Save and clear PATH
+	oldPath := os.Getenv("PATH")
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
+	_ = os.Setenv("PATH", "")
+
+	// Use a non-existent fallback directory
+	_, err := engineNameResolution("docker", "/non/existent/path")
+
+	if err == nil {
+		t.Error("engineNameResolution should return error when engine not found")
+	}
+
+	// Error should mention fallback locations
+	if !strings.Contains(err.Error(), "fallback locations") {
+		t.Errorf("Error should mention fallback locations: %v", err)
+	}
+}
+
+func TestEngineNameResolution_EmptyEngineName(t *testing.T) {
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osLinux }
+
+	// Save and clear PATH
+	oldPath := os.Getenv("PATH")
+	defer func() { _ = os.Setenv("PATH", oldPath) }()
+	_ = os.Setenv("PATH", "")
+
+	_, err := engineNameResolution("", "/fallback")
+
+	if err == nil {
+		t.Error("engineNameResolution should return error for empty engine name")
+	}
+}
+
+// ============================================================================
+// Tests for buildIgnoreMap function (direct tests)
+// ============================================================================
+
+func TestBuildIgnoreMap_Empty(t *testing.T) {
+	ignored := []IgnoredIacFinding{}
+	result := buildIgnoreMap(ignored)
+
+	if len(result) != 0 {
+		t.Errorf("Expected empty map, got %d entries", len(result))
+	}
+}
+
+func TestBuildIgnoreMap_SingleEntry(t *testing.T) {
+	ignored := []IgnoredIacFinding{
+		{
+			Title:        "Test Finding",
+			SimilarityID: "abc123",
+		},
+	}
+	result := buildIgnoreMap(ignored)
+
+	if len(result) != 1 {
+		t.Errorf("Expected 1 entry, got %d", len(result))
+	}
+
+	expectedKey := "Test Finding_abc123"
+	if !result[expectedKey] {
+		t.Errorf("Expected key %q to be true", expectedKey)
+	}
+}
+
+func TestBuildIgnoreMap_MultipleEntries(t *testing.T) {
+	ignored := []IgnoredIacFinding{
+		{Title: "Finding1", SimilarityID: "id1"},
+		{Title: "Finding2", SimilarityID: "id2"},
+		{Title: "Finding3", SimilarityID: "id3"},
+	}
+	result := buildIgnoreMap(ignored)
+
+	if len(result) != 3 {
+		t.Errorf("Expected 3 entries, got %d", len(result))
+	}
+
+	expectedKeys := []string{"Finding1_id1", "Finding2_id2", "Finding3_id3"}
+	for _, key := range expectedKeys {
+		if !result[key] {
+			t.Errorf("Expected key %q to be present", key)
+		}
+	}
+}
+
+func TestBuildIgnoreMap_DuplicateEntries(t *testing.T) {
+	ignored := []IgnoredIacFinding{
+		{Title: "Same", SimilarityID: "same"},
+		{Title: "Same", SimilarityID: "same"},
+	}
+	result := buildIgnoreMap(ignored)
+
+	// Duplicates should result in single entry
+	if len(result) != 1 {
+		t.Errorf("Expected 1 entry for duplicates, got %d", len(result))
+	}
+}
+
+// ============================================================================
+// Tests for filterIgnoredFindings function (additional cases)
+// ============================================================================
+
+func TestFilterIgnoredFindings_EmptyResults(t *testing.T) {
+	results := []IacRealtimeResult{}
+	ignoreMap := map[string]bool{"key": true}
+
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 0 {
+		t.Errorf("Expected empty result, got %d", len(filtered))
+	}
+}
+
+func TestFilterIgnoredFindings_EmptyIgnoreMap(t *testing.T) {
+	results := []IacRealtimeResult{
+		{Title: "Finding1", SimilarityID: "id1"},
+		{Title: "Finding2", SimilarityID: "id2"},
+	}
+	ignoreMap := map[string]bool{}
+
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(filtered))
+	}
+}
+
+func TestFilterIgnoredFindings_AllIgnored(t *testing.T) {
+	results := []IacRealtimeResult{
+		{Title: "Finding1", SimilarityID: "id1"},
+		{Title: "Finding2", SimilarityID: "id2"},
+	}
+	ignoreMap := map[string]bool{
+		"Finding1_id1": true,
+		"Finding2_id2": true,
+	}
+
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 0 {
+		t.Errorf("Expected 0 results when all ignored, got %d", len(filtered))
+	}
+}
+
+func TestFilterIgnoredFindings_PartialMatch(t *testing.T) {
+	results := []IacRealtimeResult{
+		{Title: "Finding1", SimilarityID: "id1"},
+		{Title: "Finding2", SimilarityID: "id2"},
+		{Title: "Finding3", SimilarityID: "id3"},
+	}
+	ignoreMap := map[string]bool{
+		"Finding2_id2": true,
+	}
+
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 results, got %d", len(filtered))
+	}
+
+	// Verify correct findings remain
+	titles := make(map[string]bool)
+	for _, r := range filtered {
+		titles[r.Title] = true
+	}
+
+	if !titles["Finding1"] || !titles["Finding3"] {
+		t.Error("Wrong findings were filtered")
+	}
+	if titles["Finding2"] {
+		t.Error("Finding2 should have been filtered out")
+	}
+}
+
+func TestFilterIgnoredFindings_PreservesOrder(t *testing.T) {
+	results := []IacRealtimeResult{
+		{Title: "A", SimilarityID: "1"},
+		{Title: "B", SimilarityID: "2"},
+		{Title: "C", SimilarityID: "3"},
+		{Title: "D", SimilarityID: "4"},
+	}
+	ignoreMap := map[string]bool{
+		"B_2": true,
+	}
+
+	filtered := filterIgnoredFindings(results, ignoreMap)
+
+	if len(filtered) != 3 {
+		t.Fatalf("Expected 3 results, got %d", len(filtered))
+	}
+
+	// Verify order is preserved
+	expectedOrder := []string{"A", "C", "D"}
+	for i, expected := range expectedOrder {
+		if filtered[i].Title != expected {
+			t.Errorf("Position %d: expected %s, got %s", i, expected, filtered[i].Title)
+		}
+	}
+}
+
+// ============================================================================
+// Tests for loadIgnoredIacFindings function
+// ============================================================================
+
+func TestLoadIgnoredIacFindings_ValidFile(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	// Create valid JSON file
+	content := `[
+		{"title": "Finding1", "similarityId": "id1"},
+		{"title": "Finding2", "similarityId": "id2"}
+	]`
+	err := os.WriteFile(testFile, []byte(content), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	findings, err := loadIgnoredIacFindings(testFile)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(findings) != 2 {
+		t.Errorf("Expected 2 findings, got %d", len(findings))
+	}
+
+	if findings[0].Title != "Finding1" || findings[0].SimilarityID != "id1" {
+		t.Errorf("First finding mismatch: %+v", findings[0])
+	}
+}
+
+func TestLoadIgnoredIacFindings_EmptyArray(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte("[]"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	findings, err := loadIgnoredIacFindings(testFile)
+
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if len(findings) != 0 {
+		t.Errorf("Expected 0 findings, got %d", len(findings))
+	}
+}
+
+func TestLoadIgnoredIacFindings_InvalidJSON(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte("not valid json"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err = loadIgnoredIacFindings(testFile)
+
+	if err == nil {
+		t.Error("Expected error for invalid JSON, got nil")
+	}
+}
+
+func TestLoadIgnoredIacFindings_FileNotFound(t *testing.T) {
+	_, err := loadIgnoredIacFindings("/non/existent/file.json")
+
+	if err == nil {
+		t.Error("Expected error for non-existent file, got nil")
+	}
+}
+
+func TestLoadIgnoredIacFindings_EmptyFile(t *testing.T) {
+	tempDir := t.TempDir()
+	testFile := filepath.Join(tempDir, "ignored.json")
+
+	err := os.WriteFile(testFile, []byte(""), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	_, err = loadIgnoredIacFindings(testFile)
+
+	if err == nil {
+		t.Error("Expected error for empty file, got nil")
+	}
+}
+
+// ============================================================================
+// Additional tests for verifyEnginePath function - testing with real executable
+// ============================================================================
+
+func TestVerifyEnginePath_DirectoryInsteadOfFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	result := verifyEnginePath(tempDir)
+	if result {
+		t.Error("verifyEnginePath should return false for directory path")
+	}
+}
+
+func TestVerifyEnginePath_ValidSystemExecutable(t *testing.T) {
+	// This test only runs on Windows because:
+	// - On Linux, common executables like /bin/sh don't properly support --version flag
+	// - The verifyEnginePath function is designed for Docker/Podman which do support --version
+	// - We have other tests covering the main code paths (directory check, file existence, etc.)
+	if runtime.GOOS != osWindows {
+		t.Skip("Skipping on non-Windows: system executables may not support --version flag")
+	}
+
+	execPath := "C:\\Windows\\System32\\cmd.exe"
+
+	// Check if the executable exists first
+	if _, err := os.Stat(execPath); err != nil {
+		t.Skipf("System executable not found: %s", execPath)
+	}
+
+	result := verifyEnginePath(execPath)
+	if !result {
+		t.Errorf("verifyEnginePath should return true for valid executable: %s", execPath)
 	}
 }
