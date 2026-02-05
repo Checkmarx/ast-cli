@@ -371,25 +371,26 @@ jobs:
             local LOG_FILE="$1"
             local FAILED_TESTS=""
 
-            echo "=== Analyzing log file for failures ==="
+            # NOTE: All debug output goes to stderr (>&2) so it doesn't get captured in the return value
+            echo "=== Analyzing log file for failures ===" >&2
 
             # Method 1: Standard "--- FAIL: TestName" pattern
             local STANDARD_FAILS=$(grep -E "^--- FAIL:" "$LOG_FILE" 2>/dev/null | \
               grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' ' ' || true)
             if [ -n "$STANDARD_FAILS" ]; then
-              echo "  [Method 1] Found via --- FAIL: $STANDARD_FAILS"
+              echo "  [Method 1] Found via --- FAIL: $STANDARD_FAILS" >&2
               FAILED_TESTS="$STANDARD_FAILS"
             fi
 
             # Method 2: Find tests that panicked (look for === RUN before each panic)
             if grep -q "^panic:" "$LOG_FILE" 2>/dev/null; then
-              echo "  [Method 2] Panic detected, finding affected tests..."
+              echo "  [Method 2] Panic detected, finding affected tests..." >&2
               # Get all panic line numbers
               local PANIC_LINES=$(grep -n "^panic:" "$LOG_FILE" | cut -d: -f1)
               for PANIC_LINE in $PANIC_LINES; do
                 local PANIC_TEST=$(head -n "$PANIC_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
                 if [ -n "$PANIC_TEST" ]; then
-                  echo "    Panic in: $PANIC_TEST"
+                  echo "    Panic in: $PANIC_TEST" >&2
                   FAILED_TESTS="$FAILED_TESTS $PANIC_TEST"
                 fi
               done
@@ -398,12 +399,12 @@ jobs:
             # Method 3: Find tests with error messages (API errors, auth failures, etc.)
             local ERROR_PATTERNS="Authorization failed|Failed showing|Failed creating|Failed getting|error getting|API error|status code: 5[0-9][0-9]"
             if grep -qE "$ERROR_PATTERNS" "$LOG_FILE" 2>/dev/null; then
-              echo "  [Method 3] API/Auth errors detected, finding affected tests..."
+              echo "  [Method 3] API/Auth errors detected, finding affected tests..." >&2
               local ERROR_LINES=$(grep -nE "$ERROR_PATTERNS" "$LOG_FILE" | cut -d: -f1 | head -5)
               for ERROR_LINE in $ERROR_LINES; do
                 local ERROR_TEST=$(head -n "$ERROR_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
                 if [ -n "$ERROR_TEST" ]; then
-                  echo "    Error in: $ERROR_TEST"
+                  echo "    Error in: $ERROR_TEST" >&2
                   FAILED_TESTS="$FAILED_TESTS $ERROR_TEST"
                 fi
               done
@@ -411,10 +412,10 @@ jobs:
 
             # Method 4: Last resort - get the last running test before FAIL
             if [ -z "$FAILED_TESTS" ]; then
-              echo "  [Method 4] Using last running test as fallback..."
+              echo "  [Method 4] Using last running test as fallback..." >&2
               local LAST_TEST=$(grep -E "^=== RUN" "$LOG_FILE" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
               if [ -n "$LAST_TEST" ]; then
-                echo "    Last running: $LAST_TEST"
+                echo "    Last running: $LAST_TEST" >&2
                 FAILED_TESTS="$LAST_TEST"
               fi
             fi
@@ -434,6 +435,7 @@ jobs:
               FAILED_TESTS=$(echo "$ALL_TESTS" | tr ' ' '\n' | grep -E "^Test" | sort -u | tr '\n' '|' | sed 's/|$//')
             fi
 
+            # Only this final echo goes to stdout (gets captured as the return value)
             echo "$FAILED_TESTS"
           }
 
