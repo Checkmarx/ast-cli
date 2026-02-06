@@ -679,14 +679,11 @@ jobs:
                     fi
                   fi
 
-                  # Add failed tests
+                  # Add failed tests (use ASCII-safe characters: - instead of bullet, [] instead of ())
                   for TEST in $TESTS_FAILED; do
                     FAIL_COUNT=$((FAIL_COUNT + 1))
-                    if [ -n "$FAILED_TESTS" ]; then
-                      FAILED_TESTS="$FAILED_TESTS\\n• $TEST ($GROUP_NAME)"
-                    else
-                      FAILED_TESTS="• $TEST ($GROUP_NAME)"
-                    fi
+                    # Use simple format: "- TestName [group]" - ASCII safe for GitHub Actions
+                    FAILED_TESTS="${FAILED_TESTS}- ${TEST} [${GROUP_NAME}]"$'\n'
                   done
                 fi
               fi
@@ -697,24 +694,30 @@ jobs:
           if [ "${{ needs.integration-tests.result }}" == "failure" ]; then
             HAS_FAILURES=true
             if [ -z "$FAILED_TESTS" ]; then
-              FAILED_TESTS="• Check workflow logs for details"
+              FAILED_TESTS="- Check workflow logs for details"$'\n'
               FAIL_COUNT=1
             fi
           fi
 
-          # Set outputs
+          # Set simple outputs (single line, no special characters)
           echo "has_failures=$HAS_FAILURES" >> $GITHUB_OUTPUT
           echo "fail_count=$FAIL_COUNT" >> $GITHUB_OUTPUT
           echo "failed_groups=$FAILED_GROUPS" >> $GITHUB_OUTPUT
 
-          # Handle multiline output for failed tests
+          # Handle multiline output using EOF delimiter (proper way for multiline in GitHub Actions)
           if [ -n "$FAILED_TESTS" ]; then
-            # Escape for GitHub Actions output
-            FAILED_TESTS_ESCAPED=$(echo -e "$FAILED_TESTS" | head -20)
-            if [ $(echo -e "$FAILED_TESTS" | wc -l) -gt 20 ]; then
-              FAILED_TESTS_ESCAPED="$FAILED_TESTS_ESCAPED\\n... and more (see logs)"
+            # Limit to first 15 tests to avoid huge messages
+            FAILED_TESTS_LIMITED=$(echo "$FAILED_TESTS" | head -15)
+            TOTAL_LINES=$(echo "$FAILED_TESTS" | wc -l)
+            if [ "$TOTAL_LINES" -gt 15 ]; then
+              FAILED_TESTS_LIMITED="${FAILED_TESTS_LIMITED}- ... and $((TOTAL_LINES - 15)) more (see logs)"$'\n'
             fi
-            echo "failed_list=$FAILED_TESTS_ESCAPED" >> $GITHUB_OUTPUT
+            # Use EOF delimiter for multiline output
+            {
+              echo "failed_list<<EOF"
+              echo "$FAILED_TESTS_LIMITED"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
           else
             echo "failed_list=None" >> $GITHUB_OUTPUT
           fi
@@ -724,6 +727,19 @@ jobs:
           echo "Has failures: $HAS_FAILURES"
           echo "Failed groups: $FAILED_GROUPS"
           echo "Fail count: $FAIL_COUNT"
+          echo "Failed tests preview:"
+          echo "$FAILED_TESTS" | head -5
+
+      - name: Prepare Teams message
+        id: prepare_message
+        if: always() && steps.analyze_results.outputs.has_failures == 'true'
+        shell: bash
+        run: |
+          # Get the failed list and escape it for JSON (replace newlines with \n, escape quotes)
+          FAILED_LIST="${{ steps.analyze_results.outputs.failed_list }}"
+          # Replace actual newlines with literal \n for JSON, and escape any quotes
+          FAILED_LIST_JSON=$(echo "$FAILED_LIST" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "failed_list_json=$FAILED_LIST_JSON" >> $GITHUB_OUTPUT
 
       - name: Send failure notification to Teams
         if: always() && steps.analyze_results.outputs.has_failures == 'true'
@@ -770,7 +786,7 @@ jobs:
                       },
                       {
                         "type": "TextBlock",
-                        "text": "${{ steps.analyze_results.outputs.failed_list }}",
+                        "text": "${{ steps.prepare_message.outputs.failed_list_json }}",
                         "wrap": true,
                         "fontType": "Monospace",
                         "spacing": "Small"
