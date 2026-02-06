@@ -632,7 +632,6 @@ jobs:
         run: |
           go test -v github.com/checkmarx/ast-cli/test/cleandata || true
 
-  # Send Teams notification with test results
   notify-teams:
     runs-on: ubuntu-latest
     needs: integration-tests
