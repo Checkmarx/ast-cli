@@ -1,13 +1,24 @@
 package iacrealtime
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"time"
 
-	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
+
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+)
+
+const (
+	osWindows = "windows"
 )
 
 type IacRealtimeService struct {
@@ -135,4 +146,101 @@ func (svc *IacRealtimeService) validateFilePath(filePath string) error {
 		return errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 	return nil
+}
+
+func engineNameResolution(engineName, fallBackDir string) (string, error) {
+	// First, try to find the engine in PATH (works when launched from terminal)
+	if _, err := exec.LookPath(engineName); err == nil {
+		return engineName, nil
+	}
+
+	// On Windows, we don't have fallback paths - the engine must be in PATH
+	if getOS() == osWindows {
+		return "", errors.New(engineName + ": executable file not found in PATH")
+	}
+
+	// On macOS/Linux, check multiple fallback paths
+	// This handles the case when IDE is launched via GUI and doesn't inherit shell PATH
+	fallbackPaths := getFallbackPaths(engineName, fallBackDir)
+
+	for _, fallbackPath := range fallbackPaths {
+		if verifyEnginePath(fallbackPath) {
+			return fallbackPath, nil
+		}
+	}
+
+	checkedPaths := make([]string, len(fallbackPaths))
+	copy(checkedPaths, fallbackPaths)
+	return "", errors.Errorf("%s not found in PATH or in fallback locations: %v", engineName, checkedPaths)
+}
+
+// getFallbackPaths returns a list of paths to check for the container engine
+func getFallbackPaths(engineName, fallBackDir string) []string {
+	var paths []string
+
+	// Add the primary fallback directory
+	paths = append(paths, filepath.Join(fallBackDir, engineName))
+
+	// On macOS, add additional paths based on engine type
+	if getOS() == osDarwin {
+		var additionalPaths []string
+		switch engineName {
+		case engineDocker:
+			additionalPaths = macOSDockerFallbackPaths
+		case enginePodman:
+			additionalPaths = macOSPodmanFallbackPaths
+		default:
+			// Unknown engine, no additional paths
+		}
+
+		for _, dir := range additionalPaths {
+			enginePath := filepath.Join(dir, engineName)
+			// Skip duplicates
+			if enginePath == filepath.Join(fallBackDir, engineName) {
+				continue
+			}
+			paths = append(paths, enginePath)
+		}
+
+		// Add user home-based paths
+		if homeDir, err := os.UserHomeDir(); err == nil {
+			switch engineName {
+			case engineDocker:
+				paths = append(paths,
+					filepath.Join(homeDir, ".docker", "bin", engineDocker),
+					filepath.Join(homeDir, ".rd", "bin", engineDocker))
+			case enginePodman:
+				paths = append(paths, filepath.Join(homeDir, ".local", "bin", enginePodman))
+			default:
+				// Unknown engine, no home-based paths
+			}
+		}
+	}
+
+	return paths
+}
+
+// verifyEnginePath checks if the engine exists and is executable at the given path
+func verifyEnginePath(enginePath string) bool {
+	info, err := os.Stat(enginePath)
+	if err != nil || info.IsDir() {
+		return false
+	}
+
+	// Verify the engine can be executed with a timeout to prevent hanging
+	ctx, cancel := context.WithTimeout(context.Background(), engineVerifyTimeout*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, enginePath, "--version")
+	if err := cmd.Run(); err != nil {
+		return false
+	}
+
+	return true
+}
+
+const osDarwin = "darwin"
+
+var getOS = func() string {
+	return runtime.GOOS
 }

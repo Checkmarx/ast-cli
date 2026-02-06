@@ -53,7 +53,10 @@ tzdata==2025.1
 
 flask==3.1.2
 werkzeug>=3.0.6
+<<<<<<< HEAD
 
+=======
+>>>>>>> a4bf4515ff88a006d5f4ba0b9303d59eb09c56f3
 
 # Range: greater than or equal and less than
 
