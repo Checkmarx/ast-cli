@@ -4515,7 +4515,7 @@ func TestIsTarFileReference(t *testing.T) {
 	}
 }
 
-// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files or oci-dir are detected.
 // Container-security scan-type related test function.
 func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 	testCases := []struct {
@@ -4530,15 +4530,20 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 		{"Already enabled", "alpine.tar", true, true, false},
 		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
 		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
-		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
 
-		// Should enable local resolution
+		// Should enable local resolution - tar files
 		{"Single tar", "alpine.tar", false, true, true},
 		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
 		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
 		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
 		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
 		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+
+		// Should enable local resolution - oci-dir directories
+		{"oci-dir directory", "oci-dir:my-alpine-image", false, true, true},
+		{"oci-dir with path", "oci-dir:/path/to/oci-layout", false, true, true},
+		{"oci-dir with tag suffix", "oci-dir:file.tar:latest", false, true, true},
+		{"Mixed oci-dir+image", "nginx:latest,oci-dir:my-image", false, true, true},
 	}
 
 	for _, tc := range testCases {
@@ -4578,7 +4583,7 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
 			}
 
-			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			hasWarning := strings.Contains(output, "Warning:") && (strings.Contains(output, "Tar file") || strings.Contains(output, "oci-dir"))
 			if tc.expectWarning && !hasWarning {
 				t.Errorf("Expected warning but got: %s", output)
 			} else if !tc.expectWarning && hasWarning {
