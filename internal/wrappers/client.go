@@ -646,6 +646,7 @@ func writeCredentialsToCache(accessToken string) {
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
 	CachedAccessToken = accessToken
+	fmt.Printf("Token: %s\n", CachedAccessToken)
 	CachedAccessTime = time.Now()
 }
 
