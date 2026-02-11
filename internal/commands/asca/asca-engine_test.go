@@ -76,7 +76,7 @@ func Test_ExecuteAscaScan(t *testing.T) {
 				ASCAWrapper: &mock.ASCAMockWrapper{},
 			}
 			// No CustomVorpal Location
-			got, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams, "")
+			got, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeASCAScan() error = %v, wantErr %v", err, ttt.wantErr)
 				return
