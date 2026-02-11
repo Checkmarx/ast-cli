@@ -461,7 +461,10 @@ func extractOptionalFlags(cmd *cobra.Command) error {
 		if len(keyVal) != params.KeyValuePairSize {
 			return errors.New("Invalid optional flags. Optional flags should be in a KEY1=VALUE1;KEY2=VALUE2 format")
 		}
-		utils.SetOptionalParam(keyVal[0], keyVal[1])
+		err := utils.SetOptionalParam(keyVal[0], keyVal[1])
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -33,6 +33,7 @@ type AscaScanParams struct {
 	ASCAUpdateVersion bool
 	IsDefaultAgent    bool
 	IgnoredFilePath   string
+	VorpalLocation    string
 }
 
 type AscaWrappersParam struct {
@@ -59,24 +60,24 @@ func validateVorpalDirExist(dirPath string) error {
 
 func ValidateCustomASCAInstallation(vorpalLocation string) error {
 	if err := validateVorpalDirExist(vorpalLocation); err != nil {
-		return errors.Wrap(err, "Failed to validate ASCA location")
+		return errors.Wrap(err, "Failed to validate ASCA custom location")
 	}
-	ascaconfig.Params.SetVorpalCustomPath(vorpalLocation)
-	ASCAInstalled, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
+	ASCAInstalled, _ := osinstaller.FileExists(filepath.Join(vorpalLocation, ascaconfig.Params.ExecutableFile))
 	if !ASCAInstalled {
 		return errors.Errorf("No ASCA executable found in provided location: %s", vorpalLocation)
 	}
+	logger.PrintIfVerbose("Using custom ASCA engine installed at: " + vorpalLocation)
 	return nil
 }
 
-func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappersParam, vorpalLocation string) (*grpcs.ScanResult, error) {
+func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappersParam) (*grpcs.ScanResult, error) {
 	var err error
-	if vorpalLocation == "" {
+	if ascaParams.VorpalLocation == "" {
 		err = manageASCAInstallation(ascaParams, wrapperParams)
 		if err != nil {
 			return nil, err
 		}
-	} else if err := ValidateCustomASCAInstallation(vorpalLocation); err != nil {
+	} else if err := ValidateCustomASCAInstallation(ascaParams.VorpalLocation); err != nil {
 		return nil, err
 	}
 	err = ensureASCAServiceRunning(wrapperParams, ascaParams)
@@ -254,7 +255,7 @@ func ensureASCAServiceRunning(wrappersParam AscaWrappersParam, ascaParams AscaSc
 		if err != nil {
 			return err
 		}
-		if err := RunASCAEngine(wrappersParam.ASCAWrapper.GetPort()); err != nil {
+		if err := RunASCAEngine(wrappersParam.ASCAWrapper.GetPort(), ascaParams.VorpalLocation); err != nil {
 			return err
 		}
 
@@ -281,7 +282,7 @@ func readSourceCode(filePath string) (string, error) {
 	return string(data), nil
 }
 
-func RunASCAEngine(port int) error {
+func RunASCAEngine(port int, vorpalLocation string) error {
 	dialTimeout := 5 * time.Second
 	args := []string{
 		"-listen",
@@ -289,8 +290,13 @@ func RunASCAEngine(port int) error {
 	}
 
 	logger.PrintIfVerbose(fmt.Sprintf("Running ASCA engine with args: %v \n", args))
+	var cmd *exec.Cmd
 
-	cmd := exec.Command(ascaconfig.Params.ExecutableFilePath(), args...)
+	if vorpalLocation != "" {
+		cmd = exec.Command(filepath.Join(vorpalLocation, ascaconfig.Params.ExecutableFile), args...)
+	} else {
+		cmd = exec.Command(ascaconfig.Params.ExecutableFilePath(), args...)
+	}
 
 	osinstaller.ConfigureIndependentProcess(cmd)
 

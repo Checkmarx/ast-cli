@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"net/url"
 	"path"
 	"strings"
@@ -44,7 +45,7 @@ func LimitSlice[T any](slice []T, limit int) []T {
 	return slice[:limit]
 }
 
-func SetOptionalParam(key, value string) {
+func SetOptionalParam(key, value string) error {
 	logger.PrintfIfVerbose("Setting optional parameter: %s", key)
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -52,7 +53,10 @@ func SetOptionalParam(key, value string) {
 	key = strings.TrimSpace(key)
 	if _, ok := allowedOptionalKeys[key]; ok {
 		optionalParams[key] = value
+	} else {
+		return errors.New("Invalid optional parameter key: " + key)
 	}
+	return nil
 }
 
 func hasOptionalParam(key string) bool {

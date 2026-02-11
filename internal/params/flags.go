@@ -68,7 +68,7 @@ const (
 	BaseURIFlag                    = "base-uri"
 	ProxyFlag                      = "proxy"
 	ProxyFlagUsage                 = "Proxy server to send communication through"
-	OptionalFlagUsage              = "Flag for adding optional global configurations"
+	OptionalFlagUsage              = "Flag for providing command specific flag from IDE or CI/CD plugins."
 	IgnoreProxyFlag                = "ignore-proxy"
 	IgnoreProxyFlagUsage           = "Ignore proxy configuration"
 	ProxyTypeFlag                  = "proxy-auth-type"

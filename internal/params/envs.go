@@ -90,6 +90,6 @@ const (
 	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"
 	MultipartFileSizeEnv                = "MULTIPART_FILE_SIZE"
 	DisableASCALatestVersionEnv         = "DISABLE_ASCA_UPDATE"
-	VorpalPathEnv                       = "CX_ASCA_PATH"
+	ASCALocationEnv                     = "CX_ASCA_LOCATION"
 	OptionalFlagsEnv                    = "CX_OPTIONAL_FLAGS"
 )

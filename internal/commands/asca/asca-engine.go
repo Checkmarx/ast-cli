@@ -1,6 +1,7 @@
 package asca
 
 import (
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -8,7 +9,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -30,7 +30,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			return err
 		}
 
-		vorpal := strings.TrimSpace(viper.GetString(commonParams.VorpalCustomPathKey))
+		vorpal := strings.TrimSpace(viper.GetString(commonParams.ASCALocationKey))
 		if vorpal != "" {
 			vorpalLocation = vorpal
 		} else if location := utils.GetOptionalParam(ascaLocationParam); location != "" {
@@ -44,12 +44,14 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			ASCAUpdateVersion: ASCALatestVersion,
 			IsDefaultAgent:    agent == commonParams.DefaultAgent,
 			IgnoredFilePath:   ignoredFilePathFlag,
+			VorpalLocation:    vorpalLocation,
 		}
+
 		wrapperParams := services.AscaWrappersParam{
 			JwtWrapper:  jwtWrapper,
 			ASCAWrapper: ASCAWrapper,
 		}
-		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams, vorpalLocation)
+		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 		if err != nil {
 			return err
 		}
