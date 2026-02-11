@@ -1,7 +1,6 @@
 package asca
 
 import (
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -9,6 +8,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
