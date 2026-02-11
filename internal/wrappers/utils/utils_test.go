@@ -231,11 +231,11 @@ func TestConcurrentSetOptionalParam(t *testing.T) {
 	// spawn several goroutines setting allowed and disallowed keys
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go func(i int) {
+		go func() {
 			defer wg.Done()
 			SetOptionalParam(ascaLocationKey, "v")
 			SetOptionalParam("not-allowed", "x")
-		}(i)
+		}()
 	}
 	wg.Wait()
 

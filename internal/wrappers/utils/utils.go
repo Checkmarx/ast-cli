@@ -1,11 +1,12 @@
 package utils
 
 import (
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"net/url"
 	"path"
 	"strings"
 	"sync"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
 var (

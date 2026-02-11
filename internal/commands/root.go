@@ -118,7 +118,10 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		CheckPreferredCredentials(cmd)
-		err := extractOptionalFlags()
+		err := extractOptionalFlags(cmd)
+		if err != nil {
+			return err
+		}
 		err = customLogConfiguration(rootCmd)
 		if err != nil {
 			return err
@@ -434,7 +437,13 @@ func CheckPreferredCredentials(cmd *cobra.Command) {
 	}
 }
 
-func extractOptionalFlags() error {
+func extractOptionalFlags(cmd *cobra.Command) error {
+	if cmd.Flags().Changed(params.OptionalFlags) {
+		flagVal := strings.TrimSpace(viper.GetString(params.OptionalFlags))
+		if strings.TrimSpace(flagVal) == "" {
+			return errors.Errorf("%s flag is provided but empty", params.OptionalFlags)
+		}
+	}
 	optionalFlags := strings.TrimSpace(viper.GetString(params.OptionalFlagsKey))
 	if optionalFlags == "" {
 		return nil

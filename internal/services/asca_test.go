@@ -2,11 +2,12 @@ package services
 
 import (
 	"fmt"
-	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
+
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"

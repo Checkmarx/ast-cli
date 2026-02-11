@@ -76,7 +76,7 @@ func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappers
 		if err != nil {
 			return nil, err
 		}
-	} else if err = ValidateCustomASCAInstallation(vorpalLocation); err != nil {
+	} else if err := ValidateCustomASCAInstallation(vorpalLocation); err != nil {
 		return nil, err
 	}
 	err = ensureASCAServiceRunning(wrapperParams, ascaParams)
