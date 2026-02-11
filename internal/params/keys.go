@@ -89,4 +89,6 @@ var (
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
 	DisableASCALatestVersionKey         = strings.ToLower(DisableASCALatestVersionEnv)
+	VorpalCustomPathKey                 = strings.ToLower(VorpalPathEnv)
+	OptionalFlagsKey                    = strings.ToLower(OptionalFlagsEnv)
 )

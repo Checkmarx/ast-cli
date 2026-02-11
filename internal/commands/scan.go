@@ -482,6 +482,9 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	)
 
 	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to ASCA installed location")
+	_ = viper.BindPFlag(commonParams.VorpalCustomPathKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
+
 	return scanASCACmd
 }
 

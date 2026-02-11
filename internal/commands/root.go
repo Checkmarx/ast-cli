@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"io"
 	"log"
 	"os"
@@ -106,6 +107,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.ConfigFilePathFlag, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
+	rootCmd.PersistentFlags().String(params.OptionalFlags, "", params.OptionalFlagUsage)
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
@@ -115,7 +117,8 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		CheckPreferredCredentials(cmd)
-		err := customLogConfiguration(rootCmd)
+		err := extractOptionalFlags()
+		err = customLogConfiguration(rootCmd)
 		if err != nil {
 			return err
 		}
@@ -149,6 +152,8 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
 	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePathFlag))
+	_ = viper.BindPFlag(params.OptionalFlagsKey, rootCmd.PersistentFlags().Lookup(params.OptionalFlags))
+
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
@@ -426,4 +431,24 @@ func CheckPreferredCredentials(cmd *cobra.Command) {
 	} else {
 		viper.Set(params.PreferredCredentialTypeKey, "")
 	}
+}
+
+func extractOptionalFlags() error {
+	optionalFlags := strings.TrimSpace(viper.GetString(params.OptionalFlagsKey))
+	if optionalFlags == "" {
+		return nil
+	}
+	pairs := strings.Split(optionalFlags, ";")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		keyVal := strings.Split(pair, "=")
+		if len(keyVal) != params.KeyValuePairSize {
+			return errors.New("Invalid optional flags. Optional flags should be in a KEY1=VALUE1;KEY2=VALUE2 format")
+		}
+		utils.SetOptionalParam(keyVal[0], keyVal[1])
+	}
+	return nil
 }

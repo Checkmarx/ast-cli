@@ -1,10 +1,21 @@
 package utils
 
 import (
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"net/url"
 	"path"
 	"strings"
+	"sync"
 )
+
+var (
+	mutex          sync.RWMutex
+	optionalParams = make(map[string]string)
+)
+
+var allowedOptionalKeys = map[string]bool{
+	"asca-location": true,
+}
 
 // CleanURL returns a cleaned url removing double slashes
 func CleanURL(uri string) (string, error) {
@@ -30,4 +41,31 @@ func LimitSlice[T any](slice []T, limit int) []T {
 		return slice
 	}
 	return slice[:limit]
+}
+
+func SetOptionalParam(key, value string) {
+	logger.PrintfIfVerbose("Setting optional parameter: %s", key)
+	mutex.Lock()
+	defer mutex.Unlock()
+	value = strings.TrimSpace(value)
+	if _, ok := allowedOptionalKeys[strings.TrimSpace(key)]; ok {
+		optionalParams[key] = value
+	}
+}
+
+func hasOptionalParam(key string) bool {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	_, ok := optionalParams[key]
+	return ok
+}
+
+func GetOptionalParam(key string) string {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	key = strings.TrimSpace(key)
+	if hasOptionalParam(key) {
+		return optionalParams[key]
+	}
+	return ""
 }

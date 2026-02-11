@@ -6,16 +6,24 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		var vorpalLocation string
 		ASCALatestVersion, _ := cmd.Flags().GetBool(commonParams.ASCALatestVersion)
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+		vorpal := viper.GetString(commonParams.VorpalCustomPathKey)
+		if vorpal != "" {
+			vorpalLocation = vorpal
+		} else if location := utils.GetOptionalParam(commonParams.ASCALocationFlag); location != "" {
+			vorpalLocation = location
+		}
 		var port = viper.GetInt(commonParams.ASCAPortKey)
 		ASCAWrapper := grpcs.NewASCAGrpcWrapper(port)
 		ASCAParams := services.AscaScanParams{
@@ -28,7 +36,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			JwtWrapper:  jwtWrapper,
 			ASCAWrapper: ASCAWrapper,
 		}
-		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
+		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams, vorpalLocation)
 		if err != nil {
 			return err
 		}
