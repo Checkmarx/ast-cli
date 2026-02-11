@@ -48,7 +48,8 @@ func SetOptionalParam(key, value string) {
 	mutex.Lock()
 	defer mutex.Unlock()
 	value = strings.TrimSpace(value)
-	if _, ok := allowedOptionalKeys[strings.TrimSpace(key)]; ok {
+	key = strings.TrimSpace(key)
+	if _, ok := allowedOptionalKeys[key]; ok {
 		optionalParams[key] = value
 	}
 }
@@ -63,9 +64,9 @@ func hasOptionalParam(key string) bool {
 func GetOptionalParam(key string) string {
 	mutex.RLock()
 	defer mutex.RUnlock()
-	key = strings.TrimSpace(key)
-	if hasOptionalParam(key) {
-		return optionalParams[key]
+	trimmedKey := strings.TrimSpace(key)
+	if hasOptionalParam(trimmedKey) {
+		return optionalParams[trimmedKey]
 	}
 	return ""
 }

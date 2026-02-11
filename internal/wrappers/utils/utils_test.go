@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+const (
+	ascaLocationKey = "asca-location"
+)
+
 func TestCleanURL_CleansCorrectly(t *testing.T) {
 	uri := "https://codebashing.checkmarx.com/courses/java/////lessons/sql_injection/////"
 	want := "https://codebashing.checkmarx.com/courses/java/lessons/sql_injection"
@@ -170,7 +174,7 @@ func clearOptionalParams() {
 
 func TestSetAndGetAllowedKey(t *testing.T) {
 	clearOptionalParams()
-	key := "asca-location"
+	key := ascaLocationKey
 	value := "location-1"
 
 	SetOptionalParam(key, value)
@@ -206,23 +210,17 @@ func TestSetWithTrimmedKeyBehavior(t *testing.T) {
 	clearOptionalParams()
 
 	originalKey := "  asca-location  "
-	trimmedKey := "asca-location"
+	trimmedKey := ascaLocationKey
 	value := "trimmed-value"
 
 	SetOptionalParam(originalKey, value)
 
-	if !hasOptionalParam(originalKey) {
-		t.Fatalf("expected hasOptionalParam(%q) to be true", originalKey)
-	}
 	if got := GetOptionalParam(originalKey); got != value {
 		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", originalKey, value, got)
 	}
 
-	if hasOptionalParam(trimmedKey) {
-		t.Fatalf("did not expect hasOptionalParam(%q) to be true", trimmedKey)
-	}
-	if got := GetOptionalParam(trimmedKey); got != "" {
-		t.Fatalf("expected GetOptionalParam(%q) == empty, got %q", trimmedKey, got)
+	if got := GetOptionalParam(trimmedKey); got != value {
+		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", originalKey, value, got)
 	}
 }
 
@@ -235,16 +233,16 @@ func TestConcurrentSetOptionalParam(t *testing.T) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			SetOptionalParam("asca-location", "v")
+			SetOptionalParam(ascaLocationKey, "v")
 			SetOptionalParam("not-allowed", "x")
 		}(i)
 	}
 	wg.Wait()
 
-	if !hasOptionalParam("asca-location") {
+	if !hasOptionalParam(ascaLocationKey) {
 		t.Fatalf("expected hasOptionalParam(%q) to be true after concurrent sets", "asca-location")
 	}
 	if GetOptionalParam("asca-location") != "v" {
-		t.Fatalf("expected GetOptionalParam(%q) == %q", "asca-location", "v")
+		t.Fatalf("expected GetOptionalParam(%q) == %q", ascaLocationKey, "v")
 	}
 }

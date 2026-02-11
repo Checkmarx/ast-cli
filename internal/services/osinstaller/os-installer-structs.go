@@ -1,9 +1,10 @@
 package osinstaller
 
 import (
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"os"
 	"path/filepath"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
 )
 
 type InstallationConfiguration struct {

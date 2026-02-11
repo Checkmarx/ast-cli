@@ -3,6 +3,12 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -15,12 +21,6 @@ import (
 	getport "github.com/jsumners/go-getport"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"net"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"time"
 )
 
 const (
