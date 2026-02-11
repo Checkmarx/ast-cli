@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/stretchr/testify/assert"
 	"log"
 	"sync"
 	"testing"
@@ -213,7 +214,8 @@ func TestSetWithTrimmedKeyBehavior(t *testing.T) {
 	trimmedKey := ascaLocationKey
 	value := "trimmed-value"
 
-	SetOptionalParam(originalKey, value)
+	err := SetOptionalParam(originalKey, value)
+	assert.Nil(t, err)
 
 	if got := GetOptionalParam(originalKey); got != value {
 		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", originalKey, value, got)
@@ -233,8 +235,10 @@ func TestConcurrentSetOptionalParam(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			SetOptionalParam(ascaLocationKey, "v")
-			SetOptionalParam("not-allowed", "x")
+			err := SetOptionalParam(ascaLocationKey, "v")
+			assert.Nil(t, err)
+			err = SetOptionalParam("not-allowed", "x")
+			assert.NotNil(t, err)
 		}()
 	}
 	wg.Wait()
