@@ -439,7 +439,10 @@ func CheckPreferredCredentials(cmd *cobra.Command) {
 
 func extractOptionalFlags(cmd *cobra.Command) error {
 	if cmd.Flags().Changed(params.OptionalFlags) {
-		flagVal := strings.TrimSpace(viper.GetString(params.OptionalFlags))
+		flagVal, err := cmd.Flags().GetString(params.OptionalFlags)
+		if err != nil {
+			return err
+		}
 		if strings.TrimSpace(flagVal) == "" {
 			return errors.Errorf("%s flag is provided but empty", params.OptionalFlags)
 		}
