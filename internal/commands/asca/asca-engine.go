@@ -1,6 +1,8 @@
 package asca
 
 import (
+	"strings"
+
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -10,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"strings"
 )
 
 const (
