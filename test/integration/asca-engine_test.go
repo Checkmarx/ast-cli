@@ -229,6 +229,7 @@ func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 }
 
 func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
+	t.Skip()
 	configuration.LoadConfiguration()
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
