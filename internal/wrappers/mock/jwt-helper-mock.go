@@ -13,6 +13,7 @@ type JWTMockWrapper struct {
 	EnterpriseSecretsEnabled  int
 	SecretDetectionEnabled    int
 	CheckmarxOneAssistEnabled int
+	DastEnabled               bool
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
 }
 
@@ -83,10 +84,11 @@ func (j *JWTMockWrapper) GetLicenseDetails() (licenseDetails map[string]string, 
 	licenseDetails = make(map[string]string)
 
 	assistEnabled := (j.CheckmarxOneAssistEnabled != CheckmarxOneAssistDisabled) || (j.AIEnabled != AIProtectionDisabled)
-	licenseDetails["scan.config.plugins.cxoneassist"] = strconv.FormatBool(assistEnabled)
+	licenseDetails[params.CxOneAssistEnabledKey] = strconv.FormatBool(assistEnabled)
 
 	standaloneEnabled := true
-	licenseDetails["scan.config.plugins.cxdevassist"] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails[params.CxDevAssistEnabledKey] = strconv.FormatBool(standaloneEnabled)
+	licenseDetails[params.DastEnabledKey] = strconv.FormatBool(j.DastEnabled)
 
 	for _, engine := range engines {
 		licenseDetails[engine] = licenseEnabledValue

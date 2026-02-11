@@ -160,6 +160,7 @@ func TestCreateCommand_WithInvalidFlag_ShouldReturnExitCode1(t *testing.T) {
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
+	defer viper.Reset()
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	return cmd.Execute()

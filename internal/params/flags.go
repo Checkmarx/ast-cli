@@ -55,6 +55,7 @@ const (
 	AccessKeyIDFlag                = "client-id"
 	AccessKeySecretFlag            = "client-secret"
 	AccessKeyIDFlagUsage           = "The OAuth2 client ID"
+	PreferredCredentialTypeKey     = "preferred-credential-type"
 	AccessKeySecretFlagUsage       = "The OAuth2 client secret"
 	InsecureFlag                   = "insecure"
 	InsecureFlagUsage              = "Ignore TLS certificate validations"
@@ -242,6 +243,10 @@ const (
 	SCSRepoTokenFlag = "scs-repo-token"
 	SCSRepoURLFlag   = "scs-repo-url"
 
+	// Secret Detection Git Commit History
+	GitCommitHistoryFlag            = "git-commit-history"
+	GitCommitHistoryFlagDescription = "Enable or disable commit history scan for Secret Detection"
+
 	// Containers Config Flags
 	ContainersFileFolderFilterFlag      = "containers-file-folder-filter"
 	ContainersImageTagFilterFlag        = "containers-image-tag-filter"
@@ -285,6 +290,13 @@ const (
 	Branch                     = ""
 	ScanPolicyDefaultTimeout   = 4
 	ResultPolicyDefaultTimeout = 1
+)
+
+// License
+const (
+	CxOneAssistEnabledKey = "scan.config.plugins.cxoneassist"
+	CxDevAssistEnabledKey = "scan.config.plugins.cxdevassist"
+	DastEnabledKey        = "scan.config.plugins.dastenabled"
 )
 
 // Results
