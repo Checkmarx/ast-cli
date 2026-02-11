@@ -49,12 +49,13 @@ func TestCreateASCAScanRequest_DefaultAgent_Success(t *testing.T) {
 		FilePath:          "data/python-vul-file.py",
 		ASCAUpdateVersion: false,
 		IsDefaultAgent:    true,
+		VorpalLocation:    "",
 	}
 	wrapperParams := AscaWrappersParam{
 		JwtWrapper:  &mock.JWTMockWrapper{},
 		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
-	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams, "")
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
 		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
@@ -74,7 +75,7 @@ func TestCreateASCAScanRequest_DefaultAgentAndLatestVersionFlag_Success(t *testi
 		JwtWrapper:  &mock.JWTMockWrapper{},
 		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
-	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams, "")
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
 		t.Fatalf("Failed to create asca scan request: %v", err)
 	}
@@ -222,7 +223,7 @@ func TestCreateASCAScanRequest_WithSingleIgnoredFinding_FiltersResult(t *testing
 		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
 
-	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams, "")
+	sr, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 	if err != nil {
 		t.Fatalf("Failed to create ASCA scan request: %v", err)
 	}
@@ -240,11 +241,11 @@ func TestCreateASCAScanRequest_WithSingleIgnoredFinding_FiltersResult(t *testing
 
 func TestCreateASCAScanRequest_InvalidCustomVorpalLocation(t *testing.T) {
 	ascaParams := AscaScanParams{
-		FilePath: "valid/path",
+		FilePath:       "valid/path",
+		VorpalLocation: "definitely/invalid/path",
 	}
 	wrapperParams := AscaWrappersParam{}
-	invalidPath := "/definitely/invalid/path"
-	result, err := CreateASCAScanRequest(ascaParams, wrapperParams, invalidPath)
+	result, err := CreateASCAScanRequest(ascaParams, wrapperParams)
 	if err == nil {
 		t.Fatalf("Expected error for invalid vorpalLocation")
 	}
@@ -257,10 +258,11 @@ func TestCreateASCAScanRequest_InvalidCustomVorpalLocation(t *testing.T) {
 func TestCreateASCAScanRequest_ValidCustomVorpalLocation_NoVorpalExe_Installed_Failed(t *testing.T) {
 	tempDir := t.TempDir()
 	ascaParams := AscaScanParams{
-		FilePath: "valid/path",
+		FilePath:       "valid/path",
+		VorpalLocation: tempDir,
 	}
 	wrapperParams := AscaWrappersParam{}
-	result, err := CreateASCAScanRequest(ascaParams, wrapperParams, tempDir)
+	result, err := CreateASCAScanRequest(ascaParams, wrapperParams)
 	assert.NotNil(t, err)
 
 	_ = result
@@ -280,12 +282,13 @@ func TestCreateASCAScanRequest_ValidCustomVorpalLocation_VorPal_exe_Success(t *t
 		ASCAUpdateVersion: false,
 		IsDefaultAgent:    true,
 		IgnoredFilePath:   "data/ignoredAsca.json",
+		VorpalLocation:    tempDir,
 	}
 	wrapperParams := AscaWrappersParam{
 		JwtWrapper:  &mock.JWTMockWrapper{},
 		ASCAWrapper: mock.NewASCAMockWrapper(1234),
 	}
-	result, err := CreateASCAScanRequest(ASCAParams, wrapperParams, tempDir)
+	result, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
