@@ -3,7 +3,8 @@
 package integration
 
 import (
-	"archive/zip"
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -229,7 +230,6 @@ func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 }
 
 func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
-	t.Skip()
 	configuration.LoadConfiguration()
 	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
@@ -243,38 +243,40 @@ func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
 
 	// Save ZIP file
 	zipPath := filepath.Join(tempDir, ascaconfig.Params.FileName)
-
-	zipBytes, err := io.ReadAll(resp.Body)
+	file, err := os.Open(zipPath)
 	asserts.Nil(t, err)
+	defer file.Close()
 
-	err = os.WriteFile(zipPath, zipBytes, 0644)
+	gzReader, err := gzip.NewReader(file)
 	asserts.Nil(t, err)
+	defer gzReader.Close()
 
-	// Unzip
-	reader, err := zip.OpenReader(zipPath)
-	asserts.Nil(t, err)
-	defer reader.Close()
+	tarReader := tar.NewReader(gzReader)
 
 	var extractedExePath string
 
-	for _, file := range reader.File {
-		if file.Name == ascaconfig.Params.ExecutableFile {
-			rc, err := file.Open()
-			asserts.Nil(t, err)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		asserts.Nil(t, err)
 
-			extractedExePath = filepath.Join(tempDir, file.Name)
+		if header.Typeflag == tar.TypeReg &&
+			filepath.Base(header.Name) == ascaconfig.Params.ExecutableFile {
+
+			extractedExePath = filepath.Join(tempDir, filepath.Base(header.Name))
+
 			outFile, err := os.Create(extractedExePath)
 			asserts.Nil(t, err)
 
-			_, err = io.Copy(outFile, rc)
+			_, err = io.Copy(outFile, tarReader)
 			asserts.Nil(t, err)
 
 			outFile.Close()
-			rc.Close()
 		}
 	}
 	asserts.NotEmpty(t, extractedExePath, "Executable not found inside zip")
-
 	// Ensure executable permissions
 	err = os.Chmod(extractedExePath, 0755)
 	asserts.Nil(t, err)
@@ -288,7 +290,7 @@ func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
 	}
 
 	err, _ = executeCommand(t, args...)
-	assert.NilError(t, err, "User has license, should not fail")
+	assert.NilError(t, err, "should not fail")
 	ASCAWrapper = grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
 	_ = ASCAWrapper.ShutDown()
 
@@ -329,5 +331,5 @@ func TestExecuteASCAScan_Asca_location_Flag_ThrowError_InvalidPath(t *testing.T)
 		flag(commonParams.ASCALocationFlag), "/definitely/invalid/path",
 	}
 	err, _ := executeCommand(t, args...)
-	asserts.ErrorContains(t, err, "Failed to validate ASCA location")
+	asserts.ErrorContains(t, err, "Failed to validate ASCA custom location")
 }

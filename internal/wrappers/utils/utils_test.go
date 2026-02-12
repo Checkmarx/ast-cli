@@ -1,10 +1,11 @@
 package utils
 
 import (
-	"github.com/stretchr/testify/assert"
 	"log"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -178,7 +179,8 @@ func TestSetAndGetAllowedKey(t *testing.T) {
 	key := ascaLocationKey
 	value := "location-1"
 
-	SetOptionalParam(key, value)
+	err := SetOptionalParam(key, value)
+	assert.Nil(t, err)
 
 	if !hasOptionalParam(key) {
 		t.Fatalf("expected hasOptionalParam(%q) to be true", key)
@@ -195,7 +197,8 @@ func TestSetNotAllowedKeyDoesNotSet(t *testing.T) {
 	key := "not-allowed-key"
 	value := "value"
 
-	SetOptionalParam(key, value)
+	err := SetOptionalParam(key, value)
+	assert.Nil(t, err)
 
 	if hasOptionalParam(key) {
 		t.Fatalf("expected hasOptionalParam(%q) to be false for disallowed key", key)
