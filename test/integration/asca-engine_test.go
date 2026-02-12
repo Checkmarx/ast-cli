@@ -235,14 +235,19 @@ func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
 	_ = ASCAWrapper.ShutDown()
 	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
 	tempDir := t.TempDir()
-	// Download ZIP
+
 	resp, err := http.Get(ascaconfig.Params.DownloadURL)
 	asserts.Nil(t, err)
 	defer resp.Body.Close()
+
 	asserts.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Save ZIP file
 	zipPath := filepath.Join(tempDir, ascaconfig.Params.FileName)
+	zipBytes, err := io.ReadAll(resp.Body)
+	asserts.Nil(t, err)
+	asserts.NotZero(t, len(zipBytes))
+	err = os.WriteFile(zipPath, zipBytes, 0644)
+	asserts.Nil(t, err)
 	file, err := os.Open(zipPath)
 	asserts.Nil(t, err)
 	defer file.Close()
