@@ -75,6 +75,7 @@ func Test_ExecuteAscaScan(t *testing.T) {
 				JwtWrapper:  &mock.JWTMockWrapper{},
 				ASCAWrapper: &mock.ASCAMockWrapper{},
 			}
+			// No CustomVorpal Location
 			got, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("executeASCAScan() error = %v, wantErr %v", err, ttt.wantErr)
@@ -128,6 +129,62 @@ func Test_runScanASCACommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
+			err := runFunc(cmd, []string{})
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
+				t.Errorf("RunScanASCACommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+			}
+		})
+	}
+}
+
+func Test_runScanASCAWithAscaLocationFlagCommand(t *testing.T) {
+	tests := []struct {
+		name         string
+		sourceFlag   string
+		engineFlag   bool
+		ascaLocation string
+		wantErr      bool
+		want         *grpcs.ScanResult
+		wantErrMsg   string
+	}{
+		{
+			name:         "Test with empty fileSourceFlag",
+			sourceFlag:   "",
+			engineFlag:   true,
+			ascaLocation: "C:/Users/test/Downloads/vorpal.exe",
+			wantErr:      false,
+			want:         nil,
+		},
+		{
+			name:         "Test with valid fileSource Flag and ASCAUpdateVersion flag set false ",
+			sourceFlag:   "data/python-vul-file.py",
+			engineFlag:   false,
+			ascaLocation: "C:/Users/test/Downloads/vorpal.exe",
+			want:         nil,
+			wantErr:      false,
+		},
+		{
+			name:         "Test with valid fileSource Flag and ASCAUpdateVersion flag set true ",
+			sourceFlag:   "data/python-vul-file.py",
+			engineFlag:   true,
+			ascaLocation: "C:/Users/test/Downloads/vorpal.exe",
+			want:         nil,
+			wantErr:      false,
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(ttt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
+			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
+			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
+			cmd.Flags().String(commonParams.ASCALocationFlag, ttt.ascaLocation, "")
 			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
