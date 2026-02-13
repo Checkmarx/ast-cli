@@ -198,7 +198,7 @@ func TestSetNotAllowedKeyDoesNotSet(t *testing.T) {
 	value := "value"
 
 	err := SetOptionalParam(key, value)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 
 	if hasOptionalParam(key) {
 		t.Fatalf("expected hasOptionalParam(%q) to be false for disallowed key", key)

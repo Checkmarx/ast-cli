@@ -54,7 +54,7 @@ func SetOptionalParam(key, value string) error {
 	if _, ok := allowedOptionalKeys[key]; ok {
 		optionalParams[key] = value
 	} else {
-		return errors.New("Invalid optional parameter key: " + key)
+		return errors.New("Invalid optional flags parameter key: " + key)
 	}
 	return nil
 }
