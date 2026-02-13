@@ -88,4 +88,6 @@ var EnvVarsBinds = []struct {
 	{MultipartFileSizeKey, MultipartFileSizeEnv, "2"},
 	{DisableASCALatestVersionKey, DisableASCALatestVersionEnv, ""},
 	{DastEnvironmentsPathKey, DastEnvironmentsPathEnv, "api/dast/scans/environments"},
+	{ASCALocationKey, ASCALocationEnv, ""},
+	{OptionalFlagsKey, OptionalFlagsEnv, ""},
 }

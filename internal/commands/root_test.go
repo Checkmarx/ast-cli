@@ -311,3 +311,10 @@ func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
 	err := setLogOutputFromFlag(params.LogFileConsoleFlag, tempDir)
 	assert.NilError(t, err)
 }
+
+func TestOptionalFlag(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--optional-flags", "asca-location=/optional/path"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
+	assert.NilError(t, err)
+}

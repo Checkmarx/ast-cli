@@ -90,4 +90,6 @@ var (
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
 	DisableASCALatestVersionKey         = strings.ToLower(DisableASCALatestVersionEnv)
 	DastEnvironmentsPathKey             = strings.ToLower(DastEnvironmentsPathEnv)
+	ASCALocationKey                     = strings.ToLower(ASCALocationEnv)
+	OptionalFlagsKey                    = strings.ToLower(OptionalFlagsEnv)
 )
