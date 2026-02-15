@@ -3,10 +3,16 @@
 package integration
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/asca/ascaconfig"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -221,4 +227,114 @@ func TestExecuteASCAScan_EngineNotRunningWithLicense_Success(t *testing.T) {
 	}
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "User has license, should not fail")
+}
+
+func TestExecuteASCAScan_Asca_location_Flag_Success(t *testing.T) {
+	configuration.LoadConfiguration()
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
+	tempDir := t.TempDir()
+
+	resp, err := http.Get(ascaconfig.Params.DownloadURL)
+	asserts.Nil(t, err)
+	defer resp.Body.Close()
+
+	asserts.Equal(t, http.StatusOK, resp.StatusCode)
+
+	zipPath := filepath.Join(tempDir, ascaconfig.Params.FileName)
+	zipBytes, err := io.ReadAll(resp.Body)
+	asserts.Nil(t, err)
+	asserts.NotZero(t, len(zipBytes))
+	err = os.WriteFile(zipPath, zipBytes, 0644)
+	asserts.Nil(t, err)
+	file, err := os.Open(zipPath)
+	asserts.Nil(t, err)
+	defer file.Close()
+
+	gzReader, err := gzip.NewReader(file)
+	asserts.Nil(t, err)
+	defer gzReader.Close()
+
+	tarReader := tar.NewReader(gzReader)
+
+	var extractedExePath string
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		asserts.Nil(t, err)
+
+		if header.Typeflag == tar.TypeReg &&
+			filepath.Base(header.Name) == ascaconfig.Params.ExecutableFile {
+
+			extractedExePath = filepath.Join(tempDir, filepath.Base(header.Name))
+
+			outFile, err := os.Create(extractedExePath)
+			asserts.Nil(t, err)
+
+			_, err = io.Copy(outFile, tarReader)
+			asserts.Nil(t, err)
+
+			outFile.Close()
+		}
+	}
+	asserts.NotEmpty(t, extractedExePath, "Executable not found inside zip")
+	// Ensure executable permissions
+	err = os.Chmod(extractedExePath, 0755)
+	asserts.Nil(t, err)
+
+	args := []string{
+		"scan", "asca",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.DebugFlag),
+		flag(commonParams.AgentFlag), "JetBrains",
+		flag(commonParams.ASCALocationFlag), tempDir,
+	}
+
+	err, _ = executeCommand(t, args...)
+	assert.NilError(t, err, "should not fail")
+	ASCAWrapper = grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+
+	time.Sleep(500 * time.Millisecond)
+}
+
+func TestExecuteASCAScan_Asca_location_Flag_ThrowError_No_Executable(t *testing.T) {
+	configuration.LoadConfiguration()
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
+
+	tempDir := t.TempDir()
+	args := []string{
+		"scan", "asca",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.DebugFlag),
+		flag(commonParams.AgentFlag), "JetBrains",
+		flag(commonParams.ASCALocationFlag), tempDir,
+	}
+
+	err, _ := executeCommand(t, args...)
+	asserts.NotNil(t, err, " Expected error due to missing executable in custom location")
+	asserts.ErrorContains(t, err, "No ASCA executable found in provided location")
+}
+
+func TestExecuteASCAScan_Asca_location_Flag_ThrowError_InvalidPath(t *testing.T) {
+	configuration.LoadConfiguration()
+	ASCAWrapper := grpcs.NewASCAGrpcWrapper(viper.GetInt(commonParams.ASCAPortKey))
+	_ = ASCAWrapper.ShutDown()
+	_ = os.RemoveAll(ascaconfig.Params.WorkingDir())
+
+	args := []string{
+		"scan", "asca",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+		flag(commonParams.DebugFlag),
+		flag(commonParams.AgentFlag), "JetBrains",
+		flag(commonParams.ASCALocationFlag), "/definitely/invalid/path",
+	}
+	err, _ := executeCommand(t, args...)
+	asserts.ErrorContains(t, err, "Failed to validate ASCA custom location")
 }
