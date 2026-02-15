@@ -2796,6 +2796,22 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			expectedError:  "",
 			setupFiles:     []string{"image.tar"},
 		},
+		// Windows full path tests
+		{
+			name:           "oci-dir with Windows full path - C drive backslash",
+			containerImage: "oci-dir:C:\\Users\\test\\docker.io\\library\\alpine",
+			expectedError:  "--container-images flag error: path C:\\Users\\test\\docker.io\\library\\alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - C drive forward slash",
+			containerImage: "oci-dir:C:/Users/test/docker.io/library/alpine",
+			expectedError:  "--container-images flag error: path C:/Users/test/docker.io/library/alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - D drive",
+			containerImage: "oci-dir:D:\\data\\images\\my-image",
+			expectedError:  "--container-images flag error: path D:\\data\\images\\my-image does not exist",
+		},
 
 		// ==================== Dir Prefix (Forbidden) ====================
 		{

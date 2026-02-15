@@ -3629,6 +3629,11 @@ func validateContainerImageFormat(containerImage string) error {
 		sanitizedInput = containerImage
 	}
 
+	// Route prefixed inputs (oci-dir:, docker:, etc.) directly to their specific validators
+	if hasKnownSource {
+		return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+	}
+
 	// Check if this looks like a file path before parsing colons
 	if looksLikeFilePath(sanitizedInput) {
 		return validateFilePath(sanitizedInput)
@@ -3645,11 +3650,6 @@ func validateContainerImageFormat(containerImage string) error {
 		// Validate that both image name and tag are not empty
 		if imageName == "" || imageTag == "" {
 			return errors.Errorf("Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='%s', tag='%s'", imageName, imageTag)
-		}
-
-		// For prefixed inputs, also validate the prefix-specific requirements
-		if hasKnownSource {
-			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
 		}
 
 		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
@@ -3687,20 +3687,7 @@ func validateContainerImageFormat(containerImage string) error {
 		return errors.Errorf("%s: image does not have a tag. Did you try to scan a tar file?", containerImagesFlagError)
 	}
 
-	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
-	if hasKnownSource {
-		prefix := getPrefixFromInput(containerImage, knownSources)
-		// oci-dir can reference directories without tags, validate it
-		if prefix == ociDirPrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
-		}
-		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
-		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
-		}
-	}
-
-	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
+	// Step 4: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
 	return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 }
 
@@ -3790,7 +3777,7 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 	imageRef = strings.Trim(imageRef, "'\"")
 
 	if imageRef == "" {
-		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
+		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 	}
 
 	// Delegate to specific validators based on prefix type
@@ -3872,7 +3859,7 @@ func validateRegistryPrefix(imageRef string) error {
 	// Basic validation - should not be empty and should not be obviously just a registry URL
 	if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
 		strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
-		return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
+		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 	}
 
 	// Check for registry:host:port format (just registry URL with port)
@@ -3880,7 +3867,7 @@ func validateRegistryPrefix(imageRef string) error {
 		parts := strings.Split(imageRef, ":")
 		if len(parts) == minImagePartsWithTag && len(parts[portPartIndex]) <= maxPortLength && !strings.Contains(imageRef, "/") {
 			// This looks like registry:port format without image
-			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
+			return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 		}
 	}
 
@@ -3896,7 +3883,7 @@ func validateDaemonPrefix(imageRef, prefix string) error {
 
 	imageParts := strings.Split(imageRef, ":")
 	if len(imageParts) < minImagePartsWithTag || imageParts[imageNameIndex] == "" || imageParts[imageTagIndex] == "" {
-		return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
+		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 	}
 	return nil
 }
