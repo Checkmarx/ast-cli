@@ -89,4 +89,6 @@ var (
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)
 	MultipartFileSizeKey                = strings.ToLower(MultipartFileSizeEnv)
 	DisableASCALatestVersionKey         = strings.ToLower(DisableASCALatestVersionEnv)
+	ASCALocationKey                     = strings.ToLower(ASCALocationEnv)
+	OptionalFlagsKey                    = strings.ToLower(OptionalFlagsEnv)
 )
