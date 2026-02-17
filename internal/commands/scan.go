@@ -3780,7 +3780,7 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 	imageRef = strings.Trim(imageRef, "'\"")
 
 	if imageRef == "" {
-		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+		return errors.Errorf("Invalid value for --container-images flag. After prefix '%s', the image reference cannot be empty", prefix)
 	}
 
 	// Delegate to specific validators based on prefix type
@@ -3862,7 +3862,7 @@ func validateRegistryPrefix(imageRef string) error {
 	// Basic validation - should not be empty and should not be obviously just a registry URL
 	if strings.HasSuffix(imageRef, ".com") || strings.HasSuffix(imageRef, ".io") ||
 		strings.HasSuffix(imageRef, ".org") || strings.HasSuffix(imageRef, ".net") {
-		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+		return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag> or registry:<image>:<tag>")
 	}
 
 	// Check for registry:host:port format (just registry URL with port)
@@ -3870,7 +3870,7 @@ func validateRegistryPrefix(imageRef string) error {
 		parts := strings.Split(imageRef, ":")
 		if len(parts) == minImagePartsWithTag && len(parts[portPartIndex]) <= maxPortLength && !strings.Contains(imageRef, "/") {
 			// This looks like registry:port format without image
-			return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+			return errors.Errorf("Invalid value for --container-images flag. Registry format must specify a single image, not just a registry URL. Use format: registry:<registry-url>/<image>:<tag>")
 		}
 	}
 
@@ -3886,7 +3886,7 @@ func validateDaemonPrefix(imageRef, prefix string) error {
 
 	imageParts := strings.Split(imageRef, ":")
 	if len(imageParts) < minImagePartsWithTag || imageParts[imageNameIndex] == "" || imageParts[imageTagIndex] == "" {
-		return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+		return errors.Errorf("Invalid value for --container-images flag. Prefix '%s' expects format <image-name>:<image-tag>", prefix)
 	}
 	return nil
 }

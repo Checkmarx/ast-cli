@@ -2717,12 +2717,12 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid docker prefix - missing tag",
 			containerImage: "docker:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'docker:' expects format <image-name>:<image-tag>",
 		},
 		{
 			name:           "Invalid docker prefix - empty",
 			containerImage: "docker:",
-			expectedError:  "image does not have a tag",
+			expectedError:  "After prefix 'docker:', the image reference cannot be empty",
 		},
 
 		// ==================== Podman Daemon Tests ====================
@@ -2734,7 +2734,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid podman prefix - missing tag",
 			containerImage: "podman:alpine",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'podman:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Containerd Daemon Tests ====================
@@ -2746,7 +2746,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid containerd prefix - missing tag",
 			containerImage: "containerd:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'containerd:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Registry Tests ====================
@@ -2763,7 +2763,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid registry - just URL without image",
 			containerImage: "registry:myregistry.com",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Registry format must specify a single image, not just a registry URL",
 		},
 
 		// ==================== OCI-Dir Tests ====================
