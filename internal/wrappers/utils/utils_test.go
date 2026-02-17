@@ -2,7 +2,14 @@ package utils
 
 import (
 	"log"
+	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+const (
+	ascaLocationKey = "asca-location"
 )
 
 func TestCleanURL_CleansCorrectly(t *testing.T) {
@@ -159,4 +166,90 @@ func equal(a, b []int) bool {
 		}
 	}
 	return true
+}
+
+func clearOptionalParams() {
+	mutex.Lock()
+	optionalParams = make(map[string]string)
+	mutex.Unlock()
+}
+
+func TestSetAndGetAllowedKey(t *testing.T) {
+	clearOptionalParams()
+	key := ascaLocationKey
+	value := "location-1"
+
+	err := SetOptionalParam(key, value)
+	assert.Nil(t, err)
+
+	if !hasOptionalParam(key) {
+		t.Fatalf("expected hasOptionalParam(%q) to be true", key)
+	}
+	got := GetOptionalParam(key)
+	if got != value {
+		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", key, value, got)
+	}
+}
+
+func TestSetNotAllowedKeyDoesNotSet(t *testing.T) {
+	clearOptionalParams()
+
+	key := "not-allowed-key"
+	value := "value"
+
+	err := SetOptionalParam(key, value)
+	assert.NotNil(t, err)
+
+	if hasOptionalParam(key) {
+		t.Fatalf("expected hasOptionalParam(%q) to be false for disallowed key", key)
+	}
+
+	got := GetOptionalParam(key)
+	if got != "" {
+		t.Fatalf("expected GetOptionalParam(%q) == empty, got %q", key, got)
+	}
+}
+
+func TestSetWithTrimmedKeyBehavior(t *testing.T) {
+	clearOptionalParams()
+
+	originalKey := "  asca-location  "
+	trimmedKey := ascaLocationKey
+	value := "trimmed-value"
+
+	err := SetOptionalParam(originalKey, value)
+	assert.Nil(t, err)
+
+	if got := GetOptionalParam(originalKey); got != value {
+		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", originalKey, value, got)
+	}
+
+	if got := GetOptionalParam(trimmedKey); got != value {
+		t.Fatalf("expected GetOptionalParam(%q) == %q, got %q", originalKey, value, got)
+	}
+}
+
+func TestConcurrentSetOptionalParam(t *testing.T) {
+	clearOptionalParams()
+	var wg sync.WaitGroup
+
+	// spawn several goroutines setting allowed and disallowed keys
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := SetOptionalParam(ascaLocationKey, "v")
+			assert.Nil(t, err)
+			err = SetOptionalParam("not-allowed", "x")
+			assert.NotNil(t, err)
+		}()
+	}
+	wg.Wait()
+
+	if !hasOptionalParam(ascaLocationKey) {
+		t.Fatalf("expected hasOptionalParam(%q) to be true after concurrent sets", "asca-location")
+	}
+	if GetOptionalParam("asca-location") != "v" {
+		t.Fatalf("expected GetOptionalParam(%q) == %q", ascaLocationKey, "v")
+	}
 }
