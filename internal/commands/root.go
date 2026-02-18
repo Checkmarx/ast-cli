@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+
 	"io"
 	"log"
 	"os"
@@ -9,12 +10,14 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -61,6 +64,7 @@ func NewAstCLI(
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realTimeWrapper wrappers.RealtimeScannerWrapper,
 	telemetryWrapper wrappers.TelemetryWrapper,
+	dastEnvironmentsWrapper wrappers.DastEnvironmentsWrapper,
 ) *cobra.Command {
 	// Create the root
 	rootCmd := &cobra.Command{
@@ -106,6 +110,7 @@ func NewAstCLI(
 	rootCmd.PersistentFlags().String(params.ConfigFilePathFlag, "", "Path to the configuration file")
 
 	rootCmd.PersistentFlags().Bool(params.ApikeyOverrideFlag, false, "")
+	rootCmd.PersistentFlags().String(params.OptionalFlags, "", params.OptionalFlagUsage)
 
 	_ = rootCmd.PersistentFlags().MarkHidden(params.ApikeyOverrideFlag)
 	rootCmd.PersistentFlags().String(params.LogFileFlag, "", params.LogFileUsage)
@@ -114,7 +119,12 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		err := customLogConfiguration(rootCmd)
+		CheckPreferredCredentials(cmd)
+		err := extractOptionalFlags(cmd)
+		if err != nil {
+			return err
+		}
+		err = customLogConfiguration(rootCmd)
 		if err != nil {
 			return err
 		}
@@ -148,6 +158,8 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
 	_ = viper.BindPFlag(params.ConfigFilePathKey, rootCmd.PersistentFlags().Lookup(params.ConfigFilePathFlag))
+	_ = viper.BindPFlag(params.OptionalFlagsKey, rootCmd.PersistentFlags().Lookup(params.OptionalFlags))
+
 	// Key here is the actual flag since it doesn't use an environment variable
 	_ = viper.BindPFlag(params.DebugFlag, rootCmd.PersistentFlags().Lookup(params.DebugFlag))
 	_ = viper.BindPFlag(params.InsecureFlag, rootCmd.PersistentFlags().Lookup(params.InsecureFlag))
@@ -187,6 +199,7 @@ func NewAstCLI(
 		realTimeWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
+	dastEnvironmentsCmd := dast.NewDastEnvironmentsCommand(dastEnvironmentsWrapper)
 
 	resultsCmd := NewResultsCommand(
 		resultsWrapper,
@@ -237,6 +250,7 @@ func NewAstCLI(
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
+		dastEnvironmentsCmd,
 		resultsCmd,
 		triageCmd,
 		versionCmd,
@@ -354,6 +368,7 @@ func printByFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.FormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
 }
+
 func printByScanInfoFormat(cmd *cobra.Command, view interface{}) error {
 	f, _ := cmd.Flags().GetString(params.ScanInfoFormatFlag)
 	return printer.Print(cmd.OutOrStdout(), view, f)
@@ -414,5 +429,50 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 		multiWriter = io.MultiWriter(file)
 	}
 	log.SetOutput(multiWriter)
+	return nil
+}
+func CheckPreferredCredentials(cmd *cobra.Command) {
+	if cmd.Flags().Changed(params.AccessKeyIDFlag) &&
+		cmd.Flags().Changed(params.AccessKeySecretFlag) {
+		viper.Set(params.PreferredCredentialTypeKey, "oauth")
+	} else if cmd.Flags().Changed(params.AstAPIKeyFlag) {
+		viper.Set(params.PreferredCredentialTypeKey, "apikey")
+	} else {
+		viper.Set(params.PreferredCredentialTypeKey, "")
+	}
+}
+
+func extractOptionalFlags(cmd *cobra.Command) error {
+	if cmd.Flags().Changed(params.OptionalFlags) {
+		flagVal, err := cmd.Flags().GetString(params.OptionalFlags)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(flagVal) == "" {
+			return errors.Errorf("%s flag is provided but empty", params.OptionalFlags)
+		}
+	}
+	optionalFlags := strings.TrimSpace(viper.GetString(params.OptionalFlagsKey))
+	if optionalFlags == "" {
+		return nil
+	}
+	pairs := strings.Split(optionalFlags, ";")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		keyVal := strings.Split(pair, "=")
+		if len(keyVal) != params.KeyValuePairSize {
+			return errors.New("Invalid optional flags. Optional flags should be in a KEY1=VALUE1;KEY2=VALUE2 format")
+		}
+		if strings.TrimSpace(keyVal[1]) == "" {
+			return errors.New("Invalid optional flags. Value for key " + keyVal[0] + " is empty")
+		}
+		err := utils.SetOptionalParam(keyVal[0], keyVal[1])
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

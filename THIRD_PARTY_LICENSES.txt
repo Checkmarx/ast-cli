@@ -1,0 +1,2 @@
+This project includes third-party software licensed under the BSD 3-Clause License.
+See `licenses/github.com_alexbrainman_sspi_LICENSE` for full text.

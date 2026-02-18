@@ -66,6 +66,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummmaryPath := viper.GetString(params.ScanSummaryPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	apiSecurityResult := viper.GetString(params.APISecurityResultPathKey)
 	riskManagement := viper.GetString(params.RiskManagementPathKey)
 	scsScanOverviewPath := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
@@ -88,6 +89,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
 	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
+	dastEnvironmentsPath := viper.GetString(params.DastEnvironmentsPathKey)
 
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
@@ -101,7 +103,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummmaryPath)
-	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview, apiSecurityResult)
 	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverviewPath)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
@@ -126,6 +128,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realtimeScannerWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
+	dastEnvironmentsWrapper := wrappers.NewHTTPDastEnvironmentsWrapper(dastEnvironmentsPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -165,6 +168,7 @@ func createASTIntegrationTestCommand(t *testing.T) *cobra.Command {
 		containerResolverWrapper,
 		realtimeScannerWrapper,
 		telemetryWrapper,
+		dastEnvironmentsWrapper,
 	)
 	return astCli
 }
