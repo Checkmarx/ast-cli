@@ -24,11 +24,11 @@
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool. 
 <br />
-    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
+    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs Â»</strong></a>
     <br />
     <br />
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
-    ·
+    Â·
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Request Feature</a>
 </p>
 
@@ -41,6 +41,7 @@
    <li><a href="#getting-started">Getting Started</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#contribution">Contribution</a></li>
    <li><a href="#license">License</a></li>
    <li><a href="#cli-integrations">CLI Integrations</a></li>
@@ -100,6 +101,62 @@ Install Make for Windows: https://sourceforge.net/projects/gnuwin32/files/make/3
 Run the following command to build the project:
 ``` make build ``` 
 
+## Repository Context
+
+The following repository context is distilled from `AGENTS.md` and `CLAUDE.md`.
+
+### Project Structure
+- `src/agent/` - Workflow orchestration, state machine graph, and node implementations
+- `src/tools/` - LLM, repository, git, and Go tool wrappers used by the agent
+- `src/config/` - Runtime configuration and environment-based settings
+- `src/observability/` - LangSmith tracing integration
+- `tests/` - Test suite with mocked subprocess, file I/O, and LLM interactions
+- `repocontext/` - Local context files for the target repo (not checked in)
+
+### Architecture Overview
+- Core runtime is a LangGraph `StateGraph` with node flow: `interpret -> load_context -> plan -> [approval_node] -> implement -> validate -> git_ops -> summary`.
+- State is managed in `AgentState` (`TypedDict`) with plan/build/test/risk Pydantic models.
+- `LLMClient` prefers Codex CLI subprocess execution and falls back to API providers.
+- State is persisted to `.agent_state.json` after node execution to support resume.
+
+### Build / Test / Lint Commands
+``` bash
+pytest
+pytest tests/test_llm_client.py
+pytest --cov=src --cov-report=term-missing
+black src tests
+ruff check src tests
+python run_agent.py suggest "Add feature X"
+python run_agent.py approve "Fix bug Y" --branch feature/fix-y
+python run_agent.py auto "Implement Z" --config config.json
+```
+
+### Coding Conventions
+- Load configuration from `.env` (or `--config`) using `AgentConfig.from_env()`.
+- Route tool operations through `ToolExecutor` for retries, failure classification, and tracing.
+- Parse JSON-oriented LLM responses with `_parse_llm_json_response()` helpers.
+- Keep node behavior deterministic and trace node entry/exit consistently.
+- In tests, mock subprocess/LLM/file operations; avoid real external API or CLI calls.
+- Follow `AGENTS.md` skill workflow: load only the needed skill docs and references.
+
+### CI Checks
+- Primary CI validation runs `pytest` and coverage reporting.
+- Current baseline in context docs: ~588 tests with ~89% coverage.
+- Formatting/lint checks run `black` and `ruff check`.
+
+### Key Files
+- `src/agent/orchestrator.py`
+- `src/agent/graph.py`
+- `src/agent/nodes.py`
+- `src/agent/state.py`
+- `src/agent/models.py`
+- `src/tools/llm_client.py`
+- `src/tools/executor.py`
+- `src/tools/repository.py`
+- `src/tools/git_tools.py`
+- `src/tools/go_tools.py`
+- `src/cli.py`
+
 ## Contribution
 We appreciate feedback and contribution to the CLI! Before you get started, please see the following:
 
@@ -119,7 +176,7 @@ Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
-© 2025 Checkmarx Ltd. All Rights Reserved.
+Â© 2025 Checkmarx Ltd. All Rights Reserved.
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
@@ -136,3 +193,6 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
+
+
+
