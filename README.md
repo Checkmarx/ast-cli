@@ -24,11 +24,11 @@
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool. 
 <br />
-    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
+    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs Â»</strong></a>
     <br />
     <br />
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
-    ·
+    Â·
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Request Feature</a>
 </p>
 
@@ -39,6 +39,7 @@
   <summary>Table of Contents</summary>
   <ol>
    <li><a href="#getting-started">Getting Started</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
    <li><a href="#contribution">Contribution</a></li>
@@ -52,6 +53,22 @@
 ## Getting Started
 
 Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html) for CLI commands and usage.
+
+## Repository Context
+
+Short repository context from the provided repo context files:
+
+- **Project structure**: `run_agent.py`, `src/agent/`, `src/tools/`, `src/config/`, `src/observability/`, `tests/`, and `docs/`.
+- **Core build/test/lint commands**:
+  - `pytest`
+  - `pytest --cov=src --cov-report=term-missing`
+  - `black src tests`
+  - `ruff check src tests`
+- **Key contribution conventions**:
+  - Keep the workflow aligned with `interpret -> load_context -> plan -> implement -> validate -> git_ops -> summary`.
+  - Route operations through shared tool abstractions for retries, tracing, and consistent failure handling.
+  - Keep tests deterministic by mocking subprocess, file I/O, and LLM/API calls instead of making real external calls.
+  - Maintain `repocontext/` files in the target repository for planning accuracy.
 
 ## Releases
 For the latest CLI release, please locate your platform download [here](https://github.com/Checkmarx/ast-cli/releases).
@@ -119,7 +136,7 @@ Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
-© 2025 Checkmarx Ltd. All Rights Reserved.
+Â© 2025 Checkmarx Ltd. All Rights Reserved.
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
@@ -136,3 +153,6 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
+
+
+
