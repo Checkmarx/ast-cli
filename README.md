@@ -24,11 +24,11 @@
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool. 
 <br />
-    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
+    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs Â»</strong></a>
     <br />
     <br />
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
-    ·
+    Â·
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Request Feature</a>
 </p>
 
@@ -39,6 +39,7 @@
   <summary>Table of Contents</summary>
   <ol>
    <li><a href="#getting-started">Getting Started</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
    <li><a href="#contribution">Contribution</a></li>
@@ -52,6 +53,15 @@
 ## Getting Started
 
 Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html) for CLI commands and usage.
+
+## Repository Context
+
+Repository context files (for example, `repocontext/AGENTS.md` and `repocontext/CLAUDE.md`) define expected implementation patterns for `ast-cli`.
+
+- **Project structure:** `cmd/`, `internal/commands`, `internal/services`, `internal/wrappers`, `internal/params`, `test/integration`, `.github/workflows`, `.golangci.yml`
+- **Core commands:** `make build`, `make vet`, `go test ./...`, `go test -tags integration ./test/integration`, `make lint`
+- **Coding/testing expectations:** keep changes aligned with existing package boundaries, add or update relevant unit/integration tests, and keep lint/build/tests passing before PR creation
+- **CI checks:** coverage gates target unit tests `>= 77.7%` and integration tests `>= 75%`
 
 ## Releases
 For the latest CLI release, please locate your platform download [here](https://github.com/Checkmarx/ast-cli/releases).
@@ -119,7 +129,7 @@ Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
-© 2025 Checkmarx Ltd. All Rights Reserved.
+Â© 2025 Checkmarx Ltd. All Rights Reserved.
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
@@ -136,3 +146,5 @@ Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmar
 [issues-url]: https://github.com/Checkmarx/ast-cli/issues
 [license-shield]: https://img.shields.io/github/license/Checkmarx/ast-cli.svg
 [license-url]: https://github.com/Checkmarx/ast-cli/blob/main/LICENSE
+
+
