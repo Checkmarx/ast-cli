@@ -10,6 +10,7 @@ import (
 func NewVersionCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
+		Aliases: []string{"cliversion"},
 		Short: "Prints the version number",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(params.Version)

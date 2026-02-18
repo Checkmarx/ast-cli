@@ -129,6 +129,12 @@ func TestRootVersion(t *testing.T) {
 	assert.NilError(t, err)
 }
 
+func TestRootCliVersion(t *testing.T) {
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, "cliversion")
+	assert.NilError(t, err)
+}
+
 func TestFilterTag(t *testing.T) {
 	stateValues := "state=exclude_not_exploitable"
 	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--filter", stateValues}
@@ -273,7 +279,7 @@ func TestSetLogOutputFromFlag_DirPathIsFilePath(t *testing.T) {
 	tempFile, _ := os.CreateTemp("", "ast-cli.txt")
 	defer func() {
 		if err := os.RemoveAll(tempFile.Name()); err != nil {
-			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempFile.Name(), err)
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\\n", tempFile.Name(), err)
 		}
 	}()
 	err := setLogOutputFromFlag(params.LogFileFlag, tempFile.Name())
@@ -294,7 +300,7 @@ func TestSetLogOutputFromFlag_DirPath_Success(t *testing.T) {
 	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\\n", tempDir, err)
 		}
 	}()
 	err := setLogOutputFromFlag(params.LogFileFlag, tempDir)
@@ -305,7 +311,7 @@ func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
 	tempDir, _ := os.MkdirTemp("", "tempdir")
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			fmt.Printf("Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+			fmt.Printf("Warning: failed to clean up temp directory %s: %v\\n", tempDir, err)
 		}
 	}()
 	err := setLogOutputFromFlag(params.LogFileConsoleFlag, tempDir)
