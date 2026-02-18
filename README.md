@@ -41,6 +41,7 @@
    <li><a href="#getting-started">Getting Started</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#contribution">Contribution</a></li>
    <li><a href="#license">License</a></li>
    <li><a href="#cli-integrations">CLI Integrations</a></li>
@@ -99,6 +100,52 @@ Install Make for Windows: https://sourceforge.net/projects/gnuwin32/files/make/3
 
 Run the following command to build the project:
 ``` make build ``` 
+
+## Repository Context
+
+### Project Overview
+- **Checkmarx One CLI** (`cx`) is a Go-based command-line tool for interacting with the Checkmarx One application security platform.
+- Supports SAST, SCA, IaC Security, Container Security, Secret Detection, API Security scans, project management, PR decoration (GitHub, GitLab, Bitbucket, Azure DevOps), real-time scanning, and GenAI capabilities.
+- Module: `github.com/checkmarx/ast-cli`
+- Go version: `1.24.x` (project currently uses `1.24.11`)
+
+### Architecture and Module Layout
+- Entrypoint: `cmd/main.go` wires all wrappers and creates the root Cobra command.
+- `internal/commands`: Cobra command definitions and command-level tests.
+- `internal/services`: business logic and realtime engine implementations (including `internal/services/realtimeengine` and `osinstaller`).
+- `internal/wrappers`: API/client wrappers, protocol adapters, and mocks (`internal/wrappers/mock`).
+- `internal/params`, `internal/constants`, `internal/logger`: shared config and utilities.
+- Integration tests are in `test/integration`, docs are in `docs/`, and CI rules are in `.github/workflows/`.
+
+### Build, Test, and Lint Commands
+``` bash
+make fmt
+make vet
+make build
+make lint
+go build -o ./bin/cx ./cmd
+go test ./...
+go test -tags integration ./test/integration
+bash internal/commands/.scripts/up.sh
+bash internal/commands/.scripts/integration_up.sh
+```
+
+### Coding Conventions
+- Use Go `1.24.x` and run `gofmt`/`goimports` before opening a PR.
+- Follow Go naming idioms: lowercase package names, `CamelCase` exported symbols, and descriptive file names.
+- Keep complexity manageable to satisfy enforced linter rules (`funlen`, `gocyclo`, `errcheck`, `staticcheck`, `revive`, and related checks).
+- Prefer constructor-based dependency injection (as in `cmd/main.go`) and avoid global state.
+
+### CI Requirements
+- CI runs unit tests, integration tests, lint (`golangci-lint`), `govulncheck`, and container image vulnerability scanning.
+- Coverage floors enforced by CI are `77.7%` for unit and `75%` for integration.
+- Ensure branch/PR naming rules and required checks are satisfied before merge.
+
+### Contribution and Security Guidance
+- Open/link an issue for significant work and include relevant tests and docs updates.
+- When modifying API integrations, update wrapper interfaces and their mock implementations together.
+- Use environment variables for credentials (`CX_*`, proxy, SCM tokens) and never commit secrets.
+- Validate release-related changes against CI and security workflows.
 
 ## Contribution
 We appreciate feedback and contribution to the CLI! Before you get started, please see the following:
