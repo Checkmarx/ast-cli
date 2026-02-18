@@ -39,6 +39,7 @@
   <summary>Table of Contents</summary>
   <ol>
    <li><a href="#getting-started">Getting Started</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
    <li><a href="#contribution">Contribution</a></li>
@@ -52,6 +53,39 @@
 ## Getting Started
 
 Refer to the [Documentation](https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html) for CLI commands and usage.
+## Repository Context
+
+The repository context for autonomous agent runs is documented in `repocontext/AGENTS.md` and `repocontext/CLAUDE.md`.
+
+- `AGENTS.md`: Skill system and usage rules, including `skill-creator` and `skill-installer` from `C:/Users/AmolM/.codex/skills/.system/...`.
+- `CLAUDE.md`: Core implementation guidance for architecture, commands, conventions, and important modules.
+
+### Project Structure
+- `src/agent/` (`orchestrator.py`, `graph.py`, `nodes.py`, `state.py`)
+- `src/tools/` (`llm_client.py`, `executor.py`, `repository.py`, `git_tools.py`, `go_tools.py`)
+- `src/config/settings.py`, `src/observability/tracer.py`, `src/cli.py`, `run_agent.py`, `tests/`
+
+### Architecture
+- LangGraph `StateGraph` flow: `interpret -> load_context -> plan -> [approval_node] -> implement -> validate -> git_ops -> summary`.
+- Node contract is `(AgentState) -> AgentState`; state is persisted to `.agent_state.json` between node executions.
+
+### Build, Test, and Lint
+```bash
+pytest
+pytest --cov=src --cov-report=term-missing
+black src tests
+ruff check src tests
+python run_agent.py suggest "Add feature X"
+python run_agent.py approve "Fix bug Y" --branch feature/fix-y
+python run_agent.py auto "Implement Z" --config config.json
+```
+
+### Coding Conventions and Key Files
+- Load config via `AgentConfig.from_env()` or CLI `--config` JSON.
+- Execute external/tool operations through `ToolExecutor` (retry plus failure classification).
+- Parse structured LLM responses with `_parse_llm_json_response()` and keep tests fully mocked (no real API/CLI calls).
+- Key files: `src/agent/orchestrator.py`, `src/agent/graph.py`, `src/agent/nodes.py`, `src/agent/models.py`, `src/tools/llm_client.py`, `src/cli.py`.
+
 
 ## Releases
 For the latest CLI release, please locate your platform download [here](https://github.com/Checkmarx/ast-cli/releases).
