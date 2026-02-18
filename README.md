@@ -41,6 +41,7 @@
    <li><a href="#getting-started">Getting Started</a></li>
    <li><a href="#releases">Releases</a></li>
    <li><a href="#compile">Compile</a></li>
+   <li><a href="#repository-context">Repository Context</a></li>
    <li><a href="#contribution">Contribution</a></li>
    <li><a href="#license">License</a></li>
    <li><a href="#cli-integrations">CLI Integrations</a></li>
@@ -99,6 +100,37 @@ Install Make for Windows: https://sourceforge.net/projects/gnuwin32/files/make/3
 
 Run the following command to build the project:
 ``` make build ``` 
+
+## Repository Context
+
+The CLI repository context is maintained in `repocontext/` files (primarily `AGENTS.md` and `CLAUDE.md`) and should be used as the source of truth for implementation work.
+
+**Repository structure (from repo context):**
+- `cmd/main.go` entrypoint
+- `internal/commands` command handlers
+- `internal/services` core service logic
+- `internal/wrappers` external integrations
+- `internal/params` parameter and flag models
+- `test/integration` integration test suites
+- `.github/workflows` CI pipelines
+- `.golangci.yml` lint configuration
+
+**Core build/test/lint commands:**
+- `make build`
+- `make vet`
+- `go test ./...`
+- `go test -tags integration ./test/integration`
+- `make lint`
+
+**Coding/testing conventions:**
+- Follow architecture, patterns, and coding conventions documented in `repocontext/AGENTS.md` and `repocontext/CLAUDE.md`.
+- Keep CLI command orchestration in `internal/commands`, reusable domain logic in `internal/services`, and tool/provider adapters in `internal/wrappers`.
+- Add or update unit tests for changed packages and integration tests for end-to-end CLI flows.
+
+**CI requirements:**
+- Unit test coverage: `>= 77.7%`
+- Integration test coverage: `>= 75%`
+- Build, vet, lint, and test steps must pass before merge.
 
 ## Contribution
 We appreciate feedback and contribution to the CLI! Before you get started, please see the following:
