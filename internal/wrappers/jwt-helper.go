@@ -201,6 +201,13 @@ func (*JWTStruct) CheckPermissionByAccessToken(requiredPermission string) (hasPe
 
 func GetUniqueID() string {
 	var uniqueID string
+
+	// Check if unique id is already set
+	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
+	if uniqueID != "" {
+		return uniqueID
+	}
+
 	// Check License first
 	jwtWrapper := NewJwtWrapper()
 	isAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxDevAssistType)
@@ -209,14 +216,8 @@ func GetUniqueID() string {
 		return ""
 	}
 	if !isAllowed {
-		logger.PrintIfVerbose("User does not have permission to standalone dev assists feature")
+		logger.PrintIfVerbose("Standalone Dev Assist is not enabled for this tenant")
 		return ""
-	}
-
-	// Check if unique id is already set
-	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
-	if uniqueID != "" {
-		return uniqueID
 	}
 
 	// Generate new unique id
