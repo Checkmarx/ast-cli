@@ -242,6 +242,7 @@ func NewAstCLI(
 	)
 
 	configCmd := util.NewConfigCommand()
+	whoamiCmd := NewWhoamiCommand()
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
@@ -257,6 +258,7 @@ func NewAstCLI(
 		authCmd,
 		utilsCmd,
 		configCmd,
+		whoamiCmd,
 		chatCmd,
 		hooksCmd,
 		telemetryCmd,
