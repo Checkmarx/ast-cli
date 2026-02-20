@@ -34,7 +34,7 @@ func TestRunContainersRealtimeScan_ValidLicenseAndFile_Success(t *testing.T) {
 			},
 		},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "", []string{})
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Greater(t, len(result.Images), 0)
@@ -47,7 +47,7 @@ func TestRunContainersRealtimeScan_EmptyFilePath_Fails(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	result, err := service.RunContainersRealtimeScan("", "")
+	result, err := service.RunContainersRealtimeScan("", "", []string{})
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "realtime engine error: file path is required")
@@ -60,7 +60,7 @@ func TestRunContainersRealtimeScan_InvalidLicense_Fails(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "", []string{})
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "JWT wrapper is not initialized, cannot ensure license")
@@ -73,7 +73,7 @@ func TestRunContainersRealtimeScan_FeatureFlagDisabled_Fails(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "", []string{})
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "realtime engine error: Realtime engine is not available for this tenant")
@@ -86,7 +86,7 @@ func TestRunContainersRealtimeScan_InvalidFilePath_Fails(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	result, err := service.RunContainersRealtimeScan("/non/existent/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("/non/existent/Dockerfile", "", []string{})
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "realtime engine error: invalid file path")
@@ -99,7 +99,7 @@ func TestRunContainersRealtimeScan_NoImagesFound_ReturnsEmpty(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/emptytestdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/emptytestdata/Dockerfile", "", []string{})
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 0, len(result.Images))
@@ -116,7 +116,7 @@ func TestRunContainersRealtimeScan_ScanError_ReturnsError(t *testing.T) {
 			},
 		},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "", []string{})
 	assert.Error(t, err)
 	assert.Nil(t, result)
 	assert.Contains(t, err.Error(), "realtime engine error: Realtime scanner engine failed")
@@ -144,7 +144,7 @@ func TestRunContainersRealtimeScan_ImageVulnerabilityMapping(t *testing.T) {
 			},
 		},
 	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "", []string{})
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, "nginx", result.Images[0].ImageName)
@@ -227,7 +227,7 @@ func TestRunContainersRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", ignoreFile)
+	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", ignoreFile, []string{})
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Equal(t, 0, len(result.Images))
