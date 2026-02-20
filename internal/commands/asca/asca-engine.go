@@ -1,6 +1,8 @@
 package asca
 
 import (
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -25,6 +27,12 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
+		severityThresholdFlag, _ := cmd.Flags().GetStringSlice(commonParams.SeverityThreshold)
+
+		if cmd.Flags().Changed(commonParams.SeverityThreshold) && len(severityThresholdFlag) == 0 {
+			return errorconstants.NewRealtimeEngineError("severity threshold value is required").Error()
+		}
+
 		err := validateASCALocationFlags(cmd)
 		if err != nil {
 			return err
@@ -37,6 +45,10 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			vorpalLocation = location
 		}
 
+		if err = realtimeengine.IsSeverityValid(severityThresholdFlag); err != nil {
+			return errorconstants.NewRealtimeEngineError(err.Error()).Error()
+		}
+
 		var port = viper.GetInt(commonParams.ASCAPortKey)
 		ASCAWrapper := grpcs.NewASCAGrpcWrapper(port)
 		ASCAParams := services.AscaScanParams{
@@ -45,6 +57,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			IsDefaultAgent:    agent == commonParams.DefaultAgent,
 			IgnoredFilePath:   ignoredFilePathFlag,
 			VorpalLocation:    vorpalLocation,
+			SeverityThreshold: severityThresholdFlag,
 		}
 
 		wrapperParams := services.AscaWrappersParam{

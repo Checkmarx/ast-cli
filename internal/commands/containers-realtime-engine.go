@@ -21,10 +21,15 @@ func RunScanContainersRealtimeCommand(
 		}
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
+		severityThresholdFlag, _ := cmd.Flags().GetStringSlice(commonParams.SeverityThreshold)
+
+		if cmd.Flags().Changed(commonParams.SeverityThreshold) && len(severityThresholdFlag) == 0 {
+			return errorconstants.NewRealtimeEngineError("severity threshold value is required").Error()
+		}
 
 		containersRealtimeService := containersrealtime.NewContainersRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
-		images, err := containersRealtimeService.RunContainersRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		images, err := containersRealtimeService.RunContainersRealtimeScan(fileSourceFlag, ignoredFilePathFlag, severityThresholdFlag)
 		if err != nil {
 			return err
 		}

@@ -50,7 +50,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string, severitiesThreshold []string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -66,6 +66,10 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	}
+
+	if err := realtimeengine.IsSeverityValid(severitiesThreshold); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	pkgs, err := parseManifest(filePath)
@@ -94,6 +98,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 
 		ignoreMap := buildIgnoreMap(ignoredPkgs)
 		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
+	}
+
+	if len(severitiesThreshold) > 0 {
+		logger.PrintIfVerbose("Filtering vulnerabilities with severity threshold")
+		filterVulnerabilitiesBySeverity(&response.Packages, severitiesThreshold)
 	}
 
 	return response, nil
@@ -281,5 +290,22 @@ func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
 		PackageManager: pkg.PackageManager,
 		PackageName:    pkg.PackageName,
 		Version:        pkg.Version,
+	}
+}
+
+func filterVulnerabilitiesBySeverity(packages *[]OssPackage, severitiesThreshold []string) {
+	for i := range *packages {
+		filteredVulnerabilities := make([]Vulnerability, 0)
+		vulnerabilities := (*packages)[i].Vulnerabilities
+		// If there are no vulnerabilities(package status is ok or unknown, continue to the next package. Nothing to change in vulnerabilities list)
+		if len(vulnerabilities) == 0 {
+			continue
+		}
+		for _, vulnerability := range vulnerabilities {
+			if realtimeengine.ContainsSeverity(vulnerability.Severity, severitiesThreshold) {
+				filteredVulnerabilities = append(filteredVulnerabilities, vulnerability)
+			}
+		}
+		(*packages)[i].Vulnerabilities = filteredVulnerabilities
 	}
 }

@@ -22,8 +22,13 @@ func RunScanSecretsRealtimeCommand(
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
 		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
+		severityThresholdFlag, _ := cmd.Flags().GetStringSlice(commonParams.SeverityThreshold)
 
-		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		if cmd.Flags().Changed(commonParams.SeverityThreshold) && len(severityThresholdFlag) == 0 {
+			return errorconstants.NewRealtimeEngineError("severity threshold value is required").Error()
+		}
+
+		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag, ignoredFilePathFlag, severityThresholdFlag)
 		if err != nil {
 			return err
 		}

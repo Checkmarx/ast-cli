@@ -21,10 +21,14 @@ func RunScanOssRealtimeCommand(
 		}
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
+		SeveritiesFlag, _ := cmd.Flags().GetStringSlice(commonParams.SeverityThreshold)
 
+		if cmd.Flags().Changed(commonParams.SeverityThreshold) && len(SeveritiesFlag) == 0 {
+			return errorconstants.NewRealtimeEngineError("severity threshold value is required").Error()
+		}
 		ossRealtimeService := ossrealtime.NewOssRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
-		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag, ignoredFilePathFlag, SeveritiesFlag)
 		if err != nil {
 			return err
 		}

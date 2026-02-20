@@ -295,3 +295,36 @@ func TestCreateASCAScanRequest_ValidCustomVorpalLocation_VorPal_exe_Success(t *t
 	}
 	_ = result
 }
+
+func TestCreateASCAScanRequest_validSeverityThresholdSuccess(t *testing.T) {
+	tempDir := t.TempDir()
+
+	executableName := ascaconfig.Params.ExecutableFile
+	executablePath := filepath.Join(tempDir, executableName)
+	err := os.WriteFile(executablePath, []byte("dummy"), 0755)
+	if err != nil {
+		t.Fatalf("Failed to create dummy executable: %v", err)
+	}
+	ASCAParams := AscaScanParams{
+		FilePath:          "data/python-vul-file.py",
+		ASCAUpdateVersion: false,
+		IsDefaultAgent:    true,
+		IgnoredFilePath:   "data/ignoredAsca.json",
+		VorpalLocation:    tempDir,
+		SeverityThreshold: []string{"High"},
+	}
+	wrapperParams := AscaWrappersParam{
+		JwtWrapper:  &mock.JWTMockWrapper{},
+		ASCAWrapper: mock.NewASCAMockWrapper(1234),
+	}
+	result, err := CreateASCAScanRequest(ASCAParams, wrapperParams)
+
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	for i := range result.ScanDetails {
+		assert.Equal(t, "High", result.ScanDetails[i].Severity)
+	}
+	_ = result
+}

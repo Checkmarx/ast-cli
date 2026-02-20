@@ -75,8 +75,9 @@ func filterIgnoredFindings(results []IacRealtimeResult, ignoreMap map[string]boo
 	return filtered
 }
 
-func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFilePath string) ([]IacRealtimeResult, error) {
-	err := svc.runValidations(filePath)
+func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFilePath string, severityThreshold []string) ([]IacRealtimeResult, error) {
+	err := svc.runValidations(filePath, severityThreshold)
+
 	if err != nil {
 		return nil, err
 	}
@@ -108,10 +109,14 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 		results = filterIgnoredFindings(results, ignoreMap)
 	}
 
+	if len(severityThreshold) > 0 {
+		filterBySeverityThreshold(&results, severityThreshold)
+	}
+
 	return results, nil
 }
 
-func (svc *IacRealtimeService) runValidations(filePath string) error {
+func (svc *IacRealtimeService) runValidations(filePath string, severityThreshold []string) error {
 	if err := svc.checkFeatureFlag(); err != nil {
 		return err
 	}
@@ -123,6 +128,11 @@ func (svc *IacRealtimeService) runValidations(filePath string) error {
 	if err := svc.validateFilePath(filePath); err != nil {
 		return err
 	}
+
+	if err := realtimeengine.IsSeverityValid(severityThreshold); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -243,4 +253,14 @@ const osDarwin = "darwin"
 
 var getOS = func() string {
 	return runtime.GOOS
+}
+
+func filterBySeverityThreshold(IacResult *[]IacRealtimeResult, severityThreshold []string) {
+	filteredResults := make([]IacRealtimeResult, 0)
+	for i := range *IacResult {
+		if realtimeengine.ContainsSeverity((*IacResult)[i].Severity, severityThreshold) {
+			filteredResults = append(filteredResults, (*IacResult)[i])
+		}
+	}
+	*IacResult = filteredResults
 }

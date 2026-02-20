@@ -75,7 +75,7 @@ func loadIgnoredSecrets(path string) ([]IgnoredSecret, error) {
 	return ignored, nil
 }
 
-func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePath string) ([]SecretsRealtimeResult, error) {
+func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePath string, severityThreshold []string) ([]SecretsRealtimeResult, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 	}
@@ -92,6 +92,9 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		logger.PrintfIfVerbose("Failed to read file %s: %v", filePath, err)
 		return nil, errorconstants.NewRealtimeEngineError("failed to read file").Error()
+	}
+	if err := realtimeengine.IsSeverityValid(severityThreshold); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	content, err := readFile(filePath)
@@ -110,15 +113,18 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	resultsPerLineMap := createResultsPerLocationMap(results)
 	results = filterGenericAPIKeyVulIfNeeded(results, resultsPerLineMap)
 
-	if ignoredFilePath == "" {
-		return results, nil
+	if ignoredFilePath != "" {
+		ignoredSecrets, err := loadIgnoredSecrets(ignoredFilePath)
+		if err != nil {
+			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored secrets").Error()
+		}
+		ignoreMap := buildIgnoreMap(ignoredSecrets)
+		results = filterIgnoredSecrets(results, ignoreMap)
 	}
-	ignoredSecrets, err := loadIgnoredSecrets(ignoredFilePath)
-	if err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to load ignored secrets").Error()
+
+	if len(severityThreshold) > 0 {
+		filterResultsBySeverity(&results, severityThreshold)
 	}
-	ignoreMap := buildIgnoreMap(ignoredSecrets)
-	results = filterIgnoredSecrets(results, ignoreMap)
 	return results, nil
 }
 
@@ -217,4 +223,13 @@ func filterGenericAPIKeyVulIfNeeded(
 		}
 	}
 	return filtered
+}
+func filterResultsBySeverity(results *[]SecretsRealtimeResult, severityThreshold []string) {
+	filteredResults := make([]SecretsRealtimeResult, 0)
+	for _, secret := range *results {
+		if realtimeengine.ContainsSeverity(secret.Severity, severityThreshold) {
+			filteredResults = append(filteredResults, secret)
+		}
+	}
+	*results = filteredResults
 }

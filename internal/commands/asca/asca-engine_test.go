@@ -197,3 +197,49 @@ func Test_runScanASCAWithAscaLocationFlagCommand(t *testing.T) {
 		})
 	}
 }
+
+func Test_runScanASCAWithAscaSeverityThresholdFlagCommand(t *testing.T) {
+	tests := []struct {
+		name              string
+		sourceFlag        string
+		engineFlag        bool
+		severityThreshold []string
+		wantErr           bool
+		wantErrMsg        string
+	}{
+		{
+			name:              "Test with valid severityThresholdValue",
+			sourceFlag:        "data/python-vul-file.py",
+			engineFlag:        true,
+			severityThreshold: []string{"High", "Medium"},
+			wantErr:           false,
+		},
+		{
+			name:              "Test with invalid severity threshold value ",
+			sourceFlag:        "data/python-vul-file.py",
+			engineFlag:        true,
+			severityThreshold: []string{"h"},
+			wantErr:           true,
+			wantErrMsg:        "realtime engine error: Invalid severity threshold value: h",
+		},
+	}
+	for _, tt := range tests {
+		ttt := tt
+		t.Run(ttt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
+			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
+			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
+			cmd.Flags().StringSlice(commonParams.SeverityThreshold, ttt.severityThreshold, "")
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
+			err := runFunc(cmd, []string{})
+			if (err != nil) != ttt.wantErr {
+				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)
+				return
+			}
+			if ttt.wantErr && err.Error() != ttt.wantErrMsg {
+				t.Errorf("RunScanASCACommand() error message = %v, wantErrMsg %v", err.Error(), ttt.wantErrMsg)
+			}
+		})
+	}
+}

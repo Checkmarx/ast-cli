@@ -483,6 +483,8 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 
 	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
 	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to custom location where ASCA engine is installed")
+	scanASCACmd.Flags().StringSlice(commonParams.SeverityThreshold, []string{}, commonParams.SeverityThresholdUsage)
+
 	_ = viper.BindPFlag(commonParams.ASCALocationKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
 
 	return scanASCACmd
@@ -525,6 +527,8 @@ func scanOssRealtimeSubCommand(
 		"",
 		"Path to a JSON file listing ignored packages",
 	)
+
+	scanOssRealtimeCmd.Flags().StringSlice(commonParams.SeverityThreshold, []string{}, commonParams.SeverityThresholdUsage)
 
 	return scanOssRealtimeCmd
 }
@@ -572,6 +576,8 @@ func scanIacRealtimeSubCommand(
 		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
 	)
 
+	scanIacRealtimeCmd.Flags().StringSlice(commonParams.SeverityThreshold, []string{}, commonParams.SeverityThresholdUsage)
+
 	return scanIacRealtimeCmd
 }
 
@@ -604,6 +610,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
 	)
 	scanContainersRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored containers file")
+	scanContainersRealtimeCmd.Flags().StringSlice(commonParams.SeverityThreshold, []string{}, commonParams.SeverityThresholdUsage)
 
 	return scanContainersRealtimeCmd
 }
@@ -631,6 +638,7 @@ func scanSecretsRealtimeSubCommand(
 
 	scanSecretsRealtimeCmd.Flags().StringP(commonParams.SourcesFlag, "s", "", "Path to the file to scan")
 	scanSecretsRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanSecretsRealtimeCmd.Flags().StringSlice(commonParams.SeverityThreshold, []string{}, commonParams.SeverityThresholdUsage)
 
 	return scanSecretsRealtimeCmd
 }

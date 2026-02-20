@@ -34,6 +34,7 @@ type AscaScanParams struct {
 	IsDefaultAgent    bool
 	IgnoredFilePath   string
 	VorpalLocation    string
+	SeverityThreshold []string
 }
 
 type AscaWrappersParam struct {
@@ -93,7 +94,7 @@ func CreateASCAScanRequest(ascaParams AscaScanParams, wrapperParams AscaWrappers
 		return ignoredResults, nil
 	}
 
-	return executeScan(wrapperParams.ASCAWrapper, ascaParams.FilePath, ascaParams.IgnoredFilePath)
+	return executeScan(wrapperParams.ASCAWrapper, ascaParams.FilePath, ascaParams.IgnoredFilePath, ascaParams.SeverityThreshold)
 }
 
 func validateIgnoredFilePath(filePath string) *grpcs.ScanResult {
@@ -135,7 +136,7 @@ func validateFilePath(filePath string) *grpcs.ScanResult {
 	return nil
 }
 
-func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string) (*grpcs.ScanResult, error) {
+func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string, severityThreshold []string) (*grpcs.ScanResult, error) {
 	sourceCode, err := readSourceCode(filePath)
 	if err != nil {
 		return nil, err
@@ -153,6 +154,10 @@ func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string
 			ignoreMap := buildAscaIgnoreMap(ignoredFindings)
 			scanResult.ScanDetails = filterIgnoredAscaFindings(scanResult.ScanDetails, ignoreMap)
 		}
+	}
+
+	if len(severityThreshold) > 0 {
+		filterSeverityThreshold(&scanResult.ScanDetails, severityThreshold)
 	}
 
 	return scanResult, nil
@@ -326,4 +331,14 @@ func waitForServer(address string, timeout time.Duration) bool {
 		time.Sleep(waitingDuration)
 	}
 	return false
+}
+
+func filterSeverityThreshold(scanDetails *[]grpcs.ScanDetail, severityThreshold []string) {
+	filteredScanDetails := make([]grpcs.ScanDetail, 0)
+	for index := range *scanDetails {
+		if realtimeengine.ContainsSeverity((*scanDetails)[index].Severity, severityThreshold) {
+			filteredScanDetails = append(filteredScanDetails, (*scanDetails)[index])
+		}
+	}
+	*scanDetails = filteredScanDetails
 }

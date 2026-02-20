@@ -130,6 +130,8 @@ const (
 	IncrementalSast                = "sast-incremental"
 	PresetName                     = "sast-preset-name"
 	Threshold                      = "threshold"
+	SeverityThreshold              = "severity-threshold"
+	SeverityThresholdUsage         = "List of severity values to filter"
 	ThresholdFlagUsage             = "Local build threshold. Format <engine>-<severity>=<limit>. " +
 		"Example: scan --threshold \"sast-high=10;sca-high=5;iac-security-low=10\""
 	KeyValuePairSize             = 2

@@ -73,7 +73,7 @@ func filterIgnoredContainers(results []ContainerImage, ignoreMap map[string]bool
 }
 
 // RunContainersRealtimeScan performs a containers real-time scan on the given file.
-func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredFilePath string) (*ContainerImageResults, error) {
+func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredFilePath string, severityThreshold []string) (*ContainerImageResults, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -85,6 +85,10 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredF
 	}
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	}
+
+	if err := realtimeengine.IsSeverityValid(severityThreshold); err != nil {
+		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}
 
 	images, err := parseContainersFile(filePath)
@@ -110,6 +114,10 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredF
 		}
 		ignoreMap := buildContainerIgnoreMap(ignored)
 		results.Images = filterIgnoredContainers(results.Images, ignoreMap)
+	}
+
+	if len(severityThreshold) > 0 {
+		filterContainerSeveritiesByThreshold(&results.Images, severityThreshold)
 	}
 
 	return results, nil
@@ -318,4 +326,20 @@ func convertVulnerabilities(vulns []wrappers.ContainerImageVulnerability) []Vuln
 		})
 	}
 	return result
+}
+
+func filterContainerSeveritiesByThreshold(containerImages *[]ContainerImage, severityThreshold []string) {
+	for i := range *containerImages {
+		if len((*containerImages)[i].Vulnerabilities) == 0 {
+			continue
+		}
+		vulnerabilities := (*containerImages)[i].Vulnerabilities
+		filteredVulns := make([]Vulnerability, 0)
+		for _, vuln := range vulnerabilities {
+			if realtimeengine.ContainsSeverity(vuln.Severity, severityThreshold) {
+				filteredVulns = append(filteredVulns, vuln)
+			}
+		}
+		(*containerImages)[i].Vulnerabilities = filteredVulns
+	}
 }

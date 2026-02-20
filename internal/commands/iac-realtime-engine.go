@@ -21,10 +21,14 @@ func RunScanIacRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
+		severityThresholdFlag, _ := cmd.Flags().GetStringSlice(commonParams.SeverityThreshold)
 
+		if cmd.Flags().Changed(commonParams.SeverityThreshold) && len(severityThresholdFlag) == 0 {
+			return errorconstants.NewRealtimeEngineError("severity threshold value is required").Error()
+		}
 		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper, iacrealtime.NewContainerManager())
 
-		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag)
+		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag, severityThresholdFlag)
 		if err != nil {
 			return err
 		}
