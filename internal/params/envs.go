@@ -90,6 +90,7 @@ const (
 	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"
 	MultipartFileSizeEnv                = "MULTIPART_FILE_SIZE"
 	DisableASCALatestVersionEnv         = "DISABLE_ASCA_UPDATE"
+	DastEnvironmentsPathEnv             = "CX_DAST_ENVIRONMENTS_PATH"
 	ASCALocationEnv                     = "CX_ASCA_LOCATION"
 	OptionalFlagsEnv                    = "CX_OPTIONAL_FLAGS"
 )
