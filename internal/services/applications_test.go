@@ -1,13 +1,14 @@
 package services
 
 import (
+	"reflect"
+	"strings"
+	"testing"
+
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"gotest.tools/assert"
-	"reflect"
-	"strings"
-	"testing"
 )
 
 func Test_createApplicationIds(t *testing.T) {
@@ -86,4 +87,13 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 			assert.Assert(t, strings.Contains(err.Error(), tt.error), err.Error())
 		})
 	}
+}
+
+func Test_AssociateProjectToApplication_ProjectAlreadyAssociated(t *testing.T) {
+	projectID := "project-123"
+	associatedProjectIds := []string{"project-123", "project-456"}
+	applicationName := "app-1"
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	err := associateProjectToApplication(applicationName, projectID, associatedProjectIds, applicationWrapper)
+	assert.NilError(t, err)
 }

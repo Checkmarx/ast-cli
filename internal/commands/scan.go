@@ -43,17 +43,19 @@ import (
 )
 
 const (
-	failedCreating    = "Failed creating a scan"
-	failedGetting     = "Failed showing a scan"
-	failedGettingTags = "Failed getting tags"
-	failedDeleting    = "Failed deleting a scan"
-	failedCanceling   = "Failed canceling a scan"
-	failedGettingAll  = "Failed listing"
-	thresholdLog      = "%s: Limit = %d, Current = %v"
-	thresholdMsgLog   = "Threshold check finished with status %s : %s"
-	mbBytes           = 1024.0 * 1024.0
-	notExploitable    = "NOT_EXPLOITABLE"
-	ignored           = "IGNORED"
+	failedCreating           = "Failed creating a scan"
+	failedGetting            = "Failed showing a scan"
+	failedGettingTags        = "Failed getting tags"
+	failedDeleting           = "Failed deleting a scan"
+	failedCanceling          = "Failed canceling a scan"
+	failedGettingAll         = "Failed listing"
+	thresholdLog             = "%s: Limit = %d, Current = %v"
+	thresholdMsgLog          = "Threshold check finished with status %s : %s"
+	mbBytes                  = 1024.0 * 1024.0
+	notExploitable           = "NOT_EXPLOITABLE"
+	ignored                  = "IGNORED"
+	minWindowsPathLength     = 3
+	containerImagesFlagError = "--container-images flag error"
 
 	git                                     = "git"
 	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
@@ -62,7 +64,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.17"
+	containerImage                          = "checkmarx/kics:v2.1.19"
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -124,12 +126,19 @@ const (
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
+	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Valid values are: 'true' or 'false'"
+	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: --git-commit-history flag ignored because git commit history scanning is not available."
+	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: --git-commit-history flag ignored because scs was not specified in scan types."
+	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: --git-commit-history flag ignored because secret detection wasn't run on this scan."
+	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
+
 	jsonExt                      = ".json"
 	xmlExt                       = ".xml"
 	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
 	BranchPrimaryPrefix          = "--branch-primary="
 	OverridePolicyManagement     = "override-policy-management"
 	defaultScanEnqueueRetryDelay = 5
+	scaResolverCxOneAuthToken    = "CXONE_AUTH_TOKEN"
 )
 
 var (
@@ -473,6 +482,9 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	)
 
 	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to custom location where ASCA engine is installed")
+	_ = viper.BindPFlag(commonParams.ASCALocationKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
+
 	return scanASCACmd
 }
 
@@ -884,6 +896,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoTokenFlag, "", "Provide a token with read permission for the repo that you are scanning (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSRepoURLFlag, "", "The URL of the repo that you are scanning with scs (for scorecard scans)")
 	createScanCmd.PersistentFlags().String(commonParams.SCSEnginesFlag, "", "Specify which scs engines will run (default: all licensed engines)")
+	createScanCmd.PersistentFlags().String(commonParams.GitCommitHistoryFlag, "", commonParams.GitCommitHistoryFlagDescription)
 	createScanCmd.PersistentFlags().Bool(commonParams.ScaHideDevAndTestDepFlag, false, scaHideDevAndTestDepFlagDescription)
 
 	// Container config flags
@@ -1010,9 +1023,8 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, containersConfig)
 	}
 
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, scsLicensingV2Flag.Status, userAllowedEngines[commonParams.RepositoryHealthType],
-		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType])
+	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.RepositoryHealthType],
+		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType], featureFlagsWrapper)
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
@@ -1255,7 +1267,7 @@ func addContainersScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) (ma
 				continue
 			}
 			if containerImagesErr := validateContainerImageFormat(containerImageName); containerImagesErr != nil {
-				errorMsg := strings.TrimPrefix(containerImagesErr.Error(), "--container-images flag error: ")
+				errorMsg := strings.TrimPrefix(containerImagesErr.Error(), containerImagesFlagError+": ")
 				validationErrors = append(validationErrors, fmt.Sprintf("User input: '%s' error: %s", containerImageName, errorMsg))
 			}
 		}
@@ -1388,14 +1400,15 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 	return isURLSupportedByScorecard(scsRepoURL), nil
 }
 
-func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensingV2, hasRepositoryHealthLicense,
-	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) (map[string]interface{}, error) {
-	scsEnabled := isScsEnabled(scsLicensingV2)
+func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasRepositoryHealthLicense,
+	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]interface{}, error) {
+	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
+	scsEnabled := isScsEnabled(scsLicensingV2Flag.Status)
 	if !scsEnabled {
 		return nil, nil
 	}
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
+	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense)
+	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1426,6 +1439,12 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, scsLicensi
 
 	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
+
+		// Set git commit history based on FF and validations
+		commitHistoryFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SscsCommitHistoryEnabled)
+		if gitCommitHistoryValue := getGitCommitHistoryValue(cmd, commitHistoryFlag.Status); gitCommitHistoryValue != "" {
+			scsConfig.GitCommitHistory = gitCommitHistoryValue
+		}
 	}
 
 	isScsEnginesFlagSet := scsEngines != ""
@@ -1854,7 +1873,7 @@ func filterMatched(filters []string, fileName string) bool {
 	return matched
 }
 
-func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string) error {
+func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	if scaResolver != "" {
 		scaFile, err := ioutil.TempFile("", "sca")
 		scaResolverResultsFile = scaFile.Name() + ".json"
@@ -1875,7 +1894,19 @@ func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName strin
 			args = append(args, parsedscaResolverParams...)
 		}
 		log.Println(fmt.Sprintf("Using SCA resolver: %s %v", scaResolver, args))
-		out, err := exec.Command(scaResolver, args...).Output()
+		cmd := exec.Command(scaResolver, args...)
+		scaDeltaScanEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScaDeltaScanEnabled)
+		if scaDeltaScanEnabled.Status {
+			accessToken, err := wrappers.GetAccessToken()
+			if err != nil {
+				return err
+			}
+			if accessToken != "" {
+				logger.PrintIfVerbose("Setting authorization token for SCA Delta Scan")
+				cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", scaResolverCxOneAuthToken, accessToken))
+			}
+		}
+		out, err := cmd.Output()
 		logger.PrintIfVerbose(string(out))
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -1988,7 +2019,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 		// execute scaResolver only in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
-			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName)
+			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 			if scaErr != nil {
 				if unzip {
 					_ = cleanTempUnzipDirectory(directoryPath)
@@ -2240,7 +2271,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
-// enforceLocalResolutionForTarFiles checks if any container image is a tar file
+// enforceLocalResolutionForTarFiles checks if any container image is a tar file or oci-dir
 // and enforces local resolution by setting the --containers-local-resolution flag.
 // Container-security scan-type related function.
 func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
@@ -2261,7 +2292,7 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 
 	// Parse container images list
 	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
-	hasTarFile := false
+	needsLocalResolution := false
 
 	for _, containerImageName := range containerImagesList {
 		// Normalize input: trim spaces and quotes
@@ -2275,15 +2306,21 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 
 		// Check if this is a tar file by checking if it contains a tar file reference
 		if isTarFileReference(containerImageName) {
-			hasTarFile = true
+			needsLocalResolution = true
+			break
+		}
+
+		// Check if this is an oci-dir reference - these also require local resolution
+		if strings.HasPrefix(containerImageName, ociDirPrefix) {
+			needsLocalResolution = true
 			break
 		}
 	}
 
-	// If at least one tar file is found, enforce local resolution
-	if hasTarFile {
-		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
-		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+	// If at least one tar file or oci-dir is found, enforce local resolution
+	if needsLocalResolution {
+		logger.PrintIfVerbose("Detected tar file(s) or oci-dir in --container-images flag")
+		fmt.Println("Warning: Tar file(s) or oci-dir detected in --container-images. Automatically enabling --containers-local-resolution flag.")
 
 		// Set the flag to true
 		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
@@ -2296,20 +2333,11 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 }
 
 // isTarFileReference checks if a container image reference points to a tar file.
-// Container-security scan-type related function.
+// Handles both Unix and Windows paths (e.g., C:\path\file.tar).
 func isTarFileReference(imageRef string) bool {
-	// Known prefixes that might precede the actual file path
-	knownPrefixes := []string{
-		dockerArchivePrefix,
-		ociArchivePrefix,
-		filePrefix,
-		ociDirPrefix,
-	}
+	knownPrefixes := []string{dockerArchivePrefix, ociArchivePrefix, filePrefix, ociDirPrefix}
 
-	// First, trim quotes from the entire input
 	actualRef := strings.Trim(imageRef, "'\"")
-
-	// Strip known prefixes to get the actual reference
 	for _, prefix := range knownPrefixes {
 		if strings.HasPrefix(actualRef, prefix) {
 			actualRef = strings.TrimPrefix(actualRef, prefix)
@@ -2318,29 +2346,33 @@ func isTarFileReference(imageRef string) bool {
 		}
 	}
 
-	// Check if the reference ends with .tar (case-insensitive)
 	lowerRef := strings.ToLower(actualRef)
-
-	// If it ends with .tar, it's a tar file (no tag suffix allowed)
 	if strings.HasSuffix(lowerRef, ".tar") {
 		return true
 	}
 
-	// If it contains a colon but doesn't end with .tar, check if it's a file.tar:tag format (invalid)
-	// A tar file cannot have a tag suffix like file.tar:tag
+	if isWindowsAbsolutePath(actualRef) {
+		return strings.Contains(lowerRef, ".tar")
+	}
+
 	if strings.Contains(actualRef, ":") {
 		parts := strings.Split(actualRef, ":")
-		const minPartsForTaggedImage = 2
-		if len(parts) >= minPartsForTaggedImage {
-			firstPart := strings.ToLower(parts[0])
-			// If the part before the colon is a tar file, this is invalid (tar files don't have tags)
-			if strings.HasSuffix(firstPart, ".tar") {
-				return false
-			}
+		if len(parts) >= 2 && strings.HasSuffix(strings.ToLower(parts[0]), ".tar") {
+			return false
 		}
 	}
 
 	return false
+}
+
+// isWindowsAbsolutePath checks for Windows drive letter paths (e.g., C:\, D:/).
+func isWindowsAbsolutePath(path string) bool {
+	if len(path) < minWindowsPathLength {
+		return false
+	}
+	firstChar := path[0]
+	isLetter := (firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z')
+	return isLetter && path[1] == ':' && (path[2] == '\\' || path[2] == '/')
 }
 
 func runCreateScanCommand(
@@ -2463,7 +2495,7 @@ func runCreateScanCommand(
 				return reportErr
 			}
 
-			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results)
+			err = applyThreshold(cmd, scanResponseModel, thresholdMap, risksOverviewWrapper, results, featureFlagsWrapper)
 
 			if err != nil {
 				return err
@@ -2731,6 +2763,7 @@ func applyThreshold(
 	thresholdMap map[string]int,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) error {
 	if len(thresholdMap) == 0 {
 		return nil
@@ -2742,7 +2775,11 @@ func applyThreshold(
 		params[commonParams.SastRedundancyFlag] = ""
 	}
 
-	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results)
+	resultsParams, err := getFilters(cmd)
+	if err != nil {
+		return err
+	}
+	summaryMap, err := getSummaryThresholdMap(scanResponseModel, risksOverviewWrapper, results, featureFlagsWrapper, resultsParams)
 
 	if err != nil {
 		return err
@@ -2830,6 +2867,8 @@ func getSummaryThresholdMap(
 	scan *wrappers.ScanResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	results *wrappers.ScanResultsCollection,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	resultsParam map[string]string,
 ) (map[string]int, error) {
 	summaryMap := make(map[string]int)
 
@@ -2841,13 +2880,21 @@ func getSummaryThresholdMap(
 	}
 
 	if slices.Contains(scan.Engines, commonParams.APISecType) {
-		apiSecRisks, err := getResultsForAPISecScanner(risksOverviewWrapper, scan.ID)
+		apiSecFilterRisks, err := getFilterResultsForAPISecScanner(risksOverviewWrapper, scan.ID, resultsParam)
 		if err != nil {
 			return nil, err
 		}
-		summaryMap["api-security-high"] = apiSecRisks.Risks[1]
-		summaryMap["api-security-medium"] = apiSecRisks.Risks[2]
-		summaryMap["api-security-low"] = apiSecRisks.Risks[3]
+		if apiSecFilterRisks != nil && apiSecFilterRisks.SeverityCount != nil {
+			summaryMap["api-security-high"] = apiSecFilterRisks.SeverityCount["high"]
+			summaryMap["api-security-medium"] = apiSecFilterRisks.SeverityCount["medium"]
+			summaryMap["api-security-low"] = apiSecFilterRisks.SeverityCount["low"]
+
+			flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.CVSSV3Enabled)
+			criticalEnabled := flagResponse.Status
+			if criticalEnabled {
+				summaryMap["api-security-critical"] = apiSecFilterRisks.SeverityCount["critical"]
+			}
+		}
 	}
 	return summaryMap, nil
 }
@@ -3461,11 +3508,17 @@ func Wait(attempt int) {
 }
 
 func deprecatedFlagValue(cmd *cobra.Command, deprecatedFlagKey, inUseFlagKey string) string {
-	flagValue, _ := cmd.Flags().GetString(inUseFlagKey)
-	if flagValue == "" {
-		flagValue, _ = cmd.Flags().GetString(deprecatedFlagKey)
+	inUseValues, _ := cmd.Flags().GetStringSlice(inUseFlagKey)
+	if len(inUseValues) > 0 {
+		return strings.Join(inUseValues, ",")
 	}
-	return flagValue
+
+	deprecatedValues, _ := cmd.Flags().GetStringSlice(deprecatedFlagKey)
+	if len(deprecatedValues) > 0 {
+		return strings.Join(deprecatedValues, ",")
+	}
+
+	return ""
 }
 
 func validateCreateScanFlags(cmd *cobra.Command) error {
@@ -3512,6 +3565,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			}
 		}
 	}
+
+	// Validate git-commit-history flag
+	err = validateGitCommitHistoryFlag(cmd)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -3532,7 +3592,7 @@ const (
 // Container-security scan-type related function.
 // This function implements comprehensive validation logic for all supported container image formats:
 // - Standard image:tag format
-// - Tar files (.tar)
+// - Tar files (.tar) - including full file paths on Windows (C:\path\file.tar) and Unix (/path/file.tar)
 // - Prefixed formats (docker:, podman:, containerd:, registry:, docker-archive:, oci-archive:, oci-dir:, file:)
 // It provides helpful error messages and hints for common user mistakes.
 func validateContainerImageFormat(containerImage string) error {
@@ -3572,6 +3632,16 @@ func validateContainerImageFormat(containerImage string) error {
 		sanitizedInput = containerImage
 	}
 
+	// Route prefixed inputs (oci-dir:, docker:, etc.) directly to their specific validators
+	if hasKnownSource {
+		return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+	}
+
+	// Check if this looks like a file path before parsing colons
+	if looksLikeFilePath(sanitizedInput) {
+		return validateFilePath(sanitizedInput)
+	}
+
 	// Step 2: Look for the last colon (:) in the sanitized input
 	lastColonIndex := strings.LastIndex(sanitizedInput, ":")
 
@@ -3583,11 +3653,6 @@ func validateContainerImageFormat(containerImage string) error {
 		// Validate that both image name and tag are not empty
 		if imageName == "" || imageTag == "" {
 			return errors.Errorf("Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='%s', tag='%s'", imageName, imageTag)
-		}
-
-		// For prefixed inputs, also validate the prefix-specific requirements
-		if hasKnownSource {
-			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
 		}
 
 		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
@@ -3607,40 +3672,88 @@ func validateContainerImageFormat(containerImage string) error {
 		// It's a tar file - check if it exists locally
 		exists, err := osinstaller.FileExists(sanitizedInput)
 		if err != nil {
-			return errors.Errorf("--container-images flag error: %v", err)
+			return errors.Errorf("%s: %v", containerImagesFlagError, err)
 		}
 		if !exists {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist", sanitizedInput)
+			return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, sanitizedInput)
 		}
 		return nil // Valid tar file
 	}
 
 	// Check for compressed tar files
-	if strings.HasSuffix(lowerInput, ".tar.gz") || strings.HasSuffix(lowerInput, ".tar.bz2") ||
-		strings.HasSuffix(lowerInput, ".tar.xz") || strings.HasSuffix(lowerInput, ".tgz") {
-		return errors.Errorf("--container-images flag error: file '%s' is compressed, use non-compressed format (tar)", sanitizedInput)
+	if isCompressedTarFile(sanitizedInput) {
+		return errors.Errorf("%s: file '%s' is compressed, use non-compressed format (tar)", containerImagesFlagError, sanitizedInput)
 	}
 
 	// Check if it looks like a tar file extension (contains ".tar." but not a valid extension)
 	if strings.Contains(lowerInput, ".tar.") {
-		return errors.Errorf("--container-images flag error: image does not have a tag. Did you try to scan a tar file?")
+		return errors.Errorf("%s: image does not have a tag. Did you try to scan a tar file?", containerImagesFlagError)
 	}
 
-	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
-	if hasKnownSource {
-		prefix := getPrefixFromInput(containerImage, knownSources)
-		// oci-dir can reference directories without tags, validate it
-		if prefix == ociDirPrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
-		}
-		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
-		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
+	// Step 4: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
+	return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
+}
+
+// isCompressedTarFile checks if the given path has a compressed tar file extension.
+func isCompressedTarFile(path string) bool {
+	lowerPath := strings.ToLower(path)
+	return strings.HasSuffix(lowerPath, ".tar.gz") || strings.HasSuffix(lowerPath, ".tar.bz2") ||
+		strings.HasSuffix(lowerPath, ".tar.xz") || strings.HasSuffix(lowerPath, ".tgz")
+}
+
+// looksLikeFilePath checks if input looks like a file path rather than image:tag.
+func looksLikeFilePath(input string) bool {
+	lowerInput := strings.ToLower(input)
+
+	if isWindowsAbsolutePath(input) {
+		return true
+	}
+
+	// If colon exists and part before it looks like a prefix (no separators/dots), it's not a file path
+	if colonIndex := strings.Index(input, ":"); colonIndex > 0 {
+		beforeColon := input[:colonIndex]
+		if !strings.Contains(beforeColon, "/") && !strings.Contains(beforeColon, "\\") && !strings.Contains(beforeColon, ".") {
+			return false
 		}
 	}
 
-	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
-	return errors.Errorf("--container-images flag error: image does not have a tag")
+	if strings.HasSuffix(lowerInput, ".tar") {
+		return true
+	}
+
+	if isCompressedTarFile(input) {
+		return true
+	}
+
+	hasPathSeparators := strings.Contains(input, "/") || strings.Contains(input, "\\")
+	if hasPathSeparators && strings.Contains(lowerInput, ".tar") {
+		return true
+	}
+
+	return false
+}
+
+// validateFilePath validates file path input for tar files.
+func validateFilePath(filePath string) error {
+	lowerPath := strings.ToLower(filePath)
+
+	if isCompressedTarFile(filePath) {
+		return errors.Errorf("%s: file '%s' is compressed, use non-compressed format (tar)", containerImagesFlagError, filePath)
+	}
+
+	if !strings.HasSuffix(lowerPath, ".tar") {
+		return errors.Errorf("%s: file '%s' is not a valid tar file. Expected .tar extension", containerImagesFlagError, filePath)
+	}
+
+	exists, err := osinstaller.FileExists(filePath)
+	if err != nil {
+		return errors.Errorf("%s: %v", containerImagesFlagError, err)
+	}
+	if !exists {
+		return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, filePath)
+	}
+
+	return nil
 }
 
 // getPrefixFromInput extracts the prefix from a container image reference.
@@ -3690,14 +3803,14 @@ func validatePrefixedContainerImage(containerImage, prefix string) error {
 func validateArchivePrefix(imageRef string) error {
 	exists, err := osinstaller.FileExists(imageRef)
 	if err != nil {
-		return errors.Errorf("--container-images flag error: %v", err)
+		return errors.Errorf("%s: %v", containerImagesFlagError, err)
 	}
 	if !exists {
 		// Check if user mistakenly used archive prefix with an image name:tag format
 		if strings.Contains(imageRef, ":") && !strings.HasSuffix(strings.ToLower(imageRef), ".tar") {
-			return errors.Errorf("--container-images flag error: file '%s' does not exist. Did you try to scan an image using image name and tag?", imageRef)
+			return errors.Errorf("%s: file '%s' does not exist. Did you try to scan an image using image name and tag?", containerImagesFlagError, imageRef)
 		}
-		return errors.Errorf("--container-images flag error: file '%s' does not exist", imageRef)
+		return errors.Errorf("%s: file '%s' does not exist", containerImagesFlagError, imageRef)
 	}
 	return nil
 }
@@ -3711,20 +3824,26 @@ func validateOCIDirPrefix(imageRef string) error {
 	// 3. Can have optional :tag suffix
 
 	pathToCheck := imageRef
-	if strings.Contains(imageRef, ":") {
+
+	// Handle Windows absolute paths (e.g., C:\path\to\dir) before splitting on colons
+	// Windows paths have a drive letter followed by colon and path separator
+	if !isWindowsAbsolutePath(imageRef) && strings.Contains(imageRef, ":") {
 		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+		// For Unix paths, we can safely split on colon to extract the tag
 		pathParts := strings.Split(imageRef, ":")
 		if len(pathParts) > 0 && pathParts[0] != "" {
 			pathToCheck = pathParts[0]
 		}
 	}
+	// For Windows absolute paths, use the entire imageRef as pathToCheck
+	// since the colon is part of the drive letter (e.g., C:\path\to\dir)
 
 	exists, err := osinstaller.FileExists(pathToCheck)
 	if err != nil {
-		return errors.Errorf("--container-images flag error: path %s does not exist: %v", pathToCheck, err)
+		return errors.Errorf("%s: path %s does not exist: %v", containerImagesFlagError, pathToCheck, err)
 	}
 	if !exists {
-		return errors.Errorf("--container-images flag error: path %s does not exist", pathToCheck)
+		return errors.Errorf("%s: path %s does not exist", containerImagesFlagError, pathToCheck)
 	}
 	return nil
 }
@@ -3781,6 +3900,102 @@ func validateBooleanString(value string) error {
 		return errors.Errorf("Invalid value. The value must be true or false.")
 	}
 	return nil
+}
+
+// validateGitCommitHistoryFlag validates the git-commit-history flag (needed for Secret Detection)
+func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+
+	err := validateBooleanString(gitCommitHistory)
+	if err != nil {
+		return errors.Errorf(gitCommitHistoryInvalidValueErrorMsg)
+	}
+
+	return nil
+}
+
+// getGitCommitHistoryValue determines the value for git commit history config based on flag and validations
+func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) string {
+	if !isFeatureFlagEnabled {
+		fmt.Println(gitCommitHistoryNotAvailableWarningMsg)
+		return ""
+	}
+
+	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
+	gitCommitHistoryValue := strings.ToLower(gitCommitHistory)
+
+	if !validateGitCommitHistoryContext(cmd) {
+		return ""
+	}
+
+	return gitCommitHistoryValue
+}
+
+// validateGitCommitHistoryContext validates if the context is appropriate for functionality
+func validateGitCommitHistoryContext(cmd *cobra.Command) bool {
+	userScanTypes, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+	if !strings.Contains(strings.ToLower(userScanTypes), commonParams.ScsType) {
+		fmt.Println(gitCommitHistoryNotSelectedWarningMsg)
+		return false
+	}
+
+	scsEngines, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
+	scsScoreCardSelected, scsSecretDetectionSelected := getSCSEnginesSelected(scsEngines)
+	if scsScoreCardSelected && !scsSecretDetectionSelected {
+		fmt.Println(gitCommitHistoryNotApplicableWarningMsg)
+		return false
+	}
+
+	source, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
+	if !hasGitRepository(source) {
+		fmt.Println(gitCommitHistoryNoGitRepositoryWarningMsg)
+		return false
+	}
+
+	return true
+}
+
+// hasGitRepository checks if the source directory contains a Git repository (skipping validation for git URLs or zip files)
+func hasGitRepository(source string) bool {
+	if source == "" {
+		return false
+	}
+
+	sourceTrimmed := strings.TrimSpace(source)
+
+	if util.IsGitURL(sourceTrimmed) || filepath.Ext(sourceTrimmed) == constants.ZipExtension {
+		return true
+	}
+
+	info, err := os.Stat(sourceTrimmed)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+
+	// Check if .git exists in the root directory
+	gitPath := filepath.Join(sourceTrimmed, ".git")
+	if _, err := os.Stat(gitPath); err == nil {
+		return true
+	}
+
+	// fallback: search for .git in subdirectories
+	return searchGitInSubdirectories(sourceTrimmed)
+}
+
+// searchGitInSubdirectories walks through subdirectories to find a .git folder
+func searchGitInSubdirectories(sourcePath string) bool {
+	found := false
+	_ = filepath.Walk(sourcePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil || found {
+			return nil
+		}
+		if info.IsDir() && info.Name() == ".git" {
+			found = true
+			return filepath.SkipAll
+		}
+		return nil
+	})
+	return found
 }
 
 func parseArgs(input string) []string {

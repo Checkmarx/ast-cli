@@ -37,6 +37,7 @@ func main() {
 	results := viper.GetString(params.ResultsPathKey)
 	scanSummary := viper.GetString(params.ScanSummaryPathKey)
 	risksOverview := viper.GetString(params.RisksOverviewPathKey)
+	apiSecurityResult := viper.GetString(params.APISecurityResultPathKey)
 	riskManagement := viper.GetString(params.RiskManagementPathKey)
 	scsScanOverview := viper.GetString(params.ScsScanOverviewPathKey)
 	uploads := viper.GetString(params.UploadsPathKey)
@@ -58,6 +59,7 @@ func main() {
 	accessManagementPath := viper.GetString(params.AccessManagementPathKey)
 	byorPath := viper.GetString(params.ByorPathKey)
 	realtimeScannerPath := viper.GetString(params.RealtimeScannerPathKey)
+	dastEnvironmentsPath := viper.GetString(params.DastEnvironmentsPathKey)
 
 	customStatesWrapper := wrappers.NewCustomStatesHTTPWrapper()
 	scansWrapper := wrappers.NewHTTPScansWrapper(scans)
@@ -69,7 +71,7 @@ func main() {
 	uploadsWrapper := wrappers.NewUploadsHTTPWrapper(uploads)
 	projectsWrapper := wrappers.NewHTTPProjectsWrapper(projects)
 	applicationsWrapper := wrappers.NewApplicationsHTTPWrapper(applications)
-	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview)
+	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview, apiSecurityResult)
 	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
@@ -96,6 +98,7 @@ func main() {
 	containerResolverWrapper := wrappers.NewContainerResolverWrapper()
 	realTimeWrapper := wrappers.NewRealtimeScannerHTTPWrapper(realtimeScannerPath, jwtWrapper, featureFlagsWrapper)
 	telemetryWrapper := wrappers.NewHTTPTelemetryAIWrapper(realtimeScannerPath)
+	dastEnvironmentsWrapper := wrappers.NewHTTPDastEnvironmentsWrapper(dastEnvironmentsPath)
 
 	astCli := commands.NewAstCLI(
 		applicationsWrapper,
@@ -135,6 +138,7 @@ func main() {
 		containerResolverWrapper,
 		realTimeWrapper,
 		telemetryWrapper,
+		dastEnvironmentsWrapper,
 	)
 	exitListener()
 	err = astCli.Execute()

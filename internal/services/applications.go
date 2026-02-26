@@ -113,9 +113,14 @@ func updateApplication(applicationModel *wrappers.ApplicationConfiguration, appl
 }
 
 func associateProjectToApplication(applicationID, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
-	associatedProjectIds = append(associatedProjectIds, projectID)
+	for _, id := range associatedProjectIds {
+		if id == projectID {
+			logger.PrintfIfVerbose("Project is already associated with the application. Skipping association")
+			return nil
+		}
+	}
 	associateProjectsModel := &wrappers.AssociateProjectModel{
-		ProjectIds: associatedProjectIds,
+		ProjectIds: []string{projectID},
 	}
 	errorModel, err := applicationsWrapper.CreateProjectAssociation(applicationID, associateProjectsModel)
 	return handleApplicationUpdateResponse(errorModel, err)

@@ -600,10 +600,12 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
 	astAPIKey := viper.GetString(commonParams.AstAPIKey)
 	var accessToken string
+	credType := viper.GetString(commonParams.PreferredCredentialTypeKey)
 
 	if accessKeyID == "" && astAPIKey == "" {
 		return "", errors.Errorf(FailedToAuth, "access key ID")
 	} else if accessKeySecret == "" && astAPIKey == "" {
+
 		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
@@ -612,10 +614,18 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 		return "", err
 	}
 
-	if astAPIKey != "" {
-		accessToken, err = getNewToken(getAPIKeyPayload(astAPIKey), authURI)
-	} else {
-		accessToken, err = getNewToken(getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	if astAPIKey != "" && credType == "apikey" {
+		accessToken, err = getNewToken(
+			getAPIKeyPayload(astAPIKey), authURI)
+	} else if accessKeyID != "" && accessKeySecret != "" && credType == "oauth" {
+		accessToken, err = getNewToken(
+			getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
+	} else if astAPIKey != "" {
+		accessToken, err = getNewToken(
+			getAPIKeyPayload(astAPIKey), authURI)
+	} else if accessKeyID != "" && accessKeySecret != "" {
+		accessToken, err = getNewToken(
+			getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 	}
 
 	if err != nil {

@@ -25,6 +25,7 @@ var EnvVarsBinds = []struct {
 	{ResultsPathKey, ResultsPathEnv, "api/results"},
 	{ScanSummaryPathKey, ScanSummaryPathEnv, "api/scan-summary"},
 	{RisksOverviewPathKey, RisksOverviewPathEnv, "api/apisec/static/api/scan/%s/risks-overview"},
+	{APISecurityResultPathKey, APISecurityResultPathEnv, "api/apisec/static/api/risks"},
 	{ScsScanOverviewPathKey, ScsScanOverviewPathEnv, "api/micro-engines/read/scans/%s/scan-overview"},
 	{SastResultsPathKey, SastResultsPathEnv, "api/sast-results"},
 	{SastResultsPredicatesPathKey, SastResultsPredicatesPathEnv, "api/sast-results-predicates"},
@@ -85,4 +86,8 @@ var EnvVarsBinds = []struct {
 	{MultipartPresignedPathKey, MultipartPresignedPathEnv, "api/uploads/multipart-presigned"},
 	{CompleteMultiPartUploadPathKey, CompleteMultipartUploadPathEnv, "api/uploads/complete-multipart-upload"},
 	{MultipartFileSizeKey, MultipartFileSizeEnv, "2"},
+	{DisableASCALatestVersionKey, DisableASCALatestVersionEnv, ""},
+	{DastEnvironmentsPathKey, DastEnvironmentsPathEnv, "api/dast/scans/environments"},
+	{ASCALocationKey, ASCALocationEnv, ""},
+	{OptionalFlagsKey, OptionalFlagsEnv, ""},
 }
