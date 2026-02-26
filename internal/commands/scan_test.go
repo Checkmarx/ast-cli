@@ -2717,12 +2717,12 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid docker prefix - missing tag",
 			containerImage: "docker:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'docker:' expects format <image-name>:<image-tag>",
 		},
 		{
 			name:           "Invalid docker prefix - empty",
 			containerImage: "docker:",
-			expectedError:  "image does not have a tag",
+			expectedError:  "After prefix 'docker:', the image reference cannot be empty",
 		},
 
 		// ==================== Podman Daemon Tests ====================
@@ -2734,7 +2734,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid podman prefix - missing tag",
 			containerImage: "podman:alpine",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'podman:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Containerd Daemon Tests ====================
@@ -2746,7 +2746,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid containerd prefix - missing tag",
 			containerImage: "containerd:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'containerd:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Registry Tests ====================
@@ -2763,7 +2763,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid registry - just URL without image",
 			containerImage: "registry:myregistry.com",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Registry format must specify a single image, not just a registry URL",
 		},
 
 		// ==================== OCI-Dir Tests ====================
@@ -2795,6 +2795,22 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			containerImage: "oci-dir:image.tar",
 			expectedError:  "",
 			setupFiles:     []string{"image.tar"},
+		},
+		// Windows full path tests
+		{
+			name:           "oci-dir with Windows full path - C drive backslash",
+			containerImage: "oci-dir:C:\\Users\\test\\docker.io\\library\\alpine",
+			expectedError:  "--container-images flag error: path C:\\Users\\test\\docker.io\\library\\alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - C drive forward slash",
+			containerImage: "oci-dir:C:/Users/test/docker.io/library/alpine",
+			expectedError:  "--container-images flag error: path C:/Users/test/docker.io/library/alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - D drive",
+			containerImage: "oci-dir:D:\\data\\images\\my-image",
+			expectedError:  "--container-images flag error: path D:\\data\\images\\my-image does not exist",
 		},
 
 		// ==================== Dir Prefix (Forbidden) ====================
@@ -4515,7 +4531,7 @@ func TestIsTarFileReference(t *testing.T) {
 	}
 }
 
-// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files or oci-dir are detected.
 // Container-security scan-type related test function.
 func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 	testCases := []struct {
@@ -4530,15 +4546,20 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 		{"Already enabled", "alpine.tar", true, true, false},
 		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
 		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
-		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
 
-		// Should enable local resolution
+		// Should enable local resolution - tar files
 		{"Single tar", "alpine.tar", false, true, true},
 		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
 		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
 		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
 		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
 		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+
+		// Should enable local resolution - oci-dir directories
+		{"oci-dir directory", "oci-dir:my-alpine-image", false, true, true},
+		{"oci-dir with path", "oci-dir:/path/to/oci-layout", false, true, true},
+		{"oci-dir with tag suffix", "oci-dir:file.tar:latest", false, true, true},
+		{"Mixed oci-dir+image", "nginx:latest,oci-dir:my-image", false, true, true},
 	}
 
 	for _, tc := range testCases {
@@ -4578,7 +4599,7 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
 			}
 
-			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			hasWarning := strings.Contains(output, "Warning:") && (strings.Contains(output, "Tar file") || strings.Contains(output, "oci-dir"))
 			if tc.expectWarning && !hasWarning {
 				t.Errorf("Expected warning but got: %s", output)
 			} else if !tc.expectWarning && hasWarning {
