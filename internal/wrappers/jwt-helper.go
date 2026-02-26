@@ -209,7 +209,6 @@ func GetUniqueID() string {
 		return ""
 	}
 	if !isAllowed {
-		logger.PrintIfVerbose("User does not have permission to standalone dev assists feature")
 		return ""
 	}
 
