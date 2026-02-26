@@ -36,3 +36,22 @@ func TestRunScanSecretsRealtimeCommand_FFDisable_ScanFailed(t *testing.T) {
 	)
 	assert.NotNil(t, err)
 }
+
+func TestRunScanSecretsRealtimeCommand_Severity_Threshold_Flag_ScanSuccess(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+	execCmdNilAssertion(
+		t,
+		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt", "--ignored-file-path", "", "--severity-threshold", "High",
+	)
+}
+
+func TestRunScanSecretsRealtimeCommand_Severity_ThresholdInvalid_Flag_ScanFailed(t *testing.T) {
+	clearFlags()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+	err := execCmdNotNilAssertion(
+		t,
+		"scan", "secrets-realtime", "-s", "data/secret-exposed.txt", "--ignored-file-path", "", "--severity-threshold", "h",
+	)
+	assert.NotNil(t, err)
+}
