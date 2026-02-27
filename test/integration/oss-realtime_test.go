@@ -14,7 +14,7 @@ import (
 )
 
 func TestOssRealtimeScan_RequirementsTxtFile_Success(t *testing.T) {
-	t.Skip() // Skip this test for now
+
 	configuration.LoadConfiguration()
 	_ = executeCmdNilAssertion(t, "Run OSS Realtime scan", "scan", "oss-realtime", "-s", "data/manifests/requirements.txt")
 	assert.True(t, validateCacheFileExist())
@@ -22,7 +22,7 @@ func TestOssRealtimeScan_RequirementsTxtFile_Success(t *testing.T) {
 }
 
 func TestOssRealtimeScan_PackageJsonFileWithVulnerablePackages_Success(t *testing.T) {
-	t.Skip() // Skip this test for now
+
 	args := []string{
 		"scan", "oss-realtime",
 		flag(commonParams.SourcesFlag), "data/manifests/package.json",
@@ -47,7 +47,7 @@ func TestOssRealtimeScan_PackageJsonFileWithVulnerablePackages_Success(t *testin
 }
 
 func TestOssRealtimeScan_PackageJsonFileWithoutPackages_SuccessWithEmptyResponse(t *testing.T) {
-	t.Skip()
+
 	args := []string{
 		"scan", "oss-realtime",
 		flag(commonParams.SourcesFlag), "data/manifests/no_dep_packageJson/package.json",
@@ -65,7 +65,6 @@ func TestOssRealtimeScan_PackageJsonFileWithoutPackages_SuccessWithEmptyResponse
 }
 
 func TestOssRealtimeScan_PackageJsonFile_Success(t *testing.T) {
-	t.Skip() // Skip this test for now
 	configuration.LoadConfiguration()
 	_ = executeCmdNilAssertion(t, "Run OSS Realtime scan", "scan", "oss-realtime", "-s", "data/manifests/package.json")
 	assert.True(t, validateCacheFileExist())
