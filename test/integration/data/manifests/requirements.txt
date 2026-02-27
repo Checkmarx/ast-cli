@@ -8,7 +8,7 @@ contourpy==1.3.1
     # via matplotlib
  c==0.12.1
     # via matplotlib
-   fonttools==4.61.0
+  fonttools==4.61.0
     # via matplotlib
    kiwisolver==1.4.8
     # via matplotlib
@@ -53,10 +53,6 @@ tzdata==2025.1
 
 flask==3.1.2
 werkzeug>=3.0.6
-<<<<<<< HEAD
-
-=======
->>>>>>> a4bf4515ff88a006d5f4ba0b9303d59eb09c56f3
 
 # Range: greater than or equal and less than
 
@@ -95,3 +91,5 @@ celery>=4.0,<5.0
 gevent==21.8.0  # pinned to a known-good version
 
 # Full-line comment below should be ignored
+
+
