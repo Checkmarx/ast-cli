@@ -2271,7 +2271,7 @@ func definePathForZipFileOrDirectory(cmd *cobra.Command) (zipFile, sourceDir str
 	return zipFile, sourceDir, err
 }
 
-// enforceLocalResolutionForTarFiles checks if any container image is a tar file
+// enforceLocalResolutionForTarFiles checks if any container image is a tar file or oci-dir
 // and enforces local resolution by setting the --containers-local-resolution flag.
 // Container-security scan-type related function.
 func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
@@ -2292,7 +2292,7 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 
 	// Parse container images list
 	containerImagesList := strings.Split(strings.TrimSpace(containerImagesFlag), ",")
-	hasTarFile := false
+	needsLocalResolution := false
 
 	for _, containerImageName := range containerImagesList {
 		// Normalize input: trim spaces and quotes
@@ -2306,15 +2306,21 @@ func enforceLocalResolutionForTarFiles(cmd *cobra.Command) error {
 
 		// Check if this is a tar file by checking if it contains a tar file reference
 		if isTarFileReference(containerImageName) {
-			hasTarFile = true
+			needsLocalResolution = true
+			break
+		}
+
+		// Check if this is an oci-dir reference - these also require local resolution
+		if strings.HasPrefix(containerImageName, ociDirPrefix) {
+			needsLocalResolution = true
 			break
 		}
 	}
 
-	// If at least one tar file is found, enforce local resolution
-	if hasTarFile {
-		logger.PrintIfVerbose("Detected tar file(s) in --container-images flag")
-		fmt.Println("Warning: Tar file(s) detected in --container-images. Automatically enabling --containers-local-resolution flag.")
+	// If at least one tar file or oci-dir is found, enforce local resolution
+	if needsLocalResolution {
+		logger.PrintIfVerbose("Detected tar file(s) or oci-dir in --container-images flag")
+		fmt.Println("Warning: Tar file(s) or oci-dir detected in --container-images. Automatically enabling --containers-local-resolution flag.")
 
 		// Set the flag to true
 		err := cmd.Flags().Set(commonParams.ContainerResolveLocallyFlag, "true")
@@ -3626,6 +3632,11 @@ func validateContainerImageFormat(containerImage string) error {
 		sanitizedInput = containerImage
 	}
 
+	// Route prefixed inputs (oci-dir:, docker:, etc.) directly to their specific validators
+	if hasKnownSource {
+		return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
+	}
+
 	// Check if this looks like a file path before parsing colons
 	if looksLikeFilePath(sanitizedInput) {
 		return validateFilePath(sanitizedInput)
@@ -3642,11 +3653,6 @@ func validateContainerImageFormat(containerImage string) error {
 		// Validate that both image name and tag are not empty
 		if imageName == "" || imageTag == "" {
 			return errors.Errorf("Invalid value for --container-images flag. Image name and tag cannot be empty. Found: image='%s', tag='%s'", imageName, imageTag)
-		}
-
-		// For prefixed inputs, also validate the prefix-specific requirements
-		if hasKnownSource {
-			return validatePrefixedContainerImage(containerImage, getPrefixFromInput(containerImage, knownSources))
 		}
 
 		// Check if this looks like an invalid prefix attempt (e.g., "invalid-prefix:file.tar")
@@ -3684,20 +3690,7 @@ func validateContainerImageFormat(containerImage string) error {
 		return errors.Errorf("%s: image does not have a tag. Did you try to scan a tar file?", containerImagesFlagError)
 	}
 
-	// Step 4: Special handling for prefixes that don't require tags (e.g., oci-dir:)
-	if hasKnownSource {
-		prefix := getPrefixFromInput(containerImage, knownSources)
-		// oci-dir can reference directories without tags, validate it
-		if prefix == ociDirPrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
-		}
-		// Archive prefixes (file:, docker-archive:, oci-archive:) can reference files without tags
-		if prefix == filePrefix || prefix == dockerArchivePrefix || prefix == ociArchivePrefix {
-			return validatePrefixedContainerImage(containerImage, prefix)
-		}
-	}
-
-	// Step 5: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
+	// Step 4: Not a tar file, no special prefix, and no colon - assume user forgot to add tag (error)
 	return errors.Errorf("%s: image does not have a tag", containerImagesFlagError)
 }
 
@@ -3831,13 +3824,19 @@ func validateOCIDirPrefix(imageRef string) error {
 	// 3. Can have optional :tag suffix
 
 	pathToCheck := imageRef
-	if strings.Contains(imageRef, ":") {
+
+	// Handle Windows absolute paths (e.g., C:\path\to\dir) before splitting on colons
+	// Windows paths have a drive letter followed by colon and path separator
+	if !isWindowsAbsolutePath(imageRef) && strings.Contains(imageRef, ":") {
 		// Handle case like "oci-dir:/path/to/dir:tag" or "oci-dir:name.tar:tag"
+		// For Unix paths, we can safely split on colon to extract the tag
 		pathParts := strings.Split(imageRef, ":")
 		if len(pathParts) > 0 && pathParts[0] != "" {
 			pathToCheck = pathParts[0]
 		}
 	}
+	// For Windows absolute paths, use the entire imageRef as pathToCheck
+	// since the colon is part of the drive letter (e.g., C:\path\to\dir)
 
 	exists, err := osinstaller.FileExists(pathToCheck)
 	if err != nil {
