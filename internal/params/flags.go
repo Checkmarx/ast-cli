@@ -55,6 +55,7 @@ const (
 	AccessKeyIDFlag                = "client-id"
 	AccessKeySecretFlag            = "client-secret"
 	AccessKeyIDFlagUsage           = "The OAuth2 client ID"
+	PreferredCredentialTypeKey     = "preferred-credential-type"
 	AccessKeySecretFlagUsage       = "The OAuth2 client secret"
 	InsecureFlag                   = "insecure"
 	InsecureFlagUsage              = "Ignore TLS certificate validations"
@@ -63,9 +64,11 @@ const (
 	FormatFlagUsageFormat          = "Format for the output. One of %s"
 	FilterFlag                     = "filter"
 	ASCALatestVersion              = "asca-latest-version"
+	ASCALocationFlag               = "asca-location"
 	BaseURIFlag                    = "base-uri"
 	ProxyFlag                      = "proxy"
 	ProxyFlagUsage                 = "Proxy server to send communication through"
+	OptionalFlagUsage              = "Flag for providing command specific flag from IDE or CI/CD plugins."
 	IgnoreProxyFlag                = "ignore-proxy"
 	IgnoreProxyFlagUsage           = "Ignore proxy configuration"
 	ProxyTypeFlag                  = "proxy-auth-type"
@@ -76,6 +79,7 @@ const (
 	KerberosProxySPNFlag           = "proxy-kerberos-spn"
 	KerberosKrb5ConfFlag           = "proxy-kerberos-krb5-conf"
 	KerberosCcacheFlag             = "proxy-kerberos-ccache"
+	OptionalFlags                  = "optional-flags"
 	SastFastScanFlag               = "sast-fast-scan"
 	SastLightQueriesFlag           = "sast-light-queries"
 	BranchPrimaryFlag              = "branch-primary"
@@ -275,6 +279,8 @@ const (
 	ProjectIDQueryParam        = "project-id"
 	FromDateQueryParam         = "from-date"
 	ToDateQueryParam           = "to-date"
+	FromQueryParam             = "from"
+	ToQueryParam               = "to"
 	SeverityQueryParam         = "severity"
 	StateQueryParam            = "state"
 	GroupQueryParam            = "group"
@@ -282,6 +288,7 @@ const (
 	NodeIDsQueryParam          = "node-ids"
 	IncludeNodesQueryParam     = "include-nodes"
 	SortQueryParam             = "sort"
+	SearchQueryParam           = "search"
 	Profile                    = "default"
 	BaseURI                    = ""
 	BaseIAMURI                 = ""
@@ -289,6 +296,13 @@ const (
 	Branch                     = ""
 	ScanPolicyDefaultTimeout   = 4
 	ResultPolicyDefaultTimeout = 1
+)
+
+// License
+const (
+	CxOneAssistEnabledKey = "scan.config.plugins.cxoneassist"
+	CxDevAssistEnabledKey = "scan.config.plugins.cxdevassist"
+	DastEnabledKey        = "scan.config.plugins.dastenabled"
 )
 
 // Results

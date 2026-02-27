@@ -73,6 +73,7 @@ func createASTTestCommand() *cobra.Command {
 	customStatesMockWrapper := &mock.CustomStatesMockWrapper{}
 	realTimeWrapper := &mock.RealtimeScannerMockWrapper{}
 	telemetryWrapper := &mock.TelemetryMockWrapper{}
+	dastEnvironmentsWrapper := &mock.DastEnvironmentsMockWrapper{}
 	return NewAstCLI(
 		applicationWrapper,
 		scansMockWrapper,
@@ -111,6 +112,7 @@ func createASTTestCommand() *cobra.Command {
 		containerResolverMockWrapper,
 		realTimeWrapper,
 		telemetryWrapper,
+		dastEnvironmentsWrapper,
 	)
 }
 
@@ -160,6 +162,7 @@ func TestCreateCommand_WithInvalidFlag_ShouldReturnExitCode1(t *testing.T) {
 
 func executeTestCommand(cmd *cobra.Command, args ...string) error {
 	fmt.Println("Executing command with args ", args)
+	defer viper.Reset()
 	cmd.SetArgs(args)
 	cmd.SilenceUsage = true
 	return cmd.Execute()
@@ -306,5 +309,12 @@ func TestSetLogOutputFromFlag_DirPath_Console_Success(t *testing.T) {
 		}
 	}()
 	err := setLogOutputFromFlag(params.LogFileConsoleFlag, tempDir)
+	assert.NilError(t, err)
+}
+
+func TestOptionalFlag(t *testing.T) {
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", githubDummyRepo, "-b", "dummy_branch", "--optional-flags", "asca-location=/optional/path"}
+	cmd := createASTTestCommand()
+	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }

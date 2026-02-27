@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -315,7 +316,8 @@ func TestCreateScanWithScaResolverParamsWrong(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName)
+			featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+			err := runScaResolver(tt.sourceDir, tt.scaResolver, tt.scaResolverParams, tt.projectName, featureFlagsWrapper)
 			assert.Assert(t, strings.Contains(err.Error(), tt.expectedError), err.Error())
 		})
 	}
@@ -326,8 +328,30 @@ func TestCreateScanWithScaResolverNoScaResolver(t *testing.T) {
 	var scaResolver = ""
 	var scaResolverParams = "params"
 	var projectName = "ProjectName"
-	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName)
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
 	assert.Assert(t, err == nil)
+}
+
+func TestScaResolverWithSCADeltaScanEnabled(t *testing.T) {
+	setupMockAccessToken()
+	defer cleanupMockAccessToken()
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.ScaDeltaScanEnabled,
+		Status: true,
+	}
+	defer func() {
+		mock.Flag = wrappers.FeatureFlagResponseModel{}
+	}()
+	var sourceDir = "/sourceDir"
+	var scaResolver = "./NonExistentScaResolver"
+	var scaResolverParams = "params"
+	var projectName = "ProjectName"
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	err := runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
+	assert.Assert(t, err != nil, "Expected error when resolver doesn't exist")
+	assert.Assert(t, strings.Contains(err.Error(), "ScaResolver"), "Error should mention ScaResolver: %v", err.Error())
 }
 
 func TestCreateScanWithScanTypes(t *testing.T) {
@@ -2401,6 +2425,91 @@ func Test_validateThresholds(t *testing.T) {
 
 // TestValidateContainerImageFormat_Comprehensive tests the complete validation logic
 // including input normalization, helpful hints, and all error cases.
+// TestIsWindowsAbsolutePath tests the Windows absolute path detection.
+// Container-security scan-type related test function.
+func TestIsWindowsAbsolutePath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		// Valid Windows absolute paths
+		{name: "C drive with backslash", input: "C:\\Users\\file.tar", expected: true},
+		{name: "D drive with backslash", input: "D:\\data\\image.tar", expected: true},
+		{name: "C drive with forward slash", input: "C:/Users/file.tar", expected: true},
+		{name: "Lowercase drive letter", input: "c:\\path\\file.tar", expected: true},
+
+		// Not Windows absolute paths
+		{name: "Unix absolute path", input: "/path/to/file.tar", expected: false},
+		{name: "Relative path", input: "Downloads/file.tar", expected: false},
+		{name: "Simple filename", input: "file.tar", expected: false},
+		{name: "Image with tag", input: "nginx:latest", expected: false},
+		{name: "Too short", input: "C:", expected: false},
+		{name: "No path separator after colon", input: "C:file.tar", expected: false},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result := isWindowsAbsolutePath(tc.input)
+			if result != tc.expected {
+				t.Errorf("isWindowsAbsolutePath(%q) = %v, expected %v", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
+// TestLooksLikeFilePath tests the file path detection logic for cross-platform support.
+// Container-security scan-type related test function.
+// This test validates the looksLikeFilePath function for various Windows and Unix path formats.
+func TestLooksLikeFilePath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		// Tar file extensions
+		{name: "Simple tar file", input: "image.tar", expected: true},
+		{name: "Tar.gz file", input: "image.tar.gz", expected: true},
+		{name: "Tar.bz2 file", input: "image.tar.bz2", expected: true},
+		{name: "Tar.xz file", input: "image.tar.xz", expected: true},
+		{name: "Tgz file", input: "image.tgz", expected: true},
+
+		// Unix-style paths
+		{name: "Unix relative path with tar", input: "subdir/image.tar", expected: true},
+		{name: "Unix absolute path with tar", input: "/path/to/image.tar", expected: true},
+		{name: "Unix path with version in filename", input: "Downloads/alpine_3.21.0_podman.tar", expected: true},
+		{name: "Unix nested path", input: "path/to/nested/dir/file.tar", expected: true},
+
+		// Windows-style paths
+		{name: "Windows absolute path with drive letter", input: "C:\\Users\\Downloads\\image.tar", expected: true},
+		{name: "Windows path with forward slash after drive", input: "C:/Users/Downloads/image.tar", expected: true},
+		{name: "Windows relative path with backslash", input: "Downloads\\alpine_3.21.0_podman.tar", expected: true},
+		{name: "Windows D drive path", input: "D:\\data\\images\\test.tar", expected: true},
+
+		// Not file paths (image:tag format)
+		{name: "Simple image:tag", input: "nginx:latest", expected: false},
+		{name: "Image with registry", input: "registry.io/namespace/image:tag", expected: false},
+		{name: "Image with port", input: "registry.io:5000/image:tag", expected: false},
+		{name: "Image without tag", input: "nginx", expected: false},
+
+		// Edge cases
+		{name: "Tar file with dots in name", input: "alpine.3.18.0.tar", expected: true},
+		{name: "Tar file with version like name", input: "app_v1.2.3.tar", expected: true},
+		{name: "Path with tar in middle", input: "tarball/other.tar", expected: true},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			result := looksLikeFilePath(tc.input)
+			if result != tc.expected {
+				t.Errorf("looksLikeFilePath(%q) = %v, expected %v", tc.input, result, tc.expected)
+			}
+		})
+	}
+}
+
 // Container-security scan-type related test function.
 // This test validates all supported container image formats, prefixes, tar files,
 // error messages, and helpful hints for the --container-images flag.
@@ -2485,6 +2594,36 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			name:           "Invalid - compressed tgz",
 			containerImage: "image.tgz",
 			expectedError:  "--container-images flag error: file 'image.tgz' is compressed, use non-compressed format (tar)",
+		},
+
+		// ==================== File Path Tests (Windows and Unix) ====================
+		// Note: These tests validate that path-like inputs are correctly recognized as file paths
+		{
+			name:           "Valid tar file with filename containing version number",
+			containerImage: "alpine_3.21.0_podman.tar",
+			expectedError:  "",
+			setupFiles:     []string{"alpine_3.21.0_podman.tar"},
+		},
+		{
+			name:           "Valid tar file with filename containing underscore and version",
+			containerImage: "mysql_5.7_backup.tar",
+			expectedError:  "",
+			setupFiles:     []string{"mysql_5.7_backup.tar"},
+		},
+		{
+			name:           "Invalid - Unix relative path does not exist",
+			containerImage: "subdir/image.tar",
+			expectedError:  "--container-images flag error: file 'subdir/image.tar' does not exist",
+		},
+		{
+			name:           "Invalid - Unix nested path does not exist",
+			containerImage: "path/to/archive/my-image.tar",
+			expectedError:  "--container-images flag error: file 'path/to/archive/my-image.tar' does not exist",
+		},
+		{
+			name:           "Invalid - file path with version-like name does not exist",
+			containerImage: "Downloads/alpine_3.21.0_podman.tar",
+			expectedError:  "--container-images flag error: file 'Downloads/alpine_3.21.0_podman.tar' does not exist",
 		},
 
 		// ==================== Helpful Hints Tests ====================
@@ -2578,12 +2717,12 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid docker prefix - missing tag",
 			containerImage: "docker:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'docker:' expects format <image-name>:<image-tag>",
 		},
 		{
 			name:           "Invalid docker prefix - empty",
 			containerImage: "docker:",
-			expectedError:  "image does not have a tag",
+			expectedError:  "After prefix 'docker:', the image reference cannot be empty",
 		},
 
 		// ==================== Podman Daemon Tests ====================
@@ -2595,7 +2734,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid podman prefix - missing tag",
 			containerImage: "podman:alpine",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'podman:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Containerd Daemon Tests ====================
@@ -2607,7 +2746,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid containerd prefix - missing tag",
 			containerImage: "containerd:nginx",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Prefix 'containerd:' expects format <image-name>:<image-tag>",
 		},
 
 		// ==================== Registry Tests ====================
@@ -2624,7 +2763,7 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 		{
 			name:           "Invalid registry - just URL without image",
 			containerImage: "registry:myregistry.com",
-			expectedError:  "image does not have a tag",
+			expectedError:  "Registry format must specify a single image, not just a registry URL",
 		},
 
 		// ==================== OCI-Dir Tests ====================
@@ -2656,6 +2795,22 @@ func TestValidateContainerImageFormat_Comprehensive(t *testing.T) {
 			containerImage: "oci-dir:image.tar",
 			expectedError:  "",
 			setupFiles:     []string{"image.tar"},
+		},
+		// Windows full path tests
+		{
+			name:           "oci-dir with Windows full path - C drive backslash",
+			containerImage: "oci-dir:C:\\Users\\test\\docker.io\\library\\alpine",
+			expectedError:  "--container-images flag error: path C:\\Users\\test\\docker.io\\library\\alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - C drive forward slash",
+			containerImage: "oci-dir:C:/Users/test/docker.io/library/alpine",
+			expectedError:  "--container-images flag error: path C:/Users/test/docker.io/library/alpine does not exist",
+		},
+		{
+			name:           "oci-dir with Windows full path - D drive",
+			containerImage: "oci-dir:D:\\data\\images\\my-image",
+			expectedError:  "--container-images flag error: path D:\\data\\images\\my-image does not exist",
 		},
 
 		// ==================== Dir Prefix (Forbidden) ====================
@@ -4376,7 +4531,7 @@ func TestIsTarFileReference(t *testing.T) {
 	}
 }
 
-// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files are detected.
+// TestEnforceLocalResolutionForTarFiles tests the automatic enforcement of local resolution when tar files or oci-dir are detected.
 // Container-security scan-type related test function.
 func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 	testCases := []struct {
@@ -4391,15 +4546,20 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 		{"Already enabled", "alpine.tar", true, true, false},
 		{"Only image:tag", "nginx:latest,alpine:3.18", false, false, false},
 		{"Non-tar prefixes", "docker:nginx:latest,registry:ubuntu:22.04", false, false, false},
-		{"Invalid tar:tag format", "oci-dir:file.tar:latest", false, false, false},
 
-		// Should enable local resolution
+		// Should enable local resolution - tar files
 		{"Single tar", "alpine.tar", false, true, true},
 		{"Mixed tar+image", "nginx:latest,alpine.tar", false, true, true},
 		{"Tar with spaces/quotes", " 'alpine.tar' ,nginx:latest", false, true, true},
 		{"Prefixed tar", "docker-archive:alpine.tar", false, true, true},
 		{"oci-dir tar", "oci-dir:image.tar", false, true, true},
 		{"Tar at end", "nginx:latest,ubuntu.tar", false, true, true},
+
+		// Should enable local resolution - oci-dir directories
+		{"oci-dir directory", "oci-dir:my-alpine-image", false, true, true},
+		{"oci-dir with path", "oci-dir:/path/to/oci-layout", false, true, true},
+		{"oci-dir with tag suffix", "oci-dir:file.tar:latest", false, true, true},
+		{"Mixed oci-dir+image", "nginx:latest,oci-dir:my-image", false, true, true},
 	}
 
 	for _, tc := range testCases {
@@ -4439,7 +4599,7 @@ func TestEnforceLocalResolutionForTarFiles(t *testing.T) {
 				t.Errorf("Expected local resolution=%v, got=%v", tc.expectedLocalResolution, actualLocalResolution)
 			}
 
-			hasWarning := strings.Contains(output, "Warning:") && strings.Contains(output, "Tar file")
+			hasWarning := strings.Contains(output, "Warning:") && (strings.Contains(output, "Tar file") || strings.Contains(output, "oci-dir"))
 			if tc.expectWarning && !hasWarning {
 				t.Errorf("Expected warning but got: %s", output)
 			} else if !tc.expectWarning && hasWarning {
@@ -4942,4 +5102,19 @@ func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
 				"Expected warning containing '%s' not found in output: %s", tt.expectWarnings, output)
 		})
 	}
+}
+
+func setupMockAccessToken() {
+	wrappers.CachedAccessToken = "mock-token-for-testing"
+	wrappers.CachedAccessTime = time.Now()
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
+}
+
+func cleanupMockAccessToken() {
+	wrappers.CachedAccessToken = ""
+	wrappers.CachedAccessTime = time.Time{}
+
+	wrappers.ClearCache()
+	// Reset to default value (300 seconds as per params/binds.go)
+	viper.Set(commonParams.TokenExpirySecondsKey, 300)
 }

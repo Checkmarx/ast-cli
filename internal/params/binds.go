@@ -87,4 +87,7 @@ var EnvVarsBinds = []struct {
 	{CompleteMultiPartUploadPathKey, CompleteMultipartUploadPathEnv, "api/uploads/complete-multipart-upload"},
 	{MultipartFileSizeKey, MultipartFileSizeEnv, "2"},
 	{DisableASCALatestVersionKey, DisableASCALatestVersionEnv, ""},
+	{DastEnvironmentsPathKey, DastEnvironmentsPathEnv, "api/dast/scans/environments"},
+	{ASCALocationKey, ASCALocationEnv, ""},
+	{OptionalFlagsKey, OptionalFlagsEnv, ""},
 }
