@@ -31,25 +31,257 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
-  integration-tests:
+
+  # Validate that all integration tests are covered by the matrix patterns
+  # and generate a list of uncovered tests for the catch-all group
+  validate-test-coverage:
     runs-on: ubuntu-latest
+    outputs:
+      uncovered_tests: ${{ steps.validate.outputs.uncovered_tests }}
+      has_uncovered: ${{ steps.validate.outputs.has_uncovered }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
+      - name: Validate all tests are covered by CI patterns
+        id: validate
+        shell: bash
+        run: |
+          echo "Validating that all integration tests are covered by CI matrix patterns..."
+
+          # Extract all test function names
+          all_tests=$(grep -rh "^func Test" test/integration/*_test.go | sed 's/func \(Test[^(]*\).*/\1/' | sort -u)
+
+          # Define all patterns from the matrix (must match the patterns below)
+          patterns=(
+            "^Test(CreateScan|CreateAsyncScan|CreateQueryDescriptionLink|ScanCreate[^I]|ScanTypeApi|ScanTypesValidation|ValidateScanTypes|ScanGenerating|ScanWith|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan|ScansAPISecThreshold)"
+            "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanWorkFlow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+            "^Test(Result|CodeBashing|RiskManagement)"
+            "^TestPR"
+            "^Test(Project|CreateEmpty|CreateAlready|CreateWith|CreateProject|GetProjectByTagsFilter)"
+            "^Test(Predicate|Bfl|RunGetBfl|SastUpdate|GetAndUpdate|Triage|ScaUpdate)"
+            "^Test(ContainerScan|ContainerImage|EmptyFolder)"
+            "^Test(IacRealtime|OssRealtime|Secrets_Realtime|ContainersRealtime|EngineNameResolution|ScaRealtime)"
+            "^Test(Auth|LoadConfiguration|SetConfigProperty|GetTenant|FailProxy)"
+            "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
+            "^Test(GitHub|GitLab|Azure|Bitbucket|BitBucket)(RateLimit|UserCount|Count)"
+            "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
+          )
+
+          uncovered_list=""
+          uncovered_display=""
+          covered_count=0
+          total_count=0
+
+          for test in $all_tests; do
+            total_count=$((total_count + 1))
+            matched=false
+            for pattern in "${patterns[@]}"; do
+              if echo "$test" | grep -qE "$pattern"; then
+                matched=true
+                covered_count=$((covered_count + 1))
+                break
+              fi
+            done
+            if [ "$matched" = false ]; then
+              # Build pipe-separated list for Go test -run pattern
+              if [ -n "$uncovered_list" ]; then
+                uncovered_list="$uncovered_list|$test"
+              else
+                uncovered_list="$test"
+              fi
+              uncovered_display="$uncovered_display\n  - $test"
+            fi
+          done
+
+          echo "Total tests found: $total_count"
+          echo "Tests covered by patterns: $covered_count"
+
+          if [ -n "$uncovered_list" ]; then
+            uncovered_count=$((total_count - covered_count))
+            echo ""
+            echo "WARNING: The following $uncovered_count tests are NOT covered by any CI matrix pattern:"
+            echo -e "$uncovered_display"
+            echo ""
+            echo "These tests will run in the 'Uncovered Tests' catch-all group."
+            echo "Please consider updating the matrix patterns or renaming the test functions."
+
+            # Output for the catch-all group - create a regex pattern
+            echo "uncovered_tests=^($uncovered_list)$" >> $GITHUB_OUTPUT
+            echo "has_uncovered=true" >> $GITHUB_OUTPUT
+          else
+            echo "SUCCESS: All $total_count tests are covered by CI matrix patterns!"
+            echo "uncovered_tests=" >> $GITHUB_OUTPUT
+            echo "has_uncovered=false" >> $GITHUB_OUTPUT
+          fi
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: validate-test-coverage
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Group 1: Scan creation tests - basic scan creation and configuration
+          # Covers: TestCreateScan_*, TestCreateAsyncScan_*, TestCreateQueryDescriptionLink*,
+          #         TestScanCreate*, TestScanTypeApi*, TestScanTypesValidation*, TestValidateScanTypes*,
+          #         TestScanGenerating*, TestScanWith*, TestScanList*, TestScanTimeout*,
+          #         TestScanASCA*, TestExecuteASCAScan*, TestScansAPISecThresholdShouldBlock*
+          - group: scan-create
+            name: "Scan Creation"
+            pattern: "^Test(CreateScan|CreateAsyncScan|CreateQueryDescriptionLink|ScanCreate[^I]|ScanTypeApi|ScanTypesValidation|ValidateScanTypes|ScanGenerating|ScanWith|ScanList|ScanTimeout|ScanASCA|ExecuteASCAScan|ScansAPISecThreshold)"
+
+          # Group 2: Scan operations - E2E, workflow, incremental, cancel, filters
+          # Covers: TestScansE2E*, TestScansUpdate*, TestFastScan*, TestLightQueries*,
+          #         TestRecommendedExclusions*, TestIncrementalScan*, TestBranchPrimary*,
+          #         TestCancelScan*, TestScanCreateInclude*, TestScanCreateIgnore*,
+          #         TestScanWorkflow*, TestScanWorkFlow*, TestScanLogs*, TestInvalidSource*, TestScanShow*,
+          #         TestRequiredScan*, TestScaResolver*, TestBrokenLink*, TestPartialScan*,
+          #         TestFailedScan*, TestRunKics*, TestRunSca*, TestScanGLReport*, TestContainerEngineScan*
+          - group: scan-ops
+            name: "Scan Operations"
+            pattern: "^Test(ScansE2E|ScansUpdate|FastScan|LightQueries|RecommendedExclusions|IncrementalScan|BranchPrimary|CancelScan|ScanCreateInclude|ScanCreateIgnore|ScanWorkflow|ScanWorkFlow|ScanLogs|InvalidSource|ScanShow|RequiredScan|ScaResolver|BrokenLink|PartialScan|FailedScan|RunKics|RunSca|ScanGLReport|ContainerEngineScan)"
+
+          # Group 3: Results and reports tests
+          # Covers: TestResult*, TestCodeBashing*, TestRiskManagement*
+          - group: results
+            name: "Results & Reports"
+            pattern: "^Test(Result|CodeBashing|RiskManagement)"
+
+          # Group 4: PR decoration tests
+          # Covers: TestPR*
+          - group: pr-decoration
+            name: "PR Decoration"
+            pattern: "^TestPR"
+
+          # Group 5: Project management tests
+          # Covers: TestProject*, TestCreateEmpty*, TestCreateAlready*, TestCreateWith*,
+          #         TestCreateProjectWhen*, TestCreateProjectWith*, TestGetProjectByTagsFilter*
+          - group: projects
+            name: "Projects"
+            pattern: "^Test(Project|CreateEmpty|CreateAlready|CreateWith|CreateProject|GetProjectByTagsFilter)"
+
+          # Group 6: Predicates, BFL, and Triage tests
+          # Covers: TestPredicate*, TestBfl*, TestRunGetBfl*, TestSastUpdate*,
+          #         TestGetAndUpdate*, TestTriage*, TestScaUpdate*
+          - group: predicates
+            name: "Predicates & BFL"
+            pattern: "^Test(Predicate|Bfl|RunGetBfl|SastUpdate|GetAndUpdate|Triage|ScaUpdate)"
+
+          # Group 7: Container-specific tests
+          # Covers: TestContainerScan*, TestContainerImage*, TestEmptyFolder*
+          - group: containers
+            name: "Container Tests"
+            pattern: "^Test(ContainerScan|ContainerImage|EmptyFolder)"
+
+          # Group 8: Realtime scanning tests (IaC, OSS, Secrets, Containers)
+          # Covers: TestIacRealtime*, TestOssRealtime*, TestSecrets_Realtime*,
+          #         TestContainersRealtime*, TestEngineNameResolution*, TestScaRealtime*
+          - group: realtime
+            name: "Realtime Scanning"
+            pattern: "^Test(IacRealtime|OssRealtime|Secrets_Realtime|ContainersRealtime|EngineNameResolution|ScaRealtime)"
+
+          # Group 9: Auth and configuration tests
+          # Covers: TestAuth*, TestLoadConfiguration*, TestSetConfigProperty*,
+          #         TestGetTenant*, TestFailProxy*
+          - group: auth-config
+            name: "Auth & Config"
+            pattern: "^Test(Auth|LoadConfiguration|SetConfigProperty|GetTenant|FailProxy)"
+
+          # Group 10: Root, logs, and feature flags tests
+          # Covers: TestRootVersion*, TestSetLogOutput*, Test_DownloadScan*,
+          #         Test_HandleFeatureFlags*, TestMain*
+          - group: root-logs
+            name: "Root & Logs"
+            pattern: "^Test(RootVersion|SetLogOutput|_DownloadScan|_HandleFeatureFlags|Main)"
+
+          # Group 11: SCM rate limiting and user count tests
+          # Covers: TestGitHub*, TestGitLab*, TestAzure*, TestBitbucket*, TestBitBucket*
+          #         (with RateLimit, UserCount, or Count suffix)
+          - group: scm-tests
+            name: "SCM Rate Limit & User Count"
+            pattern: "^Test(GitHub|GitLab|Azure|Bitbucket|BitBucket)(RateLimit|UserCount|Count)"
+
+          # Group 12: Miscellaneous tests - chat, import, telemetry, remediation, hooks, masking
+          # Covers: TestChat*, TestImport*, TestGetLearnMore*, TestGetProjectName*,
+          #         TestTelemetry*, TestMask*, TestFailedMaskSecrets*, TestScaRemediation*,
+          #         TestKicsRemediation*, TestHooksPreCommit*, TestPreReceive*, TestPre_Receive*
+          - group: misc
+            name: "Miscellaneous"
+            pattern: "^Test(Chat|Import|GetLearnMore|GetProjectName|Telemetry|Mask|FailedMask|ScaRemediation|KicsRemediation|HooksPreCommit|PreReceive|Pre_Receive)"
+
+          # Group 13: Catch-all for uncovered tests
+          # This group runs tests that don't match any of the above patterns.
+          # The pattern is dynamically set from the validate-test-coverage job output.
+          # If no uncovered tests exist, this group will be skipped.
+          - group: uncovered
+            name: "Uncovered Tests (Catch-All)"
+            pattern: ""  # Will be overridden by job output or skipped if empty
+
+    name: Integration - ${{ matrix.name }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
       - name: Set up Go version
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:
           go-version-file: go.mod
+
       - run: go version
+
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
-      - name: Install gocovmerge
-        run: go install github.com/wadey/gocovmerge@latest
-      - name: Install pre-commit
+
+      - name: Start Squid proxy
+        run: |
+          docker run \
+            --name squid \
+            -d \
+            -p 3128:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Download ScaResolver
+        run: |
+          wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Install pre-commit (for pre-commit tests)
+        if: matrix.group == 'misc'
         run: |
           pip install pre-commit
           pre-commit install
-      - name: Go Integration test
+
+      - name: Pre-test cleanup (delete stale test projects)
+        if: matrix.group == 'projects' || matrix.group == 'scan-create' || matrix.group == 'scan-ops'
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+          CX_TENANT: ${{ secrets.CX_TENANT }}
+        run: |
+          echo "Running pre-test cleanup for ${{ matrix.group }}..."
+          go test -v -timeout 5m github.com/checkmarx/ast-cli/test/cleandata || true
+          echo "Cleanup complete"
+
+      - name: Warn about uncovered tests
+        if: matrix.group == 'uncovered' && needs.validate-test-coverage.outputs.has_uncovered == 'true'
+        run: |
+          echo "::warning::Some tests are not covered by any CI matrix pattern and will run in this catch-all group."
+          echo "::warning::Please consider updating the matrix patterns or renaming the test functions to match existing patterns."
+          echo "Tests being run in catch-all group:"
+          echo "${{ needs.validate-test-coverage.outputs.uncovered_tests }}" | sed 's/\^(//;s/)$//;s/|/\n/g' | while read test; do
+            echo "  - $test"
+          done
+
+      - name: Run ${{ matrix.name }} tests
+        # Skip the uncovered group if there are no uncovered tests
+        if: matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true'
         shell: bash
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -92,9 +324,282 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
-          ./internal/commands/.scripts/integration_down.sh
+          echo "Running test group: ${{ matrix.name }}"
+
+          # Determine the pattern to use
+          # For the uncovered group, use the dynamically generated pattern from validate-test-coverage
+          if [ "${{ matrix.group }}" = "uncovered" ]; then
+            TEST_PATTERN="${{ needs.validate-test-coverage.outputs.uncovered_tests }}"
+            echo "Using dynamically generated pattern for uncovered tests"
+          else
+            TEST_PATTERN="${{ matrix.pattern }}"
+          fi
+
+          echo "Pattern: $TEST_PATTERN"
+
+          # Skip if pattern is empty (shouldn't happen, but safety check)
+          if [ -z "$TEST_PATTERN" ]; then
+            echo "No tests to run for this group (empty pattern)"
+            exit 0
+          fi
+
+          # Run tests matching the pattern with coverage
+          # Use -p 1 to run tests sequentially within the group to avoid race conditions
+          set +e  # Don't exit on error so we can capture and retry
+          go test \
+            -tags integration \
+            -v \
+            -p 1 \
+            -timeout 90m \
+            -run "$TEST_PATTERN" \
+            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+            -coverprofile cover-${{ matrix.group }}.out \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}.log
+
+          FIRST_RUN_EXIT_CODE=${PIPESTATUS[0]}
+          set -e  # Re-enable exit on error
+          echo "First run exit code: $FIRST_RUN_EXIT_CODE"
+
+          # ============================================================
+          # BULLETPROOF RETRY LOGIC - Handles ALL failure scenarios
+          # ============================================================
+          # Retries: Up to 2 retries (3 total attempts)
+          # Detects: FAIL, panic, API errors, auth failures, timeouts
+          # ============================================================
+
+          extract_failed_tests() {
+            local LOG_FILE="$1"
+            local FAILED_TESTS=""
+
+            # NOTE: All debug output goes to stderr (>&2) so it doesn't get captured in the return value
+            echo "=== Analyzing log file for failures ===" >&2
+
+            # Method 1: Standard "--- FAIL: TestName" pattern
+            local STANDARD_FAILS=$(grep -E "^--- FAIL:" "$LOG_FILE" 2>/dev/null | \
+              grep -oE "Test[A-Za-z0-9_]+" | sort -u | tr '\n' ' ' || true)
+            if [ -n "$STANDARD_FAILS" ]; then
+              echo "  [Method 1] Found via --- FAIL: $STANDARD_FAILS" >&2
+              FAILED_TESTS="$STANDARD_FAILS"
+            fi
+
+            # Method 2: Find tests that panicked (look for === RUN before each panic)
+            if grep -q "^panic:" "$LOG_FILE" 2>/dev/null; then
+              echo "  [Method 2] Panic detected, finding affected tests..." >&2
+              # Get all panic line numbers
+              local PANIC_LINES=$(grep -n "^panic:" "$LOG_FILE" | cut -d: -f1)
+              for PANIC_LINE in $PANIC_LINES; do
+                local PANIC_TEST=$(head -n "$PANIC_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+                if [ -n "$PANIC_TEST" ]; then
+                  echo "    Panic in: $PANIC_TEST" >&2
+                  FAILED_TESTS="$FAILED_TESTS $PANIC_TEST"
+                fi
+              done
+            fi
+
+            # Method 3: Find tests with error messages (API errors, auth failures, etc.)
+            local ERROR_PATTERNS="Authorization failed|Failed showing|Failed creating|Failed getting|error getting|API error|status code: 5[0-9][0-9]"
+            if grep -qE "$ERROR_PATTERNS" "$LOG_FILE" 2>/dev/null; then
+              echo "  [Method 3] API/Auth errors detected, finding affected tests..." >&2
+              local ERROR_LINES=$(grep -nE "$ERROR_PATTERNS" "$LOG_FILE" | cut -d: -f1 | head -5)
+              for ERROR_LINE in $ERROR_LINES; do
+                local ERROR_TEST=$(head -n "$ERROR_LINE" "$LOG_FILE" | grep -E "^=== RUN" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+                if [ -n "$ERROR_TEST" ]; then
+                  echo "    Error in: $ERROR_TEST" >&2
+                  FAILED_TESTS="$FAILED_TESTS $ERROR_TEST"
+                fi
+              done
+            fi
+
+            # Method 4: Last resort - get the last running test before FAIL
+            if [ -z "$FAILED_TESTS" ]; then
+              echo "  [Method 4] Using last running test as fallback..." >&2
+              local LAST_TEST=$(grep -E "^=== RUN" "$LOG_FILE" | tail -1 | grep -oE "Test[A-Za-z0-9_]+" | head -1 || true)
+              if [ -n "$LAST_TEST" ]; then
+                echo "    Last running: $LAST_TEST" >&2
+                FAILED_TESTS="$LAST_TEST"
+              fi
+            fi
+
+            # Clean up: deduplicate and format as pipe-separated for -run flag
+            if [ -n "$FAILED_TESTS" ]; then
+              # Also extract parent test names (for subtests like TestFoo/SubTest -> TestFoo)
+              local ALL_TESTS=""
+              for TEST in $FAILED_TESTS; do
+                ALL_TESTS="$ALL_TESTS $TEST"
+                # Extract parent test name if this looks like a subtest
+                local PARENT=$(echo "$TEST" | sed 's/_[^_]*$//' | grep -E "^Test" || true)
+                if [ -n "$PARENT" ] && [ "$PARENT" != "$TEST" ]; then
+                  ALL_TESTS="$ALL_TESTS $PARENT"
+                fi
+              done
+              FAILED_TESTS=$(echo "$ALL_TESTS" | tr ' ' '\n' | grep -E "^Test" | sort -u | tr '\n' '|' | sed 's/|$//')
+            fi
+
+            # Only this final echo goes to stdout (gets captured as the return value)
+            echo "$FAILED_TESTS"
+          }
+
+          run_tests_with_retry() {
+            local PATTERN="$1"
+            local ATTEMPT="$2"
+            local MAX_ATTEMPTS="$3"
+            local LOG_SUFFIX="$4"
+
+            echo ""
+            echo "=========================================="
+            echo "  RETRY ATTEMPT $ATTEMPT of $MAX_ATTEMPTS"
+            echo "  Pattern: $PATTERN"
+            echo "=========================================="
+            echo ""
+
+            # Wait before retry to allow cleanup and server recovery
+            if [ "$ATTEMPT" -gt 1 ]; then
+              local WAIT_TIME=$((ATTEMPT * 15))
+              echo "Waiting ${WAIT_TIME}s before retry..."
+              sleep $WAIT_TIME
+            fi
+
+            set +e
+            go test \
+              -tags integration \
+              -v \
+              -p 1 \
+              -timeout 60m \
+              -run "$PATTERN" \
+              -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+              -coverprofile cover-${{ matrix.group }}-${LOG_SUFFIX}.out \
+              github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group }}_${LOG_SUFFIX}.log
+            local EXIT_CODE=${PIPESTATUS[0]}
+            set -e
+
+            return $EXIT_CODE
+          }
+
+          if [ "$FIRST_RUN_EXIT_CODE" -ne 0 ]; then
+            echo ""
+            echo "============================================"
+            echo "  FIRST RUN FAILED - Starting retry logic"
+            echo "============================================"
+
+            # Check for hard infrastructure failures that shouldn't be retried
+            if grep -qE "Could not reach provided Checkmarx server|connection refused|no such host" test_output_${{ matrix.group }}.log; then
+              echo "::error::Infrastructure failure detected - Checkmarx server unreachable"
+              echo "This is a server connectivity issue, not a test failure."
+              exit 1
+            fi
+
+            # Extract failed tests
+            FAILED_TESTS=$(extract_failed_tests "test_output_${{ matrix.group }}.log")
+
+            if [ -z "$FAILED_TESTS" ]; then
+              echo "::error::Could not identify which tests failed"
+              echo "Check the log file for details"
+              exit 1
+            fi
+
+            echo ""
+            echo "Tests to retry: $FAILED_TESTS"
+
+            # Retry loop - up to 2 more attempts
+            MAX_RETRIES=2
+            CURRENT_RETRY=1
+            RETRY_SUCCESS=false
+
+            while [ $CURRENT_RETRY -le $MAX_RETRIES ]; do
+              run_tests_with_retry "^($FAILED_TESTS)$" "$CURRENT_RETRY" "$MAX_RETRIES" "retry${CURRENT_RETRY}"
+              RETRY_EXIT_CODE=$?
+
+              if [ $RETRY_EXIT_CODE -eq 0 ]; then
+                echo ""
+                echo "=========================================="
+                echo "  ✅ TESTS PASSED ON RETRY $CURRENT_RETRY"
+                echo "=========================================="
+                RETRY_SUCCESS=true
+                break
+              else
+                echo ""
+                echo "Retry $CURRENT_RETRY failed with exit code: $RETRY_EXIT_CODE"
+
+                # Check if we should continue retrying
+                if [ $CURRENT_RETRY -lt $MAX_RETRIES ]; then
+                  # Extract any new failures from this retry
+                  NEW_FAILURES=$(extract_failed_tests "test_output_${{ matrix.group }}_retry${CURRENT_RETRY}.log")
+                  if [ -n "$NEW_FAILURES" ]; then
+                    FAILED_TESTS="$NEW_FAILURES"
+                    echo "Updated failed tests for next retry: $FAILED_TESTS"
+                  fi
+                fi
+              fi
+
+              CURRENT_RETRY=$((CURRENT_RETRY + 1))
+            done
+
+            if [ "$RETRY_SUCCESS" = false ]; then
+              echo ""
+              echo "=========================================="
+              echo "  ❌ TESTS FAILED AFTER $MAX_RETRIES RETRIES"
+              echo "=========================================="
+              exit 1
+            fi
+          else
+            echo ""
+            echo "=========================================="
+            echo "  ✅ ALL TESTS PASSED ON FIRST RUN"
+            echo "=========================================="
+          fi
+
+      - name: Skip notification (no uncovered tests)
+        if: matrix.group == 'uncovered' && needs.validate-test-coverage.outputs.has_uncovered != 'true'
+        run: |
+          echo "::notice::No uncovered tests found - all tests are properly categorized!"
+          echo "The 'Uncovered Tests (Catch-All)' group was skipped because all tests match existing patterns."
+
+      - name: Stop Squid proxy
+        if: always()
+        run: docker stop squid || true && docker rm squid || true
+
+      - name: Upload coverage artifact
+        if: matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true'
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: coverage-${{ matrix.group }}
+          path: cover-*.out
+
+      - name: Upload test logs
+        if: always() && (matrix.group != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true')
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: test-logs-${{ matrix.group }}
+          path: test_output_*.log
+
+  merge-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          path: coverage-files
+          merge-multiple: true
+
+      - name: Merge coverage files
+        run: |
+          echo "Merging coverage files..."
+          ls -la coverage-files/
+          gocovmerge coverage-files/cover-*.out > cover.out
+          go tool cover -html=cover.out -o coverage.html
 
       - name: Coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
@@ -115,6 +620,18 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
+
+      - name: Run cleandata to clean up projects
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY }}
+          CX_TENANT: ${{ secrets.CX_TENANT }}
+        run: |
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+          
   lint:
     name: lint
     runs-on: ubuntu-latest

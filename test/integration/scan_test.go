@@ -2144,8 +2144,8 @@ func TestCreateScanWithResubmitFlag_ProjectNotExist_ScanCreatedSuccessfullyWithD
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		flag(params.ScanResubmit),
 	}
-	err, _ := executeCommand(t, args...)
-	assert.NilError(t, err)
+	executeCmdWithTimeOutNilAssertion(t,
+		"Scan with resubmit flag on new project should pass", timeout, args...)
 }
 
 func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testing.T) {
