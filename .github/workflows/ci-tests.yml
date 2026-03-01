@@ -33,6 +33,25 @@ jobs:
           fi
   integration-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: scan
+            filter: "^TestScan"
+            timeout: 90
+          - group: containers
+            filter: "^Test.*(Container|IacRealtime|SecretsRealtime).*"
+            timeout: 60
+          - group: scm
+            filter: "^Test.*(UserCount|Azure|Bitbucket|Github|Gitlab|PR).*"
+            timeout: 45
+          - group: git-hooks
+            filter: "^Test.*(PreCommit|PreReceive).*"
+            timeout: 45
+          - group: core
+            filter: "^Test(Auth|Config|Project|Result|Root|Tenant|Feature|Chat|Log|Import|Predicate|Telemetry|Learn|Rate|Bfl|Asca|Oss).*"
+            timeout: 60
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -49,8 +68,9 @@ jobs:
         run: |
           pip install pre-commit
           pre-commit install
-      - name: Go Integration test
+      - name: Go Integration test - ${{ matrix.group }}
         shell: bash
+        timeout-minutes: ${{ matrix.timeout }}
         env:
           CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
           CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
@@ -93,27 +113,178 @@ jobs:
           PR_BITBUCKET_ID: 1
         run: |
           sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
+          ./internal/commands/.scripts/integration_up.sh "${{ matrix.filter }}"
           ./internal/commands/.scripts/integration_down.sh
 
-      - name: Coverage report
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.group }}
+          path: |
+            cover.out
+            coverage.html
+
+      - name: Upload test output
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        if: always()
+        with:
+          name: test-output-${{ matrix.group }}
+          path: test_output.log
+
+  # Merge coverage from all parallel test groups
+  integration-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    if: always()
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          merge-multiple: false
+
+      - name: Download all test outputs
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: test-output-*
+          merge-multiple: false
+
+      - name: Generate test summary
+        shell: bash
+        run: |
+          echo "## 🧪 Integration Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Group | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped | Pass Rate |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|-----------|-----------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
+
+          GRAND_TOTAL=0
+          GRAND_PASSED=0
+          GRAND_FAILED=0
+          GRAND_SKIPPED=0
+
+          for group in scan containers scm git-hooks core; do
+            LOG_FILE="test-output-${group}/test_output.log"
+            if [ -f "$LOG_FILE" ]; then
+              PASSED=$(grep -c "^--- PASS:" "$LOG_FILE" 2>/dev/null || echo "0")
+              FAILED=$(grep -c "^--- FAIL:" "$LOG_FILE" 2>/dev/null || echo "0")
+              SKIPPED=$(grep -c "^--- SKIP:" "$LOG_FILE" 2>/dev/null || echo "0")
+              TOTAL=$((PASSED + FAILED + SKIPPED))
+
+              if [ "$TOTAL" -gt 0 ]; then
+                RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED/$TOTAL)*100}")
+              else
+                RATE="0.0"
+              fi
+
+              GRAND_TOTAL=$((GRAND_TOTAL + TOTAL))
+              GRAND_PASSED=$((GRAND_PASSED + PASSED))
+              GRAND_FAILED=$((GRAND_FAILED + FAILED))
+              GRAND_SKIPPED=$((GRAND_SKIPPED + SKIPPED))
+
+              echo "| **${group}** | ${TOTAL} | ${PASSED} | ${FAILED} | ${SKIPPED} | ${RATE}% |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| **${group}** | - | - | - | - | N/A |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          # Calculate grand total pass rate
+          if [ "$GRAND_TOTAL" -gt 0 ]; then
+            GRAND_RATE=$(awk "BEGIN {printf \"%.1f\", ($GRAND_PASSED/$GRAND_TOTAL)*100}")
+          else
+            GRAND_RATE="0.0"
+          fi
+
+          echo "|-------|-------|-----------|-----------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **TOTAL** | **${GRAND_TOTAL}** | **${GRAND_PASSED}** | **${GRAND_FAILED}** | **${GRAND_SKIPPED}** | **${GRAND_RATE}%** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # List failed tests if any
+          if [ "$GRAND_FAILED" -gt 0 ]; then
+            echo "### ❌ Failed Tests" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            for group in scan containers scm git-hooks core; do
+              LOG_FILE="test-output-${group}/test_output.log"
+              if [ -f "$LOG_FILE" ]; then
+                FAILED_TESTS=$(grep "^--- FAIL:" "$LOG_FILE" | awk '{print $3}' | head -10)
+                if [ -n "$FAILED_TESTS" ]; then
+                  echo "**${group}:**" >> $GITHUB_STEP_SUMMARY
+                  echo "$FAILED_TESTS" | while read test; do
+                    echo "- \`${test}\`" >> $GITHUB_STEP_SUMMARY
+                  done
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                fi
+              fi
+            done
+          fi
+
+      - name: Merge coverage reports
+        shell: bash
+        run: |
+          # Debug: Show downloaded artifact structure
+          echo "=== Downloaded artifacts structure ==="
+          ls -la
+          find . -name "cover.out" -type f -exec ls -la {} \;
+
+          # Find all cover.out files and merge them
+          find . -name "cover.out" -type f > coverage_files.txt
+
+          echo "=== Coverage files found ==="
+          cat coverage_files.txt
+          echo "=== File count: $(wc -l < coverage_files.txt) ==="
+
+          if [ -s coverage_files.txt ]; then
+            # Show individual coverage before merge
+            echo "=== Individual coverage percentages ==="
+            while read -r file; do
+              COV=$(go tool cover -func "$file" | grep total | awk '{print $3}')
+              echo "$file: $COV"
+            done < coverage_files.txt
+
+            # Merge all coverage files
+            gocovmerge $(cat coverage_files.txt | tr '\n' ' ') > merged-cover.out
+            go tool cover -html=merged-cover.out -o merged-coverage.html
+
+            echo "=== Merged coverage ==="
+            go tool cover -func merged-cover.out | grep total
+          else
+            echo "ERROR: No coverage files found!"
+          fi
+
+      - name: Upload merged coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
-          name: ${{ runner.os }}-coverage-latest
-          path: coverage.html
+          name: ${{ runner.os }}-coverage-merged
+          path: |
+            merged-cover.out
+            merged-coverage.html
 
       - name: Check if total coverage is greater then 75
         shell: bash
         run: |
-          CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
-          EXPECTED_CODE_COV=75
-          var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
-          if [ "$var" -eq 1 ];then
-            echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
-            exit 1
+          if [ -f merged-cover.out ]; then
+            CODE_COV=$(go tool cover -func merged-cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+            EXPECTED_CODE_COV=75
+            var=$(awk 'BEGIN{ print "'$CODE_COV'"<"'$EXPECTED_CODE_COV'" }')
+            if [ "$var" -eq 1 ];then
+              echo "Your code coverage is too low. Coverage precentage is: $CODE_COV"
+              exit 1
+            else
+              echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
+              exit 0
+            fi
           else
-            echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
-            exit 0
+            echo "No coverage file found - tests may have failed"
+            exit 1
           fi
   lint:
     name: lint

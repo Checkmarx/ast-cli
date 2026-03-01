@@ -1,3 +1,6 @@
+# Accept optional test filter as first argument (regex pattern for -run flag)
+TEST_FILTER=${1:-""}
+
 # Start the Squid proxy in a Docker container
 docker run \
   --name squid \
@@ -12,12 +15,21 @@ wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.g
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
 
-# Step 1: Check if the failedTests file exists
-FAILED_TESTS_FILE="failedTests"
+# Build the test filter argument if provided
+RUN_ARG=""
+if [ -n "$TEST_FILTER" ]; then
+    RUN_ARG="-run $TEST_FILTER"
+    echo "Running tests matching filter: $TEST_FILTER"
+fi
 
-# Step 2: Create the failedTests file
-echo "Creating $FAILED_TESTS_FILE..."
+# Initialize variables
+FAILED_TESTS_FILE="failedTests"
+rerun_status=0
+
+# Step 1: Create tracking files (ensure they exist for CI artifact upload)
+echo "Creating tracking files..."
 touch "$FAILED_TESTS_FILE"
+touch test_output.log
 
 # Step 3: Run all tests and write failed test names to failedTests file
 echo "Running all tests..."
@@ -25,6 +37,7 @@ go test \
     -tags integration \
     -v \
     -timeout 210m \
+    $RUN_ARG \
     -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
     -coverprofile cover.out \
     github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output.log
@@ -46,7 +59,7 @@ fi
 if [ ! -s "$FAILED_TESTS_FILE" ]; then
     # If the file is empty, all tests passed
     echo "All tests passed."
-    rm -f "$FAILED_TESTS_FILE" test_output.log
+    rm -f "$FAILED_TESTS_FILE"
 else
     # If the file is not empty, rerun the failed tests
     echo "Rerunning failed tests..."
@@ -79,12 +92,94 @@ else
     fi
 fi
 
-# Step 7: Run the cleandata package to delete projects
+# Step 7: Generate test summary table
+echo ""
+echo "=============================================="
+echo "           TEST EXECUTION SUMMARY             "
+echo "=============================================="
+
+# Parse test results from log (use tr to remove any newlines/carriage returns)
+TOTAL_PASSED=$(grep -c "^--- PASS:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+TOTAL_FAILED=$(grep -c "^--- FAIL:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+TOTAL_SKIPPED=$(grep -c "^--- SKIP:" test_output.log 2>/dev/null | tr -d '\r\n' || echo "0")
+
+# Ensure values are valid integers (default to 0 if empty or invalid)
+TOTAL_PASSED=${TOTAL_PASSED:-0}
+TOTAL_FAILED=${TOTAL_FAILED:-0}
+TOTAL_SKIPPED=${TOTAL_SKIPPED:-0}
+
+# Remove any non-numeric characters
+TOTAL_PASSED=$(echo "$TOTAL_PASSED" | tr -cd '0-9')
+TOTAL_FAILED=$(echo "$TOTAL_FAILED" | tr -cd '0-9')
+TOTAL_SKIPPED=$(echo "$TOTAL_SKIPPED" | tr -cd '0-9')
+
+# Default to 0 if empty after cleaning
+TOTAL_PASSED=${TOTAL_PASSED:-0}
+TOTAL_FAILED=${TOTAL_FAILED:-0}
+TOTAL_SKIPPED=${TOTAL_SKIPPED:-0}
+
+TOTAL_TESTS=$((TOTAL_PASSED + TOTAL_FAILED + TOTAL_SKIPPED))
+
+# Calculate pass rate
+if [ "$TOTAL_TESTS" -gt 0 ]; then
+    PASS_RATE=$(awk "BEGIN {printf \"%.1f\", ($TOTAL_PASSED/$TOTAL_TESTS)*100}")
+else
+    PASS_RATE="0.0"
+fi
+
+# Extract duration from test output (look for the integration test package line)
+DURATION=$(grep -E "(ok|FAIL)\s+github.com/checkmarx/ast-cli/test/integration\s+" test_output.log | awk '{for(i=1;i<=NF;i++) if($i ~ /^[0-9]+\.[0-9]+s$/) print $i}' | head -1)
+if [ -z "$DURATION" ]; then
+    DURATION="N/A"
+fi
+
+# Get test filter info (truncate if too long for table)
+if [ -n "$TEST_FILTER" ]; then
+    FILTER_INFO=$(echo "$TEST_FILTER" | cut -c1-18)
+    if [ ${#TEST_FILTER} -gt 18 ]; then
+        FILTER_INFO="${FILTER_INFO}..."
+    fi
+else
+    FILTER_INFO="All tests"
+fi
+
+# Print summary table (no ANSI colors for CI compatibility)
+printf "\n"
+printf "+---------------------+---------------------+\n"
+printf "| %-19s | %-19s |\n" "Metric" "Value"
+printf "+---------------------+---------------------+\n"
+printf "| %-19s | %-19s |\n" "Test Filter" "$FILTER_INFO"
+printf "| %-19s | %-19s |\n" "Total Tests" "$TOTAL_TESTS"
+printf "| %-19s | %-19s |\n" "Passed" "$TOTAL_PASSED"
+printf "| %-19s | %-19s |\n" "Failed" "$TOTAL_FAILED"
+printf "| %-19s | %-19s |\n" "Skipped" "$TOTAL_SKIPPED"
+printf "| %-19s | %-19s |\n" "Pass Rate" "${PASS_RATE}%"
+printf "| %-19s | %-19s |\n" "Duration" "$DURATION"
+printf "+---------------------+---------------------+\n"
+
+# Print failed test names if any
+if [ "$TOTAL_FAILED" -gt 0 ]; then
+    echo ""
+    echo "Failed Tests:"
+    echo "-------------"
+    grep "^--- FAIL:" test_output.log | awk '{print "  [X] " $3}' | head -20
+    FAIL_COUNT=$(grep -c "^--- FAIL:" test_output.log 2>/dev/null | tr -cd '0-9')
+    FAIL_COUNT=${FAIL_COUNT:-0}
+    if [ "$FAIL_COUNT" -gt 20 ]; then
+        echo "  ... and $((FAIL_COUNT - 20)) more"
+    fi
+fi
+
+echo ""
+echo "=============================================="
+
+# Step 8: Run the cleandata package to delete projects
 echo "Running cleandata to clean up projects..."
 go test -v github.com/checkmarx/ast-cli/test/cleandata
 
-# Step 8: Final cleanup and exit
-rm -f "$FAILED_TESTS_FILE" test_output.log
+# Step 9: Final cleanup and exit
+# Note: Keep test_output.log for CI artifact upload
+rm -f "$FAILED_TESTS_FILE"
 
 if [ $status -ne 0 ] || [ $rerun_status -eq 1 ]; then
     exit 1
