@@ -12,6 +12,7 @@ import (
 
 // TestContainerScan_EmptyFolderWithExternalImages tests scanning with empty folders and external container images
 func TestContainerScan_EmptyFolderWithExternalImages(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -29,6 +30,7 @@ func TestContainerScan_EmptyFolderWithExternalImages(t *testing.T) {
 
 // TestContainerScan_EmptyFolderWithMultipleExternalImages tests scanning empty folder with multiple external images
 func TestContainerScan_EmptyFolderWithMultipleExternalImages(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -46,6 +48,7 @@ func TestContainerScan_EmptyFolderWithMultipleExternalImages(t *testing.T) {
 
 // TestContainerScan_EmptyFolderWithExternalImagesAndDebug tests with debug flag enabled
 func TestContainerScan_EmptyFolderWithExternalImagesAndDebug(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -64,6 +67,7 @@ func TestContainerScan_EmptyFolderWithExternalImagesAndDebug(t *testing.T) {
 
 // TestContainerScan_EmptyFolderWithComplexImageNames tests empty folder with complex image names
 func TestContainerScan_EmptyFolderWithComplexImageNames(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -81,6 +85,7 @@ func TestContainerScan_EmptyFolderWithComplexImageNames(t *testing.T) {
 
 // TestContainerScan_EmptyFolderWithRegistryImages tests empty folder with registry-prefixed images
 func TestContainerScan_EmptyFolderWithRegistryImages(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -98,6 +103,7 @@ func TestContainerScan_EmptyFolderWithRegistryImages(t *testing.T) {
 
 // TestContainerScan_EmptyFolderInvalidImageShouldFail tests that validation still works with empty folders
 func TestContainerScan_EmptyFolderInvalidImageShouldFail(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",
@@ -115,6 +121,7 @@ func TestContainerScan_EmptyFolderInvalidImageShouldFail(t *testing.T) {
 
 // TestContainerScan_EmptyFolderMixedValidInvalidImages tests mixed valid/invalid images with empty folder
 func TestContainerScan_EmptyFolderMixedValidInvalidImages(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	testArgs := []string{
 		"scan", "create",

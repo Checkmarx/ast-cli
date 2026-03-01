@@ -18,6 +18,7 @@ type MockFeatureFlagsWrapper struct {
 }
 
 func Test_HandleFeatureFlags_WhenCalled_ThenNoErrorAndCacheNotEmpty(t *testing.T) {
+	t.Parallel()
 	createASTIntegrationTestCommand(t)
 	featureFlagsPath := viper.GetString(commonParams.FeatureFlagsKey)
 	featureFlagsWrapper := wrappers.NewFeatureFlagsHTTPWrapper(featureFlagsPath)

@@ -99,6 +99,7 @@ func TestSastUpdateAndGetPredicatesForSimilarityId(t *testing.T) {
 }
 
 func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "triage", "update",
 		flag(params.ProjectIDFlag), "1234",
@@ -125,6 +126,7 @@ func TestGetAndUpdatePredicateWithInvalidScannerType(t *testing.T) {
 }
 
 func TestPredicateWithInvalidValues(t *testing.T) {
+	t.Parallel()
 
 	err, _ := executeCommand(
 		t, "triage", "update",

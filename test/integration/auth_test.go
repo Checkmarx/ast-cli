@@ -26,17 +26,20 @@ const (
 
 // Test validate with credentials used in test env
 func TestAuthValidate(t *testing.T) {
+	t.Parallel()
 	err, buffer := executeCommand(t, "auth", "validate")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 func TestAuthValidateClientAndSecret(t *testing.T) {
+	t.Parallel()
 	err, buffer := executeCommand(t, "auth", "validate", "--debug", "--apikey", "")
 	assertSuccessAuthentication(t, err, buffer, defaultSuccessValidationMessage)
 }
 
 // Test validate with credentials from flags
 func TestAuthValidateMissingFlagsTogether(t *testing.T) {
+	t.Parallel()
 	// set base-uri to empty string so that it does not pick up the value from the environment
 	err, _ := executeCommand(t, "auth", "validate", "--client-id", "fake-client-id", "--client-secret", "fake-client-secret", "--base-uri", "", "--base-auth-uri", "", "--apikey", "")
 	assertError(t, err, wrappers.MissingURI)
@@ -44,6 +47,7 @@ func TestAuthValidateMissingFlagsTogether(t *testing.T) {
 
 // Test validate with credentials from flags
 func TestAuthValidateEmptyFlags(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(t, "auth", "validate", "--apikey", "", "--client-id", "")
 	assertError(t, err, commands.FailedAuthError)
 
@@ -104,6 +108,7 @@ func TestAuthValidateWithEmptyAuthenticationPath(t *testing.T) {
 }
 
 func TestAuthValidateOnlyAPIKey(t *testing.T) {
+	t.Parallel()
 	validateCommand, buffer := createRedirectedTestCommand(t)
 	err := execute(validateCommand, "auth", "validate", "--base-uri", "", "--client-id", "", "--client-secret", "")
 	assertSuccessAuthentication(t, err, buffer, "")
@@ -111,6 +116,7 @@ func TestAuthValidateOnlyAPIKey(t *testing.T) {
 
 // Register with empty username, password or role
 func TestAuthRegisterWithEmptyParameters(t *testing.T) {
+	t.Parallel()
 	assertRequiredParameter(
 		t, "Please provide username flag",
 		"auth", "register",
@@ -138,6 +144,7 @@ func TestAuthRegisterWithEmptyParameters(t *testing.T) {
 
 // Register with credentials and validate the obtained id/secret pair
 func TestAuthRegister(t *testing.T) {
+	t.Parallel()
 	registerCommand, _ := createRedirectedTestCommand(t)
 
 	_ = execute(
@@ -153,6 +160,7 @@ func TestAuthRegister(t *testing.T) {
 }
 
 func TestFailProxyAuth(t *testing.T) {
+	t.Parallel()
 	proxyUser := viper.GetString(ProxyUserEnv)
 	proxyPort := viper.GetInt(ProxyPortEnv)
 	proxyHost := viper.GetString(ProxyHostEnv)

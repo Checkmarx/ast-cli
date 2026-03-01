@@ -11,6 +11,7 @@ import (
 )
 
 func TestGetLearnMoreInformationFailure(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "utils", "learn-more",
 		flag(params.QueryIDFlag), "abcd",
@@ -19,6 +20,7 @@ func TestGetLearnMoreInformationFailure(t *testing.T) {
 }
 
 func TestGetLearnMoreInformationFailureMissingQueryId(t *testing.T) {
+	t.Parallel()
 	err, _ := executeCommand(
 		t, "utils", "learn-more",
 		flag(params.FormatFlag), "json")
@@ -26,6 +28,7 @@ func TestGetLearnMoreInformationFailureMissingQueryId(t *testing.T) {
 }
 
 func TestGetLearnMoreInformationSuccessCaseJson(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv("QUERY_ID")
 	queryID := viper.GetString("QUERY_ID")
 	if queryID == "" {
@@ -39,6 +42,7 @@ func TestGetLearnMoreInformationSuccessCaseJson(t *testing.T) {
 }
 
 func TestGetLearnMoreInformationSuccessCaseConsole(t *testing.T) {
+	t.Parallel()
 	_ = viper.BindEnv("QUERY_ID")
 	queryID := viper.GetString("QUERY_ID")
 	if queryID == "" {

@@ -54,25 +54,31 @@ func runRateLimitTest(t *testing.T, config *wrappers.SCMRateLimitConfig, repeatC
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryOne(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.GitHubRateLimitConfig, 429, 1, "X-RateLimit-Reset")
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryTwo(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.GitHubRateLimitConfig, 429, 2, "X-RateLimit-Reset")
 }
 
 func TestGitHubRateLimit_SuccessAfterRetryThree(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.GitHubRateLimitConfig, 403, 3, "X-RateLimit-Reset")
 }
 
 func TestGitLabRateLimit_SuccessAfterRetryOne(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.GitLabRateLimitConfig, 429, 1, "RateLimit-Reset")
 }
 
 func TestBitBucketRateLimit_SuccessAfterRetryOne(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.BitbucketRateLimitConfig, 429, 1, "X-RateLimit-Reset")
 }
 
 func TestAzureRateLimit_SuccessAfterRetryOne(t *testing.T) {
+	t.Parallel()
 	runRateLimitTest(t, wrappers.AzureRateLimitConfig, 429, 1, "X-Ratelimit-Reset")
 }

@@ -12,6 +12,7 @@ import (
 )
 
 func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *testing.T) {
+	t.Parallel()
 
 	projectId, projectName := createProject(t, nil, nil)
 	defer deleteProject(t, projectId)
@@ -27,6 +28,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 }
 
 func TestImport_ImportSarifFileWithCorrectFlagsZipFileExtention_CreateImportSuccessfully(t *testing.T) {
+	t.Parallel()
 
 	projectId, projectName := createProject(t, nil, nil)
 	defer deleteProject(t, projectId)
@@ -100,6 +102,7 @@ func TestImport_MissingImportFlag_ImportFailWithCorrectMessage(t *testing.T) {
 }
 
 func TestGetProjectNameFunction_ProjectNameValueIsEmpty_ReturnRelevantError(t *testing.T) {
+	t.Parallel()
 
 	args := []string{
 		"utils", "import",
