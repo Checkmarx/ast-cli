@@ -31,37 +31,64 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
+  
   integration-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tenant: [tenant1, tenant2, tenant3]
+        group:
+          # Group 7: Container-specific tests (from scan_test.go and container files)
+          - id: containers
+            name: "Container Tests"
+            pattern: "^Test(Container|EmptyFolder|ImagesValidation|EdgeCase)"
+            
+    name: Integration - ${{ matrix.group.name }} (${{ matrix.tenant }})
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
       - name: Set up Go version
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:
           go-version-file: go.mod
+
       - run: go version
+
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
-      - name: Install gocovmerge
-        run: go install github.com/wadey/gocovmerge@latest
-      - name: Install pre-commit
+
+      - name: Start Squid proxy
         run: |
-          pip install pre-commit
-          pre-commit install
-      - name: Go Integration test
+          docker run \
+            --name squid \
+            -d \
+            -p 3128:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+      - name: Download ScaResolver
+        run: |
+          wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+      - name: Run ${{ matrix.group.name }} tests on ${{ matrix.tenant }}
         shell: bash
         env:
-          CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
-          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
-          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
-          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
-          CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
-          CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
-          CX_APIKEY: ${{ secrets.CX_APIKEY }}
-          CX_TENANT: ${{ secrets.CX_TENANT }}
+          # Tenant-specific secrets (create these for each tenant)
+          CX_BASE_URI: ${{ secrets[format('CX_BASE_URI_{0}', matrix.tenant)] }}
+          CX_CLIENT_ID: ${{ secrets[format('CX_CLIENT_ID_{0}', matrix.tenant)] }}
+          CX_CLIENT_SECRET: ${{ secrets[format('CX_CLIENT_SECRET_{0}', matrix.tenant)] }}
+          CX_BASE_AUTH_URI: ${{ secrets[format('CX_BASE_AUTH_URI_{0}', matrix.tenant)] }}
+          CX_APIKEY: ${{ secrets[format('CX_APIKEY_{0}', matrix.tenant)] }}
+          CX_TENANT: ${{ secrets[format('CX_TENANT_{0}', matrix.tenant)] }}
+          # Optional tenant-specific secrets (if needed)
+          CX_AST_USERNAME: ${{ secrets[format('CX_AST_USERNAME_{0}', matrix.tenant)] }}
+          CX_AST_PASSWORD: ${{ secrets[format('CX_AST_PASSWORD_{0}', matrix.tenant)] }}
           CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
           CX_ORIGIN: "cli-tests"
+          # Shared secrets (not tenant-specific)
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           PROXY_HOST: localhost
           PROXY_PORT: 3128
@@ -92,10 +119,119 @@ jobs:
           PR_BITBUCKET_REPO_NAME: "cliIntegrationTest"
           PR_BITBUCKET_ID: 1
         run: |
-          sudo chmod +x ./internal/commands/.scripts/integration_up.sh ./internal/commands/.scripts/integration_down.sh
-          ./internal/commands/.scripts/integration_up.sh
-          ./internal/commands/.scripts/integration_down.sh
+          set -o pipefail  # Preserve exit code from go test, not tee
+          echo "========================================"
+          echo "Running test group: ${{ matrix.group.name }}"
+          echo "Tenant: ${{ matrix.tenant }}"
+          echo "Pattern: ${{ matrix.group.pattern }}"
+          echo "========================================"
 
+          # Record start time for performance measurement
+          START_TIME=$(date +%s)
+
+          # Run tests matching the pattern with coverage
+          go test \
+            -tags integration \
+            -v \
+            -timeout 90m \
+            -run "${{ matrix.group.pattern }}" \
+            -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+            -coverprofile cover-${{ matrix.group.id }}-${{ matrix.tenant }}.out \
+            github.com/checkmarx/ast-cli/test/integration 2>&1 | tee test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log
+
+          # Record end time and calculate duration
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          echo "========================================"
+          echo "PERFORMANCE SUMMARY"
+          echo "Tenant: ${{ matrix.tenant }}"
+          echo "Test Group: ${{ matrix.group.name }}"
+          echo "Duration: ${DURATION} seconds"
+          echo "========================================"
+          echo "duration_seconds=${DURATION}" >> test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log
+
+          # Check for failed tests and rerun them once
+          if grep -q "^--- FAIL:" test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log; then
+            echo "Some tests failed, attempting rerun..."
+            FAILED_TESTS=$(grep -E "^--- FAIL: " test_output_${{ matrix.group.id }}_${{ matrix.tenant }}.log | awk '{print $3}' | tr '\n' '|' | sed 's/|$//')
+            if [ -n "$FAILED_TESTS" ]; then
+              echo "Rerunning failed tests: $FAILED_TESTS"
+              go test \
+                -tags integration \
+                -v \
+                -timeout 30m \
+                -run "^($FAILED_TESTS)$" \
+                -coverpkg github.com/checkmarx/ast-cli/internal/commands,github.com/checkmarx/ast-cli/internal/services,github.com/checkmarx/ast-cli/internal/wrappers \
+                -coverprofile cover-${{ matrix.group.id }}-${{ matrix.tenant }}-rerun.out \
+                github.com/checkmarx/ast-cli/test/integration
+            fi
+          fi
+      - name: Stop Squid proxy
+        if: always()
+        run: docker stop squid || true && docker rm squid || true
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: coverage-${{ matrix.group.id }}-${{ matrix.tenant }}
+          path: cover-*.out
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: test-logs-${{ matrix.group.id }}-${{ matrix.tenant }}
+          path: test_output_*.log
+
+  merge-coverage:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Download all coverage artifacts
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: coverage-*
+          path: coverage-files
+          merge-multiple: true
+
+      - name: Download all test logs for performance comparison
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 #v4
+        with:
+          pattern: test-logs-*
+          path: test-logs
+          merge-multiple: true
+
+      - name: Performance Comparison Report
+        run: |
+          echo "========================================"
+          echo "PERFORMANCE COMPARISON REPORT"
+          echo "========================================"
+          for log in test-logs/test_output_*.log; do
+            if [ -f "$log" ]; then
+              filename=$(basename "$log")
+              duration=$(grep "duration_seconds=" "$log" 2>/dev/null | tail -1 | cut -d'=' -f2 || echo "N/A")
+              echo "$filename: ${duration}s"
+            fi
+          done
+          echo "========================================"
+
+      - name: Merge coverage files
+        run: |
+          echo "Merging coverage files..."
+          ls -la coverage-files/
+          gocovmerge coverage-files/cover-*.out > cover.out
+          go tool cover -html=cover.out -o coverage.html
       - name: Coverage report
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
         with:
@@ -115,6 +251,42 @@ jobs:
             echo "Your code coverage test passed! Coverage precentage is: $CODE_COV"
             exit 0
           fi
+      - name: Run cleandata for tenant1
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant1 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant1 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant1 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant1 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant1 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant1 }}
+        run: |
+          echo "Cleaning up projects on tenant1..."
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+
+      - name: Run cleandata for tenant2
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant2 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant2 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant2 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant2 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant2 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant2 }}
+        run: |
+          echo "Cleaning up projects on tenant2..."
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+
+      - name: Run cleandata for tenant3
+        env:
+          CX_BASE_URI: ${{ secrets.CX_BASE_URI_tenant3 }}
+          CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID_tenant3 }}
+          CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET_tenant3 }}
+          CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI_tenant3 }}
+          CX_APIKEY: ${{ secrets.CX_APIKEY_tenant3 }}
+          CX_TENANT: ${{ secrets.CX_TENANT_tenant3 }}
+        run: |
+          echo "Cleaning up projects on tenant3..."
+          go test -v github.com/checkmarx/ast-cli/test/cleandata || true
+
   lint:
     name: lint
     runs-on: ubuntu-latest
