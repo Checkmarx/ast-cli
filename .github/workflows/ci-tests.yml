@@ -167,7 +167,7 @@ jobs:
       - name: Build Docker image
         run: docker build -t ast-cli:${{ github.sha }} .
       - name: Run Trivy scanner without downloading DBs
-        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2 #v0.28.0
+        uses: aquasecurity/trivy-action@97e0b3872f55f89b95b2f65b3dbab56962816478 #v0.34.2
         with:
           scan-type: 'image'
           image-ref: ast-cli:${{ github.sha }}
