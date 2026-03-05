@@ -1,7 +1,6 @@
 name: Docker Image Security Scan
 
 on:
-  pull_request:
   push:
     branches:
       - other/scan-notification
