@@ -2,6 +2,9 @@ name: Continuous Integration Tests
 
 on:
   pull_request:
+  push:
+    branches:
+      - other/scan-notification
 
 jobs:
   unit-tests:
