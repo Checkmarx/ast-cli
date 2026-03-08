@@ -32,6 +32,7 @@ func FindProject(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	tenantWrapper wrappers.TenantConfigurationHTTPWrapper,
 ) (string, error) {
 	var isBranchPrimary bool
 	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
@@ -44,7 +45,7 @@ func FindProject(
 	for i := 0; i < len(resp.Projects); i++ {
 		project := resp.Projects[i]
 		if project.Name == projectName {
-			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName, project.ID, featureFlagsWrapper)
+			err = findApplicationAndUpdate(applicationName, applicationWrapper, projectName, project.ID, featureFlagsWrapper, tenantWrapper)
 			if err != nil {
 				return "", err
 			}

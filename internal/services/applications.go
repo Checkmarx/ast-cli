@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	ApplicationRuleType = "project.name.in"
+	ApplicationRuleType  = "project.name.in"
+	DirectAssociationKey = "scan.config.applications.directAssociations"
 )
 
 func createApplicationIds(applicationID, existingApplicationIds []string) []string {
@@ -64,7 +65,7 @@ func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.Appl
 	return application
 }
 
-func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
+func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationHTTPWrapper) error {
 	if applicationName == "" {
 		logger.PrintfIfVerbose("No application name provided. Skipping application update")
 		return nil
@@ -78,7 +79,26 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	}
 
 	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
-	if directAssociationEnabled.Status {
+	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DA_MIGRATION_ENABLED)
+	var isDAConfigurationEnabled bool
+	// TODO: Relevant Error message to be added + Testing
+	if daMigrationEnabled.Status {
+		tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
+		if err != nil {
+			return err
+		}
+		if errorModel != nil {
+			return errors.New(errorModel.Message)
+		}
+		if tenantConfigurationResponse != nil {
+			for _, resp := range *tenantConfigurationResponse {
+				if resp.Key == DirectAssociationKey && resp.Value == "true" {
+					isDAConfigurationEnabled = true
+				}
+			}
+		}
+	}
+	if (daMigrationEnabled.Status && isDAConfigurationEnabled) || directAssociationEnabled.Status {
 		err = associateProjectToApplication(applicationResp.ID, projectID, applicationResp.ProjectIds, applicationsWrapper)
 		if err != nil {
 			return err
