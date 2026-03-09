@@ -114,7 +114,7 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 
 func checkDirectAssociationEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) (bool, error) {
 	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
-	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DA_MIGRATION_ENABLED)
+	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DaMigrationEnabled)
 	var isDAConfigurationEnabled bool
 	if daMigrationEnabled.Status {
 		tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
