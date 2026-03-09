@@ -4486,7 +4486,7 @@ func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociatio
 	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
 }
 
-func Test_Create_Scan_With_DA_MIGRATION_And_Configuration_ShouldPass(t *testing.T) {
+func Test_Create_Scan_With_DA_MIGRATION_And_ConfigurationEnabled_ShouldPass(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
