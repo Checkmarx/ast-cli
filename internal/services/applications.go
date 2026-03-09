@@ -11,6 +11,7 @@ import (
 const (
 	ApplicationRuleType  = "project.name.in"
 	DirectAssociationKey = "scan.config.applications.directAssociations"
+	trueString           = "true"
 )
 
 func createApplicationIds(applicationID, existingApplicationIds []string) []string {
@@ -78,27 +79,11 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 		return errors.Errorf("%s: %s", errorConstants.ApplicationNotFound, applicationName)
 	}
 
-	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
-	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DA_MIGRATION_ENABLED)
-	var isDAConfigurationEnabled bool
-
-	if daMigrationEnabled.Status {
-		tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
-		if err != nil {
-			return err
-		}
-		if errorModel != nil {
-			return errors.New(errorModel.Message)
-		}
-		if tenantConfigurationResponse != nil {
-			for _, resp := range *tenantConfigurationResponse {
-				if resp.Key == DirectAssociationKey && resp.Value == "true" {
-					isDAConfigurationEnabled = true
-				}
-			}
-		}
+	isEnabled, err := checkDirectAssociationEnabled(featureFlagsWrapper, tenantWrapper)
+	if err != nil {
+		return errors.Wrap(err, "error while checking if direct association is enabled")
 	}
-	if (daMigrationEnabled.Status && isDAConfigurationEnabled) || directAssociationEnabled.Status {
+	if isEnabled {
 		err = associateProjectToApplication(applicationResp.ID, projectID, applicationResp.ProjectIds, applicationsWrapper)
 		if err != nil {
 			return err
@@ -127,6 +112,28 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	return nil
 }
 
+func checkDirectAssociationEnabled(featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) (bool, error) {
+	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
+	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DA_MIGRATION_ENABLED)
+	var isDAConfigurationEnabled bool
+	if daMigrationEnabled.Status {
+		tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
+		if err != nil {
+			return false, err
+		}
+		if errorModel != nil {
+			return false, errors.New(errorModel.Message)
+		}
+		if tenantConfigurationResponse != nil {
+			for _, resp := range *tenantConfigurationResponse {
+				if resp.Key == DirectAssociationKey && resp.Value == trueString {
+					isDAConfigurationEnabled = true
+				}
+			}
+		}
+	}
+	return (daMigrationEnabled.Status && isDAConfigurationEnabled) || directAssociationEnabled.Status, nil
+}
 func updateApplication(applicationModel *wrappers.ApplicationConfiguration, applicationWrapper wrappers.ApplicationsWrapper, applicationID string) error {
 	errorModel, err := applicationWrapper.Update(applicationID, applicationModel)
 	return handleApplicationUpdateResponse(errorModel, err)
