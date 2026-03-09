@@ -4472,9 +4472,9 @@ func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociatio
 	file := createOutputFile(t, outputFileName)
 	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
-
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DA_MIGRATION_ENABLED, Status: false}
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK2", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
 	execCmdNilAssertion(
 		t,
 		baseArgs...,
@@ -4492,7 +4492,7 @@ func Test_Create_Scan_With_DA_MIGRATION_And_Configuration_ShouldPass(t *testing.
 	defer logger.SetOutput(os.Stdout)
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DA_MIGRATION_ENABLED, Status: true}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK5", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
 	execCmdNilAssertion(
 		t,
 		baseArgs...,
