@@ -4470,11 +4470,29 @@ func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist
 
 func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociationEnabledShouldPass(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	defer deleteOutputFile(file)
+	//defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
-	baseArgs := []string{"scan", "create", "--project-name", "MOCK", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK2", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
+	execCmdNilAssertion(
+		t,
+		baseArgs...,
+	)
+	stdoutString, err := util.ReadFileAsString(file.Name())
+	if err != nil {
+		t.Fatalf("Failed to read log file: %v", err)
+	}
+	assert.Equal(t, strings.Contains(stdoutString, "Successfully updated the application"), true, "Expected output: %s", "Successfully updated the application")
+}
+
+func Test_Create_Scan_With_DA_MIGRATION_And_Configuration_ShouldPass(t *testing.T) {
+	file := createOutputFile(t, outputFileName)
+	defer deleteOutputFile(file)
+	defer logger.SetOutput(os.Stdout)
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DA_MIGRATION_ENABLED, Status: true}
+	baseArgs := []string{"scan", "create", "--project-name", "MOCK5", "-s", ".", "--branch", "main", "--debug", "--application-name", mock.ExistingApplication}
 	execCmdNilAssertion(
 		t,
 		baseArgs...,
