@@ -65,7 +65,7 @@ func verifyApplicationNameExactMatch(applicationName string, resp *wrappers.Appl
 	return application
 }
 
-func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationHTTPWrapper) error {
+func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappers.ApplicationsWrapper, projectName, projectID string, featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) error {
 	if applicationName == "" {
 		logger.PrintfIfVerbose("No application name provided. Skipping application update")
 		return nil
@@ -81,7 +81,7 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 	directAssociationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DirectAssociationEnabled)
 	daMigrationEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.DA_MIGRATION_ENABLED)
 	var isDAConfigurationEnabled bool
-	// TODO: Relevant Error message to be added + Testing
+
 	if daMigrationEnabled.Status {
 		tenantConfigurationResponse, errorModel, err := tenantWrapper.GetTenantConfiguration()
 		if err != nil {

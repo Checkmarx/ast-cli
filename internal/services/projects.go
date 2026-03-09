@@ -32,7 +32,7 @@ func FindProject(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-	tenantWrapper wrappers.TenantConfigurationHTTPWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) (string, error) {
 	var isBranchPrimary bool
 	resp, err := GetProjectsCollectionByProjectName(projectName, projectsWrapper)
