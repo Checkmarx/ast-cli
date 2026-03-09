@@ -4470,7 +4470,7 @@ func Test_CreateScanWithExistingProjectAndAssign_FailedApplication_DoesNot_Exist
 
 func Test_CreateScanWithExistingProjectAssign_to_Application_FF_DirectAssociationEnabledShouldPass(t *testing.T) {
 	file := createOutputFile(t, outputFileName)
-	//defer deleteOutputFile(file)
+	defer deleteOutputFile(file)
 	defer logger.SetOutput(os.Stdout)
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.DirectAssociationEnabled, Status: true}
