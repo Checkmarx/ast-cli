@@ -127,7 +127,7 @@ jobs:
       - run: go version
       - run: go mod tidy
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6 #v3
+        uses: golangci/golangci-lint-action@v7 #v7
         with:
           skip-pkg-cache: true
           version: v2.11.2
