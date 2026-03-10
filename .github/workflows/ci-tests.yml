@@ -130,7 +130,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4 #v3
         with:
           skip-pkg-cache: true
-          version: v2.0.0
+          version: v2.11.2
           args: -c .golangci.yml
             --timeout 5m --format=colored-line-number
           only-new-issues: true
