@@ -1,6 +1,7 @@
 module github.com/checkmarx/ast-cli
 
-go 1.25.8
+go 1.24.13
+
 
 require (
 	github.com/Checkmarx/containers-resolver v1.0.33

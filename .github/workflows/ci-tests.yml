@@ -127,10 +127,10 @@ jobs:
       - run: go version
       - run: go mod tidy
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v7 #v7
+        uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc #v3
         with:
           skip-pkg-cache: true
-          version: v2.11.2
+          version: v1.64.2
           args: -c .golangci.yml
             --timeout 5m
           only-new-issues: true
