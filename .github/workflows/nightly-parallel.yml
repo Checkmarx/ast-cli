@@ -3,7 +3,7 @@ name: Nightly Parallel Integration Tests
 on:
   push:
     branches:
-      - feature/nightly-test 
+      - feat/nightly-parallel-integration-tests 
   schedule:
     - cron: '30 18 * * *'  # 12:00 AM IST (UTC+5:30 = 18:30 UTC)
   workflow_dispatch:
