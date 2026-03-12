@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.24.13
+go 1.25.0
 
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/crypto v0.45.0
-	golang.org/x/sync v0.18.0
+	golang.org/x/sync v0.20.0
 	golang.org/x/text v0.31.0
 	google.golang.org/grpc v1.75.0
 	google.golang.org/protobuf v1.36.10
