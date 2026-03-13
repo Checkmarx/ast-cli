@@ -5,7 +5,7 @@ on:
     branches:
       - feat/nightly-parallel-integration-tests 
   schedule:
-    - cron: '30 18 * * *'  # 12:00 AM IST (UTC+5:30 = 17:30 UTC)
+    - cron: '30 18 * * *'  # 12:00 AM IST (UTC+5:30 = 16:30 UTC)
   workflow_dispatch:
     inputs:
       reason:
