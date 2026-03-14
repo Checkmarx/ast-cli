@@ -15,8 +15,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 
-	// Import SSPI package - only compiled on Windows
-	"github.com/alexbrainman/sspi/kerberos" //nolint
+	// Import SSPI packages-py kpibinosdows
+	"github.com/checkmarx/sspi/kerberos" //nolint
 )
 
 // WindowsSSPIDialContext creates a DialContext using Windows SSPI
