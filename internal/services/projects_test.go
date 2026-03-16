@@ -19,6 +19,7 @@ func TestFindProject(t *testing.T) {
 		accessManagementWrapper wrappers.AccessManagementWrapper
 		applicationsWrapper     wrappers.ApplicationsWrapper
 		featureFlagsWrapper     wrappers.FeatureFlagsWrapper
+		tenantWrapper           wrappers.TenantConfigurationWrapper
 	}
 	tests := []struct {
 		name    string
@@ -37,6 +38,7 @@ func TestFindProject(t *testing.T) {
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
 				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
+				tenantWrapper:           &mock.TenantConfigurationMockWrapper{},
 			},
 			want:    "MOCK",
 			wantErr: false,
@@ -51,6 +53,7 @@ func TestFindProject(t *testing.T) {
 				accessManagementWrapper: &mock.AccessManagementMockWrapper{},
 				applicationsWrapper:     &mock.ApplicationsMockWrapper{},
 				featureFlagsWrapper:     &mock.FeatureFlagsMockWrapper{},
+				tenantWrapper:           &mock.TenantConfigurationMockWrapper{},
 			},
 			want:    "ID-new-MOCK",
 			wantErr: false,
@@ -66,7 +69,8 @@ func TestFindProject(t *testing.T) {
 				ttt.args.groupsWrapper,
 				ttt.args.accessManagementWrapper,
 				ttt.args.applicationsWrapper,
-				ttt.args.featureFlagsWrapper)
+				ttt.args.featureFlagsWrapper,
+				ttt.args.tenantWrapper)
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("FindProject() error = %v, wantErr %v", err, ttt.wantErr)
 				return
