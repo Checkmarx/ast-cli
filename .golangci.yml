@@ -10,6 +10,9 @@ run:
       - internal/renameio
       - internal/robustio
 
+output:
+  format: colored-line-number      -
+
 linters:
   disable-all: true
   enable:
@@ -38,7 +41,7 @@ linters:
     - unused             # covers deadcode/varcheck/structcheck
     - whitespace
 
-linters.settings:
+linters-settings:
   depguard:
     list-type: blacklist
     rules:
