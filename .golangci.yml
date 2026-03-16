@@ -1,20 +1,9 @@
 # .golangci.yml
 
-version: 2
 run:
   timeout: 5m
-  issues:
-    exclude-dirs:
-      - test/testdata_etc
-      - internal/cache
-      - internal/renameio
-      - internal/robustio
-
-output:
-  format: colored-line-number
 
 linters:
-  disable-all: true
   enable:
     - bodyclose
     - depguard
@@ -34,15 +23,23 @@ linters:
     - revive             # replacement for golint
     - rowserrcheck
     - staticcheck
-    - stylecheck
     - unconvert
     - unparam
     - unused             # covers deadcode/varcheck/structcheck
     - whitespace
+  exclusions:
+    paths:
+      - test/testdata_etc
+      - internal/cache
+      - internal/renameio
+      - internal/robustio
+    rules:
+      - path: _test\.go
+        linters:
+          - mnd
 
-settings:
+linters-settings:
   depguard:
-    list-type: blacklist
     rules:
       main:
         list-mode: lax
@@ -97,9 +94,11 @@ settings:
   goimports:
     local-prefixes: github.com/golangci/golangci-lint
   mnd:
-    settings:
-      mnd:
-        checks: argument,case,condition,return
+    checks:
+      - argument
+      - case
+      - condition
+      - return
   revive:
     rules:
       - name: exported
@@ -115,18 +114,5 @@ settings:
           - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
   lll:
     line-length: 185
-  maligned:
-    suggest-new: true
   misspell:
     locale: US
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - mnd
-
-service:
-  golangci-lint-version: 1.64.2
-  prepare:
-    - echo "No special prep steps needed"
