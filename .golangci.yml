@@ -1,5 +1,6 @@
 # .golangci.yml
 
+
 run:
   timeout: 5m
   issues:
@@ -37,7 +38,7 @@ linters:
     - unused             # covers deadcode/varcheck/structcheck
     - whitespace
 
-linters-settings:
+linters.settings:
   depguard:
     list-type: blacklist
     rules:

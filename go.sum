@@ -67,10 +67,10 @@ github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Checkmarx/containers-images-extractor v1.0.22 h1:kJZgwk28LwJZ7Xky+kzwL+JSZOlpwrGsZQhhz4L2t6s=
 github.com/Checkmarx/containers-images-extractor v1.0.22/go.mod h1:HyzVb8TtTDf56hGlSakalPXtzjJ6VhTYe9fmAcOS+V8=
-github.com/Checkmarx/containers-resolver v1.0.32 h1:clCWHZ2hCgBvEudLkmelxuTsS30XS0U+Wbhr7dKVJbs=
-github.com/Checkmarx/containers-resolver v1.0.32/go.mod h1:qW1Na7dekGfJNf3fm6tnVTzHbw/FJj7nSBnPYc4YTvI=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.24 h1:+BxJgYGD6olWFaQ6B+a1JHMJHYjbRokhT1/j1N/CnuE=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.24/go.mod h1:OPGYISPnKtVFl2mZrClErv83ZLjUPKjdQQsXLmx++oY=
+github.com/Checkmarx/containers-resolver v1.0.33 h1:/n2usRwLt51gyETd4DUfJjK6VUwydpJi5/1CVdYunFg=
+github.com/Checkmarx/containers-resolver v1.0.33/go.mod h1:PorxQLmdERcag5mYsNZkyOwqychC9uM306ev0leNXYU=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.25 h1:xKjQzVZkisZeqEHu8nXtNRYYDaAwSrxQhXbzeDDc/68=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.25/go.mod h1:OPGYISPnKtVFl2mZrClErv83ZLjUPKjdQQsXLmx++oY=
 github.com/Checkmarx/containers-types v1.0.9 h1:LbHDj9LZ0x3f28wDx398WC19sw0U0EfEewHMLStBwvs=
 github.com/Checkmarx/containers-types v1.0.9/go.mod h1:KR0w8XCosq3+6jRCfQrH7i//Nj2u11qaUJM62CREFZA=
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE+CFvgjbIxUNL8rsdB2sAhfuNx85HvxImKta3g=
