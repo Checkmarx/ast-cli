@@ -1,6 +1,6 @@
 # .golangci.yml
 
-version: 1
+version: 2
 run:
   timeout: 5m
   issues:
@@ -11,7 +11,7 @@ run:
       - internal/robustio
 
 output:
-  format: colored-line-number      -
+  format: colored-line-number
 
 linters:
   disable-all: true
@@ -41,11 +41,12 @@ linters:
     - unused             # covers deadcode/varcheck/structcheck
     - whitespace
 
-linters-settings:
+settings:
   depguard:
     list-type: blacklist
     rules:
       main:
+        list-mode: lax
         allow:
           - $gostd
           - github.com/checkmarx/ast-cli/internal
