@@ -21,7 +21,7 @@ func NewImportCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	byorWrapper wrappers.ByorWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "Import SAST scan results",
@@ -37,7 +37,7 @@ func NewImportCommand(
 			`,
 			),
 		},
-		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, byorWrapper, featureFlagsWrapper),
+		RunE: runImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, byorWrapper, featureFlagsWrapper, tenantWrapper),
 	}
 
 	cmd.PersistentFlags().String(commonParams.ImportFilePath, "", "Path to the import file (sarif file or zip archive containing sarif files)")
@@ -53,7 +53,7 @@ func runImportCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	byorWrapper wrappers.ByorWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper, tenantWrapper wrappers.TenantConfigurationWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		importFilePath, err := validateFilePath(cmd)
 		if err != nil {
@@ -65,7 +65,7 @@ func runImportCommand(
 			return errors.Errorf(errorConstants.ProjectNameIsRequired)
 		}
 
-		projectID, err := services.FindProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, featureFlagsWrapper)
+		projectID, err := services.FindProject(projectName, cmd, projectsWrapper, groupsWrapper, accessManagementWrapper, applicationsWrapper, featureFlagsWrapper, tenantWrapper)
 		if err != nil {
 			return err
 		}
