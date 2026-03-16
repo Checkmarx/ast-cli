@@ -1,6 +1,6 @@
 module github.com/checkmarx/ast-cli
 
-go 1.25
+go 1.25.8
 
 
 require (
