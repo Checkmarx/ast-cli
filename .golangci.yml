@@ -16,8 +16,6 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - ineffassign
     - mnd                # replacement for gomnd
     - nakedret
@@ -91,8 +89,6 @@ linters:
         - wrapperFunc
     gocyclo:
       min-complexity: 15
-    goimports:
-      local-prefixes: github.com/golangci/golangci-lint
     mnd:
       checks:
         - argument
@@ -116,3 +112,12 @@ linters:
       line-length: 185
     misspell:
       locale: US
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/golangci/golangci-lint
