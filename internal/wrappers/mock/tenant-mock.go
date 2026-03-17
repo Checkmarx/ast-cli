@@ -26,6 +26,10 @@ func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
 				Key:   "scan.config.plugins.aiGuidedRemediationAiEngine",
 				Value: "azureai",
 			},
+			{
+				Key:   "scan.config.applications.directAssociations",
+				Value: "true",
+			},
 		}
 	}
 	return &TenantConfiguration, nil, nil
