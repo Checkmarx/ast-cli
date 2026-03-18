@@ -12,36 +12,126 @@ type ScanSummariesModel struct {
 }
 
 type ScanSumaries struct {
-	SastCounters          SastCounters          `json:"sastCounters,omitempty,"`
-	KicsCounters          KicsCounters          `json:"kicsCounters,omitempty,"`
-	ScaCounters           ScaCounters           `json:"scaCounters,omitempty,"`
-	ScaContainersCounters ScaContainersCounters `json:"scaContainersCounters,omitempty,"`
+	TenantID              string                `json:"tenantId,omitempty"`
+	ScanID                string                `json:"scanId,omitempty"`
+	SastCounters          SastCounters          `json:"sastCounters,omitempty"`
+	KicsCounters          KicsCounters          `json:"kicsCounters,omitempty"`
+	ScaCounters           ScaCounters           `json:"scaCounters,omitempty"`
+	ScaPackagesCounters   ScaPackagesCounters   `json:"scaPackagesCounters,omitempty"`
+	ScaContainersCounters ScaContainersCounters `json:"scaContainersCounters,omitempty"`
+	ApiSecCounters        ApiSecCounters        `json:"apiSecCounters,omitempty"`
+	MicroEnginesCounters  MicroEnginesCounters  `json:"microEnginesCounters,omitempty"`
+	ContainersCounters    ContainersCounters    `json:"containersCounters,omitempty"`
+	AiscCounters          AiscCounters          `json:"aiscCounters,omitempty"`
 }
 
 type SastCounters struct {
-	SeverityCounters    []SeverityCounters `json:"SeverityCounters,omitempty,"`
-	TotalCounter        int                `json:"totalCounter,omitempty,"`
-	FilesScannedCounter int                `json:"filesScannedCounter,omitempty,"`
+	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
+	TotalCounter        int                `json:"totalCounter,omitempty"`
+	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
 }
+
 type KicsCounters struct {
-	SeverityCounters    []SeverityCounters `json:"SeverityCounters,omitempty,"`
-	TotalCounter        int                `json:"totalCounter,omitempty,"`
-	FilesScannedCounter int                `json:"filesScannedCounter,omitempty,"`
+	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
+	TotalCounter        int                `json:"totalCounter,omitempty"`
+	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
 }
 
 type ScaCounters struct {
-	SeverityCounters    []SeverityCounters `json:"SeverityCounters,omitempty,"`
-	TotalCounter        int                `json:"totalCounter,omitempty,"`
-	FilesScannedCounter int                `json:"filesScannedCounter,omitempty,"`
+	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
+	TotalCounter        int                `json:"totalCounter,omitempty"`
+	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
+}
+
+type ScaPackagesCounters struct {
+	SeverityCounters []SeverityCounters  `json:"severityCounters,omitempty"`
+	StatusCounters   []StatusCounters    `json:"statusCounters,omitempty"`
+	StateCounters    []StateCounters     `json:"stateCounters,omitempty"`
+	TotalCounter     int                 `json:"totalCounter,omitempty"`
+	OutdatedCounter  int                 `json:"outdatedCounter,omitempty"`
+	RiskLevelCounters []RiskLevelCounters `json:"riskLevelCounters,omitempty"`
+	LicenseCounters  []LicenseCounters   `json:"licenseCounters,omitempty"`
 }
 
 type ScaContainersCounters struct {
-	SeverityCounters            []SeverityCounters `json:"severityVulnerabilitiesCounters,omitempty,"`
-	TotalPackagesCounter        int                `json:"totalPackagesCounter,omitempty,"`
-	TotalVulnerabilitiesCounter int                `json:"totalVulnerabilitiesCounter,omitempty,"`
+	SeverityCounters            []SeverityCounters `json:"severityVulnerabilitiesCounters,omitempty"`
+	TotalPackagesCounter        int                `json:"totalPackagesCounter,omitempty"`
+	TotalVulnerabilitiesCounter int                `json:"totalVulnerabilitiesCounter,omitempty"`
 }
 
+type ApiSecCounters struct {
+	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
+	StateCounters       []StateCounters    `json:"stateCounters,omitempty"`
+	TotalCounter        int                `json:"totalCounter,omitempty"`
+	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
+	RiskLevel           string             `json:"riskLevel,omitempty"`
+	ApiSecTotal         int                `json:"apiSecTotal,omitempty"`
+}
+
+type MicroEnginesCounters struct {
+	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
+	StatusCounters      []StatusCounters   `json:"statusCounters,omitempty"`
+	StateCounters       []StateCounters    `json:"stateCounters,omitempty"`
+	TotalCounter        int                `json:"totalCounter,omitempty"`
+	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
+}
+
+type ContainersCounters struct {
+	TotalPackagesCounter   int                      `json:"totalPackagesCounter,omitempty"`
+	TotalCounter           int                      `json:"totalCounter,omitempty"`
+	SeverityCounters       []SeverityCounters       `json:"severityCounters,omitempty"`
+	StatusCounters         []StatusCounters         `json:"statusCounters,omitempty"`
+	StateCounters          []StateCounters          `json:"stateCounters,omitempty"`
+	AgeCounters            []AgeCounters            `json:"ageCounters,omitempty"`
+	PackageCounters        []PackageCounters        `json:"packageCounters,omitempty"`
+	SeverityStatusCounters []SeverityStatusCounters `json:"severityStatusCounters,omitempty"`
+}
+
+type AiscCounters struct {
+	AssetsCounter     int `json:"assetsCounter,omitempty"`
+	AssetTypesCounter int `json:"assetTypesCounter,omitempty"`
+}
+
+// Supporting counter structures
 type SeverityCounters struct {
-	Severity string `json:"severity,omitempty,"`
-	Counter  int    `json:"counter,omitempty,"`
+	Severity string `json:"severity,omitempty"`
+	Counter  int    `json:"counter,omitempty"`
+}
+
+type StatusCounters struct {
+	Status  string `json:"status,omitempty"`
+	Counter int    `json:"counter,omitempty"`
+}
+
+type StateCounters struct {
+	State   string `json:"state,omitempty"`
+	Counter int    `json:"counter,omitempty"`
+}
+
+type RiskLevelCounters struct {
+	RiskLevel string `json:"riskLevel,omitempty"`
+	Counter   int    `json:"counter,omitempty"`
+}
+
+type LicenseCounters struct {
+	License string `json:"license,omitempty"`
+	Counter int    `json:"counter,omitempty"`
+}
+
+type AgeCounters struct {
+	Age              string             `json:"age,omitempty"`
+	Counter          int                `json:"counter,omitempty"`
+	SeverityCounters []SeverityCounters `json:"severityCounters,omitempty"`
+}
+
+type PackageCounters struct {
+	PackageID   string `json:"packageId,omitempty"`
+	Counter     int    `json:"counter,omitempty"`
+	IsMalicious bool   `json:"isMalicious,omitempty"`
+}
+
+type SeverityStatusCounters struct {
+	Severity string `json:"severity,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Counter  int    `json:"counter,omitempty"`
 }

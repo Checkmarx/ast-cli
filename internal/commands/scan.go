@@ -179,6 +179,7 @@ func NewScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -213,6 +214,7 @@ func NewScanCommand(
 		groupsWrapper,
 		riskOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		jwtWrapper,
 		policyWrapper,
 		accessManagementWrapper,
@@ -671,6 +673,7 @@ func scanCreateSubCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -705,6 +708,7 @@ func scanCreateSubCommand(
 			groupsWrapper,
 			risksOverviewWrapper,
 			scsScanOverviewWrapper,
+			scanSummaryWrapper,
 			jwtWrapper,
 			policyWrapper,
 			accessManagementWrapper,
@@ -2414,6 +2418,7 @@ func runCreateScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -2507,6 +2512,7 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
+				scanSummaryWrapper,
 				featureFlagsWrapper,
 				ignorePolicyFlagOmit)
 			if err != nil {
@@ -2521,7 +2527,7 @@ func runCreateScanCommand(
 			}
 
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if reportErr != nil {
 				return reportErr
 			}
@@ -2533,7 +2539,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
+				risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2696,6 +2702,7 @@ func handleWait(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
 ) error {
@@ -2710,6 +2717,7 @@ func handleWait(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		cmd,
 		featureFlagsWrapper,
 		ignorePolicyFlagOmit)
@@ -2735,6 +2743,7 @@ func createReportsAfterScan(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
@@ -2772,6 +2781,7 @@ func createReportsAfterScan(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		exportWrapper,
 		policyResponseModel,
 		resultsPdfReportsWrapper,
@@ -2947,6 +2957,7 @@ func waitForScanCompletion(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
@@ -2964,7 +2975,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return err
 		}
@@ -2996,6 +3007,7 @@ func isScanRunning(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -3031,6 +3043,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
+			scanSummaryWrapper,
 			nil, featureFlagsWrapper, ignorePolicyFlagOmit) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")
