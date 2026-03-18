@@ -76,8 +76,8 @@ type MicroEngineOverview struct {
 }
 
 type AISCInfo struct {
-	TotalAssets      int `json:"TotalAssets"`
-	TotalAssetTypes  int `json:"TotalAssetTypes"`
+	TotalAssets     int `json:"TotalAssets"`
+	TotalAssetTypes int `json:"TotalAssetTypes"`
 }
 
 type EngineResultSummary struct {
@@ -179,7 +179,7 @@ func (r *ResultSummary) SCSIssuesValue() int {
 }
 
 func (r *ResultSummary) HasAISC() bool {
-	return r.HasEngine(params.AISCType)
+	return r.HasEngine(params.AiscType)
 }
 
 func (r *ResultSummary) AISCAssetsValue() int {
@@ -841,7 +841,7 @@ const nonAsyncSummary = `<div class="top-row">
                 </div>
 		</div>
         {{end}}
-        {{/* if .HasAISC */}}
+        {{if .HasAISC}}
 		<div class="second-row" style="margin-top: 30px;">
                <div class="element">
                 	<div class="total">Total Assets</div>
@@ -852,7 +852,7 @@ const nonAsyncSummary = `<div class="top-row">
  					<div class="total">{{.AISCAssetTypesValue}}</div>
                 </div>
 		</div>
-        {{/* end */}}`
+        {{end}}`
 
 const asyncSummaryTemplate = `<div class="cx-info">
             <div class="data">
@@ -920,13 +920,13 @@ const SummaryMarkdownCompletedTemplate = `
 | {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
 {{end}}
 
-{{/* if .HasAISC */}}
+{{if .HasAISC}}
 ### AI Supply Chain Engine 
 
 | Total Assets | Total Asset Types |
 |:---------:|:---------:|
 | {{.AISCAssetsValue}} | {{.AISCAssetTypesValue}} |
-{{/* end */}}
+{{end}}
 `
 
 func SummaryMarkdownTemplate(isScanPending bool) string {
