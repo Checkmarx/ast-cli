@@ -39,7 +39,7 @@ jobs:
           git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com".insteadOf "https://github.com"
         env:
           GH_TOKEN: ${{ secrets.GH_ACTION_TOKEN }}
-          # added GH_ACTION_TOKEN in cli repo for testing
+          # added GH_TOKEN_FEDRMP
 
       - name: Download Go modules
         run: go mod download
@@ -47,7 +47,7 @@ jobs:
       - name: Run FedRAMP Remediation Agent
         uses: CheckmarxDev/fedramp-remediation-agent@master
         with:
-          github_token: ${{ secrets.GH_TOKEN }}
+          github_token: ${{ secrets.GH_TOKEN_FEDRMP }}
           jira_base_url: ${{ vars.JIRA_BASE_URL_FEDRAMP }}
           jira_email: ${{ secrets.JIRA_USER_EMAIL_FEDRAMP }}
           jira_apikey: ${{ secrets.JIRA_API_TOKEN_FEDRAMP }}
