@@ -396,7 +396,7 @@ jobs:
 
       - name: Send failure notification to Teams
         if: always() && steps.failed_tests.outputs.has_failures == 'true'
-        uses: Skitionek/notify-microsoft-teams@v1.0.8
+        uses: Skitionek/notify-microsoft-teams@9c67757f64d610fb6748d8ff3c11f284355ed7ec #v1.0.8
         with:
           webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL_INTEGRATION_TESTS }}
           raw: >
