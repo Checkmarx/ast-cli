@@ -997,8 +997,8 @@ func printAISCSummary(summary *wrappers.ResultSummary) {
 	fmt.Printf("              AI SUPPLY CHAIN ENGINE SUMMARY\n")
 	fmt.Printf("              ---------------------------------------------------------------------     \n")
 	fmt.Printf("              | %-32s   %30s |\n", "Category", "Count")
-	fmt.Printf("              | %-32s   %30d |\n", "Total Asset Types", summary.AISCAssetTypesValue())
 	fmt.Printf("              | %-32s   %30d |\n", "Total Assets", summary.AISCAssetsValue())
+	fmt.Printf("              | %-32s   %30d |\n", "Total Asset Types", summary.AISCAssetTypesValue())
 	fmt.Printf("              ---------------------------------------------------------------------     \n\n")
 }
 
