@@ -6,7 +6,7 @@ on:
     branches: 
       - other/fedramp-remediation
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *' 
 
 permissions:
   id-token: write
@@ -39,6 +39,7 @@ jobs:
           git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com".insteadOf "https://github.com"
         env:
           GH_TOKEN: ${{ secrets.GH_ACTION_TOKEN }}
+          # added GH_ACTION_TOKEN in cli repo for testing
 
       - name: Download Go modules
         run: go mod download
