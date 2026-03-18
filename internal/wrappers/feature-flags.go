@@ -20,6 +20,8 @@ const DirectAssociationEnabled = "DIRECT_APP_ASSOCIATION_ENABLED"
 const maxRetries = 3
 const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
+const AISupplyChainEnabled = "AI_SUPPLY_CHAIN_ENGINE_ENABLED"
+const AISupplyChainGAEnabled = "AI_SUPPLY_CHAIN_ENGINE_GA_ENABLED"
 
 var DefaultFFLoad bool = false
 
