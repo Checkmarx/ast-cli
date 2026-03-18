@@ -1173,7 +1173,16 @@ func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig
 		aiscConfig := wrappers.AISCConfig{}
 		aiscMapConfig[resultsMapType] = commonParams.AiscType
 		aiscMapConfig[resultsMapValue] = &aiscConfig
+
+		for _, config := range resubmitConfig {
+			// TODO : to do this in future when config value comes
+			if config.Type == commonParams.AiscType && config.Value == nil {
+				continue
+			}
+		}
+
 		return aiscMapConfig
+
 	}
 
 	return nil
