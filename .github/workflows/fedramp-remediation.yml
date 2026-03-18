@@ -1,0 +1,55 @@
+name: FedRAMP Remediation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: 
+      - other/fedramp-remediation
+  schedule:
+    - cron: '0 6 * * *'
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        # commit sha #v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: arn:aws:iam::941355383184:role/Bedrock-Github-github-actions-bedrock-role
+          aws-region: us-east-1
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set GOPRIVATE and configure GitHub token for private modules
+        run: |
+          echo "GOPRIVATE=github.com/checkmarxDev/*,github.com/CheckmarxDev/*" >> "$GITHUB_ENV"
+          git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com".insteadOf "https://github.com"
+        env:
+          GH_TOKEN: ${{ secrets.GH_ACTION_TOKEN }}
+
+      - name: Download Go modules
+        run: go mod download
+
+      - name: Run FedRAMP Remediation Agent
+        uses: CheckmarxDev/fedramp-remediation-agent@master
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          jira_base_url: ${{ vars.JIRA_BASE_URL_FEDRAMP }}
+          jira_email: ${{ secrets.JIRA_USER_EMAIL_FEDRAMP }}
+          jira_apikey: ${{ secrets.JIRA_API_TOKEN_FEDRAMP }}
+          otel_endpoint: ${{ secrets.FEDRAMP_AGENT_OTEL_EXPORTER_OTLP_ENDPOINT }}
+          groundcover_api_key: ${{ secrets.FEDRAMP_AGENT_GROUNDCOVER_API_KEY }}
+          groundcover_backend_id: ${{ secrets.FEDRAMP_AGENT_GROUNDCOVER_BACKEND_ID }}
