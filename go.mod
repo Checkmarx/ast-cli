@@ -1,13 +1,14 @@
 module github.com/checkmarx/ast-cli
 
-go 1.24.13
+go 1.25.8
+
 
 require (
-	github.com/Checkmarx/containers-resolver v1.0.32
+	github.com/Checkmarx/containers-resolver v1.0.33
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
-	github.com/Checkmarx/manifest-parser v0.1.1
+	github.com/Checkmarx/manifest-parser v0.1.2
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
@@ -54,7 +55,7 @@ require (
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Checkmarx/containers-images-extractor v1.0.22
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.24 // indirect
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.25 // indirect
 	github.com/CycloneDX/cyclonedx-go v0.9.2 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect

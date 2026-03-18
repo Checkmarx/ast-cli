@@ -20,6 +20,7 @@ func TestImport_ImportSarifFileWithCorrectFlags_CreateImportSuccessfully(t *test
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "my-project", "--import-file-path", "my-path.sarif"})
 	err := cmd.Execute()
@@ -36,6 +37,7 @@ func TestImport_ImportSarifFileProjectDoesntExist_CreateImportWithProvidedNewNam
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.sarif"})
 	err := cmd.Execute()
@@ -52,6 +54,7 @@ func TestImport_ImportSarifFileMissingImportFilePath_CreateImportReturnsErrorWit
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "my-project"})
 	err := cmd.Execute()
@@ -67,6 +70,7 @@ func TestImport_ImportSarifFileEmptyImportFilePathValue_CreateImportReturnsError
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "my-project", "--import-file-path", ""})
 	err := cmd.Execute()
@@ -82,6 +86,7 @@ func TestImport_ImportSarifFileMissingImportProjectName_CreateImportReturnsError
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--import-file-path", "my-path.zip"})
 	err := cmd.Execute()
@@ -97,6 +102,7 @@ func TestImport_ImportSarifFileProjectNameNotProvided_CreateImportWithProvidedNe
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "", "--import-file-path", "my-path.sarif"})
 	err := cmd.Execute()
@@ -112,6 +118,7 @@ func TestImport_ImportSarifFileUnacceptedFileExtension_CreateImportReturnsErrorW
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "my-path.txt"})
 	err := cmd.Execute()
@@ -127,6 +134,7 @@ func TestImport_ImportSarifFileMissingExtension_CreateImportReturnsErrorWithCorr
 		&mock.ByorMockWrapper{},
 		mock.ApplicationsMockWrapper{},
 		&mock.FeatureFlagsMockWrapper{},
+		&mock.TenantConfigurationMockWrapper{},
 	)
 	cmd.SetArgs([]string{"utils", "import", "--project-name", "MOCK-PROJECT-NOT-EXIST", "--import-file-path", "some/path/no/extension/my-path"})
 	err := cmd.Execute()

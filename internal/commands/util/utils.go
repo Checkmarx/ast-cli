@@ -65,7 +65,7 @@ func NewUtilsCommand(
 		},
 	}
 
-	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper, featureFlagsWrapper)
+	importCmd := NewImportCommand(projectsWrapper, uploadsWrapper, groupsWrapper, accessManagementWrapper, byorWrapper, applicationsWrapper, featureFlagsWrapper, tenantWrapper)
 
 	envCheckCmd := NewEnvCheckCommand()
 

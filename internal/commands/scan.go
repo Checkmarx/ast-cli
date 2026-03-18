@@ -187,6 +187,7 @@ func NewScanCommand(
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -217,6 +218,7 @@ func NewScanCommand(
 		accessManagementWrapper,
 		applicationsWrapper,
 		featureFlagsWrapper,
+		tenantWrapper,
 	)
 	containerResolver = containerResolverWrapper
 
@@ -674,6 +676,7 @@ func scanCreateSubCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) *cobra.Command {
 	createScanCmd := &cobra.Command{
 		Use:   "create",
@@ -707,6 +710,7 @@ func scanCreateSubCommand(
 			accessManagementWrapper,
 			applicationsWrapper,
 			featureFlagsWrapper,
+			tenantWrapper,
 		),
 	}
 	createScanCmd.PersistentFlags().Bool(commonParams.AsyncFlag, false, "Do not wait for scan completion")
@@ -945,6 +949,7 @@ func setupScanTypeProjectAndConfig(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) error {
 	userAllowedEngines, _ := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	var info map[string]interface{}
@@ -973,6 +978,7 @@ func setupScanTypeProjectAndConfig(
 		accessManagementWrapper,
 		applicationsWrapper,
 		featureFlagsWrapper,
+		tenantWrapper,
 	)
 	if findProjectErr != nil {
 		return findProjectErr
@@ -2422,6 +2428,7 @@ func runCreateScanCommand(
 	accessManagementWrapper wrappers.AccessManagementWrapper,
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		err := validateScanTypes(cmd, jwtWrapper, featureFlagsWrapper)
@@ -2471,6 +2478,7 @@ func runCreateScanCommand(
 			applicationsWrapper,
 			featureFlagsWrapper,
 			jwtWrapper,
+			tenantWrapper,
 		)
 		logger.PrintIfVerbose(fmt.Sprintf("Scan model: %v", scanModel))
 		defer cleanUpTempZip(zipFilePath)
@@ -2570,11 +2578,12 @@ func createScanModel(
 	applicationsWrapper wrappers.ApplicationsWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
 ) (*wrappers.Scan, string, error) {
 	var input = []byte("{}")
 
 	// Define type, project and config in scan model
-	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper, jwtWrapper)
+	err := setupScanTypeProjectAndConfig(&input, cmd, projectsWrapper, groupsWrapper, scansWrapper, applicationsWrapper, accessManagementWrapper, featureFlagsWrapper, jwtWrapper, tenantWrapper)
 	if err != nil {
 		return nil, "", err
 	}
