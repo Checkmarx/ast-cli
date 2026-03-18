@@ -2480,7 +2480,7 @@ func runCreateScanCommand(
 			jwtWrapper,
 			tenantWrapper,
 		)
-		logger.PrintIfVerbose(fmt.Sprintf("Scan model: %v", scanModel))
+
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
