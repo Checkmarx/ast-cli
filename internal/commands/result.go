@@ -723,14 +723,14 @@ func summaryReport(
 		summary.SCSOverview = SCSOverview
 	}
 
-	//if summary.HasAISC() {
-	// Getting AISC information from scan-summary API
-	aiscInfo, err := getAISCInfoFromScanSummary(scanSummaryWrapper, summary.ScanID)
-	if err != nil {
-		return nil, err
+	if summary.HasAISC() {
+		// Getting AISC information from scan-summary API
+		aiscInfo, err := getAISCInfoFromScanSummary(scanSummaryWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+		summary.AISCInfo = aiscInfo
 	}
-	summary.AISCInfo = aiscInfo
-	//}
 
 	if policies != nil {
 		summary.Policies = filterViolatedRules(*policies)
@@ -900,9 +900,9 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
-		//if summary.HasAISC() {
-		printAISCSummary(summary)
-		//}
+		if summary.HasAISC() {
+			printAISCSummary(summary)
+		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
@@ -1420,8 +1420,8 @@ func getAISCInfoFromScanSummary(
 	if scanSummaryModel != nil && len(scanSummaryModel.ScansSummaries) > 0 {
 		aiscCounters := scanSummaryModel.ScansSummaries[0].AiscCounters
 		return &wrappers.AISCInfo{
-			TotalAssets:     aiscCounters.AssetsCounter,      // Map from API response
-			TotalAssetTypes: aiscCounters.AssetTypesCounter,  // Map from API response
+			TotalAssets:     aiscCounters.AssetsCounter,     // Map from API response
+			TotalAssetTypes: aiscCounters.AssetTypesCounter, // Map from API response
 		}, nil
 	}
 	return nil, nil
