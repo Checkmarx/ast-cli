@@ -375,6 +375,88 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+      - name: Collect failed tests
+        id: failed_tests
+        if: always()
+        run: |
+          FAILED_LIST=$(grep -hE "^--- FAIL: " retry2_output.log retry1_output.log test_output.log 2>/dev/null \
+            | awk '{print $3}' | sort -u || true)
+
+          if [ -n "$FAILED_LIST" ]; then
+            FAIL_COUNT=$(echo "$FAILED_LIST" | wc -l | tr -d ' ')
+            FAILED_FORMATTED=$(echo "$FAILED_LIST" | tr '\n' '\n' | sed 's/^/• /' | paste -sd '\\n' -)
+            echo "has_failures=true"  >> "$GITHUB_OUTPUT"
+            echo "fail_count=${FAIL_COUNT}" >> "$GITHUB_OUTPUT"
+            echo "failed_list=${FAILED_FORMATTED}" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_failures=false" >> "$GITHUB_OUTPUT"
+            echo "fail_count=0"       >> "$GITHUB_OUTPUT"
+            echo "failed_list="       >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send failure notification to Teams
+        if: always() && steps.failed_tests.outputs.has_failures == 'true'
+        uses: Skitionek/notify-microsoft-teams@v1.0.8
+        with:
+          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL_INTEGRATION_TESTS }}
+          raw: >
+            {
+              "type": "message",
+              "attachments": [
+                {
+                  "contentType": "application/vnd.microsoft.card.adaptive",
+                  "content": {
+                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                    "type": "AdaptiveCard",
+                    "version": "1.4",
+                    "msteams": {
+                      "width": "Full"
+                    },
+                    "body": [
+                      {
+                        "type": "TextBlock",
+                        "text": "Integration Tests Failed — ${{ matrix.label }}",
+                        "weight": "Bolder",
+                        "size": "Large",
+                        "color": "Attention"
+                      },
+                      {
+                        "type": "FactSet",
+                        "facts": [
+                          { "title": "Repository:", "value": "${{ github.repository }}" },
+                          { "title": "Author:", "value": "${{ github.actor }}" },
+                          { "title": "Branch:", "value": "${{ github.ref_name }}" },
+                          { "title": "Run ID:", "value": "${{ github.run_id }}" },
+                          { "title": "Group:", "value": "${{ matrix.label }} (${{ matrix.name }})" },
+                          { "title": "Failed Tests:", "value": "${{ steps.failed_tests.outputs.fail_count }}" }
+                        ]
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "**Failed Test Cases:**",
+                        "weight": "Bolder",
+                        "spacing": "Medium"
+                      },
+                      {
+                        "type": "TextBlock",
+                        "text": "${{ steps.failed_tests.outputs.failed_list }}",
+                        "wrap": true,
+                        "fontType": "Monospace",
+                        "spacing": "Small"
+                      }
+                    ],
+                    "actions": [
+                      {
+                        "type": "Action.OpenUrl",
+                        "title": "View Workflow Run",
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+
       - name: Stop Squid proxy
         if: always()
         run: docker stop squid && docker rm squid || true
