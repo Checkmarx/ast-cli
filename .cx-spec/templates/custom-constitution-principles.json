@@ -1,0 +1,30 @@
+{
+  "principles": [
+    {
+      "id": "cxui_frontend_dependencies",
+      "title": "CXUI Frontend Dependencies (NON-NEGOTIABLE)",
+      "enabled": false,
+      "detection": {
+        "rules_any": [
+          {
+            "type": "regex_any",
+            "include_any": [
+              "**/*"
+            ],
+            "exclude_any": [
+              "**/.git/**",
+              "**/node_modules/**",
+              "**/dist/**",
+              "**/build/**"
+            ],
+            "patterns_any": [
+              "\\\"react\\\"\\s*:",
+              "\\\"react-dom\\\"\\s*:"
+            ]
+          }
+        ]
+      },
+      "principle_file": "custom_constitution_principles/cxui-frontend-dependencies.md"
+    }
+  ]
+}
