@@ -12,13 +12,14 @@ import (
 func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
-		Short: "Manage Git hooks",
-		Long:  "The hooks command enables the ability to manage Git hooks for Checkmarx One.",
+		Short: "Manage Git hooks and AI coding agent hooks",
+		Long:  "The hooks command manages Git hooks for secret detection and AI coding agent hooks for Claude, Cursor, Windsurf, Factory Droid, and Gemini.",
 		Example: heredoc.Doc(
 			`
 			$ cx hooks pre-commit secrets-install-git-hook
 			$ cx hooks pre-commit secrets-scan
 			$ cx hooks pre-receive secrets-scan
+			$ cx hooks agenthooks install
 		`,
 		),
 		Annotations: map[string]string{
@@ -30,9 +31,17 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 		},
 	}
 
-	// Add pre-commit and pre-receive subcommand
+	// Add pre-commit, pre-receive, and agenthooks management subcommands
 	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper, featureFlagsWrapper))
 	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper, featureFlagsWrapper))
+	hooksCmd.AddCommand(NewAgentHooksCommand())
+
+	// Register all hidden hook dispatch subcommands so that cx itself acts as
+	// the hook binary. Agents invoke: cx hooks <route-name>
+	// e.g. cx hooks claude-pre-tool-use
+	for _, dispatchCmd := range HookDispatchCommands() {
+		hooksCmd.AddCommand(dispatchCmd)
+	}
 
 	return hooksCmd
 }
