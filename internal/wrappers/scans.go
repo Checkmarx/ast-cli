@@ -163,3 +163,6 @@ type SCSConfig struct {
 	RepoToken        string `json:"repoToken,omitempty"`
 	GitCommitHistory string `json:"gitCommitHistory,omitempty"`
 }
+
+type AISCConfig struct {
+}

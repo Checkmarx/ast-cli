@@ -1037,6 +1037,11 @@ func setupScanTypeProjectAndConfig(
 		configArr = append(configArr, SCSConfig)
 	}
 
+	var aiscConfig = addAiscScan(featureFlagsWrapper, resubmitConfig)
+	if aiscConfig != nil {
+		configArr = append(configArr, aiscConfig)
+	}
+
 	info["config"] = configArr
 	var err2 error
 	*input, err2 = json.Marshal(info)
@@ -1162,6 +1167,31 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 	if resubmitLanguageMode := config.Value[configLanguageMode]; resubmitLanguageMode != nil {
 		sastConfig.LanguageMode = resubmitLanguageMode.(string)
 	}
+}
+
+func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
+	// TODO: Add the aisc resubmit config, currently no value is passed in config
+	aiSupplyChainEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainEnabled)
+	//aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
+	// TODO GA enabled to be added
+	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainEnabled.Status {
+		aiscMapConfig := make(map[string]interface{})
+		aiscConfig := wrappers.AISCConfig{}
+		aiscMapConfig[resultsMapType] = commonParams.AiscType
+		aiscMapConfig[resultsMapValue] = &aiscConfig
+
+		for _, config := range resubmitConfig {
+			// TODO : to do this in future when config value comes
+			if config.Type == commonParams.AiscType && config.Value == nil {
+				continue
+			}
+		}
+
+		return aiscMapConfig
+
+	}
+
+	return nil
 }
 
 func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
@@ -1504,6 +1534,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
 
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	logger.PrintIfVerbose(fmt.Sprintf("Allowed scan types: %v", allowedEngines))
 
 	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 
@@ -2449,6 +2480,7 @@ func runCreateScanCommand(
 			jwtWrapper,
 			tenantWrapper,
 		)
+
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
@@ -2562,6 +2594,7 @@ func createScanModel(
 	scanModel := wrappers.Scan{}
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
+
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
