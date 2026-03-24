@@ -1,0 +1,50 @@
+{
+  "version": "1.1",
+  "workflow": {
+    "current_mode": "spec",
+    "default_mode": "spec"
+  },
+  "options": {
+    "tdd_enabled": false,
+    "contracts_enabled": false,
+    "data_models_enabled": false,
+    "atomic_commits": true,
+    "risk_tests_enabled": false
+  },
+  "mode_defaults": {
+    "build": {
+      "tdd_enabled": false,
+      "contracts_enabled": false,
+      "data_models_enabled": false,
+      "risk_tests_enabled": false,
+      "atomic_commits": true,
+      "skip_micro_review": true,
+      "minimal_documentation": true
+    },
+    "spec": {
+      "tdd_enabled": false,
+      "contracts_enabled": true,
+      "data_models_enabled": true,
+      "risk_tests_enabled": true,
+      "atomic_commits": true,
+      "skip_micro_review": false,
+      "minimal_documentation": false
+    }
+  },
+  "spec_sync": {
+    "enabled": false,
+    "queue": {
+      "version": "1.0",
+      "created": "",
+      "pending": [],
+      "processed": []
+    }
+  },
+  "team_directives": {
+    "path": "",
+    "repo": ""
+  },
+  "architecture": {
+    "diagram_format": "ascii"
+  }
+}
