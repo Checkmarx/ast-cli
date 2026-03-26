@@ -8,150 +8,169 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	scanner "github.com/checkmarx/2ms/v3/pkg"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	agenthooks "github.com/cx-amol-mane/hooks"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
 // =============================================================================
-// Unified logic — written ONCE, runs for all 5 AI agents.
-//
-// Each function maps to one event type across the full agent matrix:
-//
-//   cxWhenAgentIdle   → Claude stop / Cursor stop / Windsurf cascade /
-//                        Factory Droid stop / Gemini after-agent
-//   cxBeforeToolCall  → Claude pre-tool-use / Cursor before-shell+mcp /
-//                        Windsurf pre-run+mcp / Droid pre-tool-use /
-//                        Gemini before-tool
-//   cxAfterFileWrite  → Claude post-tool-use / Cursor after-file-edit /
-//                        Windsurf post-write-code / Droid post-tool-use /
-//                        Gemini after-file-tool
-//   cxBeforePrompt    → Claude user-prompt / Cursor before-submit /
-//                        Windsurf pre-user-prompt / Droid user-prompt /
-//                        Gemini before-agent
+// Guardrail handlers — written once, applied to all 5 AI agents.
 // =============================================================================
 
-// cxWhenAgentIdle is called when any agent finishes its response turn.
-// ev.Agent identifies which IDE triggered it (claude / cursor / windsurf / droid / gemini).
-func cxWhenAgentIdle(ev agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
-	// TODO: post-session audit log, compliance check, scan trigger
+// cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
+func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
 	return agenthooks.Resume()
 }
 
-// blockedShellPatterns lists shell command patterns that cx will always deny.
-var blockedShellPatterns = []string{
-	"rm -rf",
-	"rm -fr",
-	"rmdir /s",
-	"del /f /s /q",
-	"format ",
-	"mkfs.",
-	":(){:|:&};:", // fork bomb
-	"curl | bash",
-	"curl | sh",
-	"wget -O- | bash",
-	"wget -O- | sh",
-}
-
-// cxBeforeToolCall is called before any shell command or MCP tool executes.
-// ev.IsShell() — bash/terminal command, ev.Command holds the command string.
-// ev.IsMCP()   — MCP tool call, ev.ToolName holds the tool identifier.
-func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
-	if ev.IsShell() {
-		lower := strings.ToLower(ev.Command)
-		for _, pattern := range blockedShellPatterns {
-			if strings.Contains(lower, strings.ToLower(pattern)) {
-				return agenthooks.Deny(
-					fmt.Sprintf("Blocked by Checkmarx policy: command contains dangerous pattern %q", pattern),
-				)
-			}
-		}
-	}
-	// TODO: check ev.ToolName against MCP server allow-list
-	// TODO: call Checkmarx API for real-time secret scan before execution
+// cxBeforeToolCall: gate shell/MCP execution. Nothing to enforce yet.
+func cxBeforeToolCall(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 	return agenthooks.Allow()
 }
 
-// cxAfterFileWrite is called after any file is written or edited by an agent.
-// ev.FilePath holds the path of the written file.
-// ev.Changes   holds before/after diffs (where available).
-func cxAfterFileWrite(ev agenthooks.FileWriteEvent) agenthooks.FileWriteVerdict {
-	// TODO: run Checkmarx secret detection on ev.FilePath
-	// TODO: run SAST/SCA quick scan on the modified file
+// cxAfterFileWrite: react to file edits. Nothing to enforce yet.
+func cxAfterFileWrite(_ agenthooks.FileWriteEvent) agenthooks.FileWriteVerdict {
 	return agenthooks.AcceptWrite()
 }
 
-// cxBeforePrompt is called before a user prompt is sent to any agent.
-// ev.Text holds the raw prompt text.
+// cxBeforePrompt scans the user's prompt for leaked secrets using the 2ms
+// engine before it reaches the AI agent. This is the prompt guardrail.
 func cxBeforePrompt(ev agenthooks.PromptEvent) agenthooks.PromptVerdict {
-	lower := strings.ToLower(ev.Text)
-	for _, pattern := range blockedShellPatterns {
-		if strings.Contains(lower, strings.ToLower(pattern)) {
-			return agenthooks.RejectPrompt(
-				fmt.Sprintf("Blocked by Checkmarx policy: prompt contains dangerous pattern %q", pattern),
-			)
-		}
+	if reason := scanForSecrets(ev.Text); reason != "" {
+		return agenthooks.RejectPrompt(reason)
 	}
-	// TODO: scan ev.Text for credentials / secret patterns
-	// TODO: enforce prompt policy (e.g. block PII, block internal data leakage)
 	return agenthooks.AcceptPrompt()
 }
 
-// setupCXHooks registers all four unified handlers.
-// Called once per dispatch — cheap, idempotent (map overwrites same values).
-func setupCXHooks() {
+// =============================================================================
+// Secret scanning — powered by the same 2ms engine used in cx realtime scan.
+// =============================================================================
+
+// scanForSecrets runs the 2ms secret scanner on arbitrary text (e.g. a prompt).
+// Returns a human-readable rejection reason, or "" when the text is clean.
+func scanForSecrets(text string) string {
+	content := text
+	report, err := scanner.NewScanner().Scan(
+		[]scanner.ScanItem{{Content: &content, Source: "prompt"}},
+		scanner.ScanConfig{WithValidation: true},
+	)
+	if err != nil {
+		return "" // fail-open: scanner error should not block the developer
+	}
+
+	var findings []string
+	for _, group := range report.Results {
+		for _, secret := range group {
+			severity := severityFromValidation(string(secret.ValidationStatus))
+			findings = append(findings, fmt.Sprintf("  - %s (severity: %s)", secret.RuleID, severity))
+		}
+	}
+	if len(findings) == 0 {
+		return ""
+	}
+	return fmt.Sprintf(
+		"Blocked by Checkmarx: prompt contains %d secret(s):\n%s\nRemove the secrets and try again.",
+		len(findings), strings.Join(findings, "\n"),
+	)
+}
+
+// severityFromValidation maps 2ms validation status to a severity label.
+func severityFromValidation(status string) string {
+	switch status {
+	case "Valid":
+		return "Critical"
+	case "Invalid":
+		return "Medium"
+	default: // "Unknown" or anything else
+		return "High"
+	}
+}
+
+// =============================================================================
+// License check
+// =============================================================================
+
+// isLicensed loads CLI config silently and checks whether the token carries
+// a CxOne Assist, AI Protection, or Developer Assist license.
+func isLicensed() bool {
+	_ = configuration.LoadConfiguration()
+	jwt := wrappers.NewJwtWrapper()
+	for _, engine := range []string{
+		params.CheckmarxOneAssistType,
+		params.AIProtectionType,
+		params.CheckmarxDevAssistType,
+	} {
+		if ok, err := jwt.IsAllowedEngine(engine); err == nil && ok {
+			return true
+		}
+	}
+	return false
+}
+
+// =============================================================================
+// Hook registration
+// =============================================================================
+
+// registerGuardrails wires the four guardrail handlers.
+func registerGuardrails() {
 	agenthooks.WhenAgentIdle(cxWhenAgentIdle)
 	agenthooks.BeforeToolCall(cxBeforeToolCall)
 	agenthooks.AfterFileWrite(cxAfterFileWrite)
 	agenthooks.BeforePrompt(cxBeforePrompt)
 }
 
+// registerPassThrough wires no-op handlers that always allow the action.
+// Used when the license check fails so we still emit valid JSON (fail-open).
+func registerPassThrough() {
+	agenthooks.WhenAgentIdle(func(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict { return agenthooks.Resume() })
+	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
+	agenthooks.AfterFileWrite(func(_ agenthooks.FileWriteEvent) agenthooks.FileWriteVerdict { return agenthooks.AcceptWrite() })
+	agenthooks.BeforePrompt(func(_ agenthooks.PromptEvent) agenthooks.PromptVerdict { return agenthooks.AcceptPrompt() })
+}
+
 // =============================================================================
-// Cobra routing — 22 hidden commands, zero logic.
+// Cobra routing — 22 hidden subcommands, one per agent×event combination.
 //
-// These exist only because Cobra sits between os.Args and Dispatch():
-//   os.Args = ["cx.exe", "hooks", "claude-pre-tool-use"]
-//   os.Args[1] = "hooks"  ← Dispatch() would read this, not the route name
-//
-// Each command captures its own route name via cmd.Use and calls DispatchRoute,
-// which looks up the route registered by setupCXHooks() and invokes it.
+// Agents invoke:  cx hooks <route-name>
+// Each route reads JSON from stdin and writes the verdict as JSON to stdout.
 // =============================================================================
 
-// HookDispatchCommands returns all 22 hidden route-dispatch subcommands.
-// Registered under "cx hooks" — agents invoke: cx hooks <route-name>
 func HookDispatchCommands() []*cobra.Command {
 	type route struct{ use, short string }
 
 	routes := []route{
-		// ── WhenAgentIdle (5 routes) ─────────────────────────────────────────
-		{"claude-stop", "Claude agent finished responding"},
-		{"cursor-stop", "Cursor agent finished responding"},
-		{"windsurf-post-cascade-response", "Windsurf agent finished responding"},
-		{"droid-stop", "Factory Droid agent finished responding"},
-		{"gemini-after-agent", "Gemini agent finished responding"},
+		// WhenAgentIdle
+		{"claude-stop", "Claude agent finished"},
+		{"cursor-stop", "Cursor agent finished"},
+		{"windsurf-post-cascade-response", "Windsurf agent finished"},
+		{"droid-stop", "Factory Droid agent finished"},
+		{"gemini-after-agent", "Gemini agent finished"},
 
-		// ── BeforeToolCall (7 routes) ────────────────────────────────────────
-		{"claude-pre-tool-use", "Gate Claude tool/shell execution"},
+		// BeforeToolCall
+		{"claude-pre-tool-use", "Gate Claude tool execution"},
 		{"cursor-before-shell", "Gate Cursor shell execution"},
-		{"cursor-before-mcp", "Gate Cursor MCP tool execution"},
+		{"cursor-before-mcp", "Gate Cursor MCP execution"},
 		{"windsurf-pre-run-command", "Gate Windsurf shell execution"},
-		{"windsurf-pre-mcp-tool-use", "Gate Windsurf MCP tool execution"},
-		{"droid-pre-tool-use", "Gate Factory Droid tool execution"},
+		{"windsurf-pre-mcp-tool-use", "Gate Windsurf MCP execution"},
+		{"droid-pre-tool-use", "Gate Droid tool execution"},
 		{"gemini-before-tool", "Gate Gemini tool execution"},
 
-		// ── AfterFileWrite (5 routes) ────────────────────────────────────────
-		{"claude-after-file-write", "React after Claude writes a file"},
-		{"cursor-after-file-edit", "React after Cursor edits a file"},
-		{"windsurf-post-write-code", "React after Windsurf writes a file"},
-		{"droid-after-file-write", "React after Factory Droid writes a file"},
-		{"gemini-after-file-tool", "React after Gemini writes a file"},
+		// AfterFileWrite
+		{"claude-after-file-write", "React to Claude file write"},
+		{"cursor-after-file-edit", "React to Cursor file edit"},
+		{"windsurf-post-write-code", "React to Windsurf file write"},
+		{"droid-after-file-write", "React to Droid file write"},
+		{"gemini-after-file-tool", "React to Gemini file write"},
 
-		// ── BeforePrompt (5 routes) ──────────────────────────────────────────
-		{"claude-user-prompt-submit", "Gate Claude prompt submission"},
-		{"cursor-before-submit-prompt", "Gate Cursor prompt submission"},
-		{"windsurf-pre-user-prompt", "Gate Windsurf prompt submission"},
-		{"droid-user-prompt-submit", "Gate Factory Droid prompt submission"},
-		{"gemini-before-agent", "Gate Gemini prompt submission"},
+		// BeforePrompt
+		{"claude-user-prompt-submit", "Gate Claude prompt"},
+		{"cursor-before-submit-prompt", "Gate Cursor prompt"},
+		{"windsurf-pre-user-prompt", "Gate Windsurf prompt"},
+		{"droid-user-prompt-submit", "Gate Droid prompt"},
+		{"gemini-before-agent", "Gate Gemini prompt"},
 	}
 
 	cmds := make([]*cobra.Command, len(routes))
@@ -161,15 +180,19 @@ func HookDispatchCommands() []*cobra.Command {
 			Use:    r.use,
 			Short:  r.short,
 			Hidden: true,
-			// Override root PersistentPreRunE — CX credential/config loading must
-			// never run during hook dispatch: any stdout output corrupts the JSON
-			// response the agent reads.
-			PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-				return nil
-			},
-			Run: func(cmd *cobra.Command, args []string) {
-				setupCXHooks()                   // register the 4 unified handlers
-				agenthooks.DispatchRoute(cmd.Use) // route to the right one
+			// Override root PersistentPreRunE — any stdout from config loading
+			// would corrupt the JSON response the agent expects.
+			PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
+			Run: func(cmd *cobra.Command, _ []string) {
+				if isLicensed() {
+					registerGuardrails()
+				} else {
+					registerPassThrough()
+				}
+				// Cobra consumed the route name from os.Args, so Dispatch()
+				// would see "hooks" instead. Fix it before dispatching.
+				os.Args = []string{os.Args[0], cmd.Use}
+				agenthooks.Dispatch()
 			},
 		}
 	}
@@ -177,10 +200,9 @@ func HookDispatchCommands() []*cobra.Command {
 }
 
 // =============================================================================
-// Management command — cx hooks agenthooks
+// Management command — cx hooks agenthooks install
 // =============================================================================
 
-// NewAgentHooksCommand creates the visible "cx hooks agenthooks" management command.
 func NewAgentHooksCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agenthooks",
@@ -190,55 +212,47 @@ func NewAgentHooksCommand() *cobra.Command {
 			$ cx hooks agenthooks install
 		`),
 	}
-	cmd.AddCommand(agentHooksInstallCommand())
+	cmd.AddCommand(agentHooksInstallCmd())
 	return cmd
 }
 
-// =============================================================================
-// install
-// =============================================================================
-
-func agentHooksInstallCommand() *cobra.Command {
+func agentHooksInstallCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "install",
-		Short: "Write hook configs for all agents pointing to this cx binary",
+		Short: "Write hook configs for all supported agents",
 		Long: heredoc.Doc(`
 			Patches the settings files for Claude Code, Cursor, Windsurf Cascade,
-			and Factory Droid to invoke "cx hooks <route>" for each hook event.
-			cx itself handles all dispatch — no separate binary needed.
+			and Factory Droid so each agent invokes "cx hooks <route>" on hook events.
 		`),
-		Example: heredoc.Doc(`
-			$ cx hooks agenthooks install
-		`),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAgentHooksInstall()
+		Example: "  $ cx hooks agenthooks install",
+		RunE: func(*cobra.Command, []string) error {
+			return runInstall()
 		},
 	}
 }
 
-func runAgentHooksInstall() error {
+func runInstall() error {
 	cxPath, err := os.Executable()
 	if err != nil {
-		return errors.Wrapf(err, "resolving cx binary path")
+		return errors.Wrap(err, "resolving cx binary path")
 	}
-
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return errors.Wrapf(err, "finding home directory")
+		return errors.Wrap(err, "finding home directory")
 	}
 
 	agents := []struct {
-		name string
-		fn   func(string, string) error
+		name    string
+		install func(home, cx string) error
 	}{
-		{"Claude Code", agentHooksInstallClaude},
-		{"Cursor", agentHooksInstallCursor},
-		{"Windsurf Cascade", agentHooksInstallWindsurf},
-		{"Factory Droid", agentHooksInstallDroid},
+		{"Claude Code", installClaude},
+		{"Cursor", installCursor},
+		{"Windsurf Cascade", installWindsurf},
+		{"Factory Droid", installDroid},
 	}
 
 	for _, a := range agents {
-		if err := a.fn(home, cxPath); err != nil {
+		if err := a.install(home, cxPath); err != nil {
 			fmt.Fprintf(os.Stderr, "warning: %s: %v\n", a.name, err)
 		} else {
 			fmt.Fprintf(os.Stdout, "✓ %s configured\n", a.name)
@@ -247,69 +261,73 @@ func runAgentHooksInstall() error {
 	return nil
 }
 
-func agentHooksInstallClaude(home, cxPath string) error {
-	return agentHooksPatchJSON(filepath.Join(home, ".claude", "settings.json"), func(m map[string]any) {
-		h := agentHooksEnsureMap(m, "hooks")
-		h["Stop"] = cxHookEntries(cxPath, "claude-stop")
-		h["PreToolUse"] = cxHookEntries(cxPath, "claude-pre-tool-use")
-		h["PostToolUse"] = cxHookEntries(cxPath, "claude-after-file-write")
-		h["UserPromptSubmit"] = cxHookEntries(cxPath, "claude-user-prompt-submit")
+// =============================================================================
+// Per-agent install helpers
+// =============================================================================
+
+func installClaude(home, cx string) error {
+	return patchJSON(filepath.Join(home, ".claude", "settings.json"), func(m map[string]any) {
+		h := ensureMap(m, "hooks")
+		h["Stop"] = claudeHook(cx, "claude-stop")
+		h["PreToolUse"] = claudeHook(cx, "claude-pre-tool-use")
+		h["PostToolUse"] = claudeHook(cx, "claude-after-file-write")
+		h["UserPromptSubmit"] = claudeHook(cx, "claude-user-prompt-submit")
 	})
 }
 
-func agentHooksInstallCursor(home, cxPath string) error {
-	return agentHooksPatchJSON(filepath.Join(home, ".cursor", "hooks.json"), func(m map[string]any) {
-		m["stop"] = cxCmd(cxPath, "cursor-stop")
-		m["beforeShellExecution"] = cxCmd(cxPath, "cursor-before-shell")
-		m["beforeMCPExecution"] = cxCmd(cxPath, "cursor-before-mcp")
-		m["afterFileEdit"] = cxCmd(cxPath, "cursor-after-file-edit")
-		m["beforeSubmitPrompt"] = cxCmd(cxPath, "cursor-before-submit-prompt")
+func installCursor(home, cx string) error {
+	return patchJSON(filepath.Join(home, ".cursor", "hooks.json"), func(m map[string]any) {
+		m["stop"] = cursorHook(cx, "cursor-stop")
+		m["beforeShellExecution"] = cursorHook(cx, "cursor-before-shell")
+		m["beforeMCPExecution"] = cursorHook(cx, "cursor-before-mcp")
+		m["afterFileEdit"] = cursorHook(cx, "cursor-after-file-edit")
+		m["beforeSubmitPrompt"] = cursorHook(cx, "cursor-before-submit-prompt")
 	})
 }
 
-func agentHooksInstallWindsurf(home, cxPath string) error {
-	return agentHooksPatchJSON(filepath.Join(home, ".codeium", "windsurf", "hooks.json"), func(m map[string]any) {
-		m["pre_run_command"] = cxCmd(cxPath, "windsurf-pre-run-command")
-		m["pre_mcp_tool_use"] = cxCmd(cxPath, "windsurf-pre-mcp-tool-use")
-		m["pre_user_prompt"] = cxCmd(cxPath, "windsurf-pre-user-prompt")
-		m["post_write_code"] = cxCmd(cxPath, "windsurf-post-write-code")
-		m["post_cascade_response"] = cxCmd(cxPath, "windsurf-post-cascade-response")
+func installWindsurf(home, cx string) error {
+	return patchJSON(filepath.Join(home, ".codeium", "windsurf", "hooks.json"), func(m map[string]any) {
+		m["pre_run_command"] = cursorHook(cx, "windsurf-pre-run-command")
+		m["pre_mcp_tool_use"] = cursorHook(cx, "windsurf-pre-mcp-tool-use")
+		m["pre_user_prompt"] = cursorHook(cx, "windsurf-pre-user-prompt")
+		m["post_write_code"] = cursorHook(cx, "windsurf-post-write-code")
+		m["post_cascade_response"] = cursorHook(cx, "windsurf-post-cascade-response")
 	})
 }
 
-func agentHooksInstallDroid(home, cxPath string) error {
-	return agentHooksPatchJSON(filepath.Join(home, ".factory", "settings.json"), func(m map[string]any) {
-		h := agentHooksEnsureMap(m, "hooks")
-		h["Stop"] = cxHookEntries(cxPath, "droid-stop")
-		h["PreToolUse"] = cxHookEntries(cxPath, "droid-pre-tool-use")
-		h["PostToolUse"] = cxHookEntries(cxPath, "droid-after-file-write")
-		h["UserPromptSubmit"] = cxHookEntries(cxPath, "droid-user-prompt-submit")
+func installDroid(home, cx string) error {
+	return patchJSON(filepath.Join(home, ".factory", "settings.json"), func(m map[string]any) {
+		h := ensureMap(m, "hooks")
+		h["Stop"] = claudeHook(cx, "droid-stop")
+		h["PreToolUse"] = claudeHook(cx, "droid-pre-tool-use")
+		h["PostToolUse"] = claudeHook(cx, "droid-after-file-write")
+		h["UserPromptSubmit"] = claudeHook(cx, "droid-user-prompt-submit")
 	})
 }
 
-// cxCommandString builds the shell command string pointing cx at a given route.
-// Quotes the binary path if it contains spaces (e.g. C:\Program Files\cx.exe).
-func cxCommandString(cxPath, route string) string {
-	p := cxPath
-	if strings.Contains(p, " ") {
-		p = `"` + p + `"`
+// =============================================================================
+// JSON config helpers
+// =============================================================================
+
+// cmdString builds "cx hooks <route>", quoting the path if it has spaces.
+func cmdString(cx, route string) string {
+	if strings.Contains(cx, " ") {
+		cx = `"` + cx + `"`
 	}
-	return p + " hooks " + route
+	return cx + " hooks " + route
 }
 
-// cxHookEntries builds a Claude/Droid-style hook entry: [{type, command}]
-func cxHookEntries(cxPath, route string) []map[string]any {
-	return []map[string]any{
-		{"type": "command", "command": cxCommandString(cxPath, route)},
-	}
+// claudeHook builds a Claude/Droid hook entry: [{type: "command", command: "..."}]
+func claudeHook(cx, route string) []map[string]any {
+	return []map[string]any{{"type": "command", "command": cmdString(cx, route)}}
 }
 
-// cxCmd builds a Cursor/Windsurf-style hook entry: {command}
-func cxCmd(cxPath, route string) map[string]any {
-	return map[string]any{"command": cxCommandString(cxPath, route)}
+// cursorHook builds a Cursor/Windsurf hook entry: {command: "..."}
+func cursorHook(cx, route string) map[string]any {
+	return map[string]any{"command": cmdString(cx, route)}
 }
 
-func agentHooksPatchJSON(path string, patch func(map[string]any)) error {
+func patchJSON(path string, patch func(map[string]any)) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -325,7 +343,7 @@ func agentHooksPatchJSON(path string, patch func(map[string]any)) error {
 	return os.WriteFile(path, append(data, '\n'), 0o644)
 }
 
-func agentHooksEnsureMap(m map[string]any, key string) map[string]any {
+func ensureMap(m map[string]any, key string) map[string]any {
 	if v, ok := m[key]; ok {
 		if sub, ok := v.(map[string]any); ok {
 			return sub
