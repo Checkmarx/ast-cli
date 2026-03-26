@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -26,8 +27,103 @@ func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
 	return agenthooks.Resume()
 }
 
-// cxBeforeToolCall: gate shell/MCP execution. Nothing to enforce yet.
-func cxBeforeToolCall(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
+// =============================================================================
+// Shell guardrail — blocks commands that match the organization's blocklist.
+// =============================================================================
+
+// shellPolicyPath returns the path to the policy file: ~/.checkmarx/policyhooks1.json
+func shellPolicyPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".checkmarx", "policyhooks1.json")
+}
+
+// shellPolicy is the minimal shape of the policy file we need.
+type shellPolicy struct {
+	BlocklistTools struct {
+		Enabled bool          `json:"enabled"`
+		Tools   []blockedTool `json:"tools"`
+	} `json:"blocklist_tools"`
+}
+
+// blockedTool is a single entry in the policy blocklist.
+type blockedTool struct {
+	Name     string   `json:"name"`
+	OS       []string `json:"os"`
+	Category string   `json:"category"`
+	Risk     string   `json:"risk"`
+}
+
+// denyMessage is the firm instruction appended to every denial. It tells the
+// agent to stop — no retries, no workarounds, no alternative approaches.
+const denyMessage = "\n\n" +
+	"IMPORTANT: This action was blocked by your organization's security policy. " +
+	"Do NOT attempt alternative commands, workarounds, or equivalent approaches to achieve the same result. " +
+	"Any alternative method to accomplish this blocked action may be equally harmful to the system and the developer. " +
+	"Instead, inform the user that this operation is restricted by organizational policy and suggest they contact their administrator if they need this action performed."
+
+// loadBlockedCommands reads the policy file and returns all command names
+// (lowercased) that are blocked on the current OS, together with their metadata.
+func loadBlockedCommands() map[string]blockedTool {
+	blocked := map[string]blockedTool{}
+
+	data, err := os.ReadFile(shellPolicyPath())
+	if err != nil {
+		return blocked // fail-open: missing policy should not block the developer
+	}
+	var policy shellPolicy
+	if err := json.Unmarshal(data, &policy); err != nil {
+		return blocked // fail-open
+	}
+	if !policy.BlocklistTools.Enabled {
+		return blocked
+	}
+
+	currentOS := runtime.GOOS
+	for _, t := range policy.BlocklistTools.Tools {
+		if !matchesOS(t.OS, currentOS) {
+			continue
+		}
+		blocked[strings.ToLower(t.Name)] = t
+	}
+	return blocked
+}
+
+// matchesOS returns true when any of the tool's OS labels match the current OS.
+func matchesOS(toolOS []string, currentOS string) bool {
+	for _, o := range toolOS {
+		mapped := o
+		if o == "mac" {
+			mapped = "darwin"
+		}
+		if mapped == currentOS {
+			return true
+		}
+	}
+	return false
+}
+
+// cxBeforeToolCall gates shell execution against the organization's blocklist.
+// Detection is simple and strong: if any blocked command name appears anywhere
+// in the full command string (case-insensitive), the command is denied.
+func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
+	if !ev.IsShell() {
+		return agenthooks.Allow()
+	}
+
+	blocked := loadBlockedCommands()
+	cmdLower := strings.ToLower(ev.Command)
+
+	for name, tool := range blocked {
+		if strings.Contains(cmdLower, name) {
+			return agenthooks.Deny(fmt.Sprintf(
+				"Blocked by Checkmarx: command %q is not allowed.\nCategory: %s\nReason: %s%s",
+				name, tool.Category, tool.Risk, denyMessage,
+			))
+		}
+	}
 	return agenthooks.Allow()
 }
 
