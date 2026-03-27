@@ -11,6 +11,7 @@ import (
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/dast"
+	mcpcmd "github.com/checkmarx/ast-cli/internal/commands/mcp"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -248,6 +249,10 @@ func NewAstCLI(
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
+
+	// MCP server — directly uses the exported guardrail functions from agenthooks.go.
+	mcpServerCmd := mcpcmd.NewMCPCommand(CheckShellCommand, ScanForSecrets)
+
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -261,6 +266,7 @@ func NewAstCLI(
 		chatCmd,
 		hooksCmd,
 		telemetryCmd,
+		mcpServerCmd,
 	)
 
 	rootCmd.SilenceUsage = true

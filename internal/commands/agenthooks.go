@@ -13,7 +13,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	agenthooks "github.com/cx-amol-mane/hooks"
+	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -105,6 +105,24 @@ func matchesOS(toolOS []string, currentOS string) bool {
 	return false
 }
 
+// CheckShellCommand checks a shell command against the organization's blocklist.
+// Returns (true, reason) if the command is blocked, (false, "") if allowed.
+// This is the core matching logic shared by the agent hook guardrail and the MCP tool.
+func CheckShellCommand(command string) (bool, string) {
+	blocked := loadBlockedCommands()
+	cmdLower := strings.ToLower(command)
+
+	for name, tool := range blocked {
+		if strings.Contains(cmdLower, name) {
+			return true, fmt.Sprintf(
+				"Blocked by Checkmarx: command %q is not allowed.\nCategory: %s\nReason: %s%s",
+				name, tool.Category, tool.Risk, denyMessage,
+			)
+		}
+	}
+	return false, ""
+}
+
 // cxBeforeToolCall gates shell execution against the organization's blocklist.
 // Detection is simple and strong: if any blocked command name appears anywhere
 // in the full command string (case-insensitive), the command is denied.
@@ -112,17 +130,8 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 	if !ev.IsShell() {
 		return agenthooks.Allow()
 	}
-
-	blocked := loadBlockedCommands()
-	cmdLower := strings.ToLower(ev.Command)
-
-	for name, tool := range blocked {
-		if strings.Contains(cmdLower, name) {
-			return agenthooks.Deny(fmt.Sprintf(
-				"Blocked by Checkmarx: command %q is not allowed.\nCategory: %s\nReason: %s%s",
-				name, tool.Category, tool.Risk, denyMessage,
-			))
-		}
+	if blocked, reason := CheckShellCommand(ev.Command); blocked {
+		return agenthooks.Deny(reason)
 	}
 	return agenthooks.Allow()
 }
@@ -135,7 +144,7 @@ func cxAfterFileWrite(_ agenthooks.FileWriteEvent) agenthooks.FileWriteVerdict {
 // cxBeforePrompt scans the user's prompt for leaked secrets using the 2ms
 // engine before it reaches the AI agent. This is the prompt guardrail.
 func cxBeforePrompt(ev agenthooks.PromptEvent) agenthooks.PromptVerdict {
-	if reason := scanForSecrets(ev.Text); reason != "" {
+	if reason := ScanForSecrets(ev.Text); reason != "" {
 		return agenthooks.RejectPrompt(reason)
 	}
 	return agenthooks.AcceptPrompt()
@@ -145,9 +154,10 @@ func cxBeforePrompt(ev agenthooks.PromptEvent) agenthooks.PromptVerdict {
 // Secret scanning — powered by the same 2ms engine used in cx realtime scan.
 // =============================================================================
 
-// scanForSecrets runs the 2ms secret scanner on arbitrary text (e.g. a prompt).
+// ScanForSecrets runs the 2ms secret scanner on arbitrary text (e.g. a prompt).
 // Returns a human-readable rejection reason, or "" when the text is clean.
-func scanForSecrets(text string) string {
+// Exported for reuse by the MCP server tool.
+func ScanForSecrets(text string) string {
 	content := text
 	report, err := scanner.NewScanner().Scan(
 		[]scanner.ScanItem{{Content: &content, Source: "prompt"}},
