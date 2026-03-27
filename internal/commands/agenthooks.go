@@ -19,7 +19,7 @@ import (
 )
 
 // =============================================================================
-// Guardrail handlers — written once, applied to all 5 AI agents.
+// Guardrail handlers — applied to Cursor agent hooks.
 // =============================================================================
 
 // cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
@@ -238,9 +238,9 @@ func registerPassThrough() {
 }
 
 // =============================================================================
-// Cobra routing — 22 hidden subcommands, one per agent×event combination.
+// Cobra routing — hidden subcommands for Cursor hook events.
 //
-// Agents invoke:  cx hooks <route-name>
+// Cursor invokes:  cx hooks <route-name>
 // Each route reads JSON from stdin and writes the verdict as JSON to stdout.
 // =============================================================================
 
@@ -249,34 +249,17 @@ func HookDispatchCommands() []*cobra.Command {
 
 	routes := []route{
 		// WhenAgentIdle
-		{"claude-stop", "Claude agent finished"},
 		{"cursor-stop", "Cursor agent finished"},
-		{"windsurf-post-cascade-response", "Windsurf agent finished"},
-		{"droid-stop", "Factory Droid agent finished"},
-		{"gemini-after-agent", "Gemini agent finished"},
 
 		// BeforeToolCall
-		{"claude-pre-tool-use", "Gate Claude tool execution"},
 		{"cursor-before-shell", "Gate Cursor shell execution"},
 		{"cursor-before-mcp", "Gate Cursor MCP execution"},
-		{"windsurf-pre-run-command", "Gate Windsurf shell execution"},
-		{"windsurf-pre-mcp-tool-use", "Gate Windsurf MCP execution"},
-		{"droid-pre-tool-use", "Gate Droid tool execution"},
-		{"gemini-before-tool", "Gate Gemini tool execution"},
 
 		// AfterFileWrite
-		{"claude-after-file-write", "React to Claude file write"},
 		{"cursor-after-file-edit", "React to Cursor file edit"},
-		{"windsurf-post-write-code", "React to Windsurf file write"},
-		{"droid-after-file-write", "React to Droid file write"},
-		{"gemini-after-file-tool", "React to Gemini file write"},
 
 		// BeforePrompt
-		{"claude-user-prompt-submit", "Gate Claude prompt"},
 		{"cursor-before-submit-prompt", "Gate Cursor prompt"},
-		{"windsurf-pre-user-prompt", "Gate Windsurf prompt"},
-		{"droid-user-prompt-submit", "Gate Droid prompt"},
-		{"gemini-before-agent", "Gate Gemini prompt"},
 	}
 
 	cmds := make([]*cobra.Command, len(routes))
@@ -312,8 +295,8 @@ func HookDispatchCommands() []*cobra.Command {
 func NewAgentHooksCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agenthooks",
-		Short: "Manage AI coding agent hook configuration",
-		Long:  "Configure AI coding agent hooks to invoke cx directly. No separate binary needed.",
+		Short: "Manage Cursor hook configuration",
+		Long:  "Configure Cursor hooks to invoke cx directly. No separate binary needed.",
 		Example: heredoc.Doc(`
 			$ cx hooks agenthooks install
 		`),
@@ -325,10 +308,10 @@ func NewAgentHooksCommand() *cobra.Command {
 func agentHooksInstallCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "install",
-		Short: "Write hook configs for all supported agents",
+		Short: "Write hook config for Cursor",
 		Long: heredoc.Doc(`
-			Patches the settings files for Claude Code, Cursor, Windsurf Cascade,
-			and Factory Droid so each agent invokes "cx hooks <route>" on hook events.
+			Patches ~/.cursor/hooks.json so Cursor invokes
+			"cx hooks <route>" on hook events.
 		`),
 		Example: "  $ cx hooks agenthooks install",
 		RunE: func(*cobra.Command, []string) error {
@@ -347,39 +330,16 @@ func runInstall() error {
 		return errors.Wrap(err, "finding home directory")
 	}
 
-	agents := []struct {
-		name    string
-		install func(home, cx string) error
-	}{
-		{"Claude Code", installClaude},
-		{"Cursor", installCursor},
-		{"Windsurf Cascade", installWindsurf},
-		{"Factory Droid", installDroid},
+	if err := installCursor(home, cxPath); err != nil {
+		return fmt.Errorf("Cursor: %w", err)
 	}
-
-	for _, a := range agents {
-		if err := a.install(home, cxPath); err != nil {
-			fmt.Fprintf(os.Stderr, "warning: %s: %v\n", a.name, err)
-		} else {
-			fmt.Fprintf(os.Stdout, "✓ %s configured\n", a.name)
-		}
-	}
+	fmt.Fprintf(os.Stdout, "✓ Cursor configured\n")
 	return nil
 }
 
 // =============================================================================
-// Per-agent install helpers
+// Cursor install helper
 // =============================================================================
-
-func installClaude(home, cx string) error {
-	return patchJSON(filepath.Join(home, ".claude", "settings.json"), func(m map[string]any) {
-		h := ensureMap(m, "hooks")
-		h["Stop"] = claudeHook(cx, "claude-stop")
-		h["PreToolUse"] = claudeHook(cx, "claude-pre-tool-use")
-		h["PostToolUse"] = claudeHook(cx, "claude-after-file-write")
-		h["UserPromptSubmit"] = claudeHook(cx, "claude-user-prompt-submit")
-	})
-}
 
 func installCursor(home, cx string) error {
 	return patchJSON(filepath.Join(home, ".cursor", "hooks.json"), func(m map[string]any) {
@@ -388,26 +348,6 @@ func installCursor(home, cx string) error {
 		m["beforeMCPExecution"] = cursorHook(cx, "cursor-before-mcp")
 		m["afterFileEdit"] = cursorHook(cx, "cursor-after-file-edit")
 		m["beforeSubmitPrompt"] = cursorHook(cx, "cursor-before-submit-prompt")
-	})
-}
-
-func installWindsurf(home, cx string) error {
-	return patchJSON(filepath.Join(home, ".codeium", "windsurf", "hooks.json"), func(m map[string]any) {
-		m["pre_run_command"] = cursorHook(cx, "windsurf-pre-run-command")
-		m["pre_mcp_tool_use"] = cursorHook(cx, "windsurf-pre-mcp-tool-use")
-		m["pre_user_prompt"] = cursorHook(cx, "windsurf-pre-user-prompt")
-		m["post_write_code"] = cursorHook(cx, "windsurf-post-write-code")
-		m["post_cascade_response"] = cursorHook(cx, "windsurf-post-cascade-response")
-	})
-}
-
-func installDroid(home, cx string) error {
-	return patchJSON(filepath.Join(home, ".factory", "settings.json"), func(m map[string]any) {
-		h := ensureMap(m, "hooks")
-		h["Stop"] = claudeHook(cx, "droid-stop")
-		h["PreToolUse"] = claudeHook(cx, "droid-pre-tool-use")
-		h["PostToolUse"] = claudeHook(cx, "droid-after-file-write")
-		h["UserPromptSubmit"] = claudeHook(cx, "droid-user-prompt-submit")
 	})
 }
 
@@ -423,12 +363,7 @@ func cmdString(cx, route string) string {
 	return cx + " hooks " + route
 }
 
-// claudeHook builds a Claude/Droid hook entry: [{type: "command", command: "..."}]
-func claudeHook(cx, route string) []map[string]any {
-	return []map[string]any{{"type": "command", "command": cmdString(cx, route)}}
-}
-
-// cursorHook builds a Cursor/Windsurf hook entry: {command: "..."}
+// cursorHook builds a Cursor hook entry: {command: "..."}
 func cursorHook(cx, route string) map[string]any {
 	return map[string]any{"command": cmdString(cx, route)}
 }
@@ -447,15 +382,4 @@ func patchJSON(path string, patch func(map[string]any)) error {
 		return err
 	}
 	return os.WriteFile(path, append(data, '\n'), 0o644)
-}
-
-func ensureMap(m map[string]any, key string) map[string]any {
-	if v, ok := m[key]; ok {
-		if sub, ok := v.(map[string]any); ok {
-			return sub
-		}
-	}
-	sub := map[string]any{}
-	m[key] = sub
-	return sub
 }
