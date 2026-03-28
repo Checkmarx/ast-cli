@@ -4,7 +4,7 @@ go 1.25.8
 
 
 require (
-	github.com/Checkmarx/containers-resolver v1.0.33
+	github.com/Checkmarx/containers-resolver v1.0.34
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
