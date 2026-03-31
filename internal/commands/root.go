@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/commands/aihooks"
 	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -247,6 +248,7 @@ func NewAstCLI(
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
+	aiHooksCmd := aihooks.NewAIHooksCommand()
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
@@ -260,6 +262,7 @@ func NewAstCLI(
 		configCmd,
 		chatCmd,
 		hooksCmd,
+		aiHooksCmd,
 		telemetryCmd,
 	)
 
