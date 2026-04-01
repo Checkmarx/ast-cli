@@ -44,10 +44,15 @@ const (
 	jwtError                = "Error retrieving %s from jwt token"
 	basicFormat             = "Basic %s"
 	bearerFormat            = "Bearer %s"
-	contentTypeHeader       = "Content-Type"
-	formURLContentType      = "application/x-www-form-urlencoded"
-	jsonContentType         = "application/json"
-	defaultDialerDuration   = 30 * time.Second
+	// Can be removed once CodeBashing team will add support for
+	//http://core-service.codebashing.com/lessons/mapping/{queryId}
+	//with --header 'Authorization: Bearer <token>' currently
+	//supports only --header 'Authorization: <token>'
+	onlyTokenFormat       = "%s"
+	contentTypeHeader     = "Content-Type"
+	formURLContentType    = "application/x-www-form-urlencoded"
+	jsonContentType       = "application/json"
+	defaultDialerDuration = 30 * time.Second
 )
 
 var (
@@ -346,6 +351,18 @@ func SendHTTPRequest(method, path string, body io.Reader, auth bool, timeout uin
 	return SendHTTPRequestByFullURL(method, u, body, auth, timeout, accessToken, true)
 }
 
+// Can be removed once CodeBashing team will add support for
+// http://core-service.codebashing.com/lessons/mapping/{queryId}
+// with --header 'Authorization: Bearer <token>' currently
+// supports only --header 'Authorization: <token>'
+func SendHTTPRequestNoBaseCBURL(method, path string, body io.Reader, auth bool, timeout uint) (*http.Response, error) {
+	_, accessToken, err := getURLAndAccessToken(path)
+	if err != nil {
+		return nil, err
+	}
+	return SendHTTPRequestWithoutBearerTagByFullURL(method, path, body, auth, timeout, accessToken, true)
+}
+
 func SendPrivateHTTPRequest(method, path string, body io.Reader, timeout uint, auth bool) (*http.Response, error) {
 	u, accessToken, err := getURLAndAccessToken(path)
 	if err != nil {
@@ -363,6 +380,21 @@ func SendHTTPRequestByFullURL(
 	bodyPrint bool,
 ) (*http.Response, error) {
 	return SendHTTPRequestByFullURLContentLength(method, fullURL, body, -1, auth, timeout, accessToken, bodyPrint)
+}
+
+// Can be removed once CodeBashing team will add support for
+// http://core-service.codebashing.com/lessons/mapping/{queryId}
+// with --header 'Authorization: Bearer <token>' currently
+// supports only --header 'Authorization: <token>'
+func SendHTTPRequestWithoutBearerTagByFullURL(
+	method, fullURL string,
+	body io.Reader,
+	auth bool,
+	timeout uint,
+	accessToken string,
+	bodyPrint bool,
+) (*http.Response, error) {
+	return SendHTTPRequestWithoutBearerTagByFullURLContentLength(method, fullURL, body, -1, auth, timeout, accessToken, bodyPrint)
 }
 
 func SendHTTPRequestByFullURLContentLength(
@@ -385,6 +417,37 @@ func SendHTTPRequestByFullURLContentLength(
 	setAgentNameAndOrigin(req, false)
 	if auth {
 		enrichWithOath2Credentials(req, accessToken, bearerFormat)
+	}
+
+	req = addReqMonitor(req)
+
+	return request(client, req, bodyPrint)
+}
+
+// Can be removed once CodeBashing team will add support for
+// http://core-service.codebashing.com/lessons/mapping/{queryId}
+// with --header 'Authorization: Bearer <token>' currently
+// allow only --header 'Authorization: <token>'
+func SendHTTPRequestWithoutBearerTagByFullURLContentLength(
+	method, fullURL string,
+	body io.Reader,
+	contentLength int64,
+	auth bool,
+	timeout uint,
+	accessToken string,
+	bodyPrint bool,
+) (*http.Response, error) {
+	req, err := http.NewRequest(method, fullURL, body)
+	if err != nil {
+		return nil, err
+	}
+	if contentLength >= 0 {
+		req.ContentLength = contentLength
+	}
+	client := GetClient(timeout)
+	setAgentNameAndOrigin(req)
+	if auth {
+		enrichWithOath2Credentials(req, accessToken, onlyTokenFormat)
 	}
 
 	req = addReqMonitor(req)
