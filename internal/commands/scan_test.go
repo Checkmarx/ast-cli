@@ -830,6 +830,119 @@ func TestAddScaScan(t *testing.T) {
 		t.Errorf("Expected %+v, but got %+v", scaMapConfig, result)
 	}
 }
+
+func TestAddAiscScan_WhenAiscEnabledAndFeatureFlagEnabled_ShouldReturnConfig(t *testing.T) {
+	wrappers.ClearCache()
+	var resubmitConfig []wrappers.Config
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.AISupplyChainEnabled,
+		Status: true,
+	}
+	defer clearFlags()
+	originalScanTypes := actualScanTypes
+	actualScanTypes = "sast,kics,sca,aisc"
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
+
+	assert.Assert(t, result != nil, "Expected non-nil result when AISC is enabled and feature flag is true")
+
+	assert.Assert(t, result[resultsMapType] == commonParams.AiscType,
+		"Expected type '%s', got '%v'", commonParams.AiscType, result[resultsMapType])
+
+	configValue := result[resultsMapValue]
+	assert.Assert(t, configValue != nil, "Expected non-nil config value")
+	_, ok := configValue.(*wrappers.AISCConfig)
+	assert.Assert(t, ok, "Expected config value to be *wrappers.AISCConfig")
+}
+
+func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
+
+	wrappers.ClearCache()
+	var resubmitConfig []wrappers.Config
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.AISupplyChainEnabled,
+		Status: true,
+	}
+	defer clearFlags()
+	originalScanTypes := actualScanTypes
+	actualScanTypes = "sast,kics,sca"
+	defer func() { actualScanTypes = originalScanTypes }()
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
+	assert.Assert(t, result == nil, "Expected nil result when AISC is disabled in scan types")
+}
+
+func TestAddAiscScan_WhenFeatureFlagDisabled_ShouldReturnNil(t *testing.T) {
+
+	wrappers.ClearCache()
+	var resubmitConfig []wrappers.Config
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.AISupplyChainEnabled,
+		Status: false,
+	}
+	defer clearFlags()
+	originalScanTypes := actualScanTypes
+	actualScanTypes = "sast,kics,sca,aisc"
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
+	assert.Assert(t, result == nil, "Expected nil result when feature flag is disabled")
+}
+
+func TestAddAiscScan_WithResubmitConfig_ShouldHandleCorrectly(t *testing.T) {
+	wrappers.ClearCache()
+	resubmitConfig := []wrappers.Config{
+		{
+			Type:  commonParams.AiscType,
+			Value: map[string]interface{}{},
+		},
+	}
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.AISupplyChainEnabled,
+		Status: true,
+	}
+	defer clearFlags()
+	originalScanTypes := actualScanTypes
+	actualScanTypes = "sast,kics,sca,aisc"
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
+	assert.Assert(t, result != nil, "Expected non-nil result with resubmit config")
+	assert.Assert(t, result[resultsMapType] == commonParams.AiscType,
+		"Expected type '%s'", commonParams.AiscType)
+}
+
+func TestAddAiscScan_ConfigStructure_ShouldHaveCorrectFormat(t *testing.T) {
+	wrappers.ClearCache()
+	var resubmitConfig []wrappers.Config
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   wrappers.AISupplyChainEnabled,
+		Status: true,
+	}
+	defer clearFlags()
+	originalScanTypes := actualScanTypes
+	actualScanTypes = "sast,kics,sca,aisc"
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
+
+	expectedMapConfig := make(map[string]interface{})
+	expectedMapConfig[resultsMapType] = commonParams.AiscType
+	expectedMapConfig[resultsMapValue] = &wrappers.AISCConfig{}
+
+	assert.Equal(t, result[resultsMapType], expectedMapConfig[resultsMapType],
+		"Type field should match")
+
+	_, ok := result[resultsMapValue].(*wrappers.AISCConfig)
+	assert.Assert(t, ok, "Expected result value to be *wrappers.AISCConfig")
+}
+
 func TestAddSCSScan_ResubmitWithoutScorecardFlags_ShouldPass(t *testing.T) {
 	tests := []struct {
 		name                        string
