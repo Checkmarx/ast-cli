@@ -21,6 +21,7 @@ type ResultSummary struct {
 	ScsIssues        *int         `json:"ScsIssues,omitempty"`
 	SCSOverview      *SCSOverview `json:"ScsOverview,omitempty"`
 	APISecurity      APISecFilteredResult
+	AISCInfo         *AISCInfo `json:"AiscInfo,omitempty"`
 	RiskStyle        string
 	RiskMsg          string
 	Status           string
@@ -72,6 +73,11 @@ type MicroEngineOverview struct {
 	Status      ScanStatus             `json:"status"`
 	TotalRisks  int                    `json:"totalRisks"`
 	RiskSummary map[string]interface{} `json:"riskSummary"`
+}
+
+type AISCInfo struct {
+	TotalAssets     int `json:"TotalAssets"`
+	TotalAssetTypes int `json:"TotalAssetTypes"`
 }
 
 type EngineResultSummary struct {
@@ -170,6 +176,24 @@ func (r *ResultSummary) HasSCS() bool {
 }
 func (r *ResultSummary) SCSIssuesValue() int {
 	return *r.ScsIssues
+}
+
+func (r *ResultSummary) HasAISC() bool {
+	return r.HasEngine(params.AiscType)
+}
+
+func (r *ResultSummary) AISCAssetsValue() int {
+	if r.AISCInfo != nil {
+		return r.AISCInfo.TotalAssets
+	}
+	return 0
+}
+
+func (r *ResultSummary) AISCAssetTypesValue() int {
+	if r.AISCInfo != nil {
+		return r.AISCInfo.TotalAssetTypes
+	}
+	return 0
 }
 
 func (r *ResultSummary) getRiskFromAPISecurity(origin string) *RiskDistributionEntry {
@@ -816,6 +840,18 @@ const nonAsyncSummary = `<div class="top-row">
  					<div class="total">{{.APISecurity.TotalRisksCount}}</div>
                 </div>
 		</div>
+        {{end}}
+        {{if .HasAISC}}
+		<div class="second-row" style="margin-top: 30px;">
+               <div class="element">
+                	<div class="total">Total Assets</div>
+ 					<div class="total">{{.AISCAssetsValue}}</div>
+                </div>
+				<div class="element">
+                	<div class="total">Total Asset Types</div>
+ 					<div class="total">{{.AISCAssetTypesValue}}</div>
+                </div>
+		</div>
         {{end}}`
 
 const asyncSummaryTemplate = `<div class="cx-info">
@@ -882,6 +918,14 @@ const SummaryMarkdownCompletedTemplate = `
 | Detected APIs | APIs with risk | {{if .HasAPISecurityDocumentation}} APIs Documentation |{{end}}
 |:---------:|:---------:| {{if .HasAPISecurityDocumentation}}:---------:|{{end}}
 | {{.APISecurity.APICount}} | {{.APISecurity.TotalRisksCount}} | {{if .HasAPISecurityDocumentation}} {{.GetAPISecurityDocumentationTotal}} |{{end}}
+{{end}}
+
+{{if .HasAISC}}
+### AI Supply Chain Engine 
+
+| Total Assets | Total Asset Types |
+|:---------:|:---------:|
+| {{.AISCAssetsValue}} | {{.AISCAssetTypesValue}} |
 {{end}}
 `
 

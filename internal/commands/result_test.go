@@ -18,6 +18,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/pkg/errors"
 	assertion "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -1740,3 +1741,141 @@ func TestGetFilterResultsForAPISecScanner(t *testing.T) {
 		}
 	}
 }
+
+func TestGetAISCInfoFromScanSummary_Success(t *testing.T) {
+	mockWrapper := &mock.ScanSummaryMockWrapper{}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected non-nil result")
+	if result == nil {
+		return
+	}
+	assert.Equal(t, result.TotalAssets, 0, "Expected TotalAssets to be 0")
+	assert.Equal(t, result.TotalAssetTypes, 0, "Expected TotalAssetTypes to be 0")
+}
+
+func TestGetAISCInfoFromScanSummary_WithNonZeroValues(t *testing.T) {
+	// Create a custom mock wrapper with non-zero values
+	mockWrapper := &customScanSummaryMockWrapper{
+		assetsCounter:     10,
+		assetTypesCounter: 5,
+	}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.NilError(t, err)
+	assert.Assert(t, result != nil, "Expected non-nil result")
+	if result == nil {
+		return
+	}
+	assert.Equal(t, result.TotalAssets, 10, "Expected TotalAssets to be 10")
+	assert.Equal(t, result.TotalAssetTypes, 5, "Expected TotalAssetTypes to be 5")
+}
+
+func TestGetAISCInfoFromScanSummary_EmptyScansSummaries(t *testing.T) {
+	mockWrapper := &customScanSummaryMockWrapper{
+		emptySummaries: true,
+	}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.NilError(t, err)
+	assert.Assert(t, result == nil, "Expected nil result for empty summaries")
+}
+
+func TestGetAISCInfoFromScanSummary_NilScanSummaryModel(t *testing.T) {
+	mockWrapper := &customScanSummaryMockWrapper{
+		nilModel: true,
+	}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.NilError(t, err)
+	assert.Assert(t, result == nil, "Expected nil result for nil scan summary model")
+}
+
+func TestGetAISCInfoFromScanSummary_Error(t *testing.T) {
+	mockWrapper := &customScanSummaryMockWrapper{
+		returnError: true,
+	}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.Assert(t, err != nil, "Expected error")
+	assert.Assert(t, result == nil, "Expected nil result on error")
+	if err == nil {
+		return
+	}
+	assert.Assert(t, strings.Contains(err.Error(), "AISC"), "Expected error message to contain 'AISC'")
+	assert.Assert(t, strings.Contains(err.Error(), failedListingResults), "Expected error message to contain failedListingResults")
+}
+
+func TestGetAISCInfoFromScanSummary_WebError(t *testing.T) {
+	mockWrapper := &customScanSummaryMockWrapper{
+		returnWebError: true,
+	}
+	scanID := "test-scan-id"
+
+	result, err := getAISCInfoFromScanSummary(mockWrapper, scanID)
+
+	assert.Assert(t, err != nil, "Expected error")
+	assert.Assert(t, result == nil, "Expected nil result on web error")
+	if err == nil {
+		return
+	}
+	assert.Assert(t, strings.Contains(err.Error(), "AISC"), "Expected error message to contain 'AISC'")
+	assert.Assert(t, strings.Contains(err.Error(), failedListingResults), "Expected error message to contain failedListingResults")
+	assert.Assert(t, strings.Contains(err.Error(), "CODE: 400"), "Expected error message to contain error code")
+	assert.Assert(t, strings.Contains(err.Error(), "Bad Request"), "Expected error message to contain error message")
+}
+
+// Custom mock wrapper for testing different scenarios
+type customScanSummaryMockWrapper struct {
+	assetsCounter     int
+	assetTypesCounter int
+	emptySummaries    bool
+	nilModel          bool
+	returnError       bool
+	returnWebError    bool
+}
+
+func (m *customScanSummaryMockWrapper) GetScanSummaryByScanID(scanID string) (*wrappers.ScanSummariesModel, *wrappers.WebError, error) {
+	if m.returnError {
+		return nil, nil, errors.New("mock error from GetScanSummaryByScanID")
+	}
+	if m.returnWebError {
+		return nil, &wrappers.WebError{
+			Code:    400,
+			Message: "Bad Request",
+		}, nil
+	}
+	if m.nilModel {
+		return nil, nil, nil
+	}
+	if m.emptySummaries {
+		return &wrappers.ScanSummariesModel{
+			ScansSummaries: []wrappers.ScanSumaries{},
+			TotalCount:     0,
+		}, nil, nil
+	}
+	return &wrappers.ScanSummariesModel{
+		ScansSummaries: []wrappers.ScanSumaries{
+			{
+				ScanID: scanID,
+				AiscCounters: wrappers.AiscCounters{
+					AssetsCounter:     m.assetsCounter,
+					AssetTypesCounter: m.assetTypesCounter,
+				},
+			},
+		},
+		TotalCount: 1,
+	}, nil, nil
+}
+
