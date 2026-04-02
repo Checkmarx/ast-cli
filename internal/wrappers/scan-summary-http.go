@@ -1,4 +1,4 @@
-﻿package wrappers
+package wrappers
 
 import (
 	"encoding/json"
