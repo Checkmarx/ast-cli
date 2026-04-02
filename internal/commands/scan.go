@@ -1176,25 +1176,19 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
 	// TODO: Add the aisc resubmit config, currently no value is passed in config
 	aiSupplyChainEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainEnabled)
-	//aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
-	// TODO GA enabled to be added
-	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainEnabled.Status {
+	aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
+	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainEnabled.Status && aiSupplyChainGAEnabled.Status {
 		aiscMapConfig := make(map[string]interface{})
 		aiscConfig := wrappers.AISCConfig{}
 		aiscMapConfig[resultsMapType] = commonParams.AiscType
 		aiscMapConfig[resultsMapValue] = &aiscConfig
-
 		for _, config := range resubmitConfig {
-			// TODO : to do this in future when config value comes
 			if config.Type == commonParams.AiscType && config.Value == nil {
 				continue
 			}
 		}
-
 		return aiscMapConfig
-
 	}
-
 	return nil
 }
 
