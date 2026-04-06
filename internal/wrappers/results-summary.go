@@ -75,6 +75,7 @@ type MicroEngineOverview struct {
 	RiskSummary map[string]interface{} `json:"riskSummary"`
 }
 
+// AISCInfo contains information about AI Supply Chain Engine assets and types.
 type AISCInfo struct {
 	TotalAssets     int `json:"TotalAssets"`
 	TotalAssetTypes int `json:"TotalAssetTypes"`
@@ -178,6 +179,7 @@ func (r *ResultSummary) SCSIssuesValue() int {
 	return *r.ScsIssues
 }
 
+// HasAISC checks if AISC engine is enabled.
 func (r *ResultSummary) HasAISC() bool {
 	return r.HasEngine(params.AiscType)
 }
