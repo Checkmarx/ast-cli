@@ -184,6 +184,7 @@ func (r *ResultSummary) HasAISC() bool {
 	return r.HasEngine(params.AiscType)
 }
 
+// AISCAssetsValue returns the total number of AISC assets.
 func (r *ResultSummary) AISCAssetsValue() int {
 	if r.AISCInfo != nil {
 		return r.AISCInfo.TotalAssets
@@ -191,6 +192,7 @@ func (r *ResultSummary) AISCAssetsValue() int {
 	return 0
 }
 
+// AISCAssetTypesValue returns the total number of AISC asset types.
 func (r *ResultSummary) AISCAssetTypesValue() int {
 	if r.AISCInfo != nil {
 		return r.AISCInfo.TotalAssetTypes

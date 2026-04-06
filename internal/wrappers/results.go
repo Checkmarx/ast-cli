@@ -43,6 +43,7 @@ type ScaCounters struct {
 	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
 }
 
+// ScaPackagesCounters contains counters for SCA packages.
 type ScaPackagesCounters struct {
 	SeverityCounters []SeverityCounters  `json:"severityCounters,omitempty"`
 	StatusCounters   []StatusCounters    `json:"statusCounters,omitempty"`
@@ -59,6 +60,7 @@ type ScaContainersCounters struct {
 	TotalVulnerabilitiesCounter int                `json:"totalVulnerabilitiesCounter,omitempty"`
 }
 
+// ApiSecCounters contains counters for API Security findings.
 type ApiSecCounters struct {
 	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
 	StateCounters       []StateCounters    `json:"stateCounters,omitempty"`
@@ -68,6 +70,7 @@ type ApiSecCounters struct {
 	ApiSecTotal         int                `json:"apiSecTotal,omitempty"`
 }
 
+// MicroEnginesCounters contains counters for micro engines.
 type MicroEnginesCounters struct {
 	SeverityCounters    []SeverityCounters `json:"severityCounters,omitempty"`
 	StatusCounters      []StatusCounters   `json:"statusCounters,omitempty"`
@@ -76,6 +79,7 @@ type MicroEnginesCounters struct {
 	FilesScannedCounter int                `json:"filesScannedCounter,omitempty"`
 }
 
+// ContainersCounters contains counters for container scanning results.
 type ContainersCounters struct {
 	TotalPackagesCounter   int                      `json:"totalPackagesCounter,omitempty"`
 	TotalCounter           int                      `json:"totalCounter,omitempty"`
