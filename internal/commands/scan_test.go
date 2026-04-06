@@ -841,7 +841,7 @@ func TestAddAiscScan_WhenAiscEnabledAndFeatureFlagEnabled_ShouldReturnConfig(t *
 	}
 	defer clearFlags()
 	originalScanTypes := actualScanTypes
-	actualScanTypes = "sast,kics,sca,aisc"
+	actualScanTypes = commonParams.SastType + "," + commonParams.KicsType + "," + commonParams.ScaType + "," + commonParams.AiscType
 	defer func() { actualScanTypes = originalScanTypes }()
 
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
@@ -867,7 +867,7 @@ func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
 	}
 	defer clearFlags()
 	originalScanTypes := actualScanTypes
-	actualScanTypes = "sast,kics,sca"
+	actualScanTypes = commonParams.SastType + "," + commonParams.KicsType + "," + commonParams.ScaType
 	defer func() { actualScanTypes = originalScanTypes }()
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	result := addAiscScan(featureFlagsWrapper, resubmitConfig)
@@ -883,7 +883,7 @@ func TestAddAiscScan_WhenFeatureFlagDisabled_ShouldReturnNil(t *testing.T) {
 	}
 	defer clearFlags()
 	originalScanTypes := actualScanTypes
-	actualScanTypes = "sast,kics,sca,aisc"
+	actualScanTypes = commonParams.SastType + "," + commonParams.KicsType + "," + commonParams.ScaType + "," + commonParams.AiscType
 	defer func() { actualScanTypes = originalScanTypes }()
 
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
@@ -905,7 +905,7 @@ func TestAddAiscScan_WithResubmitConfig_ShouldHandleCorrectly(t *testing.T) {
 	}
 	defer clearFlags()
 	originalScanTypes := actualScanTypes
-	actualScanTypes = "sast,kics,sca,aisc"
+	actualScanTypes = commonParams.SastType + "," + commonParams.KicsType + "," + commonParams.ScaType + "," + commonParams.AiscType
 	defer func() { actualScanTypes = originalScanTypes }()
 
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
@@ -924,7 +924,7 @@ func TestAddAiscScan_ConfigStructure_ShouldHaveCorrectFormat(t *testing.T) {
 	}
 	defer clearFlags()
 	originalScanTypes := actualScanTypes
-	actualScanTypes = "sast,kics,sca,aisc"
+	actualScanTypes = commonParams.SastType + "," + commonParams.KicsType + "," + commonParams.ScaType + "," + commonParams.AiscType
 	defer func() { actualScanTypes = originalScanTypes }()
 
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
