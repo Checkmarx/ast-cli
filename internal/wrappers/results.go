@@ -91,32 +91,37 @@ type ContainersCounters struct {
 	SeverityStatusCounters []SeverityStatusCounters `json:"severityStatusCounters,omitempty"`
 }
 
+// AiscCounters contains counters for AISC engine scanning.
 type AiscCounters struct {
 	AssetsCounter     int `json:"assetsCounter,omitempty"`
 	AssetTypesCounter int `json:"assetTypesCounter,omitempty"`
 }
 
-// Supporting counter structures
+// SeverityCounters contains severity level counter information.
 type SeverityCounters struct {
 	Severity string `json:"severity,omitempty"`
 	Counter  int    `json:"counter,omitempty"`
 }
 
+// StatusCounters contains status counter information.
 type StatusCounters struct {
 	Status  string `json:"status,omitempty"`
 	Counter int    `json:"counter,omitempty"`
 }
 
+// StateCounters contains state counter information.
 type StateCounters struct {
 	State   string `json:"state,omitempty"`
 	Counter int    `json:"counter,omitempty"`
 }
 
+// RiskLevelCounters contains risk level counter information.
 type RiskLevelCounters struct {
 	RiskLevel string `json:"riskLevel,omitempty"`
 	Counter   int    `json:"counter,omitempty"`
 }
 
+// LicenseCounters contains license counter information.
 type LicenseCounters struct {
 	License string `json:"license,omitempty"`
 	Counter int    `json:"counter,omitempty"`
