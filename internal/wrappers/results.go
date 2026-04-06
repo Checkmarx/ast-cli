@@ -127,18 +127,21 @@ type LicenseCounters struct {
 	Counter int    `json:"counter,omitempty"`
 }
 
+// AgeCounters contains age counter information.
 type AgeCounters struct {
 	Age              string             `json:"age,omitempty"`
 	Counter          int                `json:"counter,omitempty"`
 	SeverityCounters []SeverityCounters `json:"severityCounters,omitempty"`
 }
 
+// PackageCounters contains package counter information.
 type PackageCounters struct {
 	PackageID   string `json:"packageId,omitempty"`
 	Counter     int    `json:"counter,omitempty"`
 	IsMalicious bool   `json:"isMalicious,omitempty"`
 }
 
+// SeverityStatusCounters contains combined severity and status counter information.
 type SeverityStatusCounters struct {
 	Severity string `json:"severity,omitempty"`
 	Status   string `json:"status,omitempty"`

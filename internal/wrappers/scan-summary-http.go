@@ -14,15 +14,18 @@ const (
 	failedToParseScanSummary = "Failed to parse scan-summary response"
 )
 
+// ScanSummaryHTTPWrapper is a struct that implements the ScanSummaryWrapper interface for retrieving scan summaries via HTTP requests.
 type ScanSummaryHTTPWrapper struct {
 	path string
 }
 
+// NewHTTPScanSummaryWrapper creates a new instance of ScanSummaryHTTPWrapper with the provided path.
 func NewHTTPScanSummaryWrapper(path string) ScanSummaryWrapper {
 	return &ScanSummaryHTTPWrapper{
 		path: path,
 	}
 }
+// GetScanSummaryByScanID retrieves the scan summary for a given scan ID by making an HTTP GET request to the configured path.
 func (s *ScanSummaryHTTPWrapper) GetScanSummaryByScanID(scanID string) (*ScanSummariesModel, *WebError, error) {
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	// Construct the path with query parameter
