@@ -1878,4 +1878,3 @@ func (m *customScanSummaryMockWrapper) GetScanSummaryByScanID(scanID string) (*w
 		TotalCount: 1,
 	}, nil, nil
 }
-
