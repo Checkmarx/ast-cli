@@ -859,7 +859,6 @@ func TestAddAiscScan_WhenAiscEnabledAndFeatureFlagEnabled_ShouldReturnConfig(t *
 }
 
 func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
-
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
@@ -876,7 +875,6 @@ func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
 }
 
 func TestAddAiscScan_WhenFeatureFlagDisabled_ShouldReturnNil(t *testing.T) {
-
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{

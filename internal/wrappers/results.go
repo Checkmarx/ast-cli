@@ -7,8 +7,8 @@ type ResultsWrapper interface {
 
 // ScanSummariesModel model used to parse the response from the scan-summary API
 type ScanSummariesModel struct {
-	ScansSummaries []ScanSumaries `json:"scansSummaries,omitempty,"`
-	TotalCount     int            `json:"totalCount,omitempty,"`
+	ScansSummaries []ScanSumaries `json:"scansSummaries,omitempty"`
+	TotalCount     int            `json:"totalCount,omitempty"`
 }
 
 type ScanSumaries struct {
@@ -45,13 +45,13 @@ type ScaCounters struct {
 
 // ScaPackagesCounters contains counters for SCA packages.
 type ScaPackagesCounters struct {
-	SeverityCounters []SeverityCounters  `json:"severityCounters,omitempty"`
-	StatusCounters   []StatusCounters    `json:"statusCounters,omitempty"`
-	StateCounters    []StateCounters     `json:"stateCounters,omitempty"`
-	TotalCounter     int                 `json:"totalCounter,omitempty"`
-	OutdatedCounter  int                 `json:"outdatedCounter,omitempty"`
+	SeverityCounters  []SeverityCounters  `json:"severityCounters,omitempty"`
+	StatusCounters    []StatusCounters    `json:"statusCounters,omitempty"`
+	StateCounters     []StateCounters     `json:"stateCounters,omitempty"`
+	TotalCounter      int                 `json:"totalCounter,omitempty"`
+	OutdatedCounter   int                 `json:"outdatedCounter,omitempty"`
 	RiskLevelCounters []RiskLevelCounters `json:"riskLevelCounters,omitempty"`
-	LicenseCounters  []LicenseCounters   `json:"licenseCounters,omitempty"`
+	LicenseCounters   []LicenseCounters   `json:"licenseCounters,omitempty"`
 }
 
 type ScaContainersCounters struct {
