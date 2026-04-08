@@ -163,3 +163,7 @@ type SCSConfig struct {
 	RepoToken        string `json:"repoToken,omitempty"`
 	GitCommitHistory string `json:"gitCommitHistory,omitempty"`
 }
+
+// AISCConfig is a placeholder for AISC scan configurations.
+type AISCConfig struct {
+}

@@ -41,7 +41,7 @@ func NewJwtWrapper() JWTWrapper {
 }
 
 func getEnabledEngines(scsLicensingV2 bool) (enabledEngines []string) {
-	enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "containers"}
+	enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "containers", "aisc"}
 	if scsLicensingV2 {
 		enabledEngines = append(enabledEngines, commonParams.RepositoryHealthType, commonParams.SecretDetectionType)
 	} else {
@@ -57,6 +57,7 @@ func getDefaultEngines(scsLicensingV2 bool) (defaultEngines map[string]bool) {
 		"api-security": true,
 		"iac-security": true,
 		"containers":   true,
+		"aisc":         true,
 	}
 	if scsLicensingV2 {
 		defaultEngines[commonParams.RepositoryHealthType] = true
