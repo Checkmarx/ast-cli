@@ -11,6 +11,11 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	mockApplicationName = "MOCK"
+	testProjectName     = "test-project"
+)
+
 func Test_createApplicationIds(t *testing.T) {
 	type args struct {
 		applicationID          []string
@@ -90,9 +95,9 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 }
 
 func Test_FindApplicationAndUpdate_ProjectAlreadyAssociated_FlagEnabled(t *testing.T) {
-	applicationName := "MOCK"
+	applicationName := mockApplicationName
 	projectID := "ProjectID1" // This ID is already in the mock application's ProjectIds
-	projectName := "test-project"
+	projectName := testProjectName
 
 	// Setup mocks
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
@@ -111,9 +116,9 @@ func Test_FindApplicationAndUpdate_ProjectAlreadyAssociated_FlagEnabled(t *testi
 }
 
 func Test_FindApplicationAndUpdate_ProjectAlreadyAssociated_FlagDisabled(t *testing.T) {
-	applicationName := "MOCK"
+	applicationName := mockApplicationName
 	projectID := "ProjectID2" // This ID is already in the mock application's ProjectIds
-	projectName := "test-project"
+	projectName := testProjectName
 
 	// Setup mocks
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
