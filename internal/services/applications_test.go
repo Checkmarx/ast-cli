@@ -11,6 +11,11 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	mockApplicationName = "MOCK"
+	testProjectName     = "test-project"
+)
+
 func Test_createApplicationIds(t *testing.T) {
 	type args struct {
 		applicationID          []string
@@ -89,11 +94,42 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 	}
 }
 
-func Test_AssociateProjectToApplication_ProjectAlreadyAssociated(t *testing.T) {
-	projectID := "project-123"
-	associatedProjectIds := []string{"project-123", "project-456"}
-	applicationName := "app-1"
+func Test_FindApplicationAndUpdate_ProjectAlreadyAssociated_FlagEnabled(t *testing.T) {
+	applicationName := mockApplicationName
+	projectID := "ProjectID1" // This ID is already in the mock application's ProjectIds
+	projectName := testProjectName
+
+	// Setup mocks
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
-	err := associateProjectToApplication(applicationName, projectID, associatedProjectIds, applicationWrapper)
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	tenantWrapper := &mock.TenantConfigurationMockWrapper{}
+
+	// Set flag to ENABLED
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   "directAssociationEnabled",
+		Status: true,
+	}
+	mock.Flags = wrappers.FeatureFlagsResponseModel{} // Empty to use single Flag
+
+	err := findApplicationAndUpdate(applicationName, applicationWrapper, projectName, projectID, featureFlagsWrapper, tenantWrapper)
+	assert.NilError(t, err)
+}
+
+func Test_FindApplicationAndUpdate_ProjectAlreadyAssociated_FlagDisabled(t *testing.T) {
+	applicationName := mockApplicationName
+	projectID := "ProjectID2" // This ID is already in the mock application's ProjectIds
+	projectName := testProjectName
+
+	// Setup mocks
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
+	tenantWrapper := &mock.TenantConfigurationMockWrapper{}
+
+	mock.Flag = wrappers.FeatureFlagResponseModel{
+		Name:   "directAssociationEnabled",
+		Status: false,
+	}
+	mock.Flags = wrappers.FeatureFlagsResponseModel{}
+	err := findApplicationAndUpdate(applicationName, applicationWrapper, projectName, projectID, featureFlagsWrapper, tenantWrapper)
 	assert.NilError(t, err)
 }
