@@ -16,9 +16,6 @@ Checkmarx One CLI (`cx`) — a standalone command-line interface for the Checkma
 - **Utilities:** Shell auto-completion (bash/zsh/fish/PowerShell), environment variable display, contributor counting across SCMs (90-day window), PR decoration, SCA remediation (npm)
 - **Integration:** CI/CD pipelines (Jenkins, Azure DevOps, GitHub Actions), IDEs, ServiceNow, Jira, Slack, Teams
 
-## Architecture
-
-Architecture diagrams: [Confluence - Architecture Plugins](https://checkmarx.atlassian.net/wiki/spaces/AID/pages/7217610803/Architecture+-+Plugins#Checkmarx-One-CLI)
 
 ### Plugin Ecosystem Context
 
