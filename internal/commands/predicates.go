@@ -107,7 +107,7 @@ func triageShowSubCommand(resultsPredicatesWrapper wrappers.ResultsPredicatesWra
 		Long:  "The show command provides a list of all the predicates in the issue",
 		Example: heredoc.Doc(
 			`
-			$ cx triage show --similarity-id <SimilarityID> --project-id <ProjectID> --scan-type <SAST||IAC-SECURITY||SCS>
+			$ cx triage show --similarity-id <SimilarityID> --project-id <ProjectID> --scan-type <SAST||IAC-SECURITY>
 		`,
 		),
 
