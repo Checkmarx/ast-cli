@@ -1,5 +1,5 @@
 module github.com/checkmarx/ast-cli
-
+// Check scan success
 go 1.25.8
 
 require (
