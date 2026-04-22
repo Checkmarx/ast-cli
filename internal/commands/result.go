@@ -187,6 +187,7 @@ func NewResultsCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	riskManagementWrapper wrappers.RiskManagementWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -203,7 +204,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,6 +264,7 @@ func resultShowSubCommand(
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -276,7 +278,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -691,6 +693,7 @@ func summaryReport(
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	results *wrappers.ScanResultsCollection,
 	resultsParams map[string]string,
@@ -718,6 +721,15 @@ func summaryReport(
 			return nil, err
 		}
 		summary.SCSOverview = SCSOverview
+	}
+
+	if summary.HasAISC() {
+		// Getting AISC information from scan-summary API
+		aiscInfo, err := getAISCInfoFromScanSummary(scanSummaryWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+		summary.AISCInfo = aiscInfo
 	}
 
 	if policies != nil {
@@ -888,6 +900,10 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
 		}
 
+		if summary.HasAISC() {
+			printAISCSummary(summary)
+		}
+
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
 	} else {
 		fmt.Printf("Scan executed in asynchronous mode or still running. Hence, no results generated.\n")
@@ -977,6 +993,15 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 	}
 }
 
+func printAISCSummary(summary *wrappers.ResultSummary) {
+	fmt.Printf("              AI SUPPLY CHAIN ENGINE SUMMARY\n")
+	fmt.Printf("              ---------------------------------------------------------------------     \n")
+	fmt.Printf("              | %-32s   %30s |\n", "Category", "Count")
+	fmt.Printf("              | %-32s   %30d |\n", "Total Assets", summary.AISCAssetsValue())
+	fmt.Printf("              | %-32s   %30d |\n", "Total Asset Types", summary.AISCAssetTypesValue())
+	fmt.Printf("              ---------------------------------------------------------------------     \n\n")
+}
+
 func getCountValue(count int) interface{} {
 	if count < 0 {
 		return disabledString
@@ -1027,6 +1052,7 @@ func runGetResultCommand(
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -1093,7 +1119,7 @@ func runGetResultCommand(
 			resultsParams[commonParams.SastRedundancyFlag] = ""
 		}
 
-		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, exportWrapper,
 			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper, ignorePolicyFlagOmit)
 		return err
@@ -1183,6 +1209,7 @@ func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
@@ -1220,7 +1247,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results, resultsParams)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, featureFlagsWrapper, results, resultsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -1372,6 +1399,30 @@ func getScanOverviewForSCSScanner(
 			}
 		}
 		return scsOverview, nil
+	}
+	return nil, nil
+}
+
+func getAISCInfoFromScanSummary(
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
+	scanID string,
+) (*wrappers.AISCInfo, error) {
+	var scanSummaryModel *wrappers.ScanSummariesModel
+	var errorModel *wrappers.WebError
+
+	scanSummaryModel, errorModel, err := scanSummaryWrapper.GetScanSummaryByScanID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "AISC: %s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("AISC: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	}
+	if scanSummaryModel != nil && len(scanSummaryModel.ScansSummaries) > 0 {
+		aiscCounters := scanSummaryModel.ScansSummaries[0].AiscCounters
+		return &wrappers.AISCInfo{
+			TotalAssets:     aiscCounters.AssetsCounter,     // Map from API response
+			TotalAssetTypes: aiscCounters.AssetTypesCounter, // Map from API response
+		}, nil
 	}
 	return nil, nil
 }

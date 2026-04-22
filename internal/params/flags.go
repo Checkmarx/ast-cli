@@ -309,6 +309,7 @@ const (
 const (
 	SastType                       = "sast"
 	KicsType                       = "kics"
+	AiscType                       = "aisc"
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
 	CheckmarxOneAssistType         = "Checkmarx One Assist"
