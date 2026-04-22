@@ -1,0 +1,15 @@
+# OS-layer vulnerabilities in base image (checkmarx/bash:5.3-r5-98621acba7807a)
+# These require Checkmarx to publish an updated base image with glibc >= 2.43-r6
+# Tracked in Dockerfile TODO comment
+
+# glibc: Denial of Service via iconv() (MEDIUM) - fixed in glibc 2.43-r6
+CVE-2026-4046
+
+# glibc: Incorrect DNS response parsing (MEDIUM) - fixed in glibc 2.43-r4
+CVE-2026-4437
+
+# glibc: Invalid DNS hostname via gethostbyaddr (MEDIUM) - fixed in glibc 2.43-r4
+CVE-2026-4438
+
+# libcrypto3/libssl3: OpenSSL vulnerability (LOW) - requires base image update
+CVE-2026-2673
