@@ -132,7 +132,7 @@ jobs:
           skip-pkg-cache: true
           version: v2.11.3
           args: -c .golangci.yml
-            --timeout 5m
+            --timeout 10m
           only-new-issues: true
 
   govulncheck:
