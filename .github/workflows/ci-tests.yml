@@ -16,6 +16,9 @@ jobs:
       - run: go version
       - run: echo ${{ secrets.CX_TEST }}
       - run: echo ${{ secrets.CX_BASE_URI }}
+      - run: echo ${{ secrets.CX_APIKEY }}
+      - run: echo ${{ secrets.TEST_REPO }}
+      - run: echo "HelloXX"
       - name: go test with coverage
         run: |
           sudo chmod +x ./internal/commands/.scripts/up.sh
