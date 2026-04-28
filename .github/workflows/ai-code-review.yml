@@ -8,7 +8,7 @@ on:
 
 jobs:
   code_review:
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@main
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@72211d451194749636245827fb4c0e7661ae3dbb
     with:
       open_ai_model: "gpt-4-1106-preview"
       exclude_pattern: ""
