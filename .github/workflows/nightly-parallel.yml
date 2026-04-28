@@ -490,7 +490,7 @@ jobs:
         run: go install github.com/wadey/gocovmerge@latest
 
       - name: Download all coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@65a9edc5881444af5b3c923567ca220daf94ae4f #v4
         with:
           pattern: coverage-*
           merge-multiple: true
