@@ -20,12 +20,17 @@ import (
 // dirDefault is the permission bits applied to directories created during extraction.
 const dirDefault os.FileMode = 0755
 
+// fileNonExec and fileExec are permission bits applied to extracted regular files.
+// Only the executable bit is taken from the archive; other bits are normalized.
+const fileNonExec os.FileMode = 0644
+const fileExec os.FileMode = 0755
+
 // maxExtractBytes caps how many bytes a single tar entry may expand to,
 // preventing decompression-bomb (tar-bomb) attacks.
 const maxExtractBytes int64 = 500 * 1024 * 1024 // 500 MB
 
 // UnzipOrExtractFiles Extracts all the files from the tar.gz file
-func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) error {
+func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) (err error) {
 	logger.PrintIfVerbose("Extracting files in: " + installationConfiguration.WorkingDir())
 	filePath := filepath.Join(installationConfiguration.WorkingDir(), installationConfiguration.FileName)
 
@@ -34,14 +39,22 @@ func UnzipOrExtractFiles(installationConfiguration *InstallationConfiguration) e
 		fmt.Println("error when open file ", filePath, err)
 		return err
 	}
-	defer gzipStream.Close()
+	defer func() {
+		if cerr := gzipStream.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	uncompressedStream, err := gzip.NewReader(gzipStream)
 	if err != nil {
 		log.Println("ExtractTarGz: NewReader failed ", err)
 		return err
 	}
-	defer uncompressedStream.Close()
+	defer func() {
+		if cerr := uncompressedStream.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	return extractFiles(installationConfiguration, tar.NewReader(uncompressedStream))
 }
@@ -102,15 +115,15 @@ func extractFiles(installationConfiguration *InstallationConfiguration, tarReade
 				_ = outFile.Close()
 				return fmt.Errorf("ExtractTarGz: Copy() failed: %w", err)
 			}
-			if err = outFile.Close(); err != nil {
+			if err := outFile.Close(); err != nil {
 				return err
 			}
 			// Preserve only the executable bit from the archive entry; never grant world-write.
-			mode := os.FileMode(0644)
+			mode := fileNonExec
 			if header.FileInfo().Mode()&0111 != 0 {
-				mode = 0755
+				mode = fileExec
 			}
-			if err = os.Chmod(extractedFilePath, mode); err != nil {
+			if err := os.Chmod(extractedFilePath, mode); err != nil {
 				return err
 			}
 

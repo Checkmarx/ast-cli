@@ -18,10 +18,10 @@ import (
 // to an isolated temporary directory that is automatically removed after the test.
 // It returns both the config and the resolved working directory path so that
 // callers use the same base as extractFiles does.
-func newTestConfig(t *testing.T) (*InstallationConfiguration, string) {
+func newTestConfig(t *testing.T) (cfg *InstallationConfiguration, dir string) {
 	t.Helper()
-	dir := t.TempDir()
-	cfg := &InstallationConfiguration{WorkingDirName: dir}
+	dir = t.TempDir()
+	cfg = &InstallationConfiguration{WorkingDirName: dir}
 	// cfg.WorkingDir() prepends ~/.checkmarx/; return the resolved path so all
 	// test assertions reference the exact location that extractFiles writes to.
 	resolved := cfg.WorkingDir()
@@ -42,7 +42,7 @@ func buildTar(t *testing.T, entries []tarEntry) *tar.Reader {
 			Mode:     e.mode,
 		}
 		require.NoError(t, tw.WriteHeader(hdr))
-		if len(e.content) > 0 {
+		if e.content != "" {
 			_, err := tw.Write([]byte(e.content))
 			require.NoError(t, err)
 		}
@@ -65,7 +65,7 @@ func TestSafeJoin_ValidRelativePath(t *testing.T) {
 	base := t.TempDir()
 	got, err := safeJoin(base, "subdir/file.bin")
 	require.NoError(t, err)
-	assert.Equal(t, filepath.Join(base, "subdir/file.bin"), got)
+	assert.Equal(t, filepath.Join(base, "subdir", "file.bin"), got)
 }
 
 func TestSafeJoin_AbsolutePathRejected(t *testing.T) {
@@ -188,7 +188,7 @@ func TestExtractFiles_NestedFileWithoutExplicitDirEntry(t *testing.T) {
 
 	require.NoError(t, extractFiles(cfg, tr))
 
-	content, err := os.ReadFile(filepath.Join(dir, "a/b/c/file.txt"))
+	content, err := os.ReadFile(filepath.Join(dir, "a", "b", "c", "file.txt"))
 	require.NoError(t, err)
 	assert.Equal(t, "nested", string(content))
 }
