@@ -24,6 +24,7 @@ const (
 )
 
 func TestAzureUserCountOrgs(t *testing.T) {
+	t.Skip("Skipping this test till we get PAT")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -52,6 +53,7 @@ func TestAzureUserCountOrgs(t *testing.T) {
 }
 
 func TestAzureUserCountProjects(t *testing.T) {
+	t.Skip("Skipping this test till we get AZURE token")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -82,6 +84,7 @@ func TestAzureUserCountProjects(t *testing.T) {
 }
 
 func TestAzureUserCountRepos(t *testing.T) {
+	t.Skip("Skipping this test till we get AZURE token")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,

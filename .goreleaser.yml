@@ -110,7 +110,7 @@ universal_binaries:
     replace: true
     name_template: "cx"
     hooks:
-      post: gon gonMac.hcl
+      post: bash -c 'envsubst < gonMac.hcl > /tmp/gonMac.hcl && gon /tmp/gonMac.hcl'
 
 brews:
   - tap:

@@ -149,6 +149,7 @@ var BaseIncludeFilters = []string{
 	"*.cts",
 	"*.html",
 	"*.xhtml",
+	"*.vm",
 }
 
 var BaseExcludeFilters = []string{
