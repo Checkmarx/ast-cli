@@ -16,6 +16,7 @@ import (
 )
 
 func TestGitHubUserCount(t *testing.T) {
+	t.Skip("Skipping this test till we get PAT")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdWithTimeOutNilAssertion(
 		t,
@@ -45,6 +46,7 @@ func TestGitHubUserCount(t *testing.T) {
 }
 
 func TestGitHubUserCountRepos(t *testing.T) {
+	t.Skip("Skipping this test till we get PAT")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,

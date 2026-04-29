@@ -1240,6 +1240,7 @@ func TestScanWorkFlowWithSastEngineFilter(t *testing.T) {
 }
 
 func TestScanCreateWithSSHKey(t *testing.T) {
+	t.Skip("Skipping this test till we get ssh key")
 	_ = viper.BindEnv("CX_SCAN_SSH_KEY")
 	sshKey := viper.GetString("CX_SCAN_SSH_KEY")
 
@@ -1866,6 +1867,7 @@ func TestCreateScan_WithTypeScs_Success(t *testing.T) {
 }
 
 func TestCreateScan_WithTypeScsAndOnlyScorecard_Success(t *testing.T) {
+	t.Skip("Skipping this test till we get PAT")
 	_, projectName := getRootProject(t)
 
 	args := []string{

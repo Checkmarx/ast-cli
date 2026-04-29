@@ -8,6 +8,7 @@ on:
 
 jobs:
   code_review:
+    if: false
     uses: Checkmarx/plugins-release-workflow/.github/workflows/ai-code-review.yml@main
     with:
       open_ai_model: "gpt-4-1106-preview"
