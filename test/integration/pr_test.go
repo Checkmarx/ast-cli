@@ -253,6 +253,7 @@ func TestPRGitlabDecorationFailure(t *testing.T) {
 }
 
 func TestPRAzureDecorationSuccessCase(t *testing.T) {
+	t.Skip("Skipping this test till we get AZURE token")
 	args := []string{
 		"utils",
 		"pr",
