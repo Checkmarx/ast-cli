@@ -112,31 +112,32 @@ universal_binaries:
     hooks:
       post: bash -c 'envsubst < gonMac.hcl > /tmp/gonMac.hcl && gon /tmp/gonMac.hcl'
 
-brews:
-  - tap:
-      owner: checkmarx
-      name: homebrew-ast-cli
-      token: "{{ .Env.GO_BOT_TOKEN }}"
-    ids:
-      - cx
-      - cx-mac-universal
-    folder: Formula
-    homepage: https://github.com/Checkmarx/ast-cli
-    description: CLI for Checkmarx One
-    license: Apache
-    test: |
-      system "#{bin}/cx version"
-    install: |-
-      bin.install "cx"
-      # Install bash completion
-      output = Utils.popen_read("#{bin}/cx utils completion -s bash")
-      (bash_completion/"cx").write output
-      # Install zsh completion
-      output = Utils.popen_read("#{bin}/cx utils completion -s zsh")
-      (zsh_completion/"_cx").write output
-      # Install fish completion
-      output = Utils.popen_read("#{bin}/cx utils completion -s fish")
-      (fish_completion/"cx.fish").write output
+# brews:
+#   - skip: true
+#     tap:
+#       owner: checkmarx
+#       name: homebrew-ast-cli
+#       token: "{{ .Env.GO_BOT_TOKEN }}"
+#     ids:
+#       - cx
+#       - cx-mac-universal
+#     folder: Formula
+#     homepage: https://github.com/Checkmarx/ast-cli
+#     description: CLI for Checkmarx One
+#     license: Apache
+#     test: |
+#       system "#{bin}/cx version"
+#     install: |-
+#       bin.install "cx"
+#       # Install bash completion
+#       output = Utils.popen_read("#{bin}/cx utils completion -s bash")
+#       (bash_completion/"cx").write output
+#       # Install zsh completion
+#       output = Utils.popen_read("#{bin}/cx utils completion -s zsh")
+#       (zsh_completion/"_cx").write output
+#       # Install fish completion
+#       output = Utils.popen_read("#{bin}/cx utils completion -s fish")
+#       (fish_completion/"cx.fish").write output
 
 blobs:
   - provider: s3
