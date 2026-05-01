@@ -107,7 +107,7 @@ jobs:
           git push origin "${tag}"
       - name: Build GoReleaser Args
         run: |
-          args='release --clean --debug'
+          args='release --clean --debug --timeout 90m'
           if [ ${{ inputs.dev }} = true ]; then
             args=${args}' --config=".goreleaser-dev.yml"'
           fi
