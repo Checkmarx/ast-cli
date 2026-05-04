@@ -43,32 +43,25 @@ jobs:
         env:
           AC_USER: ${{ secrets.AC_USER }}
         run: |
-          python3 - <<'PYEOF'
-          import os
-          username = os.environ['AC_USER']
-          provider = "Z68SAQG5BR"
-          identity = "Developer ID Application: CHECKMARX LTD (Z68SAQG5BR)"
-          content = f'''source = ["./dist/cx-mac-universal_darwin_all/cx"]
+          cat > gonMac-custom.hcl <<EOF
+          source = ["./dist/cx-mac-universal_darwin_all/cx"]
           bundle_id = "com.checkmarx.cli"
 
-          apple_id {{
-            username = "{username}"
-            password = "@env:AC_PASSWORD"
-            provider = "{provider}"
-          }}
+          apple_id {
+            username = "$AC_USER"
+            provider = "Z68SAQG5BR"
+          }
 
-          sign {{
-            application_identity = "{identity}"
-          }}
+          sign {
+            application_identity = "Developer ID Application: CHECKMARX LTD (Z68SAQG5BR)"
+          }
 
-          dmg {{
+          dmg {
             output_path = "./dist/cx-mac-universal_darwin_all/cx.dmg"
             volume_name = "cx"
-          }}
-          '''
-          with open('gonMac-custom.hcl', 'w') as f:
-              f.write(content)
-          PYEOF
+          }
+          EOF
+          sed -i 's/^          //' gonMac-custom.hcl
 
       - name: Tag current commit as release version
         run: |
