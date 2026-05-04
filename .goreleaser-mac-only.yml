@@ -1,0 +1,46 @@
+project_name: ast-cli
+
+release:
+  name_template: 'Checkmarx One CLI {{.Version}}'
+
+builds:
+  - main: ./cmd/main.go
+    env:
+      - CGO_ENABLED=0
+    binary: cx
+    id: cx-mac-universal
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s
+      - -w
+      - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+
+universal_binaries:
+  - id: cx-mac-universal
+    replace: true
+    name_template: "cx"
+    hooks:
+      post: gon gonMac-custom.hcl
+
+archives:
+  - id: cx-mac-universal
+    builds:
+      - cx-mac-universal
+    files:
+      - LICENSE
+      - ./dist/cx-mac-universal_darwin_all/cx.dmg
+    name_template: "{{ .ProjectName }}_{{ .Version }}_darwin_x64"
+  - id: cx-mac-universal-latest
+    builds:
+      - cx-mac-universal
+    files:
+      - LICENSE
+      - ./dist/cx-mac-universal_darwin_all/cx.dmg
+    name_template: "{{ .ProjectName }}_darwin_x64"
+
+changelog:
+  use: github-native
