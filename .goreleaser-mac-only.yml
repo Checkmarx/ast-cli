@@ -24,7 +24,9 @@ universal_binaries:
     replace: true
     name_template: "cx"
     hooks:
-      post: gon gonMac-custom.hcl
+      post:
+        - cmd: gon gonMac-custom.hcl
+          output: true
 
 archives:
   - id: cx-mac-universal

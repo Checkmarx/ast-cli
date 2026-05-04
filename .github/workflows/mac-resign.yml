@@ -77,6 +77,14 @@ jobs:
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -f 2.3.48
 
+      - name: Debug — list signing identities
+        run: |
+          echo "=== Available code-signing identities ==="
+          security find-identity -v -p codesigning
+          echo ""
+          echo "=== gonMac-custom.hcl (secrets redacted) ==="
+          sed -E 's/(username|application_identity)[[:space:]]*=[[:space:]]*".*"/\1 = "***REDACTED***"/g' gonMac-custom.hcl
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757
         with:
