@@ -3,6 +3,7 @@ project_name: ast-cli
 release:
   prerelease: true
   name_template: 'Checkmarx One CLI {{.Version}}'
+  draft: true
 
 builds:
   - main: ./cmd/main.go
@@ -96,3 +97,4 @@ blobs:
 
 changelog:
   use: github-native
+ 

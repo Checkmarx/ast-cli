@@ -95,7 +95,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
-      - name: Tag
+      - name: Tag (local only)
         run: |
           echo ${{ inputs.tag }}
           echo "NEXT_VERSION=${{ inputs.tag }}" >> $GITHUB_ENV
@@ -104,7 +104,7 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -a "${tag}" -m "${message}"
-          git push origin "${tag}"
+          # tag stays local — pushed at the end of the job, after the release is fully built
       - name: Build GoReleaser Args
         run: |
           args='release --clean --debug --timeout 90m'
@@ -141,6 +141,13 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
+      - name: Push tag and publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git push origin "${{ inputs.tag }}"
+          gh release edit "${{ inputs.tag }}" --draft=false --latest
+
   notify:
     name: Update Teams & JIRA About New Release
     if: inputs.dev == false && 1 == 0
@@ -163,3 +170,4 @@ jobs:
     with:
       cli_version: ${{ inputs.tag }}
     secrets: inherit
+ 
