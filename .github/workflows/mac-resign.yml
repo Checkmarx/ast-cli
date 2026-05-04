@@ -41,14 +41,13 @@ jobs:
 
       - name: Generate gon config
         env:
-          AC_USERNAME: ${{ secrets.AC_USERNAME }}
-          AC_PROVIDER: ${{ secrets.AC_PROVIDER }}
+          AC_USER: ${{ secrets.AC_USER }}
           SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
         run: |
           python3 - <<'PYEOF'
           import os
-          username = os.environ['AC_USERNAME']
-          provider = os.environ['AC_PROVIDER']
+          username = os.environ['AC_USER']
+          provider = "Z68SAQG5BR"
           identity = os.environ['SIGNING_IDENTITY']
           content = f'''source = ["./dist/cx-mac-universal_darwin_all/cx"]
           bundle_id = "com.checkmarx.cli"
