@@ -42,13 +42,12 @@ jobs:
       - name: Generate gon config
         env:
           AC_USER: ${{ secrets.AC_USER }}
-          SIGNING_IDENTITY: ${{ secrets.SIGNING_IDENTITY }}
         run: |
           python3 - <<'PYEOF'
           import os
           username = os.environ['AC_USER']
           provider = "Z68SAQG5BR"
-          identity = os.environ['SIGNING_IDENTITY']
+          identity = "Developer ID Application: CHECKMARX LTD (Z68SAQG5BR)"
           content = f'''source = ["./dist/cx-mac-universal_darwin_all/cx"]
           bundle_id = "com.checkmarx.cli"
 
@@ -84,6 +83,17 @@ jobs:
           echo ""
           echo "=== gonMac-custom.hcl (secrets redacted) ==="
           sed -E 's/(username|application_identity)[[:space:]]*=[[:space:]]*".*"/\1 = "***REDACTED***"/g' gonMac-custom.hcl
+
+      - name: Verify Apple notarization credentials
+        env:
+          AC_USER: ${{ secrets.AC_USER }}
+        run: |
+          echo "=== Verifying Apple notarization credentials ==="
+          xcrun notarytool history \
+            --apple-id "$AC_USER" \
+            --password "$AC_PASSWORD" \
+            --team-id "Z68SAQG5BR" \
+            --limit 1
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757
