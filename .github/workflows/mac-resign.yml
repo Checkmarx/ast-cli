@@ -3,7 +3,7 @@ name: macOS Resign
 on:
   push:
     branches:
-      - mac-resign-2.3.48
+      - other/mac-resign-2.3.48
 
 permissions:
   id-token: write
