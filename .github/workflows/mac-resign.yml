@@ -1,12 +1,9 @@
 name: macOS Resign
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Version tag to build (e.g. 2.3.48)'
-        required: true
-        default: '2.3.48'
+  push:
+    branches:
+      - mac-resign-2.3.48
 
 permissions:
   id-token: write
@@ -79,7 +76,7 @@ jobs:
         run: |
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
-          git tag -f ${{ github.event.inputs.tag }}
+          git tag -f 2.3.48
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757
@@ -92,7 +89,7 @@ jobs:
       - name: Upload signed macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-signed-${{ github.event.inputs.tag }}
+          name: macos-signed-2.3.48
           path: |
             dist/ast-cli_*_darwin_x64.tar.gz
             dist/ast-cli_darwin_x64.tar.gz
