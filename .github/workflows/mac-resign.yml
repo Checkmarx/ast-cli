@@ -61,7 +61,7 @@ jobs:
             volume_name = "cx"
           }
           EOF
-          sed -i 's/^          //' gonMac-custom.hcl
+          sed -i '' 's/^          //' gonMac-custom.hcl
 
       - name: Tag current commit as release version
         run: |
