@@ -93,3 +93,4 @@ jobs:
             dist/ast-cli_*_darwin_x64.tar.gz
             dist/ast-cli_darwin_x64.tar.gz
           retention-days: 30
+          
