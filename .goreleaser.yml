@@ -2,7 +2,7 @@ project_name: ast-cli
 
 release:
   name_template: 'Checkmarx One CLI {{.Version}}'
-  draft: true
+  disable: true
 
 builds:
   - main: ./cmd/main.go

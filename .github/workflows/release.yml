@@ -141,12 +141,24 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
-      - name: Push tag and publish release
+      - name: Push tag
+        run: git push origin "${{ inputs.tag }}"
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git push origin "${{ inputs.tag }}"
-          gh release edit "${{ inputs.tag }}" --draft=false --latest
+          if [ "${{ inputs.dev }}" = "true" ]; then
+            gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
+              --title "Checkmarx One CLI ${{ inputs.tag }}" \
+              --generate-notes \
+              --prerelease
+          else
+            gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
+              --title "Checkmarx One CLI ${{ inputs.tag }}" \
+              --generate-notes \
+              --latest
+          fi
 
   notify:
     name: Update Teams & JIRA About New Release
