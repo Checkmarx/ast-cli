@@ -141,27 +141,35 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
-      - name: Push tag
-        run: git push origin "${{ inputs.tag }}"
-
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
+          shopt -s failglob
+
+          common=(
+            "${{ inputs.tag }}"
+            dist/*.tar.gz dist/*.zip dist/*checksums*
+            --target "${{ github.sha }}"
+            --title  "Checkmarx One CLI ${{ inputs.tag }}"
+            --generate-notes
+            --draft
+          )
+
           if [ "${{ inputs.dev }}" = "true" ]; then
-            gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
-              --title "Checkmarx One CLI ${{ inputs.tag }}" \
-              --generate-notes \
-              --prerelease \
-              --draft
-            gh release edit "${{ inputs.tag }}" --draft=false
+            gh release create "${common[@]}" --prerelease
+            gh release edit   "${{ inputs.tag }}" --draft=false
           else
-            gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
-              --title "Checkmarx One CLI ${{ inputs.tag }}" \
-              --generate-notes \
-              --draft
-            gh release edit "${{ inputs.tag }}" --draft=false --latest
+            gh release create "${common[@]}"
+            gh release edit   "${{ inputs.tag }}" --draft=false --latest
           fi
+
+      - name: Cleanup draft release on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${{ inputs.tag }}" --cleanup-tag --yes || true
 
   notify:
     name: Update Teams & JIRA About New Release
