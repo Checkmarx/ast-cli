@@ -84,7 +84,7 @@ universal_binaries:
     replace: true
     name_template: "cx"
     hooks:
-      post: bash -c 'envsubst < gonMac.hcl > /tmp/gonMac.hcl && gon /tmp/gonMac.hcl'
+      post: bash -c 'envsubst < gonMac.hcl > /tmp/gonMac.hcl && gon /tmp/gonMac.hcl || (echo "gon failed, force-detaching DMG volume..."; hdiutil detach /Volumes/cx -force 2>/dev/null || true; gon /tmp/gonMac.hcl)'
 
 blobs:
   - provider: s3
