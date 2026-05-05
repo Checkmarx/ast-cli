@@ -152,12 +152,15 @@ jobs:
             gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
               --title "Checkmarx One CLI ${{ inputs.tag }}" \
               --generate-notes \
-              --prerelease
+              --prerelease \
+              --draft
+            gh release edit "${{ inputs.tag }}" --draft=false
           else
             gh release create "${{ inputs.tag }}" dist/*.tar.gz dist/*.zip dist/*checksums* \
               --title "Checkmarx One CLI ${{ inputs.tag }}" \
               --generate-notes \
-              --latest
+              --draft
+            gh release edit "${{ inputs.tag }}" --draft=false --latest
           fi
 
   notify:
