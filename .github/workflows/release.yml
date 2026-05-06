@@ -104,7 +104,7 @@ jobs:
           git config user.name "${GITHUB_ACTOR}"
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git tag -a "${tag}" -m "${message}"
-          git push origin "${tag}"
+          # tag stays local — pushed at the end of the job, after the release is fully built
       - name: Build GoReleaser Args
         run: |
           args='release --clean --debug --timeout 90m'
@@ -141,6 +141,36 @@ jobs:
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          shopt -s failglob
+
+          common=(
+            "${{ inputs.tag }}"
+            dist/*.tar.gz dist/*.zip dist/*checksums*
+            --target "${{ github.sha }}"
+            --title  "Checkmarx One CLI ${{ inputs.tag }}"
+            --generate-notes
+            --draft
+          )
+
+          if [ "${{ inputs.dev }}" = "true" ]; then
+            gh release create "${common[@]}" --prerelease
+            gh release edit   "${{ inputs.tag }}" --draft=false
+          else
+            gh release create "${common[@]}"
+            gh release edit   "${{ inputs.tag }}" --draft=false --latest
+          fi
+
+      - name: Cleanup draft release on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${{ inputs.tag }}" --cleanup-tag --yes || true
+
   notify:
     name: Update Teams & JIRA About New Release
     if: inputs.dev == false && 1 == 0
@@ -163,3 +193,4 @@ jobs:
     with:
       cli_version: ${{ inputs.tag }}
     secrets: inherit
+ 
