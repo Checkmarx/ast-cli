@@ -95,7 +95,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
           aws-region: ${{ secrets.AWS_ASSUME_ROLE_REGION }}
-      - name: Tag (local only)
+      - name: Tag
         run: |
           echo ${{ inputs.tag }}
           echo "NEXT_VERSION=${{ inputs.tag }}" >> $GITHUB_ENV
