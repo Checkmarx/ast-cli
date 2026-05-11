@@ -788,8 +788,8 @@ func scanCreateSubCommand(
 		commonParams.Branch, commonParams.BranchFlagUsage,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.IacsFilterFlag, "", commonParams.IacsFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.IacsFilterFlag, []string{}, commonParams.IacsFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.KicsFilterFlag, []string{}, commonParams.KicsFilterUsage)
 
 	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iac-security-filter")
 	if err != nil {
