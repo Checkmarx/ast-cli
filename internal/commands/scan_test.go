@@ -1198,6 +1198,55 @@ func TestAddKicsScan(t *testing.T) {
 	}
 }
 
+func TestAddKicsScanWithIacsFilter(t *testing.T) {
+	var resubmitConfig []wrappers.Config
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.KicsFilterFlag,
+		[]string{},
+		"Filter for KICS scan",
+	)
+
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.IacsFilterFlag,
+		[]string{},
+		"IaC filter",
+	)
+
+	cmdCommand.PersistentFlags().StringSlice(
+		commonParams.IacsPlatformsFlag,
+		[]string{},
+		"IaC platforms",
+	)
+
+	_ = cmdCommand.Execute()
+
+	// Set the new --iac-security-filter flag (not the deprecated --kics-filter)
+	_ = cmdCommand.Flags().Set(commonParams.IacsFilterFlag, "!docker-compose.yaml")
+
+	result := addKicsScan(cmdCommand, resubmitConfig)
+
+	expectedConfig := wrappers.KicsConfig{
+		Filter: "!docker-compose.yaml",
+	}
+
+	if result[resultsMapType] != commonParams.KicsType {
+		t.Errorf("Expected type %s, got %v", commonParams.KicsType, result[resultsMapType])
+	}
+
+	actualConfig := result[resultsMapValue].(*wrappers.KicsConfig)
+
+	if !reflect.DeepEqual(actualConfig, &expectedConfig) {
+		t.Errorf("--iac-security-filter value was not propagated to scan config: expected %+v, got %+v", expectedConfig, actualConfig)
+	}
+}
+
 func TestCreateScanProjectTagsCheckResendToScan(t *testing.T) {
 	baseArgs := []string{"scan", "create", "--project-name", "sastFilterMock", "-b", "dummy_branch", "-s", dummyRepo, "--project-tags", "SEG", "--debug"}
 	cmd := createASTTestCommand()
