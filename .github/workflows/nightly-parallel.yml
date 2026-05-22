@@ -26,7 +26,7 @@ jobs:
   #        to a named matrix group, so they fall through to the catch-all run.
   # ─────────────────────────────────────────────────────────────────────────────
   validate-test-coverage:
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     outputs:
       uncovered_tests: ${{ steps.find-uncovered.outputs.uncovered_tests }}
       has_uncovered: ${{ steps.find-uncovered.outputs.has_uncovered }}
@@ -91,7 +91,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   integration-tests:
     needs: validate-test-coverage
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     strategy:
       fail-fast: false
       matrix:
@@ -467,7 +467,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   merge-coverage:
     needs: integration-tests
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     if: always()
     env:
       CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
@@ -537,7 +537,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   notify-on-failure:
     needs: [integration-tests, merge-coverage]
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     if: failure()
     steps:
       - name: Write failure summary

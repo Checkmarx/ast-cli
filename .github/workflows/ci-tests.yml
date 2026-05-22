@@ -3,9 +3,12 @@ name: Continuous Integration Tests
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -32,7 +35,7 @@ jobs:
             exit 0
           fi
   integration-tests:
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     steps:
       - name: Checkout the repository
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -116,8 +119,11 @@ jobs:
             exit 0
           fi
   lint:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
     name: lint
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     steps:
       - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
       - name: Set up Go version
@@ -136,7 +142,7 @@ jobs:
           only-new-issues: true
 
   govulncheck:
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     name: govulncheck
     steps:
       - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
@@ -151,7 +157,7 @@ jobs:
         continue-on-error: true
 
   checkDockerImage:
-    runs-on: ubuntu-latest
+    runs-on: cx-public-ubuntu-x64
     name: scan Docker Image with Trivy
     steps:
       - name: Checkout code
