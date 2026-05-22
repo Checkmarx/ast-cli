@@ -1,0 +1,55 @@
+The show command enables the ability to show results about a requested scan in Checkmarx One
+
+USAGE
+  cx results show [flags]
+
+FLAGS
+      --filter strings                   Filter the list of results. Use ';' as the delimiter for arrays. Available filters are: scan-id,limit,offset,sort,include-nodes,node-ids,query,group,status,severity,state
+  -h, --help                             help for show
+      --ignore-policy                    Skip policy evaluation. Requires override-policy-management permission.
+      --output-name string               Output file (default "cx_result")
+      --output-path string               Output Path (default ".")
+      --policy-timeout int               Cancel the policy evaluation and fail after the timeout in minutes (default 1)
+      --report-format string             Format for the output. One of [json-v2 summaryHTML summaryConsole sarif summaryJSON sbom pdf markdown gl-sast gl-sca sonar json] (default "json")
+      --report-pdf-email string          Send the PDF report to the specified email address. Use "," as the delimiter for multiple emails
+      --report-pdf-options string        Sections to generate PDF report. Available options: Iac-Security,Sast,Sca,ScanSummary,ExecutiveSummary,ScanResults (default "ScanSummary,ExecutiveSummary,ScanResults")
+      --report-sbom-format string        Sections to generate SBOM report. Available options: CycloneDxJson,CycloneDxXml,SpdxJson (default "CycloneDxJson")
+      --sast-redundancy                  Populate SAST results 'data.redundancy' with values 'fix' (to fix) or 'redundant' (no need to fix)
+      --sca-hide-dev-test-dependencies   Filter SCA results to exclude dev and test dependencies
+      --scan-id string                   ID to report on
+      --wait-delay int                   Polling wait time in seconds (default 5)
+
+GLOBAL FLAGS
+  --agent string                      Scan origin name (default "ASTCLI")
+  --apikey string                     The API Key to login to Checkmarx One
+  --base-auth-uri string              The base system IAM URI
+  --base-uri string                   The base system URI
+  --client-id string                  The OAuth2 client ID
+  --client-secret string              The OAuth2 client secret
+  --config-file-path string           Path to the configuration file
+  --debug                             Debug mode with detailed logs
+  --ignore-proxy                      Ignore proxy configuration
+  --insecure                          Ignore TLS certificate validations
+  --log-file string                   Saves logs to the specified file path only
+  --log-file-console string           Saves logs to the specified file path as well as to the console
+  --proxy string                      Proxy server to send communication through
+  --proxy-auth-type string            Proxy authentication type (supported types: basic, ntlm, kerberos or kerberos-native)
+  --proxy-kerberos-ccache string      Path to Kerberos credential cache (optional, default uses KRB5CCNAME env or OS default)
+  --proxy-kerberos-krb5-conf string   Path to Kerberos configuration file(default: /etc/krb5.conf on linux and C:\Windows\krb5.ini on windows)
+  --proxy-kerberos-spn string         Service Principal Name (SPN) for Kerberos proxy authentication
+  --proxy-ntlm-domain string          Window domain when using NTLM proxy
+  --retry uint                        Retry requests to Checkmarx One on connection failure (default 3)
+  --retry-delay uint                  Time between retries in seconds, use with --retry (default 20)
+  --tenant string                     Checkmarx tenant
+  --timeout string                    Timeout for network activity, (default 5 seconds)
+
+EXAMPLES
+  $ cx results show --scan-id <scan Id>
+
+QUICK START GUIDE
+  https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html
+
+LEARN MORE
+  Use 'cx <command> <subcommand> --help' for more information about a command.
+  Read the manual at https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html
+
