@@ -3,14 +3,18 @@ package wrappers
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"strings"
 
-	commonParams "github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
+	"github.com/checkmarx/ast-cli/internal/logger"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 )
 
 const (
@@ -20,6 +24,7 @@ const (
 	noCodebashingLinkAvailable  = "No codebashing link available"
 	licenseNotFoundExitCode     = 3
 	lessonNotFoundExitCode      = 4
+	codeBashingDefaultPath      = "https://core-service.codebashing.com/lessons/mapping"
 )
 
 type CodeBashingHTTPWrapper struct {
@@ -32,14 +37,14 @@ func NewCodeBashingHTTPWrapper(path string) *CodeBashingHTTPWrapper {
 	}
 }
 
-func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, codeBashingURL string) (
+func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(queryID, codeBashingURL string) (
 	*[]CodeBashingCollection,
 	*WebError,
 	error,
 ) {
+	r.path = setCodeBashingDefaultPath(r.path)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
-	params[limit] = limitValue
-	resp, err := SendHTTPRequestWithQueryParams(http.MethodGet, r.path, params, nil, clientTimeout)
+	resp, err := SendHTTPRequestNoBaseCBURL(http.MethodGet, r.path+"/"+queryID, http.NoBody, true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,20 +64,25 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 		return nil, &errorModel, nil
 	case http.StatusOK:
 		var decoded []CodeBashingCollection
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
 		}
 		err = json.Unmarshal(body, &decoded)
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+			var wrappedResponse CodeBashingResponse
+			if err2 := json.Unmarshal(body, &wrappedResponse); err2 == nil {
+				decoded = []CodeBashingCollection{wrappedResponse.Data}
+			} else {
+				return nil, nil, errors.Wrapf(err, failedToParseCodeBashing)
+			}
 		}
 		/* Only check for position 0 because at the time we are only sending
 		   one queryName and getting as output one codebashing link. But it is
 		   possible to easily change it and be able to get multiple codebashing
 		   links
 		*/
-		if decoded[0].Path == "" {
+		if len(decoded) == 0 || decoded[0].Path == "" {
 			return nil, nil, NewAstError(lessonNotFoundExitCode, errors.Errorf(noCodebashingLinkAvailable))
 		}
 
@@ -85,6 +95,21 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingLinks(params map[string]string, c
 	default:
 		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
 	}
+}
+
+// Added this function to update the cx_code_bashing field in the existing config file.
+func setCodeBashingDefaultPath(path string) string {
+	if path != codeBashingDefaultPath {
+		configFilePath, err := configuration.GetConfigFilePath()
+		if err != nil {
+			logger.PrintfIfVerbose("Error getting config file path: %v", err)
+		}
+		err = configuration.SafeWriteSingleConfigKeyString(configFilePath, strings.ToLower(commonParams.CodeBashingPathEnv), codeBashingDefaultPath)
+		if err != nil {
+			logger.PrintfIfVerbose("Error writing Risk Management path to config file: %v", err)
+		}
+	}
+	return codeBashingDefaultPath
 }
 
 func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error) {
@@ -112,7 +137,7 @@ func (r *CodeBashingHTTPWrapper) GetCodeBashingURL(field string) (string, error)
 	return url, nil
 }
 
-func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams []CodeBashingParamsCollection) (map[string]string, error) {
+func (*CodeBashingHTTPWrapper) BuildCodeBashingParams(apiParams CodeBashingParamsCollection) (map[string]string, error) {
 	// Marshall entire object to string
 	params := make(map[string]string)
 	viewJSON, err := json.Marshal(apiParams)

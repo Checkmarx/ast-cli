@@ -27,15 +27,14 @@ import (
 const fileName = "cx_result"
 
 const (
-	resultsCommand      = "results"
-	codeBashingCommand  = "codebashing"
-	vulnerabilityValue  = "Reflected XSS All Clients"
-	languageValue       = "PHP"
-	cweValue            = "79"
-	jsonValue           = "json"
-	tableValue          = "table"
-	listValue           = "list"
-	secretDetectionLine = "| Secret Detection          0      1        1      0      0   Completed  |"
+	resultsCommand         = "results"
+	codeBashingCommand     = "codebashing"
+	queryIDValue           = "8481125285487743346"
+	queryIDWrongValueValue = "11666704984804998184"
+	jsonValue              = "json"
+	tableValue             = "table"
+	listValue              = "list"
+	secretDetectionLine    = "| Secret Detection          0      1        1      0      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -553,40 +552,28 @@ func TestRunGetResultsByScanIdWithEmptyOutputPath(t *testing.T) {
 	_ = execCmdNotNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--output-path", "")
 }
 
-func TestRunGetCodeBashingWithoutLanguage(t *testing.T) {
+func TestRunGetCodeBashingWithEmptyQueryId(t *testing.T) {
 	err := execCmdNotNilAssertion(
 		t,
 		resultsCommand,
 		codeBashingCommand,
-		flag(params.CweIDFlag),
-		cweValue,
-		flag(params.VulnerabilityTypeFlag),
-		vulnerabilityValue)
-	assert.Equal(t, err.Error(), "required flag(s) \"language\" not set", "Wrong expected error message")
+		flag(params.QueryIDFlag),
+		"")
+	assert.Equal(t, err.Error(), "Cannot GET /lessons/mapping/", "Wrong expected error message")
 }
 
-func TestRunGetCodeBashingWithoutVulnerabilityType(t *testing.T) {
-	err := execCmdNotNilAssertion(
-		t,
+func TestRunGetCodeBashingWithEmptyQueryIdThatDoesNotHaveAnLesson(t *testing.T) {
+	cmd := createASTTestCommand()
+	buffer, err := executeRedirectedOsStdoutTestCommand(cmd,
 		resultsCommand,
 		codeBashingCommand,
-		flag(params.CweIDFlag),
-		cweValue,
-		flag(params.LanguageFlag),
-		languageValue)
-	assert.Equal(t, err.Error(), "required flag(s) \"vulnerability-type\" not set", "Wrong expected error message")
-}
+		flag(params.QueryIDFlag),
+		queryIDWrongValueValue)
 
-func TestRunGetCodeBashingWithoutCweId(t *testing.T) {
-	err := execCmdNotNilAssertion(
-		t,
-		resultsCommand,
-		codeBashingCommand,
-		flag(params.VulnerabilityTypeFlag),
-		vulnerabilityValue,
-		flag(params.LanguageFlag),
-		languageValue)
-	assert.Equal(t, err.Error(), "required flag(s) \"cwe-id\" not set", "Wrong expected error message")
+	assert.NilError(t, err, "Command should not return an error")
+	output := buffer.String()
+	assert.Assert(t, strings.Contains(output, "/app/home"), "Expected response to contain /app/home path")
+	assert.Assert(t, !strings.Contains(output, "Cannot GET /lessons/mapping/"), "Response should not contain error message")
 }
 
 func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
@@ -594,12 +581,8 @@ func TestRunGetCodeBashingWithFormatJson(t *testing.T) {
 		t,
 		resultsCommand,
 		codeBashingCommand,
-		flag(params.VulnerabilityTypeFlag),
-		vulnerabilityValue,
-		flag(params.LanguageFlag),
-		languageValue,
-		flag(params.CweIDFlag),
-		cweValue,
+		flag(params.QueryIDFlag),
+		queryIDValue,
 		flag(params.FormatFlag),
 		jsonValue)
 }
@@ -609,12 +592,8 @@ func TestRunGetCodeBashingWithFormatTable(t *testing.T) {
 		t,
 		resultsCommand,
 		codeBashingCommand,
-		flag(params.VulnerabilityTypeFlag),
-		vulnerabilityValue,
-		flag(params.LanguageFlag),
-		languageValue,
-		flag(params.CweIDFlag),
-		cweValue,
+		flag(params.QueryIDFlag),
+		queryIDValue,
 		flag(params.FormatFlag),
 		tableValue)
 }
@@ -624,12 +603,8 @@ func TestRunGetCodeBashingWithFormatList(t *testing.T) {
 		t,
 		resultsCommand,
 		codeBashingCommand,
-		flag(params.VulnerabilityTypeFlag),
-		vulnerabilityValue,
-		flag(params.LanguageFlag),
-		languageValue,
-		flag(params.CweIDFlag),
-		cweValue,
+		flag(params.QueryIDFlag),
+		queryIDValue,
 		flag(params.FormatFlag),
 		listValue)
 }
