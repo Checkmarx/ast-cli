@@ -144,7 +144,7 @@ func enrichResponseWithRealtimeScannerResults(
 	for _, pkg := range result.Packages {
 		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
-			PackageManager:  pkg.PackageManager,
+			PackageManager:  entry.PackageManager,
 			PackageName:     pkg.PackageName,
 			PackageVersion:  pkg.Version,
 			FilePath:        entry.FilePath,
@@ -220,12 +220,16 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 	packageMap := make(map[string]OssPackage)
 	for _, pkg := range pkgs {
-		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = OssPackage{
+		entry := OssPackage{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
 			Locations:      convertLocations(pkg.Locations),
+		}
+		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = entry
+		if pkg.PackageManager == "gradle" || pkg.PackageManager == "sbt" {
+			packageMap[generatePackageMapEntry("mvn", pkg.PackageName, pkg.Version)] = entry
 		}
 	}
 	return packageMap
@@ -277,8 +281,12 @@ func createVersionMapping(requestPackages *wrappers.RealtimeScannerPackageReques
 
 // pkgToRequest transforms a parsed package into a scan request.
 func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
+	pkgManager := pkg.PackageManager
+	if pkg.PackageManager == "gradle" || pkg.PackageManager == "sbt" {
+		pkgManager = "mvn"
+	}
 	return wrappers.RealtimeScannerPackage{
-		PackageManager: pkg.PackageManager,
+		PackageManager: pkgManager,
 		PackageName:    pkg.PackageName,
 		Version:        pkg.Version,
 	}
