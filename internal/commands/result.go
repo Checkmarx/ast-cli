@@ -2648,6 +2648,7 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 	}
 	var scanResult = initSarifResult(result)
 
+	var allLocations []wrappers.SarifLocation
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
 		if len(node.FileName) >= sarifNodeFileLength {
@@ -2662,7 +2663,23 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 			scanLocation.PhysicalLocation.Region.StartColumn = column
 			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 
-			scanResult.Locations = append(scanResult.Locations, scanLocation)
+			allLocations = append(allLocations, scanLocation)
+		}
+	}
+
+	if len(allLocations) > 0 {
+		var threadFlowLocations []wrappers.SarifThreadFlowLocation
+		for _, loc := range allLocations {
+			threadFlowLocations = append(threadFlowLocations, wrappers.SarifThreadFlowLocation{Location: loc})
+		}
+		scanResult.CodeFlows = []wrappers.SarifCodeFlow{
+			{
+				ThreadFlows: []wrappers.SarifThreadFlow{
+					{
+						Locations: threadFlowLocations,
+					},
+				},
+			},
 		}
 	}
 
@@ -2895,7 +2912,7 @@ func parseURI(summaryBaseURI string) (hostName string) {
 }
 
 func printWarningIfIgnorePolicyOmiited() {
-	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don’t have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
+	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you donât have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
 }
 
 func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOverviewWrapper, scanID string, resultsParams map[string]string) (aPISecSeveritySummary *wrappers.APISecFilteredResult, err error) {

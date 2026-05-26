@@ -59,7 +59,20 @@ type SarifScanResult struct {
 	Message             SarifMessage            `json:"message"`
 	PartialFingerprints *SarifResultFingerprint `json:"partialFingerprints,omitempty"`
 	Locations           []SarifLocation         `json:"locations,omitempty"`
+	CodeFlows           []SarifCodeFlow         `json:"codeFlows,omitempty"`
 	Properties          *SarifResultProperties  `json:"properties,omitempty"`
+}
+
+type SarifCodeFlow struct {
+	ThreadFlows []SarifThreadFlow `json:"threadFlows"`
+}
+
+type SarifThreadFlow struct {
+	Locations []SarifThreadFlowLocation `json:"locations"`
+}
+
+type SarifThreadFlowLocation struct {
+	Location SarifLocation `json:"location"`
 }
 
 type SarifLocation struct {
