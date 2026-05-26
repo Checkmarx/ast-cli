@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -46,6 +47,7 @@ func (m *MockContainerManager) GenerateContainerID() string {
 	containerName := KicsContainerPrefix + containerID
 	m.GeneratedContainerIDs = append(m.GeneratedContainerIDs, containerName)
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
+	kicsshutdown.SetKicsContainerName(containerName)
 	return containerName
 }
 
@@ -102,6 +104,7 @@ func TestMockContainerManager_GenerateContainerID(t *testing.T) {
 
 	// Clear any existing value
 	viper.Set(commonParams.KicsContainerNameKey, "")
+	kicsshutdown.SetKicsContainerName("")
 
 	containerName := dm.GenerateContainerID()
 
@@ -124,6 +127,9 @@ func TestMockContainerManager_GenerateContainerID(t *testing.T) {
 	viperValue := viper.GetString(commonParams.KicsContainerNameKey)
 	if viperValue != containerName {
 		t.Errorf("Viper should be set to '%s', got '%s'", containerName, viperValue)
+	}
+	if kicsshutdown.GetKicsContainerName() != containerName {
+		t.Errorf("kicsshutdown should be set to '%s', got '%s'", containerName, kicsshutdown.GetKicsContainerName())
 	}
 
 	// Test that mock recorded the generated ID
@@ -164,6 +170,7 @@ func TestMockContainerManager_RunKicsContainer(t *testing.T) {
 	// Set up test parameters
 	containerName := "test-container"
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
+	kicsshutdown.SetKicsContainerName(containerName)
 
 	tests := []struct {
 		name      string
@@ -262,6 +269,9 @@ func TestMockContainerManager_Integration(t *testing.T) {
 	// Verify container name was set in viper
 	if viper.GetString(commonParams.KicsContainerNameKey) != containerName {
 		t.Error("Container name should be set in viper after generation")
+	}
+	if kicsshutdown.GetKicsContainerName() != containerName {
+		t.Error("Container name should be set in kicsshutdown after generation")
 	}
 
 	// Test running container
@@ -379,6 +389,7 @@ func TestContainerManager_GenerateContainerID(t *testing.T) {
 
 	// Clear any existing value
 	viper.Set(commonParams.KicsContainerNameKey, "")
+	kicsshutdown.SetKicsContainerName("")
 
 	containerName := cm.GenerateContainerID()
 
@@ -401,6 +412,9 @@ func TestContainerManager_GenerateContainerID(t *testing.T) {
 	viperValue := viper.GetString(commonParams.KicsContainerNameKey)
 	if viperValue != containerName {
 		t.Errorf("Viper should be set to '%s', got '%s'", containerName, viperValue)
+	}
+	if kicsshutdown.GetKicsContainerName() != containerName {
+		t.Errorf("kicsshutdown should be set to '%s', got '%s'", containerName, kicsshutdown.GetKicsContainerName())
 	}
 
 	// Test that subsequent calls generate different IDs
