@@ -11,6 +11,11 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	mockApplicationName = "MOCK"
+	testProjectName     = "test-project"
+)
+
 func Test_createApplicationIds(t *testing.T) {
 	type args struct {
 		applicationID          []string
