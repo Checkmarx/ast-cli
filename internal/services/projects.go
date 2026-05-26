@@ -219,7 +219,6 @@ func updateProject(project *wrappers.ProjectResponseModel,
 	projModel.Name = projModelResp.Name
 	projModel.Groups = projModelResp.Groups
 	projModel.Tags = projModelResp.Tags
-	projModel.ApplicationIds = projModelResp.ApplicationIds
 	if projectTags != "" {
 		logger.PrintIfVerbose("Updating project tags")
 		projModel.Tags = createTagMap(projectTags)

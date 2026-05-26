@@ -79,12 +79,20 @@ func findApplicationAndUpdate(applicationName string, applicationsWrapper wrappe
 		return errors.Errorf("%s: %s", errorConstants.ApplicationNotFound, applicationName)
 	}
 
+	// Check if project is already associated (prevents unnecessary API calls for both when flag enabled/disabled)
+	for _, id := range applicationResp.ProjectIds {
+		if id == projectID {
+			logger.PrintfIfVerbose("Project is already associated with the application. Skipping association")
+			return nil
+		}
+	}
+
 	isEnabled, err := checkDirectAssociationEnabled(featureFlagsWrapper, tenantWrapper)
 	if err != nil {
 		return errors.Wrap(err, "error while checking if direct association is enabled")
 	}
 	if isEnabled {
-		err = associateProjectToApplication(applicationResp.ID, projectID, applicationResp.ProjectIds, applicationsWrapper)
+		err = associateProjectToApplication(applicationResp.ID, projectID, applicationsWrapper)
 		if err != nil {
 			return err
 		}
@@ -139,13 +147,7 @@ func updateApplication(applicationModel *wrappers.ApplicationConfiguration, appl
 	return handleApplicationUpdateResponse(errorModel, err)
 }
 
-func associateProjectToApplication(applicationID, projectID string, associatedProjectIds []string, applicationsWrapper wrappers.ApplicationsWrapper) error {
-	for _, id := range associatedProjectIds {
-		if id == projectID {
-			logger.PrintfIfVerbose("Project is already associated with the application. Skipping association")
-			return nil
-		}
-	}
+func associateProjectToApplication(applicationID, projectID string, applicationsWrapper wrappers.ApplicationsWrapper) error {
 	associateProjectsModel := &wrappers.AssociateProjectModel{
 		ProjectIds: []string{projectID},
 	}

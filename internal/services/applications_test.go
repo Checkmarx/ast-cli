@@ -11,6 +11,11 @@ import (
 	"gotest.tools/assert"
 )
 
+const (
+	mockApplicationName = "MOCK"
+	testProjectName     = "test-project"
+)
+
 func Test_createApplicationIds(t *testing.T) {
 	type args struct {
 		applicationID          []string
@@ -59,7 +64,7 @@ func Test_ProjectAssociation_ToApplicationDirectly(t *testing.T) {
 	for _, test := range tests {
 		tt := test
 		t.Run(tt.description, func(t *testing.T) {
-			err := associateProjectToApplication(tt.applicationName, tt.projectName, []string{}, applicationWrapper)
+			err := associateProjectToApplication(tt.applicationName, tt.projectName, applicationWrapper)
 			assert.Assert(t, strings.Contains(err.Error(), tt.error), err.Error())
 		})
 	}
@@ -91,9 +96,8 @@ func Test_ProjectAssociation_ToApplicationWithoutDirectAssociation(t *testing.T)
 
 func Test_AssociateProjectToApplication_ProjectAlreadyAssociated(t *testing.T) {
 	projectID := "project-123"
-	associatedProjectIds := []string{"project-123", "project-456"}
 	applicationName := "app-1"
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
-	err := associateProjectToApplication(applicationName, projectID, associatedProjectIds, applicationWrapper)
+	err := associateProjectToApplication(applicationName, projectID, applicationWrapper)
 	assert.NilError(t, err)
 }
