@@ -9,13 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	code                = 355
-	idNewProjectNameStr = "ID-new-project-name"
-	projectID1Str       = "ProjectID1"
-	projectID2Str       = "ProjectID2"
-	testProjectStr      = "test_project"
-)
+const code = 355
 
 type ApplicationsMockWrapper struct{}
 
@@ -37,14 +31,14 @@ func (a ApplicationsMockWrapper) Get(params map[string]string) (*wrappers.Applic
 		Name:        "MOCK",
 		Description: "This is a mock application",
 		Criticality: 2,
-		ProjectIds:  []string{projectID1Str, projectID2Str, testProjectStr, idNewProjectNameStr},
+		ProjectIds:  []string{"ProjectID1", "ProjectID2", "test_project", "ID-new-project-name"},
 		CreatedAt:   time.Now(),
 	}
 	if params["name"] == ExistingApplication {
 		mockApplication.Name = ExistingApplication
 		mockApplication.ID = "ID-newProject"
 		// For ExistingApplication, include "ID-newProject" for polling tests
-		mockApplication.ProjectIds = []string{projectID1Str, projectID2Str, testProjectStr, idNewProjectNameStr, "ID-newProject"}
+		mockApplication.ProjectIds = []string{"ProjectID1", "ProjectID2", "test_project", "ID-new-project-name", "ID-newProject"}
 		return &wrappers.ApplicationsResponseModel{
 			TotalCount:   1,
 			Applications: []wrappers.Application{mockApplication},
