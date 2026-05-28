@@ -182,7 +182,7 @@ var BaseIncludeFilters = []string{
 	"*.tex",
 	"*.toml",
 	"*.tsql",
-	"*.txt",
+	"CMakeLists*.txt",
 	"*.vue",
 	"*.xsaccess",
 	"*.xsapp",
