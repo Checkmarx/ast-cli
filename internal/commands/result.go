@@ -2963,7 +2963,7 @@ func parseURI(summaryBaseURI string) (hostName string) {
 }
 
 func printWarningIfIgnorePolicyOmiited() {
-	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don't have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
+	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you do not have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
 }
 
 func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOverviewWrapper, scanID string, resultsParams map[string]string) (aPISecSeveritySummary *wrappers.APISecFilteredResult, err error) {

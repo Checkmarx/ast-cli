@@ -27,16 +27,15 @@ import (
 const fileName = "cx_result"
 
 const (
-	resultsCommand             = "results"
-	codeBashingCommand         = "codebashing"
-	vulnerabilityValue         = "Reflected XSS All Clients"
-	languageValue              = "PHP"
-	cweValue                   = "79"
-	jsonValue                  = "json"
-	tableValue                 = "table"
-	listValue                  = "list"
-	secretDetectionLine        = "| Secret Detection          0      1        1      0      0   Completed  |"
-	ignorePolicyWarningMessage = "Warning: The --ignore-policy flag was not implemented because you do not have the required permission."
+	resultsCommand      = "results"
+	codeBashingCommand  = "codebashing"
+	vulnerabilityValue  = "Reflected XSS All Clients"
+	languageValue       = "PHP"
+	cweValue            = "79"
+	jsonValue           = "json"
+	tableValue          = "table"
+	listValue           = "list"
+	secretDetectionLine = "| Secret Detection          0      1        1      0      0   Completed  |"
 )
 
 func flag(f string) string {
@@ -1592,7 +1591,8 @@ func TestIgnorePolicyWithNoPermission(t *testing.T) {
 		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
 	}
 	output := buf.String()
-	assert.Assert(t, strings.Contains(output, ignorePolicyWarningMessage), "’Ignore Policy flag omitted because you dont have permission’ should not be present in the output")
+	expectedWarning := "Warning: The --ignore-policy flag was not implemented because you do not have the required permission."
+	assert.Assert(t, strings.Contains(output, expectedWarning), "’Ignore Policy flag omitted because you dont have permission’ should not be present in the output")
 }
 
 func TestIgnorePolicyWithPermission(t *testing.T) {
@@ -1626,7 +1626,8 @@ func TestIgnorePolicyWithPermission(t *testing.T) {
 		t.Fatalf("failed to copy output: %v", err) // Handle the error if io.Copy fails
 	}
 	output := buf.String()
-	assert.Assert(t, !strings.Contains(output, ignorePolicyWarningMessage), "’Ignore Policy flag omitted because you dont have permission’ should not be present in the output")
+	expectedWarning := "Warning: The --ignore-policy flag was not implemented because you do not have the required permission."
+	assert.Assert(t, !strings.Contains(output, expectedWarning), "’Ignore Policy flag omitted because you dont have permission’ should not be present in the output")
 }
 
 func TestParseGlSastVulnerability_QueryDescriptionLink_Succeed(t *testing.T) {
