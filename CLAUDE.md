@@ -54,7 +54,7 @@ All plugins invoke the `cx` binary rather than calling Checkmarx APIs directly. 
 4. **Retrieve results:** `cx results show --scan-id "<id>" --report-format "json"` (supports json, sarif, pdf, sbom)
 5. **Integrate findings:** PR decoration, IDE feedback, CI/CD pipeline exit codes
 
-Scans can target local directories (`--file-source`), Git repos (`--repo-url`), or container images (`--container-image`). Multiple engines can run simultaneously via `--scan-types`.
+Scans can target local directories (`--file-source`), Git repos (`--repo-url`), or container images (`--container-images`). Multiple engines can run simultaneously via `--scan-types`.
 
 ## Repository Structure
 
@@ -94,7 +94,7 @@ test/
 - **Auth:** golang-jwt/jwt/v5 v5.2.2, gokrb5/v8 (Kerberos), alexbrainman/sspi (Windows NTLM)
 - **Container Analysis:** containers-resolver, containers-images-extractor, anchore/syft (SBOM)
 - **Testing:** stretchr/testify v1.11.1, gotest.tools
-- **Linting:** golangci-lint v2 with 19 enabled linters
+- **Linting:** golangci-lint v2 with 20 enabled linters
 - **Release:** GoReleaser, Cosign (image signing), gon (macOS notarization)
 - **No database** — the CLI is stateless; all persistence is server-side
 
@@ -165,7 +165,7 @@ go test -tags integration -v -timeout 210m \
 ### Linting & Static Analysis
 
 ```bash
-# Run full linter suite (19 linters, see .golangci.yml)
+# Run full linter suite (20 linters, see .golangci.yml)
 golangci-lint run -c .golangci.yml
 # or
 make lint
@@ -207,7 +207,7 @@ Integration tests require these environment variables (set via `.env` file or ID
 | `PR_GITHUB_TOKEN`, `PR_GITLAB_TOKEN`, `AZURE_TOKEN` | PR decoration tests |
 | `PROXY_HOST`, `PROXY_PORT`, `PROXY_USERNAME`, `PROXY_PASSWORD` | Proxy tests |
 
-No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lines 54-96) for the full list of required secrets.
+No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lines 55-93) for the full list of required secrets.
 
 ## Coding Standards
 
@@ -215,7 +215,7 @@ No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lin
 - **Environment variables:** `CX_` prefix in SCREAMING_SNAKE_CASE (e.g., `CX_BASE_URI`, `CX_CLIENT_ID`)
 - **Max function length:** 200 lines / 100 statements (`funlen`)
 - **Max cyclomatic complexity:** 15 (`gocyclo`)
-- **Max line length:** 185 characters (`lll`)
+- **Max line length:** 185 characters (`lll` — configured in `.golangci.yml` settings but not in the enabled linters list; not actively enforced)
 - **Magic numbers:** Flagged by `mnd` linter (except in test files)
 - **Duplicate code threshold:** 500 tokens (`dupl`)
 - **Import restrictions:** `depguard` limits imports to stdlib + explicitly whitelisted packages in `.golangci.yml`
@@ -237,7 +237,7 @@ No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lin
 
 ### Coverage Thresholds
 
-- **Unit tests:** **85%** minimum (CI-enforced)
+- **Unit tests:** **77.7%** minimum (CI-enforced)
 - **Integration tests:** **75%** minimum (CI-enforced)
 - **CI pipeline order:** Unit tests → Integration tests → Lint (`golangci-lint`) → Vulnerability scan (`govulncheck`) → Docker image scan (Trivy)
 
@@ -275,7 +275,7 @@ Both packages have a `TestMain(m *testing.M)` function for setup/teardown in `in
 
 ### Integration Test Patterns
 
-Integration tests use real HTTP wrappers (not mocks) and hit the **Canary environment** (`deu.ast.checkmarx.net`). The key setup function is `createASTIntegrationTestCommand(t)` in `test/integration/util_command.go`:
+Integration tests use real HTTP wrappers (not mocks) and hit the **Checkmarx One integration environment configured via `CX_BASE_URI`**. The key setup function is `createASTIntegrationTestCommand(t)` in `test/integration/util_command.go`:
 
 ```go
 //go:build integration
@@ -343,9 +343,14 @@ func TestScanCreate(t *testing.T) {
 | `ci-tests.yml` | Unit tests, integration tests, lint, govulncheck, Trivy |
 | `release.yml` | Full build, sign, publish, notify pipeline |
 | `issue_automation.yml` | Auto-label and assign issues |
-| `pr-automation.yml` | Auto-assign reviewers, enforce PR guidelines |
+| `pr-add-reviewers.yml` | Auto-assign reviewers to PRs |
+| `pr-label.yml` | Auto-label PRs |
+| `pr-linter.yml` | Enforce PR guidelines |
 | `checkmarx-one-scan.yml` | Security scan on PRs |
-| `update-trivy.yml` | Keep Trivy vulnerability definitions current |
+| `trivy-cache.yml` | Keep Trivy vulnerability definitions current |
+| `ai-code-review.yml` | AI-powered code review on PRs |
+| `dependabot-auto-merge.yml` | Auto-merge Dependabot PRs after CI passes |
+| `nightly-parallel.yml` | Nightly parallel test runs |
 
 ### JIRA Integration
 
