@@ -27,16 +27,16 @@ import (
 const fileName = "cx_result"
 
 const (
-	resultsCommand              = "results"
-	codeBashingCommand          = "codebashing"
-	vulnerabilityValue          = "Reflected XSS All Clients"
-	languageValue               = "PHP"
-	cweValue                    = "79"
-	jsonValue                   = "json"
-	tableValue                  = "table"
-	listValue                   = "list"
-	secretDetectionLine         = "| Secret Detection          0      1        1      0      0   Completed  |"
-	ignorePolicyWarningMessage  = "Warning: The --ignore-policy flag was not implemented because you do not have the required permission."
+	resultsCommand             = "results"
+	codeBashingCommand         = "codebashing"
+	vulnerabilityValue         = "Reflected XSS All Clients"
+	languageValue              = "PHP"
+	cweValue                   = "79"
+	jsonValue                  = "json"
+	tableValue                 = "table"
+	listValue                  = "list"
+	secretDetectionLine        = "| Secret Detection          0      1        1      0      0   Completed  |"
+	ignorePolicyWarningMessage = "Warning: The --ignore-policy flag was not implemented because you do not have the required permission."
 )
 
 func flag(f string) string {
