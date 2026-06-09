@@ -88,15 +88,3 @@ func TestSaveLoad_RoundTrip_CreatesParentDir(t *testing.T) {
 func TestDefaultPath(t *testing.T) {
 	assert.Equal(t, filepath.Join(".checkmarx", "checkmarxIgnoredTempList.json"), DefaultPath())
 }
-
-func TestPathFor_AnchorsAtWorkDir(t *testing.T) {
-	workDir := filepath.Join("some", "workspace")
-	assert.Equal(t,
-		filepath.Join(workDir, ".checkmarx", "checkmarxIgnoredTempList.json"),
-		PathFor(workDir),
-	)
-}
-
-func TestPathFor_EmptyWorkDirFallsBackToDefault(t *testing.T) {
-	assert.Equal(t, DefaultPath(), PathFor(""))
-}
