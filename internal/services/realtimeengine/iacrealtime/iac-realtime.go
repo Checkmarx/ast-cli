@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -102,10 +103,11 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 	if ignoredFilePath != "" {
 		ignored, err := loadIgnoredIacFindings(ignoredFilePath)
 		if err != nil {
-			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored IaC findings").Error()
+			logger.PrintfIfVerbose("iac-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
+			ignoreMap := buildIgnoreMap(ignored)
+			results = filterIgnoredFindings(results, ignoreMap)
 		}
-		ignoreMap := buildIgnoreMap(ignored)
-		results = filterIgnoredFindings(results, ignoreMap)
 	}
 
 	return results, nil

@@ -248,6 +248,7 @@ func NewAstCLI(
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
 	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
+	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand()
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -261,6 +262,7 @@ func NewAstCLI(
 		chatCmd,
 		hooksCmd,
 		telemetryCmd,
+		ignoreVulnerabilityCmd,
 	)
 
 	rootCmd.SilenceUsage = true

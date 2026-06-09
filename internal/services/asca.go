@@ -149,7 +149,9 @@ func executeScan(ascaWrapper grpcs.AscaWrapper, filePath, ignoredFilePath string
 
 	if ignoredFilePath != "" {
 		ignoredFindings, err := loadIgnoredAscaFindings(ignoredFilePath)
-		if err == nil {
+		if err != nil {
+			logger.PrintfIfVerbose("asca: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
 			ignoreMap := buildAscaIgnoreMap(ignoredFindings)
 			scanResult.ScanDetails = filterIgnoredAscaFindings(scanResult.ScanDetails, ignoreMap)
 		}
