@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
+	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/google/uuid"
@@ -32,6 +33,7 @@ func (dm *ContainerManager) GenerateContainerID() string {
 	containerID := uuid.New().String()
 	containerName := KicsContainerPrefix + containerID
 	viper.Set(commonParams.KicsContainerNameKey, containerName)
+	kicsshutdown.SetKicsContainerName(containerName)
 	return containerName
 }
 

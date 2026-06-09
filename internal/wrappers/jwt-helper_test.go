@@ -90,7 +90,7 @@ func TestGetUniqueID(t *testing.T) {
 		if result != "" {
 			assert.Equal(t, existingID, result)
 		} else {
-			t.Skip("Requires valid auth and 'Checkmarx Developer Assist' license")
+			t.Skip("Requires valid auth and 'Checkmarx Developer Assist' or 'Checkmarx OneAssist' license")
 		}
 	})
 
@@ -101,7 +101,7 @@ func TestGetUniqueID(t *testing.T) {
 		result := GetUniqueID()
 
 		if result == "" {
-			t.Skip("Requires valid auth and 'Checkmarx Developer Assist' license")
+			t.Skip("Requires valid auth and 'Checkmarx Developer Assist' or 'Checkmarx OneAssist' license")
 			return
 		}
 
