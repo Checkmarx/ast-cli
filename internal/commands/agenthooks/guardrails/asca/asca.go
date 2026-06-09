@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
-	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
@@ -90,7 +89,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
 		r, c := formatFindings(ev.FilePath, newResult.ScanDetails)
-		return true, r + guardrails.DenyMessage, c
+		return true, r, c
 	}
 
 	// Delta: scan original content and find only newly introduced findings
@@ -116,7 +115,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 	}
 
 	r, c := formatFindings(ev.FilePath, newFindings)
-	return true, r + guardrails.DenyMessage, c
+	return true, r, c
 }
 
 // existingIgnoreFilePath returns the default realtime ignore-file path only when it

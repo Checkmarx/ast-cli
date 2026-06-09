@@ -42,7 +42,10 @@ func NewFindings(originalScan, newScan []grpcs.ScanDetail) []grpcs.ScanDetail {
 	return out
 }
 
-// findingsSummary returns the bullet list shared by both message fields.
+// findingsSummary returns the bullet list shared by both message fields. Each line
+// carries the file_name (basename), line, rule_id, severity and remediation so the
+// agent has everything needed to suppress a confirmed false positive via
+// `cx ignore-vulnerability` without having to re-scan to recover the rule_id.
 func findingsSummary(findings []grpcs.ScanDetail) string {
 	var sb strings.Builder
 	for _, f := range findings {
@@ -50,7 +53,8 @@ func findingsSummary(findings []grpcs.ScanDetail) string {
 		if remediation == "" {
 			remediation = "No remediation provided"
 		}
-		fmt.Fprintf(&sb, "  - Line %d: [%s] %s — %s\n", f.Line, f.Severity, f.RuleName, remediation)
+		fmt.Fprintf(&sb, "  - %s line %d [%s] %s (rule_id %d) — %s\n",
+			f.FileName, f.Line, f.Severity, f.RuleName, f.RuleID, remediation)
 	}
 	return sb.String()
 }
@@ -76,7 +80,11 @@ func permissionDecisionReason(filePath, summary string) string {
 			"\n\n⚠️  ASCA scans the changed file in isolation and cannot see imported modules or "+
 			"helper files. Findings may be false positives when sanitization or validation is "+
 			"performed in code that ASCA cannot reach. Review each finding in context before acting."+
-			"\nFindings:\n%s",
+			"\nFindings:\n%s"+
+			"\nThis write is blocked because it introduces the vulnerabilities above. Do not bypass "+
+			"the scan by writing the same content through another tool or shell command. Resolve it by "+
+			"fixing the finding(s) — or, only if you have confirmed a finding is a false positive, by "+
+			"suppressing it as described — then retry the write.",
 		filePath, summary,
 	)
 }
@@ -101,7 +109,7 @@ func additionalContext(filePath, cxBinary string) string {
 			"Use the remediation guidance returned by the tool to fix the vulnerability. "+
 			"If a finding is a confirmed false positive, suppress it by calling:\n"+
 			"  %s ignore-vulnerability --scan-type asca --data '{\"FileName\":\"<file_name>\",\"Line\":<line>,\"RuleID\":<rule_id>}'\n"+
-			"using the file_name, line, and rule_id from the finding, then proceed.",
+			"using the file_name (basename), line, and rule_id listed for that finding above, then retry the write.",
 		filePath, cxBinary,
 	)
 }
