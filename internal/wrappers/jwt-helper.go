@@ -203,12 +203,19 @@ func GetUniqueID() string {
 	var uniqueID string
 	// Check License first
 	jwtWrapper := NewJwtWrapper()
-	isAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxDevAssistType)
+	devAssistAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxDevAssistType)
 	if err != nil {
 		logger.PrintIfVerbose("Failed to check engine allowance: " + err.Error())
 		return ""
 	}
-	if !isAllowed {
+
+	oneAssistAllowed, err := jwtWrapper.IsAllowedEngine(commonParams.CheckmarxOneAssistType)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to check engine allowance: " + err.Error())
+		return ""
+	}
+
+	if !devAssistAllowed && !oneAssistAllowed {
 		return ""
 	}
 

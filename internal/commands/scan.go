@@ -35,6 +35,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/mssola/user_agent"
@@ -279,7 +280,9 @@ func NewScanCommand(
 
 func scanRealtimeSubCommand() *cobra.Command {
 	kicsContainerID := uuid.New()
-	viper.Set(commonParams.KicsContainerNameKey, kicsContainerPrefixName+kicsContainerID.String())
+	kicsName := kicsContainerPrefixName + kicsContainerID.String()
+	viper.Set(commonParams.KicsContainerNameKey, kicsName)
+	kicsshutdown.SetKicsContainerName(kicsName)
 	realtimeScanCmd := &cobra.Command{
 		Use:   "kics-realtime",
 		Short: "Create and run kics scan",
@@ -788,8 +791,8 @@ func scanCreateSubCommand(
 		commonParams.Branch, commonParams.BranchFlagUsage,
 	)
 	createScanCmd.PersistentFlags().String(commonParams.SastFilterFlag, "", commonParams.SastFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.IacsFilterFlag, "", commonParams.IacsFilterUsage)
-	createScanCmd.PersistentFlags().String(commonParams.KicsFilterFlag, "", commonParams.KicsFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.IacsFilterFlag, []string{}, commonParams.IacsFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.KicsFilterFlag, []string{}, commonParams.KicsFilterUsage)
 
 	err = createScanCmd.PersistentFlags().MarkDeprecated(commonParams.KicsFilterFlag, "please use the replacement flag --iac-security-filter")
 	if err != nil {

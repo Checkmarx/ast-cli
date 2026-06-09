@@ -4,22 +4,22 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
@@ -164,10 +164,8 @@ jobs:
 
           if [ "${{ inputs.dev }}" = "true" ]; then
             gh release create "${common[@]}" --prerelease
-            gh release edit   "${{ inputs.tag }}" --draft=false
           else
             gh release create "${common[@]}"
-            gh release edit   "${{ inputs.tag }}" --draft=false --latest
           fi
 
       - name: Cleanup draft release on failure
@@ -176,26 +174,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release delete "${{ inputs.tag }}" --cleanup-tag --yes || true
 
-  notify:
-    name: Update Teams & JIRA About New Release
-    if: inputs.dev == false && 1 == 0
-    needs: build
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
-    with:
-      product_name: CLI
-      release_version: ${{ inputs.tag }}
-      cli_release_version: ""
-      release_author: "Sypher Team"
-      release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
-      jira_product_name: ASTCLI
-    secrets: inherit
+  #notify:
+  #  name: Update Teams & JIRA About New Release
+  #  if: inputs.dev == false && 1 == 0
+  #  needs: build
+  #  uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
+  #  with:
+  #    product_name: CLI
+  #    release_version: ${{ inputs.tag }}
+  #    cli_release_version: ""
+  #    release_author: "Sypher Team"
+  #    release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+  #    jira_product_name: ASTCLI
+  #  secrets: inherit
 
   dispatch_auto_release:
     name: Update Plugins With new Cli Version
     if: inputs.dev == false && 1 == 0
-    needs: notify
+    #needs: notify
     uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
     with:
       cli_version: ${{ inputs.tag }}
     secrets: inherit
- 
