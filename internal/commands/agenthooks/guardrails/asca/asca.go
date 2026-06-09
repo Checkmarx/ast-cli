@@ -64,7 +64,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 		// stops blocking them. Only set when the file exists: the ASCA service treats a
 		// configured-but-missing ignore path as a scan error, which would fail-open the
 		// guardrail entirely.
-		IgnoredFilePath: existingIgnoreFilePath(ev.WorkDir),
+		IgnoredFilePath: existingIgnoreFilePath(),
 	}
 
 	// Stage and scan the proposed (new) content
@@ -88,7 +88,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
-		r, c := formatFindings(ev.FilePath, newResult.ScanDetails, ev.WorkDir)
+		r, c := formatFindings(ev.FilePath, newResult.ScanDetails)
 		return true, r, c
 	}
 
@@ -114,7 +114,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 		return false, "", ""
 	}
 
-	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir)
+	r, c := formatFindings(ev.FilePath, newFindings)
 	return true, r, c
 }
 
@@ -122,8 +122,8 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 // exists on disk. The ASCA service short-circuits the scan with an error when a
 // configured ignore path is missing, so we pass it only once the user has created it
 // via `cx ignore-vulnerability`; otherwise the scan runs without ignore filtering.
-func existingIgnoreFilePath(workDir string) string {
-	p := ignore.PathFor(workDir)
+func existingIgnoreFilePath() string {
+	p := ignore.DefaultPath()
 	if _, err := os.Stat(p); err == nil {
 		return p
 	}

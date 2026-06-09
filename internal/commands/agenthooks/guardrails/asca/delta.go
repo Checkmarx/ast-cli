@@ -1,12 +1,11 @@
 package asca
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
 
@@ -63,62 +62,41 @@ func findingsSummary(findings []grpcs.ScanDetail) string {
 // formatFindings builds the two verdict fields delivered to the agent: the
 // human-readable deny reason (rendered as permissionDecisionReason) and the
 // remediation guidance injected into the agent's context (additionalContext).
-// ast-cx-hooks v1.0.3 carries these as distinct fields via RejectEditWithContext.
-func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir string) (reason, context string) {
+// ast-cx-hooks v1.0.2 carries these as distinct fields via RejectEditWithContext.
+func formatFindings(filePath string, findings []grpcs.ScanDetail) (reason, context string) {
 	summary := findingsSummary(findings)
 	cxExe, err := os.Executable()
 	cxBinary := "cx"
 	if err == nil {
-		cxBinary = cxExe
+		cxBinary = filepath.Base(cxExe)
 	}
-	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings, workDir)
-}
-
-// ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
-// the suppression command to the workspace ignore file, anchored at the hook event's
-// workDir. This keeps the write (cx ignore-vulnerability) and the later read (the hook)
-// on the same absolute file regardless of either process's CWD — without it, a host CLI
-// that runs the agent's shell from a different directory than the hook (e.g. Copilot CLI)
-// would write and read different files. Returns "" when workDir is unknown so the command
-// falls back to its CWD-relative default.
-func ignoredFilePathFlag(workDir string) string {
-	if workDir == "" {
-		return ""
-	}
-	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
+	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary)
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.
-// Contains only the findings — no agent instructions.
 func permissionDecisionReason(filePath, summary string) string {
 	return fmt.Sprintf(
-		"ASCA security scan detected vulnerabilities in %s.\nFindings:\n%s",
+		"ASCA security scan detected vulnerabilities in %s."+
+			"\n\n⚠️  ASCA scans the changed file in isolation and cannot see imported modules or "+
+			"helper files. Findings may be false positives when sanitization or validation is "+
+			"performed in code that ASCA cannot reach. Review each finding in context before acting."+
+			"\nFindings:\n%s"+
+			"\nThis write is blocked because it introduces the vulnerabilities above. Do not bypass "+
+			"the scan by writing the same content through another tool or shell command. Resolve it by "+
+			"fixing the finding(s) — or, only if you have confirmed a finding is a false positive, by "+
+			"suppressing it as described — then retry the write.",
 		filePath, summary,
 	)
 }
 
 // additionalContext is injected into the agent's context window to drive remediation.
-// Contains all action instructions — not shown directly to the user.
-func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir string) string {
-	ignoreFlag := ignoredFilePathFlag(workDir)
-	var suppressCmds strings.Builder
-	for _, f := range findings {
-		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
-			FileName: f.FileName,
-			Line:     f.Line,
-			RuleID:   f.RuleID,
-		})
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s\n", cxBinary, string(data), ignoreFlag)
-	}
+// Does not repeat the findings — the agent already has them from permissionDecisionReason.
+func additionalContext(filePath, cxBinary string) string {
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command. "+
 			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
 			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"For each real finding, invoke the cx-security:cx-security-asca skill — "+
-			"the findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
-			"If that skill is not available in this session, call mcp__Checkmarx__codeRemediation directly:\n"+
+			"For each real finding, call the mcp__Checkmarx__codeRemediation tool with:\n"+
 			"  {\n"+
 			"    \"language\": \"[auto-detected programming language]\",\n"+
 			"    \"metadata\": {\n"+
@@ -128,9 +106,10 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"    },\n"+
 			"    \"type\": \"sast\"\n"+
 			"  }\n"+
-			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n"+
-			suppressCmds.String(),
-		filePath,
+			"Use the remediation guidance returned by the tool to fix the vulnerability. "+
+			"If a finding is a confirmed false positive, suppress it by calling:\n"+
+			"  %s ignore-vulnerability --scan-type asca --data '{\"FileName\":\"<file_name>\",\"Line\":<line>,\"RuleID\":<rule_id>}'\n"+
+			"using the file_name (basename), line, and rule_id listed for that finding above, then retry the write.",
+		filePath, cxBinary,
 	)
 }
