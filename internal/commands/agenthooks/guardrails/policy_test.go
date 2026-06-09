@@ -1,5 +1,3 @@
-//go:build !integration
-
 package guardrails_test
 
 import (

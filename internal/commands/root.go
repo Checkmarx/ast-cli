@@ -42,7 +42,6 @@ func NewAstCLI(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	riskManagementWrapper wrappers.RiskManagementWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
-	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	authWrapper wrappers.AuthWrapper,
 	logsWrapper wrappers.LogsWrapper,
 	groupsWrapper wrappers.GroupsWrapper,
@@ -191,7 +190,6 @@ func NewAstCLI(
 		groupsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
-		scanSummaryWrapper,
 		jwtWrapper,
 		scaRealTimeWrapper,
 		policyWrapper,
@@ -216,7 +214,6 @@ func NewAstCLI(
 		risksOverviewWrapper,
 		riskManagementWrapper,
 		scsScanOverviewWrapper,
-		scanSummaryWrapper,
 		policyWrapper,
 		featureFlagsWrapper,
 		jwtWrapper,
@@ -250,14 +247,12 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper, realTimeWrapper, telemetryWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
-	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand()
 
 	// MCP server — directly uses the exported guardrail functions from agenthooks.go.
 	mcpServerCmd := cxmcp.NewMCPCommand(params.Version, func() bool { return isLicensed(jwtWrapper) })
 
-	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand(telemetryWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -271,7 +266,6 @@ func NewAstCLI(
 		chatCmd,
 		hooksCmd,
 		telemetryCmd,
-		ignoreVulnerabilityCmd,
 		mcpServerCmd,
 	)
 
@@ -441,7 +435,7 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 	} else {
 		multiWriter = io.MultiWriter(file)
 	}
-	logger.SetOutput(multiWriter)
+	log.SetOutput(multiWriter)
 	return nil
 }
 func CheckPreferredCredentials(cmd *cobra.Command) {
