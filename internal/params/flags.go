@@ -112,6 +112,8 @@ const (
 	ProjectName                    = "project-name"
 	ScanTypes                      = "scan-types"
 	ScanTypeFlag                   = "scan-type"
+	IgnoreDataFlag                 = "data"
+	IgnoreRemoveFlag               = "remove"
 	ScanResubmit                   = "resubmit"
 	KicsRealtimeFile               = "file"
 	KicsRealtimeEngine             = "engine"
