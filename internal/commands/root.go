@@ -253,6 +253,7 @@ func NewAstCLI(
 	// MCP server — directly uses the exported guardrail functions from agenthooks.go.
 	mcpServerCmd := cxmcp.NewMCPCommand(params.Version, func() bool { return isLicensed(jwtWrapper) })
 
+	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand()
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -267,6 +268,7 @@ func NewAstCLI(
 		hooksCmd,
 		telemetryCmd,
 		mcpServerCmd,
+		ignoreVulnerabilityCmd,
 	)
 
 	rootCmd.SilenceUsage = true

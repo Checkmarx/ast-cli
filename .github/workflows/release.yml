@@ -159,10 +159,8 @@ jobs:
 
           if [ "${{ inputs.dev }}" = "true" ]; then
             gh release create "${common[@]}" --prerelease
-            gh release edit   "${{ inputs.tag }}" --draft=false
           else
             gh release create "${common[@]}"
-            gh release edit   "${{ inputs.tag }}" --draft=false --latest
           fi
 
       - name: Cleanup draft release on failure

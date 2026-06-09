@@ -6,6 +6,7 @@ import (
 	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
 	"github.com/CheckmarxDev/ast-cx-hooks/cursor"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 )
 
 // cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
@@ -58,6 +59,9 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	}
 	if blocked, reason := guardrails.CheckAndIncrementTotalFileSize(totalBytes); blocked {
 		return agenthooks.RejectEdit(reason)
+	}
+	if blocked, reason, context := asca.ScanFileEdit(ev); blocked {
+		return agenthooks.RejectEditWithContext(reason, context)
 	}
 	return agenthooks.AcceptEdit()
 }
