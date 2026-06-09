@@ -486,7 +486,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"The file source should be the path to a single file",
 	)
 
-	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to a JSON file listing ignored ASCA findings")
 	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to custom location where ASCA engine is installed")
 	_ = viper.BindPFlag(commonParams.ASCALocationKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
 
