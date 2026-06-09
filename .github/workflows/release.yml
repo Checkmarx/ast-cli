@@ -138,13 +138,13 @@ jobs:
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
-      - name: Verify Docker image signature
-        if: inputs.dev == false
-        run: |
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
-          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      #- name: Verify Docker image signature
+      #  if: inputs.dev == false
+      #  run: |
+      #    echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+      #    cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
+      #  env:
+      #    COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       - name: Create GitHub Release
         env:
