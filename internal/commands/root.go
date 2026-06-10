@@ -247,7 +247,7 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper, realTimeWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
 
 	// MCP server — directly uses the exported guardrail functions from agenthooks.go.
