@@ -2,38 +2,55 @@ package cx
 
 import (
 	"os"
+	"strings"
 
 	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
 	"github.com/CheckmarxDev/ast-cx-hooks/cursor"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
+
+// scaScanner is the package-level SCA scanner used by the guardrail handlers.
+// It is set by RegisterGuardrails so the handlers (free functions registered
+// with the agenthooks library) can reach it without an injection mechanism.
+var scaScanner *sca.Scanner
 
 // cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
 func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
 	return agenthooks.Resume()
 }
 
-// cxBeforeToolCall gates shell execution against the organization's blacklist and tool rules.
+// cxBeforeToolCall gates shell execution against the organization's blacklist,
+// tool rules, and the SCA guardrail (malicious / vulnerable package installs).
 func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 	if !ev.IsShell() {
 		return agenthooks.Allow()
 	}
 	blocked, needsConfirm, reason := guardrails.CheckShellCommand(ev.Command, ev.WorkDir)
-	if !blocked {
-		return agenthooks.Allow()
+	if blocked {
+		if needsConfirm {
+			return agenthooks.AskUser(reason)
+		}
+		return agenthooks.Deny(reason)
 	}
-	if needsConfirm {
-		return agenthooks.AskUser(reason)
+	if scaScanner != nil {
+		if finding, remediation := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir); finding != "" {
+			return agenthooks.DenyWithContext(finding, remediation)
+		}
 	}
-	return agenthooks.Deny(reason)
+	return agenthooks.Allow()
 }
 
 // cxBeforeFileEdit gates two distinct events the library multiplexes through
 // the same handler signature:
 //
 //  1. File EDITS (Claude / Windsurf / Droid / Gemini) — ev.Changes is populated.
-//     Enforce blast_radius_limit and files_limits.max_total_file_size_kb before
-//     any bytes are written to disk.
+//     Enforce blast_radius_limit, files_limits.max_total_file_size_kb, the ASCA
+//     guardrail (AI-introduced code vulnerabilities), and the SCA guardrail
+//     (malicious / vulnerable manifest additions) before any bytes are written
+//     to disk. MultiEdit and multi-file edits are handled uniformly by iterating
+//     ev.Changes.
 //
 //  2. Cursor file READS (beforeReadFile) — ev.Changes is empty and ev.FilePath
 //     points to a file the agent is about to ingest into the LLM context.
@@ -59,7 +76,29 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	if blocked, reason := guardrails.CheckAndIncrementTotalFileSize(totalBytes); blocked {
 		return agenthooks.RejectEdit(reason)
 	}
+	if scaScanner != nil {
+		for _, diff := range ev.Changes {
+			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff)); finding != "" {
+				return agenthooks.RejectEditWithContext(finding, remediation)
+			}
+		}
+	}
 	return agenthooks.AcceptEdit()
+}
+
+// fullAfterContent returns the complete new file content for a diff.
+// Write ops set diff.Before to "" and diff.After to the full new content.
+// Edit ops set diff.After only to the replacement snippet, so we
+// reconstruct by applying the replacement to the current file on disk.
+func fullAfterContent(filePath string, diff agenthooks.FileDiff) []byte {
+	if diff.Before == "" {
+		return []byte(diff.After)
+	}
+	current, err := os.ReadFile(filePath)
+	if err != nil {
+		return []byte(diff.After)
+	}
+	return []byte(strings.Replace(string(current), diff.Before, diff.After, 1))
 }
 
 // cxBeforePrompt runs all prompt guardrails before the prompt reaches the AI agent.
@@ -92,8 +131,10 @@ func promptWorkspaceRoots(raw any) []string {
 	return []string{cwd}
 }
 
-// RegisterGuardrails wires the four guardrail handlers.
-func RegisterGuardrails() {
+// RegisterGuardrails wires the four guardrail handlers and instantiates the
+// SCA scanner used by the Bash and FileEdit handlers.
+func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper) {
+	scaScanner = sca.NewScanner(jwt, ff, rt)
 	agenthooks.WhenAgentIdle(cxWhenAgentIdle)
 	agenthooks.BeforeToolCall(cxBeforeToolCall)
 	agenthooks.BeforeFileEdit(cxBeforeFileEdit)
@@ -103,6 +144,7 @@ func RegisterGuardrails() {
 // RegisterPassThrough wires no-op handlers that always allow the action.
 // Used when the license check fails so we still emit valid JSON (fail-open).
 func RegisterPassThrough() {
+	scaScanner = nil
 	agenthooks.WhenAgentIdle(func(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict { return agenthooks.Resume() })
 	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
 	agenthooks.BeforeFileEdit(func(_ agenthooks.FileEditEvent) agenthooks.FileEditVerdict { return agenthooks.AcceptEdit() })
