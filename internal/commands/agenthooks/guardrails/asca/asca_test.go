@@ -255,3 +255,48 @@ func TestNewFindings_EmptyNewScanReturnsEmpty(t *testing.T) {
 		t.Fatalf("expected 0 findings, got %d", len(got))
 	}
 }
+
+// ── additionalContext ────────────────────────────────────────────────────────
+
+func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings)
+	if !strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"FileName":"billing.py"`) {
+		t.Errorf("expected FileName in command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"Line":5`) {
+		t.Errorf("expected Line in command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4059`) {
+		t.Errorf("expected RuleID in command, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+		{FileName: "billing.py", Line: 12, RuleID: 4027},
+	}
+	ctx := additionalContext("billing.py", "cx", findings)
+	if strings.Count(ctx, "ignore-vulnerability") != 2 {
+		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4059`) {
+		t.Errorf("expected RuleID 4059, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4027`) {
+		t.Errorf("expected RuleID 4027, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *testing.T) {
+	ctx := additionalContext("main.py", "cx", nil)
+	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
+	}
+}
