@@ -3,6 +3,7 @@ package sca
 import (
 	"os"
 
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -43,7 +44,18 @@ func NewScannerWithFunc(f func(path string) (*ossrealtime.OssPackageResults, err
 
 func (s *Scanner) runRealScan(path string) (*ossrealtime.OssPackageResults, error) {
 	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.FF, s.RT)
-	return svc.RunOssRealtimeScan(path, "")
+	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath())
+}
+
+// existingIgnoreFilePath returns the default realtime ignore-file path only when
+// it exists on disk. Passing a missing path to RunOssRealtimeScan is harmless but
+// consistent with the ASCA pattern of only enabling filtering once the file exists.
+func existingIgnoreFilePath() string {
+	p := ignore.DefaultPath()
+	if _, err := os.Stat(p); err == nil {
+		return p
+	}
+	return ""
 }
 
 // ScanPackages synthesises a temp manifest from pkgs and scans it. Returns
