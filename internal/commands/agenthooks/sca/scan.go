@@ -3,7 +3,6 @@ package sca
 import (
 	"os"
 
-	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -26,11 +25,6 @@ type Scanner struct {
 	FF   wrappers.FeatureFlagsWrapper
 	RT   wrappers.RealtimeScannerWrapper
 	scan func(path string) (*ossrealtime.OssPackageResults, error)
-	// workDir is the workspace root reported by the hook event (its "cwd"). The
-	// Check* entry points set it so the ignore-file lookup is anchored to the
-	// workspace rather than the hook process's own working directory. A hook runs
-	// as a one-shot process handling a single event, so this single field is safe.
-	workDir string
 }
 
 // NewScanner returns a Scanner backed by the given wrappers. The scan call
@@ -49,19 +43,7 @@ func NewScannerWithFunc(f func(path string) (*ossrealtime.OssPackageResults, err
 
 func (s *Scanner) runRealScan(path string) (*ossrealtime.OssPackageResults, error) {
 	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.FF, s.RT)
-	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath(s.workDir))
-}
-
-// existingIgnoreFilePath returns the realtime ignore-file path (anchored at the
-// hook event's workDir) only when it exists on disk. Passing a missing path to
-// RunOssRealtimeScan is harmless but consistent with the ASCA pattern of only
-// enabling filtering once the file exists.
-func existingIgnoreFilePath(workDir string) string {
-	p := ignore.PathFor(workDir)
-	if _, err := os.Stat(p); err == nil {
-		return p
-	}
-	return ""
+	return svc.RunOssRealtimeScan(path, "")
 }
 
 // ScanPackages synthesises a temp manifest from pkgs and scans it. Returns
@@ -71,17 +53,17 @@ func (s *Scanner) ScanPackages(format Format, pkgs []Package) (malicious, vulner
 	if len(pkgs) == 0 {
 		return nil, nil, nil
 	}
+	normalized := make([]Package, len(pkgs))
+	for i, p := range pkgs {
+		normalized[i] = Package{Name: p.Name, Version: normalizeSemver(p.Version)}
+	}
 	dir, err := os.MkdirTemp("", "sca-scan-")
 	if err != nil {
 		return nil, nil, err
 	}
 	defer os.RemoveAll(dir)
 
-	// Versions are passed through exactly as parsed. The realtime scanner matches
-	// on the literal version string, so padding (e.g. Maven 1.7 -> 1.7.0) makes the
-	// backend mismatch / time out. Callers that need bare-version handling (bash
-	// installs, e.g. parseNpmSpec) normalize at parse time instead.
-	path, err := Synthesize(format, pkgs, dir)
+	path, err := Synthesize(format, normalized, dir)
 	if err != nil {
 		return nil, nil, err
 	}

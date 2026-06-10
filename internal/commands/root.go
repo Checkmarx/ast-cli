@@ -246,7 +246,7 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper, realTimeWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
 	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand()
 	rootCmd.AddCommand(

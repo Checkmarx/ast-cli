@@ -10,7 +10,7 @@ import (
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
-func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, realtimeScannerWrapper wrappers.RealtimeScannerWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
 		Short: "Manage Git hooks and AI coding agent hooks",
@@ -40,7 +40,7 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	// Register all hidden hook dispatch subcommands so that cx itself acts as
 	// the hook binary. Agents invoke: cx hooks <route-name>
 	// e.g. cx hooks claude-pre-tool-use
-	for _, dispatchCmd := range HookDispatchCommands(jwtWrapper) {
+	for _, dispatchCmd := range HookDispatchCommands(jwtWrapper, featureFlagsWrapper, realtimeScannerWrapper) {
 		hooksCmd.AddCommand(dispatchCmd)
 	}
 
