@@ -5122,6 +5122,258 @@ func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
 	}
 }
 
+// zipContainsFile opens a zip at zipPath and reports whether any entry's base name matches filename.
+func zipContainsFile(t *testing.T, zipPath, filename string) bool {
+	t.Helper()
+	r, err := zip.OpenReader(zipPath)
+	assert.NilError(t, err)
+	defer func() { _ = r.Close() }()
+	for _, f := range r.File {
+		if filepath.Base(f.Name) == filename || f.Name == filename {
+			return true
+		}
+	}
+	return false
+}
+
+// ---------------------------------------------------------------------------
+// SBOM exclusion tests
+// ---------------------------------------------------------------------------
+
+func TestParseSbomResolverArgs(t *testing.T) {
+	tests := []struct {
+		name           string
+		params         string
+		wantSbomFirst  bool
+		wantOutputPath string
+		wantOutputName string
+	}{
+		{
+			name:           "empty params defaults",
+			params:         "",
+			wantSbomFirst:  false,
+			wantOutputPath: "",
+			wantOutputName: defaultSbomOutputName,
+		},
+		{
+			name:           "unrelated params only",
+			params:         "-q --offline",
+			wantSbomFirst:  false,
+			wantOutputPath: "",
+			wantOutputName: defaultSbomOutputName,
+		},
+		{
+			name:           "sbom-first only",
+			params:         "--sbom-first",
+			wantSbomFirst:  true,
+			wantOutputPath: "",
+			wantOutputName: defaultSbomOutputName,
+		},
+		{
+			name:           "sbom-first with custom output path and name",
+			params:         "--sbom-first --sbom-output-path ./out --sbom-output-name my-sbom.json",
+			wantSbomFirst:  true,
+			wantOutputPath: "./out",
+			wantOutputName: "my-sbom.json",
+		},
+		{
+			name:           "custom name without sbom-first (--sbom-output-name excludeSbom.json)",
+			params:         "--sbom-output-name excludeSbom.json",
+			wantSbomFirst:  false,
+			wantOutputPath: "",
+			wantOutputName: "excludeSbom.json",
+		},
+		{
+			name:           "sbom-first with trailing path separator",
+			params:         "--sbom-first --sbom-output-path ./out/",
+			wantSbomFirst:  true,
+			wantOutputPath: "./out/",
+			wantOutputName: defaultSbomOutputName,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotFirst, gotPath, gotName := parseSbomResolverArgs(tt.params)
+			assert.Equal(t, tt.wantSbomFirst, gotFirst)
+			assert.Equal(t, tt.wantOutputPath, gotPath)
+			assert.Equal(t, tt.wantOutputName, gotName)
+		})
+	}
+}
+
+// sbomTestSourceDir normalises a temp dir path the same way definePathForZipFileOrDirectory
+// does ΓÇö forward slashes and a trailing "/" ΓÇö so that compressFolder's string-concatenation
+// path building works correctly.
+func sbomTestSourceDir(dir string) string {
+	s := filepath.ToSlash(dir)
+	if !strings.HasSuffix(s, "/") {
+		s += "/"
+	}
+	return s
+}
+
+// TestSbomFileExcludedFromZip_WithCustomOutputName verifies that when
+// --sbom-output-name excludeSbom.json is passed via --sca-resolver-params,
+// the file named excludeSbom.json placed in the project root is excluded
+// from the upload zip while other source files are retained.
+func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "sbom-exclude-test-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	// Regular source file ΓÇö must be in the zip.
+	err = os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600)
+	assert.NilError(t, err)
+
+	// Custom-named SBOM file ΓÇö must NOT be in the zip.
+	err = os.WriteFile(filepath.Join(projectDir, "excludeSbom.json"), []byte(`{"bomFormat":"CycloneDX"}`), 0600)
+	assert.NilError(t, err)
+
+	_, _, sbomOutputName := parseSbomResolverArgs("--sbom-first --sbom-output-name excludeSbom.json")
+	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "", sbomOutputName)
+	defer func() { sbomAbsoluteExcludes = nil }()
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "excludeSbom.json"),
+		"excludeSbom.json should be excluded from the zip")
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"),
+		"main.go should be present in the zip")
+}
+
+// TestDefaultSbomFileAlwaysExcludedFromZip verifies that cx-sbom.json is
+// excluded from the zip even when --sbom-first is NOT passed, acting as a
+// safety net in case the SCA Resolver writes the file to the project directory.
+func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "sbom-default-exclude-test-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	err = os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600)
+	assert.NilError(t, err)
+
+	err = os.WriteFile(filepath.Join(projectDir, defaultSbomOutputName), []byte(`{"bomFormat":"CycloneDX"}`), 0600)
+	assert.NilError(t, err)
+
+	// No --sbom-first: parseSbomResolverArgs returns defaults.
+	_, sbomOutputPath, sbomOutputName := parseSbomResolverArgs("")
+	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
+	defer func() { sbomAbsoluteExcludes = nil }()
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, false, zipContainsFile(t, zipPath, defaultSbomOutputName),
+		"cx-sbom.json should always be excluded from the zip as a safety net")
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"),
+		"main.go should be present in the zip")
+}
+
+// TestSbomFileExcludedFromZip_InSubdirectory verifies that the SBOM file is
+// excluded when --sbom-output-path points to a subdirectory inside the project.
+func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "sbom-subdir-exclude-test-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	err = os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600)
+	assert.NilError(t, err)
+
+	// Create subdirectory and place SBOM there.
+	subDir := filepath.Join(projectDir, "out")
+	err = os.MkdirAll(subDir, 0700)
+	assert.NilError(t, err)
+	err = os.WriteFile(filepath.Join(subDir, "excludeSbom.json"), []byte(`{"bomFormat":"CycloneDX"}`), 0600)
+	assert.NilError(t, err)
+
+	_, _, sbomOutputName := parseSbomResolverArgs("--sbom-first --sbom-output-path ./out --sbom-output-name excludeSbom.json")
+	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "./out", sbomOutputName)
+	defer func() { sbomAbsoluteExcludes = nil }()
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "excludeSbom.json"),
+		"excludeSbom.json in subdirectory should be excluded from the zip")
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"),
+		"main.go should be present in the zip")
+}
+
+// TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName verifies that
+// --sbom-output-path <projectdir>/somefolder/ combined with --sbom-output-name mysbom.json
+// correctly excludes <projectdir>/somefolder/mysbom.json from the upload zip.
+func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "sbom-abs-subdir-test-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	err = os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600)
+	assert.NilError(t, err)
+
+	subDir := filepath.Join(projectDir, "somefolder")
+	err = os.MkdirAll(subDir, 0700)
+	assert.NilError(t, err)
+
+	sbomFilePath := filepath.Join(subDir, "mysbom.json")
+	err = os.WriteFile(sbomFilePath, []byte(`{"bomFormat":"CycloneDX"}`), 0600)
+	assert.NilError(t, err)
+
+	// Simulate: --sbom-output-path <projectdir>/somefolder/ --sbom-output-name mysbom.json
+	sbomOutputPath := filepath.ToSlash(subDir) + "/"
+	_, _, sbomOutputName := parseSbomResolverArgs(
+		"--sbom-first --sbom-output-path " + sbomOutputPath + " --sbom-output-name mysbom.json",
+	)
+	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
+	defer func() { sbomAbsoluteExcludes = nil }()
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "mysbom.json"),
+		"mysbom.json in somefolder/ should be excluded from the zip")
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"),
+		"main.go should be present in the zip")
+}
+
+// ---------------------------------------------------------------------------
+// --no-scan flag tests
+//
+// These exercise the full `scan create` flow through the mock command harness.
+// No --sca-resolver is set, so runScaResolver is a no-op and no real SCA Resolver
+// binary is ever executed.
+// ---------------------------------------------------------------------------
+
+const noScanArg = "--no-scan"
+
+// TestCreateScanNoScanWithoutSbomFirst verifies that --no-scan without --sbom-first
+// (in --sca-resolver-params) is rejected with the bad-use error and no scan is submitted.
+func TestCreateScanNoScanWithoutSbomFirst(t *testing.T) {
+	baseArgs := []string{
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch", noScanArg,
+	}
+	err := execCmdNotNilAssertion(t, baseArgs...)
+	assert.Assert(t,
+		strings.Contains(err.Error(), "--no-scan flag was passed without --sbom-first"),
+		err.Error())
+}
+
+// TestCreateScanNoScanWithSbomFirst verifies that --no-scan combined with --sbom-first
+// (passed via --sca-resolver-params) passes the guard, runs the SBOM-first path, and
+// skips scan submission, returning no error. --sca-resolver is intentionally not set so
+// runScaResolver is a no-op and no real resolver binary is invoked.
+func TestCreateScanNoScanWithSbomFirst(t *testing.T) {
+	baseArgs := []string{
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch",
+		noScanArg, "--sca-resolver-params=--sbom-first",
+	}
+	execCmdNilAssertion(t, baseArgs...)
+}
+
 func setupMockAccessToken() {
 	wrappers.CachedAccessToken = "mock-token-for-testing"
 	wrappers.CachedAccessTime = time.Now()
