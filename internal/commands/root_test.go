@@ -50,6 +50,7 @@ func createASTTestCommand() *cobra.Command {
 	risksOverviewMockWrapper := &mock.RisksOverviewMockWrapper{}
 	riskManagementMockWrapper := &mock.RiskManagementMockWrapper{}
 	scsScanOverviewMockWrapper := &mock.ScanOverviewMockWrapper{}
+	scanSummaryMockWrapper := &mock.ScanSummaryMockWrapper{}
 	authWrapper := &mock.AuthMockWrapper{}
 	logsWrapper := &mock.LogsMockWrapper{}
 	codeBashingWrapper := &mock.CodeBashingMockWrapper{}
@@ -89,6 +90,7 @@ func createASTTestCommand() *cobra.Command {
 		risksOverviewMockWrapper,
 		riskManagementMockWrapper,
 		scsScanOverviewMockWrapper,
+		scanSummaryMockWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsMockWrapper,

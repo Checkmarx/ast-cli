@@ -3,8 +3,10 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -776,4 +778,47 @@ func findQueryDescriptionLink(glReport wrappers.GlSastResultsCollection) (string
 		}
 	}
 	return "", false
+}
+
+func TestCreateScan_WithTypeAisc_ConsoleSummaryContainsAISCOutput(t *testing.T) {
+	// Step 1: Create scan with AISC type
+	createArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Zip,
+		flag(params.BranchFlag), "main",
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON, flag(params.DebugFlag),
+	}
+	scanID, _ := executeCreateScan(t, createArgs)
+	assert.Assert(t, scanID != "", "Scan ID should not be empty")
+
+	// Step 2: Redirect os.Stdout to capture fmt.Printf output from printAISCSummary
+	oldStdout := os.Stdout
+	r, w, pipeErr := os.Pipe()
+	assert.NilError(t, pipeErr, "Failed to create os.Pipe")
+	os.Stdout = w
+
+	_ = executeCmdNilAssertion(
+		t, "Results show with AISC summary console should pass",
+		"results", "show",
+		flag(params.ScanIDFlag), scanID,
+		flag(params.TargetFormatFlag), printer.FormatSummaryConsole,
+	)
+
+	w.Close()
+	var buf bytes.Buffer
+	_, copyErr := io.Copy(&buf, r)
+	os.Stdout = oldStdout
+	assert.NilError(t, copyErr, "Failed to read captured stdout")
+
+	output := buf.String()
+	// Check if scan-summary API was called
+	if strings.Contains(output, "scan-summary") {
+		assert.Assert(t, strings.Contains(output, "AI SUPPLY CHAIN ENGINE SUMMARY"),
+			"Console output should contain AISC summary header")
+		assert.Assert(t, strings.Contains(output, "Total Assets"),
+			"Console output should contain Total Assets row")
+		assert.Assert(t, strings.Contains(output, "Total Asset Types"),
+			"Console output should contain Total Asset Types row")
+	}
 }

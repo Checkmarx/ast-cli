@@ -75,6 +75,7 @@ func main() {
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview, apiSecurityResult)
 	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
+	scanSummaryWrapper := wrappers.NewHTTPScanSummaryWrapper(scanSummary)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -116,6 +117,7 @@ func main() {
 		risksOverviewWrapper,
 		riskManagementWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
