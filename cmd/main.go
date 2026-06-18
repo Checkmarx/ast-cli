@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
+	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -74,6 +75,7 @@ func main() {
 	risksOverviewWrapper := wrappers.NewHTTPRisksOverviewWrapper(risksOverview, apiSecurityResult)
 	riskManagementWrapper := wrappers.NewHTTPRiskManagementWrapper(riskManagement)
 	scsScanOverviewWrapper := wrappers.NewHTTPScanOverviewWrapper(scsScanOverview)
+	scanSummaryWrapper := wrappers.NewHTTPScanSummaryWrapper(scanSummary)
 	resultsWrapper := wrappers.NewHTTPResultsWrapper(results, scanSummary)
 	authWrapper := wrappers.NewAuthHTTPWrapper()
 	resultsPredicatesWrapper := wrappers.NewResultsPredicatesHTTPWrapper()
@@ -115,6 +117,7 @@ func main() {
 		risksOverviewWrapper,
 		riskManagementWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		authWrapper,
 		logsWrapper,
 		groupsWrapper,
@@ -191,10 +194,6 @@ func exitListener() {
 }
 
 func signalHandler(signalChanel chan os.Signal) {
-	kicsRunArgs := []string{
-		killCommand,
-		viper.GetString(params.KicsContainerNameKey),
-	}
 	for {
 		s := <-signalChanel
 		switch s {
@@ -204,7 +203,12 @@ func signalHandler(signalChanel chan os.Signal) {
 				os.Exit(failureExitCode)
 			}
 			logger.PrintIfVerbose(string(out))
-			if strings.Contains(string(out), viper.GetString(params.KicsContainerNameKey)) {
+			kicsContainerName := kicsshutdown.GetKicsContainerName()
+			if kicsContainerName != "" && strings.Contains(string(out), kicsContainerName) {
+				kicsRunArgs := []string{
+					killCommand,
+					kicsContainerName,
+				}
 				out, err = exec.Command("docker", kicsRunArgs...).CombinedOutput()
 				logger.PrintIfVerbose(string(out))
 				if err != nil {

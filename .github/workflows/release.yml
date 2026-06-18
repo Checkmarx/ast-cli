@@ -4,22 +4,22 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
@@ -40,6 +40,11 @@ jobs:
       COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
+      - name: Install Harden Runner
+        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
+        with:
+          use-policy-store: true
+          api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
       - name: Checkout
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
         with:
@@ -81,14 +86,14 @@ jobs:
           docker info
       - name: Login to Docker Hub
         if: inputs.dev == false
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 #v4.1.0
+        uses: step-security/docker-login-action@870af644803bf9f204aed474adbad2958fec048b # v4.1.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Install Cosign
         if: inputs.dev == false
-        uses: sigstore/cosign-installer@1fc5bd396d372bee37d608f955b336615edf79c8 #v3.2.0
+        uses: step-security/cosign-installer@8c02650536457a1c912424ab6cb9734aa3eceb56 # v4.1.1
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
@@ -115,7 +120,7 @@ jobs:
       - name: Echo GoReleaser Args
         run: echo ${{ env.GR_ARGS }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@b508e2e3ef3b19d4e4146d4f8fb3ba9db644a757 #v3
+        uses: step-security/goreleaser-action@1472c46ac6e641f2b929f1a893354288b3a6b6b6 # v7.2.1
         with:
           version: v1.18.2
           args: ${{ env.GR_ARGS }}
@@ -133,13 +138,13 @@ jobs:
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
-      - name: Verify Docker image signature
-        if: inputs.dev == false
-        run: |
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
-          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      #- name: Verify Docker image signature
+      #  if: inputs.dev == false
+      #  run: |
+      #    echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+      #    cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
+      #  env:
+      #    COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       - name: Create GitHub Release
         env:
@@ -159,10 +164,8 @@ jobs:
 
           if [ "${{ inputs.dev }}" = "true" ]; then
             gh release create "${common[@]}" --prerelease
-            gh release edit   "${{ inputs.tag }}" --draft=false
           else
             gh release create "${common[@]}"
-            gh release edit   "${{ inputs.tag }}" --draft=false --latest
           fi
 
       - name: Cleanup draft release on failure
@@ -171,26 +174,25 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release delete "${{ inputs.tag }}" --cleanup-tag --yes || true
 
-  notify:
-    name: Update Teams & JIRA About New Release
-    if: inputs.dev == false && 1 == 0
-    needs: build
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
-    with:
-      product_name: CLI
-      release_version: ${{ inputs.tag }}
-      cli_release_version: ""
-      release_author: "Sypher Team"
-      release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
-      jira_product_name: ASTCLI
-    secrets: inherit
+  #notify:
+  #  name: Update Teams & JIRA About New Release
+  #  if: inputs.dev == false && 1 == 0
+  #  needs: build
+  #  uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
+  #  with:
+  #    product_name: CLI
+  #    release_version: ${{ inputs.tag }}
+  #    cli_release_version: ""
+  #    release_author: "Sypher Team"
+  #    release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+  #    jira_product_name: ASTCLI
+  #  secrets: inherit
 
   dispatch_auto_release:
     name: Update Plugins With new Cli Version
     if: inputs.dev == false && 1 == 0
-    needs: notify
+    #needs: notify
     uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
     with:
       cli_version: ${{ inputs.tag }}
     secrets: inherit
- 

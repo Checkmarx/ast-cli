@@ -33,36 +33,37 @@ import (
 )
 
 const (
-	failedCreatingSummary     = "Failed creating summary"
-	failedGettingScan         = "Failed getting scan"
-	failedListingResults      = "Failed listing results"
-	failedListingCodeBashing  = "Failed codebashing link"
-	mediumLabel               = "medium"
-	criticalLabel             = "critical"
-	highLabel                 = "high"
-	lowLabel                  = "low"
-	infoLabel                 = "info"
-	sonarTypeLabel            = "_sonar"
-	glSastTypeLabel           = ".gl-sast-report"
-	glScaTypeLabel            = ".gl-sca-report"
-	directoryPermission       = 0700
-	infoSonar                 = "INFO"
-	lowSonar                  = "LOW"
-	mediumSonar               = "MEDIUM"
-	highSonar                 = "HIGH"
-	criticalSonar             = "BLOCKER"
-	infoLowSarif              = "note"
-	mediumSarif               = "warning"
-	highSarif                 = "error"
-	vulnerabilitySonar        = "SECURITY"
-	cleanCodeAttribute        = "FORMATTED"
-	infoCx                    = "INFO"
-	lowCx                     = "LOW"
-	mediumCx                  = "MEDIUM"
-	highCx                    = "HIGH"
-	criticalCx                = "CRITICAL"
-	tableResultsFormat        = "              | %-10s   %6v   %5d   %6d   %5d   %4d   %-9s   |\n"
-	stringTableResultsFormat  = "              | %-10s    %5s  %6s   %6s   %5s   %4s   %5s       |\n"
+	failedCreatingSummary    = "Failed creating summary"
+	failedGettingScan        = "Failed getting scan"
+	failedListingResults     = "Failed listing results"
+	failedListingCodeBashing = "Failed codebashing link"
+	mediumLabel              = "medium"
+	criticalLabel            = "critical"
+	highLabel                = "high"
+	lowLabel                 = "low"
+	infoLabel                = "info"
+	sonarTypeLabel           = "_sonar"
+	glSastTypeLabel          = ".gl-sast-report"
+	glScaTypeLabel           = ".gl-sca-report"
+	directoryPermission      = 0700
+	infoSonar                = "INFO"
+	lowSonar                 = "LOW"
+	mediumSonar              = "MEDIUM"
+	highSonar                = "HIGH"
+	criticalSonar            = "BLOCKER"
+	infoLowSarif             = "note"
+	mediumSarif              = "warning"
+	highSarif                = "error"
+	vulnerabilitySonar       = "SECURITY"
+	cleanCodeAttribute       = "FORMATTED"
+	infoCx                   = "INFO"
+	lowCx                    = "LOW"
+	mediumCx                 = "MEDIUM"
+	highCx                   = "HIGH"
+	criticalCx               = "CRITICAL"
+	tableResultsFormat       = "              | %-10s   %6v   %5d   %6d   %5d   %4d   %-9s   |\n"
+	stringTableResultsFormat = "              | %-10s    %5s  %6s   %6s   %5s   %4s   %5s       |\n"
+	// TableTitleFormat is the printf format string for the scan results summary table title row.
 	TableTitleFormat          = "              | %-11s   %4s   %4s    %6s  %4s   %4s   %6s     |\n"
 	twoNewLines               = "\n\n"
 	tableLine                 = "              ---------------------------------------------------------------------     "
@@ -109,11 +110,28 @@ const (
 	redundantLabel                          = "redundant"
 	delayValueForReport                     = 10
 	fixLinkPrefix                           = "https://devhub.checkmarx.com/cve-details/"
-	ScaDevAndTestExclusionParam             = "DEV_AND_TEST"
-	ScaExcludeResultTypesParam              = "exclude-result-types"
-	noFileForScorecardResultString          = "Issue Found in your GitHub repository"
-	CliType                                 = "cli"
-	artifactLocationURIString               = "This alert has no associated file"
+	// ScaDevAndTestExclusionParam is the SCA exclude-result-types value used to filter out dev and test dependencies.
+	ScaDevAndTestExclusionParam = "DEV_AND_TEST"
+	// ScaExcludeResultTypesParam is the SCA query parameter name used to exclude specific result types.
+	ScaExcludeResultTypesParam     = "exclude-result-types"
+	noFileForScorecardResultString = "Issue Found in your GitHub repository"
+	// CliType identifies the report type used when generating reports through the CLI.
+	CliType                   = "cli"
+	artifactLocationURIString = "This alert has no associated file"
+	commandDocAnnotation      = "command:doc"
+	showSubCommand            = "show"
+	sectionScanSummary        = "ScanSummary"
+	sectionExecutiveSummary   = "ExecutiveSummary"
+	sectionScanResults        = "ScanResults"
+	scaEngineLabel            = "SCA"
+	sastEngineLabel           = "SAST"
+	kicsEngineLabel           = "KICS"
+	notAvailableValue         = "NA"
+	originCode                = "code"
+	originDocumentation       = "documentation"
+	statusCompleted           = "Completed"
+	statusPartial             = "Partial"
+	statusFailed              = "Failed"
 )
 
 var (
@@ -176,6 +194,7 @@ var (
 	}
 )
 
+// NewResultsCommand returns the `results` Cobra command tree with all subcommands attached.
 func NewResultsCommand(
 	resultsWrapper wrappers.ResultsWrapper,
 	scanWrapper wrappers.ScansWrapper,
@@ -187,6 +206,7 @@ func NewResultsCommand(
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	riskManagementWrapper wrappers.RiskManagementWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -195,7 +215,7 @@ func NewResultsCommand(
 		Use:   "results",
 		Short: "Retrieve results",
 		Annotations: map[string]string{
-			"command:doc": heredoc.Doc(
+			commandDocAnnotation: heredoc.Doc(
 				`
 				https://checkmarx.com/resource/documents/en/34965-68640-results.html
 			`,
@@ -203,7 +223,7 @@ func NewResultsCommand(
 		},
 	}
 	showResultCmd := resultShowSubCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-		risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
+		risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper)
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
@@ -263,12 +283,13 @@ func resultShowSubCommand(
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 ) *cobra.Command {
 	resultShowCmd := &cobra.Command{
-		Use:   "show",
+		Use:   showSubCommand,
 		Short: "Show results of a scan",
 		Long:  "The show command enables the ability to show results about a requested scan in Checkmarx One",
 		Example: heredoc.Doc(
@@ -276,7 +297,7 @@ func resultShowSubCommand(
 			$ cx results show --scan-id <scan Id>
 		`,
 		),
-		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
+		RunE: runGetResultCommand(resultsWrapper, scanWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyWrapper, featureFlagsWrapper, jwtWrapper),
 	}
 	addScanIDFlag(resultShowCmd, "ID to report on")
 	addResultFormatFlag(
@@ -396,6 +417,7 @@ func getRiskManagementResults(riskManagement wrappers.RiskManagementWrapper, pro
 	return ASPMResult, nil
 }
 
+// GetScannerResults returns per-scanner status entries for the given scan, optionally filtered by scan types.
 func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID, scanTypesFlagValue string) ([]ScannerResponse, error) {
 	scanResponseModel, errorModel, err := scanWrapper.GetByID(scanID)
 	if err != nil {
@@ -609,27 +631,7 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	enginesStatusCode[commonParams.ScsType] = 0
 
 	if len(scanInfo.StatusDetails) > 0 {
-		for _, statusDetailItem := range scanInfo.StatusDetails {
-			if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
-				if statusDetailItem.Name == commonParams.SastType {
-					sastIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScaType {
-					scaIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.KicsType {
-					kicsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ScsType {
-					*scsIssues = notAvailableNumber
-				} else if statusDetailItem.Name == commonParams.ContainersType && wrappers.IsContainersEnabled {
-					*containersIssues = notAvailableNumber
-				}
-			}
-			switch statusDetailItem.Status {
-			case wrappers.ScanFailed:
-				handleScanStatus(statusDetailItem, enginesStatusCode, scanFailedNumber)
-			case wrappers.ScanCanceled:
-				handleScanStatus(statusDetailItem, enginesStatusCode, scanCanceledNumber)
-			}
-		}
+		applyScanStatusDetails(scanInfo.StatusDetails, &sastIssues, &scaIssues, &kicsIssues, scsIssues, containersIssues, enginesStatusCode)
 	}
 	summary := &wrappers.ResultSummary{
 		ScanID:           scanInfo.ID,
@@ -680,6 +682,42 @@ func convertScanToResultsSummary(scanInfo *wrappers.ScanResponseModel, resultsWr
 	return summary, nil
 }
 
+func applyScanStatusDetails(
+	statusDetails []wrappers.StatusInfo,
+	sastIssues, scaIssues, kicsIssues *int,
+	scsIssues, containersIssues *int,
+	enginesStatusCode map[string]int,
+) {
+	for _, statusDetailItem := range statusDetails {
+		if statusDetailItem.Status == wrappers.ScanFailed || statusDetailItem.Status == wrappers.ScanCanceled {
+			markEngineNotAvailable(statusDetailItem.Name, sastIssues, scaIssues, kicsIssues, scsIssues, containersIssues)
+		}
+		switch statusDetailItem.Status {
+		case wrappers.ScanFailed:
+			handleScanStatus(statusDetailItem, enginesStatusCode, scanFailedNumber)
+		case wrappers.ScanCanceled:
+			handleScanStatus(statusDetailItem, enginesStatusCode, scanCanceledNumber)
+		}
+	}
+}
+
+func markEngineNotAvailable(name string, sastIssues, scaIssues, kicsIssues, scsIssues, containersIssues *int) {
+	switch name {
+	case commonParams.SastType:
+		*sastIssues = notAvailableNumber
+	case commonParams.ScaType:
+		*scaIssues = notAvailableNumber
+	case commonParams.KicsType:
+		*kicsIssues = notAvailableNumber
+	case commonParams.ScsType:
+		*scsIssues = notAvailableNumber
+	case commonParams.ContainersType:
+		if wrappers.IsContainersEnabled {
+			*containersIssues = notAvailableNumber
+		}
+	}
+}
+
 func handleScanStatus(statusDetailItem wrappers.StatusInfo, targetTypes map[string]int, statusCode int) {
 	if _, ok := targetTypes[statusDetailItem.Name]; ok {
 		targetTypes[statusDetailItem.Name] = statusCode
@@ -691,6 +729,7 @@ func summaryReport(
 	policies *wrappers.PolicyResponseModel,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	results *wrappers.ScanResultsCollection,
 	resultsParams map[string]string,
@@ -718,6 +757,15 @@ func summaryReport(
 			return nil, err
 		}
 		summary.SCSOverview = SCSOverview
+	}
+
+	if summary.HasAISC() {
+		// Getting AISC information from scan-summary API
+		aiscInfo, err := getAISCInfoFromScanSummary(scanSummaryWrapper, summary.ScanID)
+		if err != nil {
+			return nil, err
+		}
+		summary.AISCInfo = aiscInfo
 	}
 
 	if policies != nil {
@@ -853,7 +901,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	err = tmpl.Execute(file, &data)
 	if err != nil {
@@ -863,7 +911,7 @@ func writeMarkdownSummary(targetFile string, data *wrappers.ResultSummary) error
 }
 
 // nolint: whitespace
-func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wrappers.FeatureFlagsWrapper, ignorePolicyFlagOmit bool) error {
+func writeConsoleSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit bool) error {
 	if !isScanPending(summary.Status) {
 		fmt.Printf("            Scan Summary:                     \n")
 		fmt.Printf("              Created At: %s\n", summary.CreatedAt)
@@ -885,7 +933,11 @@ func writeConsoleSummary(summary *wrappers.ResultSummary, featureFlagsWrapper wr
 		}
 
 		if summary.HasSCS() {
-			printSCSSummary(summary.SCSOverview.MicroEngineOverviews, featureFlagsWrapper)
+			printSCSSummary(summary.SCSOverview.MicroEngineOverviews)
+		}
+
+		if summary.HasAISC() {
+			printAISCSummary(summary)
 		}
 
 		fmt.Printf("              Checkmarx One - Scan Summary & Details: %s\n", summary.BaseURI)
@@ -951,17 +1003,17 @@ func printTableRow(title string, counts *wrappers.EngineResultSummary, statusNum
 	}
 }
 
-func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+func printSCSSummary(microEngineOverviews []*wrappers.MicroEngineOverview) {
 	fmt.Printf("              Supply Chain Security Results\n")
 	fmt.Printf("              --------------------------------------------------------------------------     \n")
 	fmt.Println("              |                      Critical   High   Medium   Low   Info   Status    |")
 	for _, microEngineOverview := range microEngineOverviews {
-		printSCSTableRow(microEngineOverview, featureFlagsWrapper)
+		printSCSTableRow(microEngineOverview)
 	}
 	fmt.Printf("              --------------------------------------------------------------------------     \n\n")
 }
 
-func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, featureFlagsWrapper wrappers.FeatureFlagsWrapper) {
+func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview) {
 	formatString := "              | %-20s   %4v   %4v   %6v   %4v   %4v   %-9s  |\n"
 	notAvailableFormatString := "              | %-20s   %4v   %4s   %6s   %4s   %4s   %5s      |\n"
 
@@ -975,6 +1027,15 @@ func printSCSTableRow(microEngineOverview *wrappers.MicroEngineOverview, feature
 		fmt.Printf(formatString, microEngineName, riskSummary[criticalLabel], riskSummary[highLabel], riskSummary[mediumLabel], riskSummary[lowLabel],
 			riskSummary[infoLabel], microEngineOverview.Status)
 	}
+}
+
+func printAISCSummary(summary *wrappers.ResultSummary) {
+	fmt.Printf("              AI SUPPLY CHAIN ENGINE SUMMARY\n")
+	fmt.Printf("              ---------------------------------------------------------------------     \n")
+	fmt.Printf("              | %-32s   %30s |\n", "Category", "Count")
+	fmt.Printf("              | %-32s   %30d |\n", "Total Assets", summary.AISCAssetsValue())
+	fmt.Printf("              | %-32s   %30d |\n", "Total Asset Types", summary.AISCAssetTypesValue())
+	fmt.Printf("              ---------------------------------------------------------------------     \n\n")
 }
 
 func getCountValue(count int) interface{} {
@@ -1027,6 +1088,7 @@ func runGetResultCommand(
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	jwtWrapper wrappers.JWTWrapper,
@@ -1093,7 +1155,7 @@ func runGetResultCommand(
 			resultsParams[commonParams.SastRedundancyFlag] = ""
 		}
 
-		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, exportWrapper,
+		_, err = CreateScanReport(resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, exportWrapper,
 			policyResponseModel, resultsPdfReportsWrapper, resultsJSONReportsWrapper, scan, format, formatPdfToEmail, formatPdfOptions,
 			formatSbomOptions, targetFile, targetPath, agent, resultsParams, featureFlagsWrapper, ignorePolicyFlagOmit)
 		return err
@@ -1104,14 +1166,14 @@ func runGetCodeBashingCommand(
 	codeBashingWrapper wrappers.CodeBashingWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		language, _ := cmd.Flags().GetString(commonParams.LanguageFlag)
+		lang, _ := cmd.Flags().GetString(commonParams.LanguageFlag)
 		cwe, _ := cmd.Flags().GetString(commonParams.CweIDFlag)
 		vulType, _ := cmd.Flags().GetString(commonParams.VulnerabilityTypeFlag)
 		params, err := codeBashingWrapper.BuildCodeBashingParams(
 			[]wrappers.CodeBashingParamsCollection{
 				{
 					CweID:       "CWE-" + cwe,
-					Language:    language,
+					Language:    lang,
 					CxQueryName: strings.ReplaceAll(vulType, " ", "_"),
 				},
 			},
@@ -1179,10 +1241,12 @@ func filterScsResultsByAgent(results *wrappers.ScanResultsCollection, agent stri
 	return results
 }
 
+// CreateScanReport produces the requested report formats for a scan and writes them to the target path.
 func CreateScanReport(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	exportWrapper wrappers.ExportWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	resultsPdfReportsWrapper wrappers.ResultsPdfWrapper,
@@ -1220,7 +1284,7 @@ func CreateScanReport(
 	}
 	isSummaryNeeded := verifyFormatsByReportList(reportList, summaryFormats...)
 	if isSummaryNeeded && !scanPending {
-		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, featureFlagsWrapper, results, resultsParams)
+		summary, err = summaryReport(summary, policyResponseModel, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, featureFlagsWrapper, results, resultsParams)
 		if err != nil {
 			return nil, err
 		}
@@ -1376,11 +1440,71 @@ func getScanOverviewForSCSScanner(
 	return nil, nil
 }
 
+func getAISCInfoFromScanSummary(
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
+	scanID string,
+) (*wrappers.AISCInfo, error) {
+	var scanSummaryModel *wrappers.ScanSummariesModel
+	var errorModel *wrappers.WebError
+
+	scanSummaryModel, errorModel, err := scanSummaryWrapper.GetScanSummaryByScanID(scanID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "AISC: %s", failedListingResults)
+	}
+	if errorModel != nil {
+		return nil, errors.Errorf("AISC: %s: CODE: %d, %s", failedListingResults, errorModel.Code, errorModel.Message)
+	}
+	if scanSummaryModel != nil && len(scanSummaryModel.ScansSummaries) > 0 {
+		aiscCounters := scanSummaryModel.ScansSummaries[0].AiscCounters
+		return &wrappers.AISCInfo{
+			TotalAssets:     aiscCounters.AssetsCounter,     // Map from API response
+			TotalAssetTypes: aiscCounters.AssetTypesCounter, // Map from API response
+		}, nil
+	}
+	return nil, nil
+}
+
 func isScanPending(scanStatus string) bool {
-	return !(strings.EqualFold(scanStatus, "Completed") || strings.EqualFold(
-		scanStatus,
-		"Partial",
-	) || strings.EqualFold(scanStatus, "Failed"))
+	return !strings.EqualFold(scanStatus, statusCompleted) &&
+		!strings.EqualFold(scanStatus, statusPartial) &&
+		!strings.EqualFold(scanStatus, statusFailed)
+}
+
+func createRawReport(
+	format, targetFile, targetPath string,
+	results *wrappers.ScanResultsCollection,
+	summary *wrappers.ResultSummary,
+	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+) (handled bool, err error) {
+	if printer.IsFormat(format, printer.FormatIndentedJSON) {
+		return true, nil
+	}
+	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
+		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
+		return true, exportSarifResults(sarifRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatSonar) && isValidScanStatus(summary.Status, printer.FormatSonar) {
+		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, printer.FormatJSON)
+		return true, exportSonarResults(sonarRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
+		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
+		return true, exportJSONResults(jsonRpt, results)
+	}
+	if printer.IsFormat(format, printer.FormatJSONv2) && isValidScanStatus(summary.Status, printer.FormatJSONv2) {
+		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
+		return true, exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, featureFlagsWrapper)
+	}
+	if printer.IsFormat(format, printer.FormatGLSast) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
+		return true, exportGlSastResults(jsonRpt, results, summary)
+	}
+	if printer.IsFormat(format, printer.FormatGLSca) {
+		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glScaTypeLabel), targetPath, printer.FormatJSON)
+		return true, exportGlScaResults(jsonRpt, results, summary)
+	}
+	return false, nil
 }
 
 func isValidScanStatus(status, format string) bool {
@@ -1404,36 +1528,12 @@ func createReport(format,
 	resultsJSONReportsWrapper wrappers.ResultsJSONWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool) error {
-	if printer.IsFormat(format, printer.FormatIndentedJSON) {
-		return nil
-	}
-	if printer.IsFormat(format, printer.FormatSarif) && isValidScanStatus(summary.Status, printer.FormatSarif) {
-		sarifRpt := createTargetName(targetFile, targetPath, printer.FormatSarif)
-		return exportSarifResults(sarifRpt, results)
-	}
-	if printer.IsFormat(format, printer.FormatSonar) && isValidScanStatus(summary.Status, printer.FormatSonar) {
-		sonarRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, sonarTypeLabel), targetPath, printer.FormatJSON)
-		return exportSonarResults(sonarRpt, results)
-	}
-	if printer.IsFormat(format, printer.FormatJSON) && isValidScanStatus(summary.Status, printer.FormatJSON) {
-		jsonRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
-		return exportJSONResults(jsonRpt, results)
-	}
-	if printer.IsFormat(format, printer.FormatJSONv2) && isValidScanStatus(summary.Status, printer.FormatJSONv2) {
-		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatJSON)
-		return exportJSONReportResults(resultsJSONReportsWrapper, summary, summaryRpt, featureFlagsWrapper)
-	}
-	if printer.IsFormat(format, printer.FormatGLSast) {
-		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glSastTypeLabel), targetPath, printer.FormatJSON)
-		return exportGlSastResults(jsonRpt, results, summary)
-	}
-	if printer.IsFormat(format, printer.FormatGLSca) {
-		jsonRpt := createTargetName(fmt.Sprintf("%s%s", targetFile, glScaTypeLabel), targetPath, printer.FormatJSON)
-		return exportGlScaResults(jsonRpt, results, summary)
+	if handled, err := createRawReport(format, targetFile, targetPath, results, summary, resultsJSONReportsWrapper, featureFlagsWrapper); handled {
+		return err
 	}
 
 	if printer.IsFormat(format, printer.FormatSummaryConsole) {
-		return writeConsoleSummary(summary, featureFlagsWrapper, ignorePolicyFlagOmit)
+		return writeConsoleSummary(summary, ignorePolicyFlagOmit)
 	}
 	if printer.IsFormat(format, printer.FormatSummary) {
 		summaryRpt := createTargetName(targetFile, targetPath, printer.FormatHTML)
@@ -1491,6 +1591,7 @@ func createDirectory(targetPath string) error {
 	return nil
 }
 
+// ReadResults fetches all scan results for the given scan and enriches them with SCA and SCS data as applicable.
 func ReadResults(
 	resultsWrapper wrappers.ResultsWrapper,
 	exportWrapper wrappers.ExportWrapper,
@@ -1663,7 +1764,7 @@ func exportGlSastResults(targetFile string, results *wrappers.ScanResultsCollect
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
 	return nil
 }
@@ -1688,8 +1789,8 @@ func exportGlScaResults(targetFile string, results *wrappers.ScanResultsCollecti
 	if err != nil {
 		return errors.Wrapf(err, "%s: failed to create target file  ", failedListingResults)
 	}
+	defer func() { _ = f.Close() }()
 	_, _ = fmt.Fprintln(f, string(resultsJSON))
-	defer f.Close()
 
 	return nil
 }
@@ -1845,16 +1946,16 @@ func exportJSONReportResults(jsonWrapper wrappers.ResultsJSONWrapper, summary *w
 
 func parseJSONOptions(enabledEngines []string, reportName string) (jsonOptionsSections, jsonOptionsEngines []string) {
 	jsonOptionsSections = []string{
-		"ScanSummary",
-		"ExecutiveSummary",
-		"ScanResults",
+		sectionScanSummary,
+		sectionExecutiveSummary,
+		sectionScanResults,
 	}
 
 	var jsonOptionsEnginesMap = map[string]string{
-		commonParams.ScaType:        "SCA",
-		commonParams.SastType:       "SAST",
-		commonParams.KicsType:       "KICS",
-		commonParams.IacType:        "KICS",
+		commonParams.ScaType:        scaEngineLabel,
+		commonParams.SastType:       sastEngineLabel,
+		commonParams.KicsType:       kicsEngineLabel,
+		commonParams.IacType:        kicsEngineLabel,
 		commonParams.ContainersType: "Containers",
 		commonParams.ScsType:        "Microengines",
 	}
@@ -1909,7 +2010,7 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 
 	// will generate pdf report and send it to the email list
 	// instead of saving it to the file system
-	if len(formatPdfToEmail) > 0 {
+	if formatPdfToEmail != "" {
 		emailList, validateErr := validateEmails(formatPdfToEmail)
 		if validateErr != nil {
 			return validateErr
@@ -1958,16 +2059,16 @@ func exportPdfResults(pdfWrapper wrappers.ResultsPdfWrapper, summary *wrappers.R
 
 func parsePDFOptions(pdfOptions string, enabledEngines []string, reportName string) (pdfOptionsSections, pdfOptionsEngines []string, err error) {
 	var pdfOptionsSectionsMap = map[string]string{
-		"scansummary":      "ScanSummary",
-		"executivesummary": "ExecutiveSummary",
-		"scanresults":      "ScanResults",
+		"scansummary":      sectionScanSummary,
+		"executivesummary": sectionExecutiveSummary,
+		"scanresults":      sectionScanResults,
 	}
 
 	var pdfOptionsEnginesMap = map[string]string{
-		commonParams.ScaType:  "SCA",
-		commonParams.SastType: "SAST",
-		commonParams.KicsType: "KICS",
-		commonParams.IacType:  "KICS",
+		commonParams.ScaType:  scaEngineLabel,
+		commonParams.SastType: sastEngineLabel,
+		commonParams.KicsType: kicsEngineLabel,
+		commonParams.IacType:  kicsEngineLabel,
 	}
 
 	pdfOptions = strings.ToLower(strings.ReplaceAll(pdfOptions, " ", ""))
@@ -2000,9 +2101,9 @@ func translateReportSectionsForImproved(sections []string) []string {
 	var resultSections = make([]string, 0)
 
 	var pdfOptionsSectionsImprovedTranslation = map[string][]string{
-		"ScanSummary":      {"scan-information"},
-		"ExecutiveSummary": {"results-overview"},
-		"ScanResults":      {"scan-results", "categories", "resolved-results", "vulnerability-details"},
+		sectionScanSummary:      {"scan-information"},
+		sectionExecutiveSummary: {"results-overview"},
+		sectionScanResults:      {"scan-results", "categories", "resolved-results", "vulnerability-details"},
 	}
 
 	for _, section := range sections {
@@ -2087,7 +2188,7 @@ func parseGlSastVulnerability(result *wrappers.ScanResult, glSast *wrappers.GlSa
 			Type: "source",
 			Items: []wrappers.Item{
 				{
-					Signatures: []wrappers.Signature{{Algorithm: result.Type + "-Algorithm ", Value: "NA"}},
+					Signatures: []wrappers.Signature{{Algorithm: result.Type + "-Algorithm ", Value: notAvailableValue}},
 					File:       fileName,
 					EndLine:    endLine,
 					StartLine:  startLine,
@@ -2166,7 +2267,7 @@ func collectScaFileLocations(result *wrappers.ScanResult) []wrappers.ScaDependen
 func collectScaPackageItemsDep(result *wrappers.ScanResult) []wrappers.ItemDep {
 	allScaPackageItemDep := []wrappers.ItemDep{}
 	allScaPackageItemDep = append(allScaPackageItemDep, wrappers.ItemDep{
-		Signature: []wrappers.SignatureDep{{Algorithm: "SCA-Algorithm ", Value: "NA"}},
+		Signature: []wrappers.SignatureDep{{Algorithm: "SCA-Algorithm ", Value: notAvailableValue}},
 		File:      result.VulnerabilityDetails.CveName,
 		EndLine:   0,
 		StartLine: 0,
@@ -2648,6 +2749,7 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 	}
 	var scanResult = initSarifResult(result)
 
+	var allLocations []wrappers.SarifLocation
 	for _, node := range result.ScanResultData.Nodes {
 		var scanLocation wrappers.SarifLocation
 		if len(node.FileName) >= sarifNodeFileLength {
@@ -2662,7 +2764,23 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 			scanLocation.PhysicalLocation.Region.StartColumn = column
 			scanLocation.PhysicalLocation.Region.EndColumn = column + length
 
-			scanResult.Locations = append(scanResult.Locations, scanLocation)
+			allLocations = append(allLocations, scanLocation)
+		}
+	}
+
+	if len(allLocations) > 0 {
+		var threadFlowLocations []wrappers.SarifThreadFlowLocation
+		for _, loc := range allLocations {
+			threadFlowLocations = append(threadFlowLocations, wrappers.SarifThreadFlowLocation{Location: loc})
+		}
+		scanResult.CodeFlows = []wrappers.SarifCodeFlow{
+			{
+				ThreadFlows: []wrappers.SarifThreadFlow{
+					{
+						Locations: threadFlowLocations,
+					},
+				},
+			},
 		}
 	}
 
@@ -2726,9 +2844,9 @@ func buildAuxiliaryScaMaps(resultsModel *wrappers.ScanResultsCollection, scaPack
 	// Create map to be used to populate locations for each package path
 	for _, result := range resultsModel.Results {
 		if result.Type == commonParams.ScaType {
-			for _, packages := range *scaPackageModel {
-				currentPackage := packages
-				locationsByID[packages.ID] = currentPackage.Locations
+			for i := range *scaPackageModel {
+				pkg := &(*scaPackageModel)[i]
+				locationsByID[pkg.ID] = pkg.Locations
 			}
 			for _, types := range *scaTypeModel {
 				identifier := fmt.Sprintf("%s:%s", types.ID, types.PackageID)
@@ -2876,6 +2994,7 @@ func trimOsSeparatorFromFileName(result *wrappers.ScanResult) {
 	}
 }
 
+// ScannerResponse is the per-scanner status info returned by the results exit-code subcommand.
 type ScannerResponse struct {
 	ScanID    string `json:"ScanID,omitempty"`
 	Name      string `json:"Name,omitempty"`
@@ -2895,7 +3014,7 @@ func parseURI(summaryBaseURI string) (hostName string) {
 }
 
 func printWarningIfIgnorePolicyOmiited() {
-	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you don’t have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
+	fmt.Printf("\n            Warning: The --ignore-policy flag was not implemented because you do not have the required permission.\n                     Only users with 'override-policy-management' permission can use this flag.                     \n\n")
 }
 
 func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOverviewWrapper, scanID string, resultsParams map[string]string) (aPISecSeveritySummary *wrappers.APISecFilteredResult, err error) {
@@ -2926,11 +3045,11 @@ func getFilterResultsForAPISecScanner(risksOverviewWrapper wrappers.RisksOvervie
 			totalRecords++
 		}
 		var riskDistribution []wrappers.RiskDistributionEntry
-		if originCount["code"] > 0 {
-			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: "code", Total: originCount["code"]})
+		if originCount[originCode] > 0 {
+			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: originCode, Total: originCount[originCode]})
 		}
-		if originCount["documentation"] > 0 {
-			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: "documentation", Total: originCount["documentation"]})
+		if originCount[originDocumentation] > 0 {
+			riskDistribution = append(riskDistribution, wrappers.RiskDistributionEntry{Origin: originDocumentation, Total: originCount[originDocumentation]})
 		}
 		return &wrappers.APISecFilteredResult{
 			SeverityCount:    severityCount,
