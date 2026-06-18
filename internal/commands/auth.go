@@ -113,7 +113,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.
 		},
 		RunE: validLogin(telemetryWrapper),
 	}
-	authCmd.AddCommand(createClientCmd, validLoginCmd)
+	authCmd.AddCommand(createClientCmd, validLoginCmd, newAuthLoginCommand(), newAuthLogoutCommand())
 	return authCmd
 }
 
