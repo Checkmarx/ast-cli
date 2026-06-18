@@ -878,7 +878,7 @@ func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
-func GetAuthURI() (string, error) {
+func GetRealmURL() (string, error) {
 	var authURI string
 	var err error
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
@@ -925,7 +925,15 @@ func GetAuthURI() (string, error) {
 
 	authURI = strings.Trim(authURI, "/")
 	logger.PrintIfVerbose(fmt.Sprintf("Base Auth URI - %s ", authURI))
-	return fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix), nil
+	return authURI, nil
+}
+
+func GetAuthURI() (string, error) {
+	realmURL, err := GetRealmURL()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", realmURL, BaseAuthURLSuffix), nil
 }
 
 func GetURL(path, accessToken string) (string, error) {
