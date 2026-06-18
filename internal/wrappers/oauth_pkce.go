@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"html"
 	"io"
 	"net"
 	"net/http"
@@ -78,7 +77,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 		return nil, errors.Wrap(err, "failed to generate state")
 	}
 
-	listener, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", opts.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", opts.Port))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start local callback listener")
 	}
@@ -87,13 +86,10 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	if !ok {
 		return nil, errors.New("local listener did not bind to a TCP address")
 	}
-	// The redirect URI uses the 'localhost' hostname and the '/checkmarx1/callback'
-	// path to match the pattern whitelisted on the 'ide-integration' Keycloak client
-	// — the same pattern used by the Checkmarx One VS Code extension. Because
-	// 'localhost' resolves to ::1 on IPv6-preferring systems, we ALSO bind an IPv6
-	// loopback listener on the same port below (best-effort), so the browser callback
-	// reaches us whichever family 'localhost' resolves to. Both listeners are
-	// loopback-only (safe).
+	// Listener binds to 127.0.0.1 (loopback-only, safe). The redirect URI uses
+	// the 'localhost' hostname and the '/checkmarx1/callback' path to match the
+	// pattern whitelisted on the 'ide-integration' Keycloak client — the same
+	// pattern used by the Checkmarx One VS Code extension.
 	redirectURI := fmt.Sprintf("http://localhost:%d/checkmarx1/callback", tcpAddr.Port)
 	authURL := buildAuthorizeURL(disco.AuthorizationEndpoint, opts.ClientID, redirectURI, state, challenge)
 
@@ -106,21 +102,15 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	mux := http.NewServeMux()
 	mux.HandleFunc("/checkmarx1/callback", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		// Validate the anti-CSRF state FIRST. A request that does not carry our
-		// exact state value is unsolicited (a stray prefetch, a probe, or a CSRF
-		// attempt) and is IGNORED — we do NOT resolve resultCh, so it cannot
-		// abort the pending login, and we do not act on its other parameters.
-		// The genuine callback echoes our state and is the only thing that
-		// completes the flow; if none arrives, the outer timeout fires.
-		if got := q.Get("state"); got != state {
-			writeBrowserMessage(w, "Authentication failed.", "State mismatch — this request was ignored. You can close this tab.")
-			logger.PrintIfVerbose("OAuth callback: ignoring request with missing/mismatched state")
-			return
-		}
 		if errParam := q.Get("error"); errParam != "" {
 			desc := q.Get("error_description")
 			writeBrowserMessage(w, "Authentication failed.", fmt.Sprintf("%s: %s", errParam, desc))
 			resultCh <- callbackResult{err: errors.Errorf("authorization server returned error: %s — %s", errParam, desc)}
+			return
+		}
+		if got := q.Get("state"); got != state {
+			writeBrowserMessage(w, "Authentication failed.", "State mismatch — possible CSRF. You can close this tab.")
+			resultCh <- callbackResult{err: errors.New("state mismatch in callback — possible CSRF")}
 			return
 		}
 		code := q.Get("code")
@@ -135,15 +125,6 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = server.Serve(listener) }()
-	// Best-effort IPv6 loopback listener on the same port, so a browser that resolves
-	// 'localhost' to ::1 still reaches the callback. If it fails (no IPv6 stack, or the
-	// port is taken on ::1), proceed IPv4-only — unchanged from the previous behavior.
-	if v6Listener, v6Err := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", tcpAddr.Port)); v6Err == nil {
-		defer v6Listener.Close()
-		go func() { _ = server.Serve(v6Listener) }()
-	} else {
-		logger.PrintIfVerbose("OAuth callback: IPv6 loopback listener unavailable, using IPv4 only: " + v6Err.Error())
-	}
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -329,11 +310,7 @@ var openBrowser = func(targetURL string) error {
 
 func writeBrowserMessage(w http.ResponseWriter, title, body string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// Escape both fields: body may contain server-supplied error/description
-	// text, so it must never be reflected into the page as raw HTML.
-	safeTitle := html.EscapeString(title)
-	safeBody := html.EscapeString(body)
 	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><title>%s</title>
 <style>body{font-family:system-ui,sans-serif;max-width:600px;margin:80px auto;padding:0 20px;color:#222}h1{font-size:22px}p{font-size:16px;color:#555}</style>
-</head><body><h1>%s</h1><p>%s</p></body></html>`, safeTitle, safeTitle, safeBody)
+</head><body><h1>%s</h1><p>%s</p></body></html>`, title, title, body)
 }

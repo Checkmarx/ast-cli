@@ -14,6 +14,7 @@ const (
 	SessionGlobalFileName   = "session_global"
 	ActiveModeFileName      = "active_mode"
 	SessionLoginFlagUsage   = "Session mode: 'local' keeps the refresh token only in the current shell's environment (requires Invoke-Expression / eval wrapper); 'global' persists it to a dedicated file readable by every shell on the machine until explicit logout."
+	SessionLogoutFlagUsage  = "Session mode: 'local' clears the refresh token from the current shell's environment (requires Invoke-Expression / eval wrapper); 'global' clears the refresh token from the dedicated global session file."
 
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"
@@ -65,7 +66,6 @@ const (
 	MainBranchFlag                 = "branch"
 	ScaResolverFlag                = "sca-resolver"
 	ScaResolverParamsFlag          = "sca-resolver-params"
-	NoScanFlag                     = "no-scan"
 	AccessKeyIDFlag                = "client-id"
 	AccessKeySecretFlag            = "client-secret"
 	AccessKeyIDFlagUsage           = "The OAuth2 client ID"
@@ -325,7 +325,6 @@ const (
 const (
 	SastType                       = "sast"
 	KicsType                       = "kics"
-	AiscType                       = "aisc"
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
 	CheckmarxOneAssistType         = "Checkmarx One Assist"

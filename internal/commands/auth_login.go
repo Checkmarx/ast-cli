@@ -21,11 +21,6 @@ import (
 // This client has localhost callbacks whitelisted across production tenants.
 const defaultLoginClientID = "ide-integration"
 
-// configFilePerm restricts the yaml config file to owner read/write only, since
-// after login it holds a long-lived refresh token. Mirrors the 0o600 used for
-// the global-session and active-mode files in the wrappers package.
-const configFilePerm = 0o600
-
 func newAuthLoginCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
@@ -80,43 +75,30 @@ func runAuthLogin(cmd *cobra.Command, _ []string) error {
 		return errors.Wrap(err, "failed to resolve IAM realm URL")
 	}
 
-	// revokeClientID is used ONLY for the best-effort revocation of any
-	// PRE-EXISTING stored tokens during the nuke phase. It intentionally keeps
-	// the CX_CLIENT_ID fallback so that a credential originally issued to that
-	// client can still be revoked. It is NOT used for the interactive login
-	// below (see the ClientID note on LoginWithPKCE).
-	revokeClientID := viper.GetString(params.AccessKeyIDConfigKey)
-	if revokeClientID == "" {
-		revokeClientID = defaultLoginClientID
+	clientID := viper.GetString(params.AccessKeyIDConfigKey)
+	if clientID == "" {
+		clientID = defaultLoginClientID
 	}
+
+	// Nuke phase: revoke every existing refresh token server-side and clear
+	// the file storages. After this, the system has no active credentials
+	// anywhere (modulo any stale env-var bytes in OTHER shells, which the
+	// CLI can't reach). The new login that follows establishes exactly one
+	// fresh credential in the storage matching --session.
+	nukeAllStorages(clientID)
 
 	port, _ := cmd.Flags().GetInt(params.LoginPortFlag)
 	noBrowser, _ := cmd.Flags().GetBool(params.LoginNoBrowserFlag)
 
-	// Authenticate FIRST and only touch existing credentials once we hold a
-	// fresh refresh token. If the browser flow fails or is cancelled (closed
-	// tab, timeout, port clash, network blip), the user's existing credential
-	// is left completely intact instead of being wiped before login even runs.
-	//
-	// The interactive PKCE flow MUST use the public 'ide-integration' client
-	// (its localhost callbacks are whitelisted and it needs no client secret).
-	// CX_CLIENT_ID is a confidential service-account client and cannot complete
-	// an Authorization Code + PKCE flow, so it is deliberately NOT used here.
 	tokens, err := wrappers.LoginWithPKCE(context.Background(), wrappers.PKCELoginOptions{
 		RealmURL:    realmURL,
-		ClientID:    defaultLoginClientID,
+		ClientID:    clientID,
 		Port:        port,
 		OpenBrowser: !noBrowser,
 	})
 	if err != nil {
 		return err
 	}
-
-	// Nuke phase: now that a new credential exists, revoke every prior refresh
-	// token server-side and clear the file storages. Combined with the persist
-	// step below this leaves exactly one active credential in the storage
-	// matching --session.
-	nukeAllStorages(revokeClientID)
 
 	switch sessionMode {
 	case params.SessionLocalValue:
@@ -141,23 +123,23 @@ func validateSessionFlag(sessionMode string) error {
 	}
 }
 
-// nukeAllStorages revokes the tokens the CLI actually owns — the yaml config
-// file and the global session file — at IAM (best-effort, via the OAuth 2.0
-// revocation endpoint) and clears those file storages.
-//
-// The CX_APIKEY environment variable is deliberately left untouched: a child
-// process cannot clear a parent shell's env var, and that env value is most
-// often a deliberately-provided CI / long-lived credential. Silently revoking
-// it server-side would break the caller's pipeline, so we never revoke env.
+// nukeAllStorages reads every storage location, revokes any non-empty token
+// at IAM (best-effort, via the OAuth 2.0 revocation endpoint), and clears
+// file storages. Env is read but cannot be cleared from a child process —
+// its token is revoked server-side, so the bytes that remain in the parent
+// shell are inert.
 //
 // This is called as the first step of every login (regardless of mode) and
-// of every logout, ensuring that the CLI's own file storages hold at most one
-// active credential after the operation completes.
+// of every logout, ensuring that there is at most one active credential
+// anywhere after the operation completes.
 func nukeAllStorages(clientID string) {
 	// Revoke yaml's token first — read the yaml file directly to bypass any
 	// stale env shadowing in viper's normal lookup.
-	if yamlRT := wrappers.ReadYamlAPIKey(); yamlRT != "" {
+	if yamlRT := readYamlAPIKeyForLogin(); yamlRT != "" {
 		revokeOldRefreshToken(yamlRT, clientID, "yaml")
+	}
+	if envRT := os.Getenv(params.AstAPIKeyEnv); envRT != "" {
+		revokeOldRefreshToken(envRT, clientID, "env")
 	}
 	if globalRT, err := wrappers.ReadSessionGlobal(); err == nil && globalRT != "" {
 		revokeOldRefreshToken(globalRT, clientID, "global")
@@ -195,10 +177,27 @@ func clearFileStorages() {
 	}
 }
 
-// persistYamlLogin writes the new refresh token to the yaml config file and
-// records yaml as the active mode. The token is NOT echoed to stdout — it is
-// already persisted to the config file, and printing it would leak the
-// credential into shell history / CI logs.
+// readYamlAPIKeyForLogin reads cx_apikey directly from the yaml file, bypassing
+// viper. Used during the nuke phase so we revoke whatever yaml had, not what
+// viper currently resolves to (which could be a stale env var).
+func readYamlAPIKeyForLogin() string {
+	configPath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		return ""
+	}
+	yamlConfig, err := configuration.LoadConfig(configPath)
+	if err != nil {
+		return ""
+	}
+	if v, ok := yamlConfig[params.AstAPIKey].(string); ok {
+		return v
+	}
+	return ""
+}
+
+// persistYamlLogin writes the new refresh token to the yaml config file,
+// records yaml as the active mode, and prints CX_APIKEY=<token> + path to
+// stdout for scripting parity with cx auth register.
 func persistYamlLogin(cmd *cobra.Command, refreshToken string) error {
 	configPath, err := configuration.GetConfigFilePath()
 	if err != nil {
@@ -207,15 +206,10 @@ func persistYamlLogin(cmd *cobra.Command, refreshToken string) error {
 	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AstAPIKey, refreshToken); err != nil {
 		return errors.Wrap(err, "failed to save refresh token to config file")
 	}
-	// The config file now holds a long-lived refresh token; restrict it to
-	// owner read/write only (matching the 0o600 used for the global session
-	// and active-mode files). On Windows this is a best-effort no-op.
-	if chErr := os.Chmod(configPath, configFilePerm); chErr != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("failed to restrict config file permissions: %v", chErr))
-	}
 	if err := wrappers.WriteActiveMode(params.SessionYamlValue); err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("failed to write active-mode file: %v", err))
 	}
+	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s=%s\n", params.AstAPIKeyEnv, refreshToken)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Authenticated. Token saved to %s\n", configPath)
 	return nil
 }
