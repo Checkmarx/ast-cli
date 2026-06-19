@@ -65,17 +65,17 @@ func (s *Scanner) ScanPackages(format Format, pkgs []Package) (malicious, vulner
 	if len(pkgs) == 0 {
 		return nil, nil, nil
 	}
-	normalized := make([]Package, len(pkgs))
-	for i, p := range pkgs {
-		normalized[i] = Package{Name: p.Name, Version: normalizeSemver(p.Version)}
-	}
 	dir, err := os.MkdirTemp("", "sca-scan-")
 	if err != nil {
 		return nil, nil, err
 	}
 	defer os.RemoveAll(dir)
 
-	path, err := Synthesize(format, normalized, dir)
+	// Versions are passed through exactly as parsed. The realtime scanner matches
+	// on the literal version string, so padding (e.g. Maven 1.7 -> 1.7.0) makes the
+	// backend mismatch / time out. Callers that need bare-version handling (bash
+	// installs, e.g. parseNpmSpec) normalize at parse time instead.
+	path, err := Synthesize(format, pkgs, dir)
 	if err != nil {
 		return nil, nil, err
 	}

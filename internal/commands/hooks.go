@@ -14,7 +14,7 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
 		Short: "Manage Git hooks and AI coding agent hooks",
-		Long:  "The hooks command manages Git hooks for secret detection and AI coding agent hooks for Claude, Cursor, Windsurf, Factory Droid, and Gemini.",
+		Long:  "The hooks command manages Git hooks for secret detection and AI coding agent hooks for Claude, Cursor, Windsurf, Factory Droid, Gemini, and GitHub Copilot CLI.",
 		Example: heredoc.Doc(
 			`
 			$ cx hooks pre-commit secrets-install-git-hook
