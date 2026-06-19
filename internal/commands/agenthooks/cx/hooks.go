@@ -1,6 +1,7 @@
 package cx
 
 import (
+	"log"
 	"os"
 	"strings"
 
@@ -94,6 +95,15 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 // Write ops set diff.Before to "" and diff.After to the full new content.
 // Edit ops set diff.After only to the replacement snippet, so we
 // reconstruct by applying the replacement to the current file on disk.
+//
+// Reconstruction must not depend on the checkout's line-ending style. An
+// agent/editor may send the replaced region with LF endings while the file on
+// disk uses CRLF (Windows / git core.autocrlf=true), or vice versa. A
+// byte-exact strings.Replace then finds no match, returns the file unchanged,
+// and any newly added (possibly vulnerable) dependency slips past the scanner
+// silently. We therefore try an exact match first, then fall back to a
+// line-ending–normalized match. Line endings are irrelevant to manifest
+// dependency parsing, so scanning the normalized content is safe.
 func fullAfterContent(filePath string, diff agenthooks.FileDiff) []byte {
 	if diff.Before == "" {
 		return []byte(diff.After)
@@ -102,7 +112,32 @@ func fullAfterContent(filePath string, diff agenthooks.FileDiff) []byte {
 	if err != nil {
 		return []byte(diff.After)
 	}
-	return []byte(strings.Replace(string(current), diff.Before, diff.After, 1))
+	cur := string(current)
+
+	// 1) Exact replacement (fast path; preserves original bytes).
+	if out := strings.Replace(cur, diff.Before, diff.After, 1); out != cur {
+		return []byte(out)
+	}
+
+	// 2) Line-ending–agnostic replacement. Normalize both the file and the
+	// diff region to LF, then replace. This makes reconstruction independent
+	// of CRLF vs LF differences between machines and checkouts.
+	curN := normalizeNewlines(cur)
+	if out := strings.Replace(curN, normalizeNewlines(diff.Before), normalizeNewlines(diff.After), 1); out != curN {
+		return []byte(out)
+	}
+
+	// 3) Fail-safe: the replaced region could not be located even after
+	// normalization. Do not silently accept by returning the unchanged file.
+	// Surface the anomaly and fall back to scanning the proposed snippet so a
+	// newly added dependency is still given a chance to be detected.
+	log.Printf("sca guardrail: could not locate edited region in %q (line-ending or whitespace mismatch); scanning proposed snippet as fallback", filePath)
+	return []byte(normalizeNewlines(diff.After))
+}
+
+// normalizeNewlines converts CRLF and lone CR line endings to LF.
+func normalizeNewlines(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, "\r\n", "\n"), "\r", "\n")
 }
 
 // cxBeforePrompt runs all prompt guardrails before the prompt reaches the AI agent.

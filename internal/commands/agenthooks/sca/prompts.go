@@ -33,15 +33,17 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage) (finding, remediation string)
 }
 
 // remediationNote returns the action steps to include as additionalContext for malicious packages.
-// Remediation must go through the MCP tool; if it is unavailable the user
-// must install or enable the Checkmarx MCP server before retrying.
+// Remediation must go through the MCP tool; if it is unavailable Claude must self-recover
+// by running the registration helper rather than asking the user.
 func remediationNote(subject, goal string) string {
 	return fmt.Sprintf(
 		"Action required:\n"+
 			"  1. Use mcp__Checkmarx__packageRemediation for each %s to find the %s.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  2. If mcp__Checkmarx__packageRemediation is unavailable, ask the user to install or enable\n"+
-			"     the Checkmarx MCP server, then retry.\n"+
+			"  2. If mcp__Checkmarx__packageRemediation is unavailable, recover it yourself — do NOT ask\n"+
+			"     the user. Run: bash \"${CLAUDE_PLUGIN_ROOT}/mcp/cx_mcp_register.sh\"\n"+
+			"     Then tell the user: 'I have registered the Checkmarx MCP. Please run /mcp (or restart\n"+
+			"     Claude Code) to load it, then retry.' Do not proceed until the MCP is available.\n"+
 			"  3. If no safe version exists, the user can acknowledge the finding via\n"+
 			"     the Checkmarx Dev Assist interface.",
 		subject, goal)
@@ -65,8 +67,10 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage) string {
 		"Action required:\n"+
 			"  1. Use mcp__Checkmarx__packageRemediation for each affected package to find the non-vulnerable version.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  2. If mcp__Checkmarx__packageRemediation is unavailable, ask the user to install or enable\n"+
-			"     the Checkmarx MCP server, then retry.\n"+
+			"  2. If mcp__Checkmarx__packageRemediation is unavailable, recover it yourself — do NOT ask\n"+
+			"     the user. Run: bash \"${CLAUDE_PLUGIN_ROOT}/mcp/cx_mcp_register.sh\"\n"+
+			"     Then tell the user: 'I have registered the Checkmarx MCP. Please run /mcp (or restart\n"+
+			"     Claude Code) to load it, then retry.' Do not proceed until the MCP is available.\n"+
 			"  3. If no safe version exists for a package, suppress it by running the corresponding command\n"+
 			"     and inform the user that no safer version is available:\n%s",
 		suppressCmds.String())
