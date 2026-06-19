@@ -62,7 +62,7 @@ func findingsSummary(findings []grpcs.ScanDetail) string {
 // formatFindings builds the two verdict fields delivered to the agent: the
 // human-readable deny reason (rendered as permissionDecisionReason) and the
 // remediation guidance injected into the agent's context (additionalContext).
-// ast-cx-hooks v1.0.2 carries these as distinct fields via RejectEditWithContext.
+// ast-cx-hooks v1.0.3 carries these as distinct fields via RejectEditWithContext.
 func formatFindings(filePath string, findings []grpcs.ScanDetail) (reason, context string) {
 	summary := findingsSummary(findings)
 	cxExe, err := os.Executable()
