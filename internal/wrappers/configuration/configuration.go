@@ -3,6 +3,7 @@ package configuration
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/user"
@@ -228,7 +229,8 @@ func SafeWriteSingleConfigKeyString(configFilePath, key string, value string) er
 	return nil
 }
 
-// LoadConfig loads the configuration from a file. If the file does not exist, it returns an empty map.
+// LoadConfig loads the configuration from a file. If the file does not exist
+// or is empty, it returns an empty map.
 func LoadConfig(path string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
 	file, err := os.Open(path)
@@ -244,6 +246,13 @@ func LoadConfig(path string) (map[string]interface{}, error) {
 
 	decoder := yaml.NewDecoder(file)
 	if err = decoder.Decode(&config); err != nil {
+		if err == io.EOF {
+			// An empty (zero-byte) config file is a valid "no config yet"
+			// state, not corruption. Treat it like a missing file and return
+			// an empty config so callers (e.g. cx auth login persisting a
+			// fresh token) can populate it instead of failing.
+			return config, nil
+		}
 		return nil, fmt.Errorf("error decoding YAML: %w", err)
 	}
 	return config, nil
