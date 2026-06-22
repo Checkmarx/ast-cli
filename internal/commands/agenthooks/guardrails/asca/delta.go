@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
 
@@ -63,14 +64,28 @@ func findingsSummary(findings []grpcs.ScanDetail) string {
 // human-readable deny reason (rendered as permissionDecisionReason) and the
 // remediation guidance injected into the agent's context (additionalContext).
 // ast-cx-hooks v1.0.3 carries these as distinct fields via RejectEditWithContext.
-func formatFindings(filePath string, findings []grpcs.ScanDetail) (reason, context string) {
+func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir string) (reason, context string) {
 	summary := findingsSummary(findings)
 	cxExe, err := os.Executable()
 	cxBinary := "cx"
 	if err == nil {
 		cxBinary = cxExe
 	}
-	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings)
+	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings, workDir)
+}
+
+// ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
+// the suppression command to the workspace ignore file, anchored at the hook event's
+// workDir. This keeps the write (cx ignore-vulnerability) and the later read (the hook)
+// on the same absolute file regardless of either process's CWD — without it, a host CLI
+// that runs the agent's shell from a different directory than the hook (e.g. Copilot CLI)
+// would write and read different files. Returns "" when workDir is unknown so the command
+// falls back to its CWD-relative default.
+func ignoredFilePathFlag(workDir string) string {
+	if workDir == "" {
+		return ""
+	}
+	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.
@@ -84,7 +99,8 @@ func permissionDecisionReason(filePath, summary string) string {
 
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user.
-func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail) string {
+func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir string) string {
+	ignoreFlag := ignoredFilePathFlag(workDir)
 	var suppressCmds strings.Builder
 	for _, f := range findings {
 		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
@@ -92,7 +108,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail) s
 			Line:     f.Line,
 			RuleID:   f.RuleID,
 		})
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'\n", cxBinary, string(data))
+		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s\n", cxBinary, string(data), ignoreFlag)
 	}
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
