@@ -36,7 +36,7 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
-require github.com/Checkmarx/manifest-parser v0.0.0-00010101000000-000000000000
+require github.com/Checkmarx/manifest-parser v0.1.3-0.20260608094502-6b5ebcc42e9f
 
 require (
 	cyphar.com/go-pathrs v0.2.1 // indirect
@@ -334,7 +334,5 @@ replace github.com/containerd/containerd => github.com/containerd/containerd v1.
 replace github.com/containerd/containerd/v2 => github.com/containerd/containerd/v2 v2.1.5
 
 replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v1.13.0
-
-replace github.com/Checkmarx/manifest-parser => C:/Users/AtishJ/GitHub_Repo/manifest-parser
 
 replace github.com/opencontainers/runtime-spec => github.com/opencontainers/runtime-spec v1.2.0
