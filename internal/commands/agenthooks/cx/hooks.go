@@ -83,7 +83,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
-			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff)); finding != "" {
+			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir); finding != "" {
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}

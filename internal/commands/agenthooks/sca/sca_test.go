@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
 
@@ -111,7 +112,7 @@ func TestCheckBashInstall_FailOpenOnScannerError(t *testing.T) {
 
 func TestCheckManifestEdit_NonManifestNoop(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "x", Status: "Malicious"})
-	finding, _ := s.CheckManifestEdit("/repo/main.go", []byte("anything"))
+	finding, _ := s.CheckManifestEdit("/repo/main.go", []byte("anything"), "")
 	if finding != "" {
 		t.Errorf("non-manifest: expected empty, got %q", finding)
 	}
@@ -133,7 +134,7 @@ func TestCheckManifestEdit_NewMaliciousAddition(t *testing.T) {
 	after := []byte(`{"name":"x","dependencies":{"lodash":"4.17.21","evil-pkg":"1.0.0"}}`)
 
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "evil-pkg", PackageVersion: "1.0.0", Status: "Malicious"})
-	finding, remediation := s.CheckManifestEdit(pkgJSON, after)
+	finding, remediation := s.CheckManifestEdit(pkgJSON, after, "")
 	if !strings.Contains(finding, "MALICIOUS") {
 		t.Errorf("expected MALICIOUS finding, got %q", finding)
 	}
@@ -157,7 +158,7 @@ func TestCheckManifestEdit_OnlyVersionBumpOfCleanPkg(t *testing.T) {
 	// Even though it's only a bump, the new version is "new" and gets scanned.
 	// If the scanner returns OK, the edit is accepted.
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"})
-	finding, _ := s.CheckManifestEdit(pkgJSON, after)
+	finding, _ := s.CheckManifestEdit(pkgJSON, after, "")
 	if finding != "" {
 		t.Errorf("expected accept for clean version bump, got %q", finding)
 	}
@@ -167,7 +168,7 @@ func TestDenyVulnerable_IgnoreCommandIncludesPackageData(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "pip", PackageName: "requests", PackageVersion: "2.19.0"},
 	}
-	_, remediation := DenyVulnerable(pkgs)
+	_, remediation := DenyVulnerable(pkgs, "")
 	if !strings.Contains(remediation, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability in remediation, got %q", remediation)
 	}
@@ -187,7 +188,7 @@ func TestDenyVulnerable_MultiplePackages_EachGetsIgnoreCommand(t *testing.T) {
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.0"},
 		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
 	}
-	_, remediation := DenyVulnerable(pkgs)
+	_, remediation := DenyVulnerable(pkgs, "")
 	if strings.Count(remediation, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 packages, got %q", remediation)
 	}
@@ -196,6 +197,28 @@ func TestDenyVulnerable_MultiplePackages_EachGetsIgnoreCommand(t *testing.T) {
 	}
 	if !strings.Contains(remediation, "axios") {
 		t.Errorf("expected axios in remediation, got %q", remediation)
+	}
+}
+
+func TestDenyVulnerable_PinsIgnoredFilePathToWorkDir(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	workDir := filepath.Join("repo", "ws")
+	_, remediation := DenyVulnerable(pkgs, workDir)
+	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected remediation to pin %q, got %q", want, remediation)
+	}
+}
+
+func TestDenyVulnerable_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "")
+	if strings.Contains(remediation, "--ignored-file-path") {
+		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", remediation)
 	}
 }
 
@@ -224,7 +247,7 @@ func TestCheckManifestEdit_VulnerableContainsIgnoreCommand(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{
 		PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0", Status: "Vulnerable",
 	})
-	finding, remediation := s.CheckManifestEdit(pkgJSON, after)
+	finding, remediation := s.CheckManifestEdit(pkgJSON, after, "")
 	if !strings.Contains(finding, "vulnerabilities") {
 		t.Errorf("expected vulnerable finding, got %q", finding)
 	}
@@ -233,6 +256,28 @@ func TestCheckManifestEdit_VulnerableContainsIgnoreCommand(t *testing.T) {
 	}
 	if !strings.Contains(remediation, "axios") {
 		t.Errorf("expected package name in remediation, got %q", remediation)
+	}
+}
+
+func TestExistingIgnoreFilePath_ResolvesUnderWorkDir(t *testing.T) {
+	workDir := t.TempDir()
+	dir := filepath.Join(workDir, ".checkmarx")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "checkmarxIgnoredTempList.json"), []byte("[]"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	got := existingIgnoreFilePath(workDir)
+	if want := ignore.PathFor(workDir); got != want {
+		t.Errorf("expected ignore path %q under workDir, got %q", want, got)
+	}
+}
+
+func TestExistingIgnoreFilePath_MissingReturnsEmpty(t *testing.T) {
+	// Empty workspace: no .checkmarx file → no filtering path passed to the scanner.
+	if got := existingIgnoreFilePath(t.TempDir()); got != "" {
+		t.Errorf("expected empty for missing ignore file, got %q", got)
 	}
 }
 

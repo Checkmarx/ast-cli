@@ -13,12 +13,13 @@ import (
 // Compound commands produce multiple install requests; we scan each and
 // return on the first finding (malicious takes precedence over vulnerable).
 func (s *Scanner) CheckBashInstall(command, workDir string) (finding, remediation string) {
+	s.workDir = workDir
 	for _, req := range ParseInstall(command) {
 		mal, vuln, err := s.scanRequest(req, workDir)
 		if err != nil {
 			continue
 		}
-		if f, r := denyFrom(mal, vuln); f != "" {
+		if f, r := denyFrom(mal, vuln, workDir); f != "" {
 			return f, r
 		}
 	}
@@ -45,7 +46,8 @@ func (s *Scanner) scanRequest(req InstallRequest, workDir string) (malicious, vu
 // Non-manifest paths are a no-op. For manifest paths we diff before/after,
 // scan only the newly-added packages, and reject if any are malicious or
 // vulnerable.
-func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte) (finding, remediation string) {
+func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDir string) (finding, remediation string) {
+	s.workDir = workDir
 	format, ok := IsManifest(filePath)
 	if !ok {
 		return "", ""
@@ -59,15 +61,18 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte) (findi
 	if err != nil {
 		return "", ""
 	}
-	return denyFrom(mal, vuln)
+	return denyFrom(mal, vuln, workDir)
 }
 
-func denyFrom(malicious, vulnerable []ossrealtime.OssPackage) (finding, remediation string) {
+// denyFrom builds the (finding, remediation) pair. workDir anchors the
+// `cx ignore-vulnerability` suppression command emitted for vulnerable packages
+// to the workspace ignore file so the agent writes where the hook later reads.
+func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir string) (finding, remediation string) {
 	if len(malicious) > 0 {
 		return DenyMalicious(malicious)
 	}
 	if len(vulnerable) > 0 {
-		return DenyVulnerable(vulnerable)
+		return DenyVulnerable(vulnerable, workDir)
 	}
 	return "", ""
 }
