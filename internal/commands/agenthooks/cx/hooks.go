@@ -88,7 +88,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
-			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir); finding != "" {
+			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, ev.WorkDir); finding != "" {
 				logRemediationTelemetry(agent, "Oss", finding, remediation)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
