@@ -185,6 +185,55 @@ func TestGetAPIKeyPayload(t *testing.T) {
 	}
 }
 
+// TestGetRealmURL_LoginOverrideSkipsStoredAPIKey guards the `cx auth login` fix:
+// when ApikeyOverrideFlag is set, GetRealmURL must build the realm from the
+// explicit --base-auth-uri/--tenant flags and must NOT decode the stored
+// cx_apikey. A stale/malformed stored key previously surfaced here as a hard
+// "failed to resolve IAM realm URL" error, making login impossible until the bad
+// key was manually cleared.
+func TestGetRealmURL_LoginOverrideSkipsStoredAPIKey(t *testing.T) {
+	keys := []string{
+		commonParams.ApikeyOverrideFlag,
+		commonParams.AstAPIKey,
+		commonParams.BaseAuthURIKey,
+		commonParams.TenantKey,
+	}
+	saved := make(map[string]interface{}, len(keys))
+	for _, k := range keys {
+		saved[k] = viper.Get(k)
+	}
+	t.Cleanup(func() {
+		for _, k := range keys {
+			viper.Set(k, saved[k])
+		}
+	})
+
+	const malformedKey = "not-a-jwt" // single segment -> ExtractFromTokenClaims fails
+
+	t.Run("override builds realm from flags despite a malformed stored key", func(t *testing.T) {
+		viper.Set(commonParams.ApikeyOverrideFlag, true)
+		viper.Set(commonParams.AstAPIKey, malformedKey)
+		viper.Set(commonParams.BaseAuthURIKey, "https://eu.iam.checkmarx.net")
+		viper.Set(commonParams.TenantKey, "cx_seg")
+
+		realmURL, err := GetRealmURL()
+
+		assert.NoError(t, err)
+		assert.Equal(t, "https://eu.iam.checkmarx.net/auth/realms/cx_seg", realmURL)
+	})
+
+	t.Run("without override a malformed stored key still errors (unchanged)", func(t *testing.T) {
+		viper.Set(commonParams.ApikeyOverrideFlag, false)
+		viper.Set(commonParams.AstAPIKey, malformedKey)
+		viper.Set(commonParams.BaseAuthURIKey, "https://eu.iam.checkmarx.net")
+		viper.Set(commonParams.TenantKey, "cx_seg")
+
+		_, err := GetRealmURL()
+
+		assert.Error(t, err)
+	})
+}
+
 func TestSetAgentNameAndOrigin(t *testing.T) {
 	viper.Set(commonParams.AgentNameKey, "TestAgent")
 	viper.Set(commonParams.OriginKey, "TestOrigin")
