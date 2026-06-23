@@ -11,13 +11,10 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,15 +32,6 @@ import (
 // Mcp-Session-Id). The credential is sent ONLY in the Authorization header (the
 // server exchanges it; no client-side OAuth flow runs here) and is never written
 // to stdout/stderr.
-//
-// Resilient/self-healing: if no usable credential exists at startup (e.g. the
-// developer hasn't logged in yet, or the stored token is expired/malformed in a way
-// that prevents URL derivation), the bridge does NOT exit. It answers the MCP
-// handshake LOCALLY so the client shows the server "Connected" with an empty tool
-// list (capabilities.tools.listChanged=true), and a background watcher polls cx
-// config on disk; the moment `cx auth login` writes a usable credential, the bridge
-// establishes the remote session and pushes notifications/tools/list_changed so the
-// client auto-fetches the real tools — no /reload-plugins, no /mcp reconnect.
 const (
 	securityMCPPathPrefix = "/api/security-mcp/mcp/"
 	bridgeRequestTimeout  = 120 * time.Second
@@ -51,111 +39,16 @@ const (
 	httpAccepted          = 202    // POST of a notification/response: no body to relay
 )
 
-// bridgeState is the bridge's connection lifecycle: stateUnauth answers the MCP
-// handshake locally and runs a credential watcher; stateConnected proxies to the
-// remote (the only state the authed-at-startup path is ever in).
-type bridgeState int
-
-const (
-	stateUnauth bridgeState = iota
-	stateConnected
-)
-
-// supportedProtocolVersions are the MCP protocol versions the local handshake can
-// advertise. The first is the preferred default when a client omits one.
-var supportedProtocolVersions = []string{"2025-06-18", "2024-11-05"}
-
-func defaultProtocolVersion() string { return supportedProtocolVersions[0] }
-
-// bridgeSession holds the MCP session state. Fields touched by both the read loop
-// and the watcher goroutine (state/apiKey/mcpURL/clientProto/remoteReady) are
-// guarded by mu; id/proto are mutated only after promotion (single-threaded).
+// bridgeSession holds the MCP session state negotiated as messages flow through.
 type bridgeSession struct {
-	mu          sync.Mutex
-	state       bridgeState
-	apiKey      string // raw credential forwarded to the remote (Authorization)
-	mcpURL      string // realm-scoped Security MCP URL
-	clientProto string // protocolVersion the client requested at initialize
-	remoteReady bool   // the remote initialize handshake has completed
-	version     string // cx binary version, for the synthetic serverInfo
-	urlOverride string // --mcp-url / CX_MCP_URL override, immutable after construction
-	writer      *syncWriter
-
-	// resolveKey returns the credential cx resolved. Injected (not a package
-	// global) so the concurrent self-heal test can stub it without racing viper.
-	resolveKey func() string
-
 	id    string // Mcp-Session-Id, echoed back on every subsequent request
 	proto string // negotiated protocolVersion, sent as MCP-Protocol-Version
 }
 
-// syncWriter serializes all stdout writes so a full JSON-RPC line is written+flushed
-// atomically — the read loop and the watcher goroutine share it, and the MCP stdio
-// transport forbids interleaved/partial lines.
-type syncWriter struct {
-	mu sync.Mutex
-	w  *bufio.Writer
-}
-
-func newSyncWriter(w io.Writer) *syncWriter { return &syncWriter{w: bufio.NewWriter(w)} }
-
-func (sw *syncWriter) emitLine(raw []byte) {
-	sw.mu.Lock()
-	defer sw.mu.Unlock()
-	_, _ = sw.w.Write(raw)
-	_ = sw.w.WriteByte('\n')
-	_ = sw.w.Flush()
-}
-
 const mcpURLFlag = "mcp-url"
 
-// Test seams. getAccessToken stubs the (network) refresh_token->access_token
-// exchange. reloadConfig re-reads cx config FROM DISK into viper — essential for
-// self-heal, since viper is a one-shot startup snapshot and would otherwise never
-// see a credential written by a later `cx auth login`. invalidateTokenCache forces
-// a fresh access-token exchange. credentialPollInterval paces the watcher.
-var (
-	getAccessToken = wrappers.GetAccessToken
-
-	reloadConfig = func() {
-		// viper is not concurrency-safe; serialize disk re-reads (which mutate
-		// viper) against the credential resolver's viper reads. Both the read
-		// loop (on 401/403) and the watcher goroutine call this.
-		configMu.Lock()
-		defer configMu.Unlock()
-		_ = configuration.LoadConfiguration()
-		wrappers.LoadActiveCredential()
-	}
-	invalidateTokenCache   = wrappers.InvalidateAccessTokenCache
-	credentialPollInterval = 3 * time.Second
-)
-
-// configMu serializes all viper access performed by the bridge's two goroutines
-// (the stdin read loop and the credential watcher): reloadConfig mutates viper,
-// productionResolveAPIKey reads it. viper itself has no internal locking.
-var configMu sync.Mutex
-
-// productionResolveAPIKey returns the credential cx resolved (CX_APIKEY env / cx
-// config / active session), falling back to CHECKMARX_API_KEY for parity with the
-// previous Python bridge. Callers that need a credential written AFTER startup must
-// call reloadConfig() first (viper is a one-shot startup snapshot). The viper read
-// is guarded by configMu so it never races a concurrent reloadConfig.
-func productionResolveAPIKey() string {
-	configMu.Lock()
-	k := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey))
-	configMu.Unlock()
-	if k != "" {
-		return k
-	}
-	if k := strings.TrimSpace(os.Getenv("CHECKMARX_API_KEY")); k != "" {
-		return k
-	}
-	return ""
-}
-
-// NewBridgeCommand creates the hidden "cx mcp bridge" subcommand. version is the cx
-// binary version, surfaced in the synthetic serverInfo during the degraded handshake.
-func NewBridgeCommand(version string) *cobra.Command {
+// NewBridgeCommand creates the hidden "cx mcp bridge" subcommand.
+func NewBridgeCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bridge",
 		Short: "Proxy stdio MCP traffic to the Checkmarx Security remediation MCP",
@@ -169,78 +62,41 @@ Intended to be launched by an AI coding assistant as an MCP server:
     }
   }
 
-The credential is read from cx config (or CX_APIKEY). The realm-scoped URL is
-resolved by, in order: the --mcp-url flag, the CX_MCP_URL env var, the
-authoritative "ast-base-url" claim from the exchanged access token (works for
-any region/on-prem), then an offline IAM->AST host swap. Override with --mcp-url
-(preferred for MCP clients that pass args but not env) or CX_MCP_URL only for
-air-gapped setups where the token endpoint is unreachable at startup.
-
-If no usable credential exists at startup the bridge stays up in a degraded state
-and connects automatically once you run 'cx auth login' — no restart needed.`,
+The credential is read from cx config (or CX_APIKEY); the realm-scoped URL is
+derived from the credential's JWT issuer claim. For dev/on-prem where it can't
+be derived, override it with the --mcp-url flag or the CX_MCP_URL env var. The
+flag is preferred for MCP clients that pass args but not env to the server.`,
 		Hidden: true, // internal plumbing for the Claude Code / IDE plugins
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			urlOverride, _ := cmd.Flags().GetString(mcpURLFlag)
-			return runBridge(version, urlOverride)
+			return runBridge(urlOverride)
 		},
 	}
 	cmd.Flags().String(mcpURLFlag, "", "Override the Security MCP URL (dev/on-prem where it can't be derived from the credential)")
 	return cmd
 }
 
-// newBridgeClient builds the HTTP client used to reach the remote Security MCP. When a cx proxy is
-// configured — the config-file cx_http_proxy or the HTTP_PROXY/CX_HTTP_PROXY env, including NTLM /
-// Kerberos auth types — it reuses the CLI's proxy-aware client (wrappers.GetClient), so a single
-// `cx configure`-based proxy setup covers both the CLI and the MCP. Otherwise it keeps the default
-// transport, which already honors HTTPS_PROXY / HTTP_PROXY / NO_PROXY — so no existing env-var proxy
-// behavior is lost.
-func newBridgeClient() *http.Client {
-	if strings.TrimSpace(viper.GetString(commonParams.ProxyKey)) != "" {
-		c := wrappers.GetClient(uint(bridgeRequestTimeout / time.Second))
-		c.Timeout = bridgeRequestTimeout // preserve the exact bridge timeout
-		return c
-	}
-	return &http.Client{Timeout: bridgeRequestTimeout}
-}
-
-func runBridge(version, urlOverride string) error {
-	return runBridgeIO(os.Stdin, os.Stdout, newBridgeClient(), version, urlOverride, productionResolveAPIKey)
-}
-
-// runBridgeIO is the testable core: it wires the session to the given streams,
-// decides the startup state, runs the watcher when degraded, and pumps the stdin
-// read loop. It never exits the process on a missing credential. resolveKey is the
-// credential resolver, injected so tests can stub it without racing viper.
-func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlOverride string, resolveKey func() string) error {
-	sess := &bridgeSession{writer: newSyncWriter(out), version: version, resolveKey: resolveKey, urlOverride: urlOverride}
-
-	apiKey := sess.resolveKey()
+func runBridge(urlOverride string) error {
+	apiKey := resolveAPIKey()
 	mcpURL, err := deriveMCPURL(apiKey, urlOverride)
-	if apiKey != "" && err == nil {
-		sess.state = stateConnected
-		sess.apiKey = apiKey
-		sess.mcpURL = mcpURL
-	} else {
-		sess.state = stateUnauth
-		// Degraded notice goes to STDERR only (stdout is the protocol channel).
-		fmt.Fprintln(os.Stderr, "cx mcp bridge: no usable Checkmarx credential yet — serving in a degraded state. "+
-			"Log in with 'cx auth login' (or /cx-cli-setup) using the default (yaml) or '--session global' mode "+
-			"(NOT '--session local', which this process can't see); Checkmarx tools appear automatically once authenticated. "+
-			"For on-prem/custom domains, set CX_MCP_URL or pass --mcp-url.")
-		stop := make(chan struct{})
-		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() { defer wg.Done(); sess.watchForCredential(client, urlOverride, stop) }()
-		// Clean shutdown on EOF: stop the watcher and wait for it to fully exit before
-		// returning, so no goroutine outlives the bridge or touches config concurrently.
-		defer func() { close(stop); wg.Wait() }()
+	if apiKey == "" || err != nil {
+		// Fatal startup failure. Write to stderr and exit directly: returning an
+		// error would route through main.exitIfError, which prints to STDOUT and
+		// would corrupt the MCP protocol channel.
+		fmt.Fprintln(os.Stderr, "cx mcp bridge: no usable Checkmarx credential or could not derive the Security MCP URL. "+
+			"Run 'cx auth login' (or /cx-cli-setup), or set CX_MCP_URL for on-prem/custom domains.")
+		os.Exit(1)
 	}
 
-	reader := bufio.NewReader(in)
+	client := &http.Client{Timeout: bridgeRequestTimeout}
+	sess := &bridgeSession{}
+	in := bufio.NewReader(os.Stdin)
+	out := bufio.NewWriter(os.Stdout)
+
 	for {
-		line, readErr := reader.ReadString('\n')
+		line, readErr := in.ReadString('\n')
 		if body := bytes.TrimSpace([]byte(line)); len(body) > 0 {
-			sess.dispatch(client, body)
+			apiKey, mcpURL = sess.dispatch(client, mcpURL, apiKey, body, out)
 		}
 		if readErr != nil {
 			break // EOF — the client closed the connection
@@ -249,17 +105,23 @@ func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlO
 	return nil
 }
 
-// deriveMCPURL builds the realm-scoped Security MCP URL, region/tenant/on-prem
-// agnostic. Resolution order (top wins):
-//  1. the --mcp-url flag (explicit override),
-//  2. the CX_MCP_URL env var (explicit override),
-//  3. the authoritative "ast-base-url" claim from the exchanged ACCESS token —
-//     the AST base the IAM server itself issued (works for any region/on-prem),
-//  4. an offline IAM->AST host swap from the credential's `iss` claim, for
-//     standard cloud regions when the token exchange is unavailable.
-//
-// The realm (tenant) always comes from the stored credential's `iss` claim and is
-// independent of how the AST base host is resolved.
+// resolveAPIKey returns the credential cx resolved at startup (CX_APIKEY env /
+// cx config / active session), falling back to CHECKMARX_API_KEY for parity with
+// the previous Python bridge.
+func resolveAPIKey() string {
+	if k := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey)); k != "" {
+		return k
+	}
+	if k := strings.TrimSpace(os.Getenv("CHECKMARX_API_KEY")); k != "" {
+		return k
+	}
+	return ""
+}
+
+// deriveMCPURL builds the realm-scoped Security MCP URL. An explicit override
+// wins (the --mcp-url flag, else the CX_MCP_URL env var); otherwise the realm and
+// host come from the credential's JWT `iss` claim, mapping the IAM host to the AST
+// host (<region>.iam -> <region>.ast, or iam. -> ast.).
 func deriveMCPURL(apiKey, override string) (string, error) {
 	override = strings.TrimSpace(override)
 	if override == "" {
@@ -271,232 +133,76 @@ func deriveMCPURL(apiKey, override string) (string, error) {
 	if apiKey == "" {
 		return "", errors.New("no API key")
 	}
-
 	issuer, err := wrappers.ExtractFromTokenClaims(apiKey, "iss")
 	if err != nil {
 		return "", err
 	}
-	realm, err := realmFromIssuer(issuer)
-	if err != nil {
-		return "", err
-	}
-
-	// 3. Authoritative: AST base from the access token's ast-base-url claim. On any
-	// failure (token endpoint unreachable, claim absent) fall through to the swap.
-	if base := astBaseFromAccessToken(); base != "" {
-		return joinSecurityMCPURL(base, realm), nil
-	}
-
-	// 4. Offline fallback for standard cloud regions.
-	astBase, err := astBaseFromIAMHost(issuer)
-	if err != nil {
-		return "", err
-	}
-	return joinSecurityMCPURL(astBase, realm), nil
-}
-
-// astBaseFromAccessToken exchanges the stored refresh token for an access token
-// (cached, non-interactive grant_type=refresh_token) and reads the authoritative
-// "ast-base-url" claim from it — the claim is present only on the access token,
-// never on the stored refresh token. Returns "" (logging at verbose) on any
-// failure so the caller can fall back to the offline host swap. The access token
-// is used ONLY for URL discovery here; it is never sent to the MCP server.
-func astBaseFromAccessToken() string {
-	accessToken, err := getAccessToken()
-	if err != nil {
-		logger.PrintIfVerbose("cx mcp bridge: access-token exchange failed, falling back to IAM->AST host swap: " + err.Error())
-		return ""
-	}
-	base, err := wrappers.ExtractFromTokenClaims(accessToken, wrappers.BaseURLKey)
-	if err != nil {
-		logger.PrintIfVerbose("cx mcp bridge: ast-base-url claim unavailable, falling back to IAM->AST host swap: " + err.Error())
-		return ""
-	}
-	return strings.TrimSpace(base)
+	return buildSecurityMCPURL(issuer)
 }
 
 // buildSecurityMCPURL maps a JWT issuer (e.g. https://eu.iam.checkmarx.net/auth/realms/<realm>)
-// to the realm-scoped Security MCP URL via the offline IAM->AST host swap
-// (https://eu.ast.checkmarx.net/api/security-mcp/mcp/<realm>).
+// to the realm-scoped Security MCP URL (https://eu.ast.checkmarx.net/api/security-mcp/mcp/<realm>).
 func buildSecurityMCPURL(issuer string) (string, error) {
-	astBase, err := astBaseFromIAMHost(issuer)
-	if err != nil {
-		return "", err
-	}
-	realm, err := realmFromIssuer(issuer)
-	if err != nil {
-		return "", err
-	}
-	return joinSecurityMCPURL(astBase, realm), nil
-}
-
-// astBaseFromIAMHost maps a JWT issuer's IAM host to the AST base URL for standard
-// cloud regions (<region>.iam -> <region>.ast, or iam. -> ast.). Dev/on-prem/custom
-// hosts are not mappable and return an error (use ast-base-url or CX_MCP_URL).
-func astBaseFromIAMHost(issuer string) (string, error) {
 	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(issuer), "/"))
 	if err != nil || parsed.Host == "" {
 		return "", errors.New("could not parse issuer host from API key")
 	}
+
+	var astBase string
 	switch host := parsed.Host; {
 	case strings.Contains(host, ".iam."):
-		return "https://" + strings.Replace(host, ".iam.", ".ast.", 1), nil
+		astBase = "https://" + strings.Replace(host, ".iam.", ".ast.", 1)
 	case strings.HasPrefix(host, "iam."):
-		return "https://ast." + strings.TrimPrefix(host, "iam."), nil
+		astBase = "https://ast." + strings.TrimPrefix(host, "iam.")
 	default:
 		return "", errors.New("could not map IAM host to AST host; set CX_MCP_URL for on-prem/custom domains")
 	}
-}
 
-// realmFromIssuer extracts the realm (tenant) from a JWT issuer URL whose path ends
-// in .../auth/realms/<realm>.
-func realmFromIssuer(issuer string) (string, error) {
-	parsed, err := url.Parse(strings.TrimRight(strings.TrimSpace(issuer), "/"))
-	if err != nil {
-		return "", errors.New("could not parse issuer from API key")
-	}
 	segments := strings.Split(strings.Trim(parsed.Path, "/"), "/")
 	realm := segments[len(segments)-1]
 	if realm == "" {
 		return "", errors.New("could not derive realm from issuer")
 	}
-	return realm, nil
+	return astBase + securityMCPPathPrefix + realm, nil
 }
 
-// joinSecurityMCPURL composes the realm-scoped Security MCP endpoint from an AST
-// base URL and a realm.
-func joinSecurityMCPURL(base, realm string) string {
-	return strings.TrimRight(strings.TrimSpace(base), "/") + securityMCPPathPrefix + realm
-}
-
-// dispatch handles one inbound JSON-RPC line. When unauthenticated it answers the
-// MCP handshake locally; when connected it proxies to the remote (unchanged).
-func (s *bridgeSession) dispatch(client *http.Client, body []byte) {
-	s.mu.Lock()
-	state := s.state
-	apiKey := s.apiKey
-	mcpURL := s.mcpURL
-	s.mu.Unlock()
-
-	if state == stateUnauth {
-		s.dispatchLocal(body)
-		return
-	}
-	s.proxy(client, mcpURL, apiKey, body)
-}
-
-// dispatchLocal answers the MCP handshake without any network access so the client
-// shows the server Connected while we wait for a credential. initialize advertises
-// tools.listChanged=true (the contract that lets the client accept an empty list now
-// and re-fetch after notifications/tools/list_changed); tools/list returns empty;
-// ping is answered; any other request returns a clear "not authenticated" error.
-func (s *bridgeSession) dispatchLocal(body []byte) {
-	var req struct {
-		ID     json.RawMessage `json:"id"`
-		Method string          `json:"method"`
-		Params struct {
-			ProtocolVersion string `json:"protocolVersion"`
-		} `json:"params"`
-	}
-	if err := json.Unmarshal(body, &req); err != nil {
-		return
-	}
-	switch req.Method {
-	case "initialize":
-		s.emitLocalInitialize(req.ID, req.Params.ProtocolVersion)
-	case "notifications/initialized":
-		// client readiness signal — no response
-	case "tools/list":
-		s.emitResult(req.ID, map[string]interface{}{"tools": []interface{}{}})
-	case "ping":
-		s.emitResult(req.ID, map[string]interface{}{})
-	default:
-		if len(req.ID) > 0 {
-			s.writeError(body, "not authenticated yet — run 'cx auth login' (or /cx-cli-setup); Checkmarx tools enable automatically once authenticated")
-		}
-	}
-}
-
-// emitLocalInitialize answers initialize locally, echoing the client's requested
-// protocolVersion (or a supported default) and remembering it for the eventual
-// remote handshake.
-func (s *bridgeSession) emitLocalInitialize(id json.RawMessage, clientProto string) {
-	proto := strings.TrimSpace(clientProto)
-	if proto == "" {
-		proto = defaultProtocolVersion()
-	}
-	s.mu.Lock()
-	s.clientProto = proto
-	s.mu.Unlock()
-	s.emitResult(id, map[string]interface{}{
-		"protocolVersion": proto,
-		"capabilities":    map[string]interface{}{"tools": map[string]interface{}{"listChanged": true}},
-		"serverInfo":      map[string]interface{}{"name": "Checkmarx Security", "version": s.version},
-		"instructions":    "Checkmarx Security is initializing — its tools appear once you authenticate (run 'cx auth login' or /cx-cli-setup).",
-	})
-}
-
-// emitResult writes a JSON-RPC result for the given id.
-func (s *bridgeSession) emitResult(id json.RawMessage, result interface{}) {
-	reply, err := json.Marshal(map[string]interface{}{"jsonrpc": "2.0", "id": id, "result": result})
-	if err != nil {
-		return
-	}
-	s.writer.emitLine(reply)
-}
-
-// proxy forwards one JSON-RPC request to the remote and relays the response. On
-// 401/403 it re-reads cx config from disk and retries once with the refreshed
-// credential — a rotated `cx auth login` token self-heals without a restart, while a
-// dead key fails fast instead of looping.
-func (s *bridgeSession) proxy(client *http.Client, mcpURL, apiKey string, body []byte) {
+// dispatch forwards one JSON-RPC request and relays the response. On 401/403 it
+// re-reads the credential and retries once, but only if the credential actually
+// changed — a rotated `cx auth login` token self-heals without a restart, while a
+// dead key fails fast instead of looping. Returns the (possibly refreshed)
+// credential and URL for the next iteration.
+func (s *bridgeSession) dispatch(client *http.Client, mcpURL, apiKey string, body []byte, out *bufio.Writer) (newKey, newURL string) {
 	resp, err := s.post(client, mcpURL, apiKey, body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "cx mcp bridge: request failed: %v\n", err)
-		s.writeError(body, "")
-		return
+		writeJSONRPCError(out, body, "")
+		return apiKey, mcpURL
 	}
 
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		resp.Body.Close()
-		reloadConfig() // re-read disk so a token rotated by another process is visible
-		reloaded := s.resolveKey()
+		reloaded := resolveAPIKey()
 		if reloaded != "" && reloaded != apiKey {
-			// A rotated credential may target a different tenant/realm, so
-			// re-derive the realm-scoped URL rather than replaying the stale
-			// one. Invalidate the cached access token first (as tryHeal does)
-			// so the ast-base-url claim is re-fetched for the new tenant instead
-			// of reusing the old tenant's cached base. If the URL actually
-			// changes, the previous Mcp-Session-Id is scoped to the old tenant
-			// and must not be reused — drop it so the remote issues a fresh
-			// session for the new tenant.
-			invalidateTokenCache()
-			retryURL := mcpURL
-			if derived, derr := deriveMCPURL(reloaded, s.urlOverride); derr == nil && derived != "" {
-				retryURL = derived
-			}
-			s.mu.Lock()
-			s.apiKey = reloaded
-			if retryURL != s.mcpURL {
-				s.mcpURL = retryURL
-				s.id = ""
-			}
-			s.mu.Unlock()
-			retry, retryErr := s.post(client, retryURL, reloaded, body)
+			// The URL is stable across a credential reload (it comes from the
+			// override or the realm, not the token instance), so only the
+			// credential is refreshed here.
+			apiKey = reloaded
+			retry, retryErr := s.post(client, mcpURL, apiKey, body)
 			if retryErr != nil {
 				fmt.Fprintf(os.Stderr, "cx mcp bridge: retry after credential reload failed: %v\n", retryErr)
-				s.writeError(body, "")
-				return
+				writeJSONRPCError(out, body, "")
+				return apiKey, mcpURL
 			}
-			s.finish(retry, body)
-			return
+			s.finish(retry, body, out)
+			return apiKey, mcpURL
 		}
 		fmt.Fprintf(os.Stderr, "cx mcp bridge: HTTP %d from MCP endpoint (no fresh credential to retry with)\n", resp.StatusCode)
-		s.writeError(body, fmt.Sprintf("HTTP %d (auth failed — run /cx-cli-setup to re-authenticate)", resp.StatusCode))
-		return
+		writeJSONRPCError(out, body, fmt.Sprintf("HTTP %d (auth failed — run /cx-cli-setup to re-authenticate)", resp.StatusCode))
+		return apiKey, mcpURL
 	}
 
-	s.finish(resp, body)
+	s.finish(resp, body, out)
+	return apiKey, mcpURL
 }
 
 func (s *bridgeSession) post(client *http.Client, mcpURL, apiKey string, body []byte) (*http.Response, error) {
@@ -507,9 +213,6 @@ func (s *bridgeSession) post(client *http.Client, mcpURL, apiKey string, body []
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("Accept-Encoding", "identity")
-	// Forward the RAW stored credential (API key / refresh token); the server
-	// exchanges it server-side. Never send the access token fetched in
-	// deriveMCPURL — that is for URL discovery only.
 	req.Header.Set("Authorization", apiKey)
 	if s.id != "" {
 		req.Header.Set("Mcp-Session-Id", s.id)
@@ -520,17 +223,17 @@ func (s *bridgeSession) post(client *http.Client, mcpURL, apiKey string, body []
 	return client.Do(req)
 }
 
-func (s *bridgeSession) finish(resp *http.Response, body []byte) {
+func (s *bridgeSession) finish(resp *http.Response, body []byte, out *bufio.Writer) {
 	if resp.StatusCode >= 400 {
 		fmt.Fprintf(os.Stderr, "cx mcp bridge: HTTP %d from MCP endpoint\n", resp.StatusCode)
-		s.writeError(body, fmt.Sprintf("HTTP %d", resp.StatusCode))
+		writeJSONRPCError(out, body, fmt.Sprintf("HTTP %d", resp.StatusCode))
 		resp.Body.Close()
 		return
 	}
-	s.handleResponse(resp)
+	s.handleResponse(resp, out)
 }
 
-func (s *bridgeSession) handleResponse(resp *http.Response) {
+func (s *bridgeSession) handleResponse(resp *http.Response, out *bufio.Writer) {
 	defer resp.Body.Close()
 	if sid := resp.Header.Get("Mcp-Session-Id"); sid != "" {
 		s.id = sid
@@ -540,21 +243,21 @@ func (s *bridgeSession) handleResponse(resp *http.Response) {
 		return
 	}
 	if strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "text/event-stream") {
-		s.pumpSSE(resp.Body)
+		s.pumpSSE(resp.Body, out)
 		return
 	}
 	raw, _ := io.ReadAll(resp.Body)
-	s.emit(raw)
+	s.emit(out, raw)
 }
 
 // pumpSSE parses an SSE stream and emits each buffered `data:` payload as a single
 // JSON-RPC line until the stream ends.
-func (s *bridgeSession) pumpSSE(body io.Reader) {
+func (s *bridgeSession) pumpSSE(body io.Reader, out *bufio.Writer) {
 	reader := bufio.NewReader(body)
 	var dataLines []string
 	flush := func() {
 		if len(dataLines) > 0 {
-			s.emit([]byte(strings.Join(dataLines, "\n")))
+			s.emit(out, []byte(strings.Join(dataLines, "\n")))
 			dataLines = dataLines[:0]
 		}
 	}
@@ -580,7 +283,7 @@ func (s *bridgeSession) pumpSSE(body io.Reader) {
 // emit writes one validated JSON-RPC message to stdout as a single line, capturing
 // the negotiated protocol version from an initialize result. stdout is the MCP
 // channel, so non-JSON payloads are dropped rather than corrupting the stream.
-func (s *bridgeSession) emit(raw []byte) {
+func (s *bridgeSession) emit(out *bufio.Writer, raw []byte) {
 	raw = bytes.TrimSpace(raw)
 	if len(raw) == 0 || !json.Valid(raw) {
 		return
@@ -593,13 +296,15 @@ func (s *bridgeSession) emit(raw []byte) {
 	if err := json.Unmarshal(raw, &probe); err == nil && probe.Result.ProtocolVersion != "" {
 		s.proto = probe.Result.ProtocolVersion
 	}
-	s.writer.emitLine(raw)
+	_, _ = out.Write(raw)
+	_ = out.WriteByte('\n')
+	_ = out.Flush()
 }
 
-// writeError surfaces a JSON-RPC error for a request id so the client never hangs on
-// a failed call. Notifications and unparseable/batch lines have no single id to
-// reply to and are skipped.
-func (s *bridgeSession) writeError(requestLine []byte, detail string) {
+// writeJSONRPCError surfaces a JSON-RPC error for a request id so the client never
+// hangs on a failed call. Notifications and unparseable/batch lines have no single
+// id to reply to and are skipped.
+func writeJSONRPCError(out *bufio.Writer, requestLine []byte, detail string) {
 	var req struct {
 		ID     json.RawMessage `json:"id"`
 		Method string          `json:"method"`
@@ -619,132 +324,7 @@ func (s *bridgeSession) writeError(requestLine []byte, detail string) {
 	if err != nil {
 		return
 	}
-	s.writer.emitLine(reply)
-}
-
-// watchForCredential polls cx config on disk while the bridge is degraded. As soon
-// as a usable credential appears (e.g. the developer ran `cx auth login`), it
-// establishes the remote session, flips to connected, and pushes a
-// notifications/tools/list_changed so the client auto-fetches the real tools — then
-// the watcher exits. It also exits on EOF (stop closed).
-func (s *bridgeSession) watchForCredential(client *http.Client, urlOverride string, stop <-chan struct{}) {
-	ticker := time.NewTicker(credentialPollInterval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-stop:
-			return
-		case <-ticker.C:
-			if s.tryHeal(client, urlOverride) {
-				return
-			}
-		}
-	}
-}
-
-// tryHeal attempts one self-heal cycle. Returns true once the bridge is connected.
-func (s *bridgeSession) tryHeal(client *http.Client, urlOverride string) bool {
-	if s.isConnected() {
-		return true
-	}
-	reloadConfig() // the definitive disk re-read; viper alone is a stale startup snapshot
-	key := s.resolveKey()
-	if key == "" {
-		return false // still no credential — stay degraded
-	}
-	invalidateTokenCache() // a fresh login may target a different tenant
-	mcpURL, err := deriveMCPURL(key, urlOverride)
-	if err != nil || mcpURL == "" {
-		return false
-	}
-	if !s.establishRemoteSession(client, mcpURL, key) {
-		return false // remote not reachable / credential not yet valid — retry next tick
-	}
-	s.promote(key, mcpURL)
-	s.notifyToolsChanged()
-	return true
-}
-
-// establishRemoteSession performs the remote MCP initialize handshake on the
-// bridge's behalf (the client's initialize was answered locally, so the remote never
-// saw it). It sends a MINIMAL synthesized initialize (clientInfo=cx-bridge, no
-// client capabilities), captures the Mcp-Session-Id + negotiated protocolVersion,
-// drives notifications/initialized, and DISCARDS the response body (the client
-// already received its handshake result). Returns false if the remote is unreachable
-// or rejects the credential, so the watcher retries.
-func (s *bridgeSession) establishRemoteSession(client *http.Client, mcpURL, apiKey string) bool {
-	s.mu.Lock()
-	proto := s.clientProto
-	s.mu.Unlock()
-	if proto == "" {
-		proto = defaultProtocolVersion()
-	}
-
-	initReq, err := json.Marshal(map[string]interface{}{
-		"jsonrpc": "2.0",
-		"id":      0,
-		"method":  "initialize",
-		"params": map[string]interface{}{
-			"protocolVersion": proto,
-			"capabilities":    map[string]interface{}{},
-			"clientInfo":      map[string]interface{}{"name": "cx-bridge", "version": s.version},
-		},
-	})
-	if err != nil {
-		return false
-	}
-
-	resp, err := s.post(client, mcpURL, apiKey, initReq)
-	if err != nil {
-		return false
-	}
-	sid := resp.Header.Get("Mcp-Session-Id")
-	code := resp.StatusCode
-	_, _ = io.Copy(io.Discard, resp.Body)
-	resp.Body.Close()
-	if code >= 400 {
-		return false
-	}
-
-	// Session id + the version we negotiated drive every subsequent proxied request.
-	s.id = sid
-	s.proto = proto
-
-	// Complete the remote lifecycle so it accepts tools/list and tool calls.
-	notif, _ := json.Marshal(map[string]interface{}{"jsonrpc": "2.0", "method": "notifications/initialized"})
-	if nresp, nerr := s.post(client, mcpURL, apiKey, notif); nerr == nil {
-		_, _ = io.Copy(io.Discard, nresp.Body)
-		nresp.Body.Close()
-	}
-	// remoteReady is shared with the read loop; guard the write with mu (the
-	// struct contract lists it among the mutex-protected fields).
-	s.mu.Lock()
-	s.remoteReady = true
-	s.mu.Unlock()
-	return true
-}
-
-// promote publishes the resolved credential/URL and flips the bridge to connected.
-func (s *bridgeSession) promote(key, mcpURL string) {
-	s.mu.Lock()
-	s.apiKey = key
-	s.mcpURL = mcpURL
-	s.state = stateConnected
-	s.mu.Unlock()
-}
-
-func (s *bridgeSession) isConnected() bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.state == stateConnected
-}
-
-// notifyToolsChanged pushes an unsolicited notifications/tools/list_changed so the
-// client re-fetches tools/list (now served by the connected remote) with no reload.
-func (s *bridgeSession) notifyToolsChanged() {
-	notif, err := json.Marshal(map[string]interface{}{"jsonrpc": "2.0", "method": "notifications/tools/list_changed"})
-	if err != nil {
-		return
-	}
-	s.writer.emitLine(notif)
+	_, _ = out.Write(reply)
+	_ = out.WriteByte('\n')
+	_ = out.Flush()
 }
