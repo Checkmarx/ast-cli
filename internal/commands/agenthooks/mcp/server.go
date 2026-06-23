@@ -18,7 +18,7 @@ import (
 // when false, all guardrails run as pass-through (fail-open), matching the
 // behaviour of the Cursor hook path.
 func NewMCPCommand(version string, licensed func() bool) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "mcp",
 		Short: "Start MCP server for AI assistant integration",
 		Long: `Start a Model Context Protocol (MCP) server that exposes Checkmarx
@@ -42,6 +42,11 @@ Transport: stdio (compatible with Claude Desktop, Cursor, VS Code Copilot, Winds
 			return run(version, licensed)
 		},
 	}
+	// "cx mcp bridge" proxies stdio MCP to the remote Checkmarx Security MCP.
+	// Keeping it as a subcommand leaves the default "cx mcp" (local guardrail
+	// server) unchanged and backward-compatible.
+	cmd.AddCommand(NewBridgeCommand())
+	return cmd
 }
 
 func run(version string, licensed func() bool) error {
