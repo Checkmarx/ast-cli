@@ -884,7 +884,13 @@ func GetRealmURL() (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-	if len(apiKey) > 0 {
+	// When override is set (e.g. `cx auth login`, which forces ApikeyOverrideFlag
+	// so the explicit --base-auth-uri/--tenant win), do NOT decode the stored API
+	// key. Decoding it here would surface a stale/malformed cx_apikey as a hard
+	// "failed to resolve IAM realm URL" error before the override branch below can
+	// build the realm from the flags — defeating the very purpose of the override
+	// and making login impossible until the bad key is manually cleared.
+	if len(apiKey) > 0 && !override {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
 		if err != nil {
