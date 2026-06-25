@@ -45,7 +45,7 @@ Transport: stdio (compatible with Claude Desktop, Cursor, VS Code Copilot, Winds
 	// "cx mcp bridge" proxies stdio MCP to the remote Checkmarx Security MCP.
 	// Keeping it as a subcommand leaves the default "cx mcp" (local guardrail
 	// server) unchanged and backward-compatible.
-	cmd.AddCommand(NewBridgeCommand())
+	cmd.AddCommand(NewBridgeCommand(version))
 	return cmd
 }
 

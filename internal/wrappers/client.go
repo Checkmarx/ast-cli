@@ -72,7 +72,9 @@ type ClientCredentialsError struct {
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
 const BaseAuthURLPrefix = "auth/realms/organization"
-const baseURLKey = "ast-base-url"
+// BaseURLKey is the JWT claim that carries the AST base URL. It is present only
+// on the exchanged access token (see GetURL), not on the stored refresh token.
+const BaseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
@@ -649,6 +651,17 @@ func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	return ""
 }
 
+// InvalidateAccessTokenCache forces the next GetAccessToken to re-exchange the
+// stored credential instead of returning a cached access token. Used after a fresh
+// `cx auth login` (which may target a different tenant) so the new ast-base-url
+// claim is re-derived. Guarded by the same mutex that protects the cache writes.
+func InvalidateAccessTokenCache() {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+	CachedAccessToken = ""
+	CachedAccessTime = time.Time{}
+}
+
 func writeCredentialsToCache(accessToken string) {
 	credentialsMutex.Lock()
 	defer credentialsMutex.Unlock()
@@ -948,7 +961,7 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 	if accessToken != "" {
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL, err = ExtractFromTokenClaims(accessToken, baseURLKey)
+		cleanURL, err = ExtractFromTokenClaims(accessToken, BaseURLKey)
 		if err != nil {
 			return "", err
 		}
