@@ -1650,6 +1650,7 @@ func enrichScaResults(
 		if scaPackageModel != nil {
 			resultsModel = addPackageInformation(resultsModel, scaPackageModel, scaTypeModel)
 		}
+		backfillRecommendedVersionsFromExport(resultsModel, scaExportDetails.ScaTypes)
 	}
 	if slices.Contains(scan.Engines, commonParams.ContainersType) && !wrappers.IsContainersEnabled {
 		resultsModel = removeResultsByType(resultsModel, commonParams.ContainersType)
@@ -1660,7 +1661,12 @@ func enrichScaResults(
 func parseExportScaVulnerability(types []wrappers.ScaType) *[]wrappers.ScaTypeCollection {
 	var scaTypes []wrappers.ScaTypeCollection
 	for _, t := range types {
-		scaTypes = append(scaTypes, wrappers.ScaTypeCollection(t))
+		scaTypes = append(scaTypes, wrappers.ScaTypeCollection{
+			ID:        t.ID,
+			Type:      t.Type,
+			IsIgnored: t.IsIgnored,
+			PackageID: t.PackageID,
+		})
 	}
 	return &scaTypes
 }
@@ -2877,6 +2883,72 @@ func buildScaState(typesByCVE map[string]wrappers.ScaTypeCollection, result *wra
 
 func buildVulnerabilityIdentifier(result *wrappers.ScanResult) string {
 	return fmt.Sprintf("%s:%s", result.ID, result.ScanResultData.PackageIdentifier)
+}
+
+func scaUpgradeVersionLookupKey(cveID, packageID string) string {
+	return fmt.Sprintf("%s|%s", cveID, packageID)
+}
+
+func buildScaUpgradeVersionLookup(vulnerabilities []wrappers.ScaType) map[string]string {
+	lookup := make(map[string]string)
+	for _, vulnerability := range vulnerabilities {
+		cveID := vulnerability.CveName
+		if cveID == "" {
+			cveID = vulnerability.ID
+		}
+		if cveID == "" || vulnerability.PackageID == "" || vulnerability.NextFixedVersion == "" {
+			continue
+		}
+		lookup[scaUpgradeVersionLookupKey(cveID, vulnerability.PackageID)] = vulnerability.NextFixedVersion
+	}
+	return lookup
+}
+
+func isRecommendedVersionEmpty(version interface{}) bool {
+	if version == nil {
+		return true
+	}
+	value, ok := version.(string)
+	if !ok {
+		return fmt.Sprint(version) == ""
+	}
+	return strings.TrimSpace(value) == ""
+}
+
+func backfillRecommendedVersionsFromExport(
+	resultsModel *wrappers.ScanResultsCollection,
+	vulnerabilities []wrappers.ScaType,
+) {
+	if resultsModel == nil || len(vulnerabilities) == 0 {
+		return
+	}
+
+	lookup := buildScaUpgradeVersionLookup(vulnerabilities)
+	if len(lookup) == 0 {
+		return
+	}
+
+	for _, result := range resultsModel.Results {
+		if result.Type != commonParams.ScaType {
+			continue
+		}
+		if !isRecommendedVersionEmpty(result.ScanResultData.RecommendedVersion) {
+			continue
+		}
+
+		cveID := result.ID
+		if cveID == "" {
+			cveID = result.VulnerabilityDetails.CveName
+		}
+		packageID := result.ScanResultData.PackageIdentifier
+		if cveID == "" || packageID == "" {
+			continue
+		}
+
+		if version, ok := lookup[scaUpgradeVersionLookupKey(cveID, packageID)]; ok {
+			result.ScanResultData.RecommendedVersion = version
+		}
+	}
 }
 
 func addPackageInformation(

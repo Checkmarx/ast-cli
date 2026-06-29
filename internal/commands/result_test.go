@@ -1045,6 +1045,58 @@ func Test_addPackageInformation(t *testing.T) {
 	assert.Equal(t, expectedFixLink, actualFixLink, "FixLink should match the result ID")
 }
 
+func Test_backfillRecommendedVersionsFromExport(t *testing.T) {
+	resultsModel := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: "sca",
+				ID:   "CVE-2024-0001",
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier:  "pkg-empty",
+					RecommendedVersion: "",
+				},
+			},
+			{
+				Type: "sca",
+				ID:   "CVE-2024-0002",
+				ScanResultData: wrappers.ScanResultData{
+					PackageIdentifier:  "pkg-existing",
+					RecommendedVersion: "1.2.3",
+				},
+			},
+		},
+	}
+	exportVulnerabilities := []wrappers.ScaType{
+		{
+			CveName:          "CVE-2024-0001",
+			PackageID:        "pkg-empty",
+			NextFixedVersion: "4.5.6",
+		},
+		{
+			CveName:          "CVE-2024-0002",
+			PackageID:        "pkg-existing",
+			NextFixedVersion: "9.9.9",
+		},
+	}
+
+	backfillRecommendedVersionsFromExport(resultsModel, exportVulnerabilities)
+
+	assert.Equal(t, "4.5.6", resultsModel.Results[0].ScanResultData.RecommendedVersion)
+	assert.Equal(t, "1.2.3", resultsModel.Results[1].ScanResultData.RecommendedVersion)
+}
+
+func Test_buildScaUpgradeVersionLookup_usesCveIDFallback(t *testing.T) {
+	lookup := buildScaUpgradeVersionLookup([]wrappers.ScaType{
+		{
+			ID:               "CVE-2024-9999",
+			PackageID:        "pkg-1",
+			NextFixedVersion: "2.0.0",
+		},
+	})
+
+	assert.Equal(t, "2.0.0", lookup["CVE-2024-9999|pkg-1"])
+}
+
 func TestRunGetResultsByScanIdGLSastFormat_NoVulnerabilities_Success(t *testing.T) {
 	// Execute the command and perform nil assertion
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK_NO_VULNERABILITIES", "--report-format", "gl-sast")
