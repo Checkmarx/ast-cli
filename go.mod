@@ -7,7 +7,7 @@ require (
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
-	github.com/Checkmarx/manifest-parser v0.1.2
+	//	github.com/Checkmarx/manifest-parser v0.1.2
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
@@ -35,6 +35,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	gotest.tools v2.2.0+incompatible
 )
+
+require github.com/Checkmarx/manifest-parser v0.0.0-00010101000000-000000000000
 
 require (
 	cyphar.com/go-pathrs v0.2.1 // indirect
@@ -334,3 +336,5 @@ replace github.com/containerd/containerd/v2 => github.com/containerd/containerd/
 replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v1.13.0
 
 replace github.com/opencontainers/runtime-spec => github.com/opencontainers/runtime-spec v1.2.0
+
+replace github.com/Checkmarx/manifest-parser => C:/Users/AtishJ/GitHub_Repo/manifest-parser
