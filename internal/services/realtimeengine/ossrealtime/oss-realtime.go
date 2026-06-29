@@ -16,6 +16,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	pkgManagerGradle = "gradle"
+	pkgManagerSbt    = "sbt"
+	pkgManagerMvn    = "mvn"
+)
+
 // convertLocations converts models.Location to realtimeengine.Location
 func convertLocations(locations []models.Location) []realtimeengine.Location {
 	var result []realtimeengine.Location
@@ -228,8 +234,8 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 			Locations:      convertLocations(pkg.Locations),
 		}
 		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = entry
-		if pkg.PackageManager == "gradle" || pkg.PackageManager == "sbt" {
-			packageMap[generatePackageMapEntry("mvn", pkg.PackageName, pkg.Version)] = entry
+		if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
+			packageMap[generatePackageMapEntry(pkgManagerMvn, pkg.PackageName, pkg.Version)] = entry
 		}
 	}
 	return packageMap
@@ -282,8 +288,8 @@ func createVersionMapping(requestPackages *wrappers.RealtimeScannerPackageReques
 // pkgToRequest transforms a parsed package into a scan request.
 func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
 	pkgManager := pkg.PackageManager
-	if pkg.PackageManager == "gradle" || pkg.PackageManager == "sbt" {
-		pkgManager = "mvn"
+	if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
+		pkgManager = pkgManagerMvn
 	}
 	return wrappers.RealtimeScannerPackage{
 		PackageManager: pkgManager,
