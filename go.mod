@@ -327,7 +327,7 @@ require (
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
-replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.32
+replace github.com/containerd/containerd => github.com/containerd/containerd v1.7.33
 
 replace github.com/containerd/containerd/v2 => github.com/containerd/containerd/v2 v2.1.5
 
