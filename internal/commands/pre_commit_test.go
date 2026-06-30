@@ -11,7 +11,9 @@ import (
 func TestNewHooksCommand(t *testing.T) {
 	mockJWT := &mock.JWTMockWrapper{}
 	mockFF := &mock.FeatureFlagsMockWrapper{}
-	cmd := NewHooksCommand(mockJWT, mockFF)
+	mockRealtime := &mock.RealtimeScannerMockWrapper{}
+	mockTelemetry := &mock.TelemetryMockWrapper{}
+	cmd := NewHooksCommand(mockJWT, mockFF, mockRealtime, mockTelemetry)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "hooks", cmd.Use)
