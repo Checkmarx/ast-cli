@@ -9,7 +9,7 @@ require (
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
 	github.com/Checkmarx/manifest-parser v0.1.2
 	github.com/Checkmarx/secret-detection v1.2.1
-	github.com/CheckmarxDev/ast-cx-hooks v1.0.2
+	github.com/CheckmarxDev/ast-cx-hooks v1.0.3
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/bouk/monkey v1.0.0

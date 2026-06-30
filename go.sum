@@ -99,8 +99,8 @@ github.com/Checkmarx/manifest-parser v0.1.2 h1:Sh2xkpeOWKu56Y7wo+ljckNGHAQX1uITE
 github.com/Checkmarx/manifest-parser v0.1.2/go.mod h1:hh5FX5FdDieU8CKQEkged4hfOaSylpJzub8PRFXa4kA=
 github.com/Checkmarx/secret-detection v1.2.1 h1:Hzpz74dcN/L14Q86ARvPOZpKBnERzGTpy6sl1RXKOTo=
 github.com/Checkmarx/secret-detection v1.2.1/go.mod h1:kbXbtIQisDdB/TNuV7r9HPclEznUyBHLQ5yr7IX7vBQ=
-github.com/CheckmarxDev/ast-cx-hooks v1.0.2 h1:geBt2XuzK+D5TVheeNbYNGvq1aFVl90MGmdPpGHt2Oc=
-github.com/CheckmarxDev/ast-cx-hooks v1.0.2/go.mod h1:BNFcjgHhjxiPnKGHqiaWQycMMrkeT+DqokG/l7d9gs8=
+github.com/CheckmarxDev/ast-cx-hooks v1.0.3 h1:zMz6Ony8iWgKqjgUFvYhhqm5dr29sEO6r2pBl7fi/OM=
+github.com/CheckmarxDev/ast-cx-hooks v1.0.3/go.mod h1:BNFcjgHhjxiPnKGHqiaWQycMMrkeT+DqokG/l7d9gs8=
 github.com/CycloneDX/cyclonedx-go v0.10.0 h1:7xyklU7YD+CUyGzSFIARG18NYLsKVn4QFg04qSsu+7Y=
 github.com/CycloneDX/cyclonedx-go v0.10.0/go.mod h1:vUvbCXQsEm48OI6oOlanxstwNByXjCZ2wuleUlwGEO8=
 github.com/DATA-DOG/go-sqlmock v1.5.2 h1:OcvFkGmslmlZibjAjaHm3L//6LiuBgolP7OputlJIzU=

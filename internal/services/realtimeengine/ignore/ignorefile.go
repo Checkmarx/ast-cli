@@ -27,6 +27,22 @@ func DefaultPath() string {
 	return filepath.Join(defaultDir, defaultFileName)
 }
 
+// PathFor returns the ignore-file path anchored at workDir — the workspace root the hook
+// event reports via its "cwd" field — i.e. <workDir>/.checkmarx/checkmarxIgnoredTempList.json.
+// When workDir is empty it falls back to the CWD-relative DefaultPath.
+//
+// Anchoring to workDir (rather than relying on the hook process's own working directory)
+// keeps the read side aligned with the write side regardless of where the host CLI launches
+// the hook subprocess: Claude Code happens to run hooks from the workspace root, but Copilot
+// CLI launches them from a different directory, so a CWD-relative lookup misses the file the
+// ignore command wrote under the workspace and the suppression is silently dropped.
+func PathFor(workDir string) string {
+	if workDir == "" {
+		return DefaultPath()
+	}
+	return filepath.Join(workDir, defaultDir, defaultFileName)
+}
+
 // Load reads the ignore file as a list of raw JSON entries. A missing or empty file yields an
 // empty list (not an error) so the first ignore creates the file cleanly.
 func Load(path string) ([]json.RawMessage, error) {

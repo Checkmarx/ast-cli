@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
 
@@ -262,7 +263,7 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
-	ctx := additionalContext("billing.py", "cx", findings)
+	ctx := additionalContext("billing.py", "cx", findings, "")
 	if !strings.Contains(ctx, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
 	}
@@ -282,7 +283,7 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 		{FileName: "billing.py", Line: 12, RuleID: 4027},
 	}
-	ctx := additionalContext("billing.py", "cx", findings)
+	ctx := additionalContext("billing.py", "cx", findings, "")
 	if strings.Count(ctx, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
 	}
@@ -295,8 +296,30 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 }
 
 func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *testing.T) {
-	ctx := additionalContext("main.py", "cx", nil)
+	ctx := additionalContext("main.py", "cx", nil, "")
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_PinsIgnoredFilePathToWorkDir(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	workDir := filepath.Join("repo", "ws")
+	ctx := additionalContext("billing.py", "cx", findings, workDir)
+	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected context to pin %q, got %q", want, ctx)
+	}
+}
+
+func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "")
+	if strings.Contains(ctx, "--ignored-file-path") {
+		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
 	}
 }
