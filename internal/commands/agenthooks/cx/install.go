@@ -91,6 +91,18 @@ var Agents = []Agent{
 			{"gemini-after-agent", "Gemini CLI agent finished"},
 		},
 	},
+	{
+		ID:          "copilot",
+		DisplayName: "GitHub Copilot CLI",
+		ConfigPath:  "~/.copilot/hooks/agenthooks.json",
+		Install:     install.InstallCopilotCLI,
+		Routes: []Route{
+			{"copilot-cli-stop", "GitHub Copilot CLI agent finished"},
+			{"copilot-cli-pre-tool-use", "Gate GitHub Copilot CLI tool use"},
+			{"copilot-cli-pre-file-write", "Gate GitHub Copilot CLI file write"},
+			{"copilot-cli-user-prompt-submit", "Gate GitHub Copilot CLI prompt"},
+		},
+	},
 }
 
 // FindAgent returns the Agent with the given ID, or nil if not found.
