@@ -44,14 +44,14 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go version
+      - name: Install pre-commit
+        run: |
+          pip config set global.extra-index-url https://__token__:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
+          pip install pre-commit==4.6.0
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Install gocovmerge
         run: go install github.com/wadey/gocovmerge@latest
-      - name: Install pre-commit
-        run: |
-          pip config set global.index-url https://__token__:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
-          pip install pre-commit
       - name: Go Integration test
         shell: bash
         env:
