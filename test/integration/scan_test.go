@@ -2164,8 +2164,7 @@ func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testi
 	}
 	scanID, _ := executeCreateScan(t, args)
 	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
-	wrappers.CachedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4"
-	wrappers.CachedAccessTime = time.Now()
+	wrappers.SetCachedAccessTokenForTest("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4")
 	viper.Set(params.TokenExpirySecondsKey, 300)
 	scan, _, err := scanWrapper.GetByID(scanID)
 	asserts.Nil(t, err)

@@ -13,7 +13,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
@@ -5123,14 +5122,12 @@ func TestGetGitCommitHistoryValue_WithWarnings(t *testing.T) {
 }
 
 func setupMockAccessToken() {
-	wrappers.CachedAccessToken = "mock-token-for-testing"
-	wrappers.CachedAccessTime = time.Now()
+	wrappers.SetCachedAccessTokenForTest("mock-token-for-testing")
 	viper.Set(commonParams.TokenExpirySecondsKey, 300)
 }
 
 func cleanupMockAccessToken() {
-	wrappers.CachedAccessToken = ""
-	wrappers.CachedAccessTime = time.Time{}
+	wrappers.SetCachedAccessTokenForTest("")
 
 	wrappers.ClearCache()
 	// Reset to default value (300 seconds as per params/binds.go)
