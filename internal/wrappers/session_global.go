@@ -111,7 +111,7 @@ func LoadActiveCredential() {
 		// Yaml's cx_apikey is already loaded by configuration.LoadConfiguration,
 		// but env-binding would override it if a stale CX_APIKEY is set in
 		// this shell. viper.Set with the yaml value forces yaml to win.
-		yamlRT := readYamlAPIKey()
+		yamlRT := ReadYamlAPIKey()
 		if yamlRT != "" {
 			viper.Set(params.AstAPIKey, yamlRT)
 		}
@@ -124,10 +124,12 @@ func LoadActiveCredential() {
 	}
 }
 
-// readYamlAPIKey reads cx_apikey directly from the yaml config file, bypassing
-// viper's env-first precedence. Used by LoadActiveCredential to force yaml
-// to win when the active mode is "yaml" but a stale CX_APIKEY env var exists.
-func readYamlAPIKey() string {
+// ReadYamlAPIKey reads cx_apikey directly from the yaml config file, bypassing
+// viper's env-first precedence. Used by LoadActiveCredential to force yaml to
+// win when the active mode is "yaml" but a stale CX_APIKEY env var exists, and
+// by the auth login/logout nuke phase to revoke whatever yaml actually holds
+// (not what viper currently resolves to, which could be a stale env var).
+func ReadYamlAPIKey() string {
 	configPath, err := configuration.GetConfigFilePath()
 	if err != nil {
 		return ""

@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -123,23 +122,23 @@ func validateSessionFlag(sessionMode string) error {
 	}
 }
 
-// nukeAllStorages reads every storage location, revokes any non-empty token
-// at IAM (best-effort, via the OAuth 2.0 revocation endpoint), and clears
-// file storages. Env is read but cannot be cleared from a child process —
-// its token is revoked server-side, so the bytes that remain in the parent
-// shell are inert.
+// nukeAllStorages revokes the tokens the CLI actually owns — the yaml config
+// file and the global session file — at IAM (best-effort, via the OAuth 2.0
+// revocation endpoint) and clears those file storages.
+//
+// The CX_APIKEY environment variable is deliberately left untouched: a child
+// process cannot clear a parent shell's env var, and that env value is most
+// often a deliberately-provided CI / long-lived credential. Silently revoking
+// it server-side would break the caller's pipeline, so we never revoke env.
 //
 // This is called as the first step of every login (regardless of mode) and
-// of every logout, ensuring that there is at most one active credential
-// anywhere after the operation completes.
+// of every logout, ensuring that the CLI's own file storages hold at most one
+// active credential after the operation completes.
 func nukeAllStorages(clientID string) {
 	// Revoke yaml's token first — read the yaml file directly to bypass any
 	// stale env shadowing in viper's normal lookup.
-	if yamlRT := readYamlAPIKeyForLogin(); yamlRT != "" {
+	if yamlRT := wrappers.ReadYamlAPIKey(); yamlRT != "" {
 		revokeOldRefreshToken(yamlRT, clientID, "yaml")
-	}
-	if envRT := os.Getenv(params.AstAPIKeyEnv); envRT != "" {
-		revokeOldRefreshToken(envRT, clientID, "env")
 	}
 	if globalRT, err := wrappers.ReadSessionGlobal(); err == nil && globalRT != "" {
 		revokeOldRefreshToken(globalRT, clientID, "global")
@@ -177,27 +176,10 @@ func clearFileStorages() {
 	}
 }
 
-// readYamlAPIKeyForLogin reads cx_apikey directly from the yaml file, bypassing
-// viper. Used during the nuke phase so we revoke whatever yaml had, not what
-// viper currently resolves to (which could be a stale env var).
-func readYamlAPIKeyForLogin() string {
-	configPath, err := configuration.GetConfigFilePath()
-	if err != nil {
-		return ""
-	}
-	yamlConfig, err := configuration.LoadConfig(configPath)
-	if err != nil {
-		return ""
-	}
-	if v, ok := yamlConfig[params.AstAPIKey].(string); ok {
-		return v
-	}
-	return ""
-}
-
-// persistYamlLogin writes the new refresh token to the yaml config file,
-// records yaml as the active mode, and prints CX_APIKEY=<token> + path to
-// stdout for scripting parity with cx auth register.
+// persistYamlLogin writes the new refresh token to the yaml config file and
+// records yaml as the active mode. The token is NOT echoed to stdout — it is
+// already persisted to the config file, and printing it would leak the
+// credential into shell history / CI logs.
 func persistYamlLogin(cmd *cobra.Command, refreshToken string) error {
 	configPath, err := configuration.GetConfigFilePath()
 	if err != nil {
@@ -209,7 +191,6 @@ func persistYamlLogin(cmd *cobra.Command, refreshToken string) error {
 	if err := wrappers.WriteActiveMode(params.SessionYamlValue); err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("failed to write active-mode file: %v", err))
 	}
-	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "%s=%s\n", params.AstAPIKeyEnv, refreshToken)
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Authenticated. Token saved to %s\n", configPath)
 	return nil
 }

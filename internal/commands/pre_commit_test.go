@@ -1,3 +1,5 @@
+//go:build !integration
+
 package commands
 
 import (
@@ -13,7 +15,8 @@ func TestNewHooksCommand(t *testing.T) {
 	mockFF := &mock.FeatureFlagsMockWrapper{}
 	mockRealtime := &mock.RealtimeScannerMockWrapper{}
 	mockTelemetry := &mock.TelemetryMockWrapper{}
-	cmd := NewHooksCommand(mockJWT, mockFF, mockRealtime, mockTelemetry)
+	mockRealtime := &mock.RealtimeScannerMockWrapper{}
+	cmd := NewHooksCommand(mockJWT, mockFF, mockRealtime, mockTelemetry, mockRealtime)
 
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "hooks", cmd.Use)

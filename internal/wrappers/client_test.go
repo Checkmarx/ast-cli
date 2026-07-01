@@ -1,6 +1,8 @@
 package wrappers
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -255,6 +257,47 @@ func TestSetAgentNameAndOrigin(t *testing.T) {
 	if origin != expectedOrigin {
 		t.Errorf("Origin header mismatch: got %v, want %v", origin, expectedOrigin)
 	}
+}
+
+// unsignedJWT builds a 3-segment JWT with the given claims. ExtractFromTokenClaims
+// uses ParseUnverified, so the signature segment is irrelevant.
+func unsignedJWT(claims map[string]interface{}) string {
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"none","typ":"JWT"}`))
+	payloadBytes, _ := json.Marshal(claims)
+	payload := base64.RawURLEncoding.EncodeToString(payloadBytes)
+	return header + "." + payload + ".sig"
+}
+
+// TestExtractFromTokenClaims covers fix #10: the "aud" (and any) claim may be a
+// string or an array of strings. The array form must not panic.
+func TestExtractFromTokenClaims(t *testing.T) {
+	const realm = "https://eu.iam.checkmarx.net/auth/realms/cx_seg"
+
+	t.Run("string claim returned as-is", func(t *testing.T) {
+		token := unsignedJWT(map[string]interface{}{"aud": realm})
+		got, err := ExtractFromTokenClaims(token, "aud")
+		assert.NoError(t, err)
+		assert.Equal(t, realm, got)
+	})
+
+	t.Run("array claim returns first non-empty string (no panic)", func(t *testing.T) {
+		token := unsignedJWT(map[string]interface{}{"aud": []interface{}{"", realm, "account"}})
+		got, err := ExtractFromTokenClaims(token, "aud")
+		assert.NoError(t, err)
+		assert.Equal(t, realm, got)
+	})
+
+	t.Run("non-string, non-array claim errors instead of panicking", func(t *testing.T) {
+		token := unsignedJWT(map[string]interface{}{"aud": 12345})
+		_, err := ExtractFromTokenClaims(token, "aud")
+		assert.Error(t, err)
+	})
+
+	t.Run("missing claim errors", func(t *testing.T) {
+		token := unsignedJWT(map[string]interface{}{"iss": realm})
+		_, err := ExtractFromTokenClaims(token, "aud")
+		assert.Error(t, err)
+	})
 }
 
 func TestRetryIAMHTTPRequest_Success(t *testing.T) {
