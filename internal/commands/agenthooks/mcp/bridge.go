@@ -80,6 +80,10 @@ type bridgeSession struct {
 	version     string // cx binary version, for the synthetic serverInfo
 	writer      *syncWriter
 
+	// resolveKey returns the credential cx resolved. Injected (not a package
+	// global) so the concurrent self-heal test can stub it without racing viper.
+	resolveKey func() string
+
 	id    string // Mcp-Session-Id, echoed back on every subsequent request
 	proto string // negotiated protocolVersion, sent as MCP-Protocol-Version
 }
@@ -113,12 +117,40 @@ var (
 	getAccessToken = wrappers.GetAccessToken
 
 	reloadConfig = func() {
+		// viper is not concurrency-safe; serialize disk re-reads (which mutate
+		// viper) against the credential resolver's viper reads. Both the read
+		// loop (on 401/403) and the watcher goroutine call this.
+		configMu.Lock()
+		defer configMu.Unlock()
 		_ = configuration.LoadConfiguration()
 		wrappers.LoadActiveCredential()
 	}
 	invalidateTokenCache   = wrappers.InvalidateAccessTokenCache
 	credentialPollInterval = 3 * time.Second
 )
+
+// configMu serializes all viper access performed by the bridge's two goroutines
+// (the stdin read loop and the credential watcher): reloadConfig mutates viper,
+// productionResolveAPIKey reads it. viper itself has no internal locking.
+var configMu sync.Mutex
+
+// productionResolveAPIKey returns the credential cx resolved (CX_APIKEY env / cx
+// config / active session), falling back to CHECKMARX_API_KEY for parity with the
+// previous Python bridge. Callers that need a credential written AFTER startup must
+// call reloadConfig() first (viper is a one-shot startup snapshot). The viper read
+// is guarded by configMu so it never races a concurrent reloadConfig.
+func productionResolveAPIKey() string {
+	configMu.Lock()
+	k := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey))
+	configMu.Unlock()
+	if k != "" {
+		return k
+	}
+	if k := strings.TrimSpace(os.Getenv("CHECKMARX_API_KEY")); k != "" {
+		return k
+	}
+	return ""
+}
 
 // NewBridgeCommand creates the hidden "cx mcp bridge" subcommand. version is the cx
 // binary version, surfaced in the synthetic serverInfo during the degraded handshake.
@@ -156,16 +188,17 @@ and connects automatically once you run 'cx auth login' — no restart needed.`,
 }
 
 func runBridge(version, urlOverride string) error {
-	return runBridgeIO(os.Stdin, os.Stdout, &http.Client{Timeout: bridgeRequestTimeout}, version, urlOverride)
+	return runBridgeIO(os.Stdin, os.Stdout, &http.Client{Timeout: bridgeRequestTimeout}, version, urlOverride, productionResolveAPIKey)
 }
 
 // runBridgeIO is the testable core: it wires the session to the given streams,
 // decides the startup state, runs the watcher when degraded, and pumps the stdin
-// read loop. It never exits the process on a missing credential.
-func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlOverride string) error {
-	sess := &bridgeSession{writer: newSyncWriter(out), version: version}
+// read loop. It never exits the process on a missing credential. resolveKey is the
+// credential resolver, injected so tests can stub it without racing viper.
+func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlOverride string, resolveKey func() string) error {
+	sess := &bridgeSession{writer: newSyncWriter(out), version: version, resolveKey: resolveKey}
 
-	apiKey := resolveAPIKey()
+	apiKey := sess.resolveKey()
 	mcpURL, err := deriveMCPURL(apiKey, urlOverride)
 	if apiKey != "" && err == nil {
 		sess.state = stateConnected
@@ -198,22 +231,6 @@ func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlO
 		}
 	}
 	return nil
-}
-
-// resolveAPIKey returns the credential cx resolved (CX_APIKEY env / cx config /
-// active session), falling back to CHECKMARX_API_KEY for parity with the previous
-// Python bridge. Callers that need a credential written AFTER startup must call
-// reloadConfig() first (viper is a one-shot startup snapshot). It is a package var
-// so the concurrent self-heal test can simulate a credential appearing without
-// racing viper (which is not concurrency-safe).
-var resolveAPIKey = func() string {
-	if k := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey)); k != "" {
-		return k
-	}
-	if k := strings.TrimSpace(os.Getenv("CHECKMARX_API_KEY")); k != "" {
-		return k
-	}
-	return ""
 }
 
 // deriveMCPURL builds the realm-scoped Security MCP URL, region/tenant/on-prem
@@ -427,7 +444,7 @@ func (s *bridgeSession) proxy(client *http.Client, mcpURL, apiKey string, body [
 	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
 		resp.Body.Close()
 		reloadConfig() // re-read disk so a token rotated by another process is visible
-		reloaded := resolveAPIKey()
+		reloaded := s.resolveKey()
 		if reloaded != "" && reloaded != apiKey {
 			s.mu.Lock()
 			s.apiKey = reloaded
@@ -598,7 +615,7 @@ func (s *bridgeSession) tryHeal(client *http.Client, urlOverride string) bool {
 		return true
 	}
 	reloadConfig() // the definitive disk re-read; viper alone is a stale startup snapshot
-	key := resolveAPIKey()
+	key := s.resolveKey()
 	if key == "" {
 		return false // still no credential — stay degraded
 	}
@@ -666,7 +683,11 @@ func (s *bridgeSession) establishRemoteSession(client *http.Client, mcpURL, apiK
 		_, _ = io.Copy(io.Discard, nresp.Body)
 		nresp.Body.Close()
 	}
+	// remoteReady is shared with the read loop; guard the write with mu (the
+	// struct contract lists it among the mutex-protected fields).
+	s.mu.Lock()
 	s.remoteReady = true
+	s.mu.Unlock()
 	return true
 }
 
