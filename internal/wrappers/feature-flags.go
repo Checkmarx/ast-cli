@@ -113,8 +113,10 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 		if len(featureFlags) == 0 || DefaultFFLoad {
 			_ = HandleFeatureFlags(featureFlagsWrapper)
 		}
-		// Take the value from FeatureFlags
-		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
+		defaultValue := featureFlags[flagName]
+		featureFlagsCache[flagName] = defaultValue // prevent re-fetch on next call
+		return &FeatureFlagResponseModel{Name: flagName, Status: defaultValue}, nil
+
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)
