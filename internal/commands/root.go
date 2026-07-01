@@ -431,7 +431,7 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 	} else {
 		multiWriter = io.MultiWriter(file)
 	}
-	log.SetOutput(multiWriter)
+	logger.SetOutput(multiWriter)
 	return nil
 }
 func CheckPreferredCredentials(cmd *cobra.Command) {

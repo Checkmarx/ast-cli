@@ -77,7 +77,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 		return nil, errors.Wrap(err, "failed to generate state")
 	}
 
-	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", opts.Port))
+	listener, err := net.Listen("tcp4", fmt.Sprintf("127.0.0.1:%d", opts.Port))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start local callback listener")
 	}
@@ -86,10 +86,13 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	if !ok {
 		return nil, errors.New("local listener did not bind to a TCP address")
 	}
-	// Listener binds to 127.0.0.1 (loopback-only, safe). The redirect URI uses
-	// the 'localhost' hostname and the '/checkmarx1/callback' path to match the
-	// pattern whitelisted on the 'ide-integration' Keycloak client — the same
-	// pattern used by the Checkmarx One VS Code extension.
+	// The redirect URI uses the 'localhost' hostname and the '/checkmarx1/callback'
+	// path to match the pattern whitelisted on the 'ide-integration' Keycloak client
+	// — the same pattern used by the Checkmarx One VS Code extension. Because
+	// 'localhost' resolves to ::1 on IPv6-preferring systems, we ALSO bind an IPv6
+	// loopback listener on the same port below (best-effort), so the browser callback
+	// reaches us whichever family 'localhost' resolves to. Both listeners are
+	// loopback-only (safe).
 	redirectURI := fmt.Sprintf("http://localhost:%d/checkmarx1/callback", tcpAddr.Port)
 	authURL := buildAuthorizeURL(disco.AuthorizationEndpoint, opts.ClientID, redirectURI, state, challenge)
 
@@ -125,6 +128,15 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = server.Serve(listener) }()
+	// Best-effort IPv6 loopback listener on the same port, so a browser that resolves
+	// 'localhost' to ::1 still reaches the callback. If it fails (no IPv6 stack, or the
+	// port is taken on ::1), proceed IPv4-only — unchanged from the previous behavior.
+	if v6Listener, v6Err := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", tcpAddr.Port)); v6Err == nil {
+		defer v6Listener.Close()
+		go func() { _ = server.Serve(v6Listener) }()
+	} else {
+		logger.PrintIfVerbose("OAuth callback: IPv6 loopback listener unavailable, using IPv4 only: " + v6Err.Error())
+	}
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()

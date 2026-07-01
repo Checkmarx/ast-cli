@@ -78,8 +78,8 @@ const BaseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
-var CachedAccessToken string
-var CachedAccessTime time.Time
+var cachedAccessToken string
+var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
 func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
@@ -642,10 +642,10 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
 
-	expired := time.Since(CachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
-		return CachedAccessToken
+		return cachedAccessToken
 	}
 	logger.PrintIfVerbose("API access token not found in cache!")
 	return ""
@@ -658,8 +658,8 @@ func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 func InvalidateAccessTokenCache() {
 	credentialsMutex.Lock()
 	defer credentialsMutex.Unlock()
-	CachedAccessToken = ""
-	CachedAccessTime = time.Time{}
+	cachedAccessToken = ""
+	cachedAccessTime = time.Time{}
 }
 
 func writeCredentialsToCache(accessToken string) {
@@ -668,8 +668,24 @@ func writeCredentialsToCache(accessToken string) {
 
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
-	CachedAccessToken = accessToken
-	CachedAccessTime = time.Now()
+	cachedAccessToken = accessToken
+	cachedAccessTime = time.Now()
+}
+
+// SetCachedAccessTokenForTest seeds (token != "") or clears (token == "") the
+// in-memory access-token cache. Exported solely so tests in other packages can
+// control the cache without reaching into unexported state. Guarded by the same
+// mutex that protects the cache writes.
+func SetCachedAccessTokenForTest(token string) {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+	if token == "" {
+		cachedAccessToken = ""
+		cachedAccessTime = time.Time{}
+		return
+	}
+	cachedAccessToken = token
+	cachedAccessTime = time.Now()
 }
 
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
@@ -992,9 +1008,28 @@ func ExtractFromTokenClaims(accessToken, claim string) (string, error) {
 		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
-		value = strings.TrimSpace(claims[claim].(string))
-	} else {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims[claim] == nil {
+		return "", errors.Errorf(jwtError, claim)
+	}
+
+	// A claim value can be a string or, per the OIDC spec (notably "aud"), an
+	// array of strings. Handle both without a type assertion that would panic.
+	switch v := claims[claim].(type) {
+	case string:
+		value = strings.TrimSpace(v)
+	case []interface{}:
+		for _, item := range v {
+			if s, isStr := item.(string); isStr && strings.TrimSpace(s) != "" {
+				value = strings.TrimSpace(s)
+				break
+			}
+		}
+	default:
+		return "", errors.Errorf(jwtError, claim)
+	}
+
+	if value == "" {
 		return "", errors.Errorf(jwtError, claim)
 	}
 

@@ -1,3 +1,5 @@
+//go:build !integration
+
 package mcp
 
 import (
@@ -277,13 +279,11 @@ func setupBridgeTest(t *testing.T) {
 	t.Helper()
 	prevKey := viper.GetString(commonParams.AstAPIKey)
 	prevReload, prevInval, prevPoll := reloadConfig, invalidateTokenCache, credentialPollInterval
-	prevResolve := resolveAPIKey
 	t.Cleanup(func() {
 		viper.Set(commonParams.AstAPIKey, prevKey)
 		reloadConfig = prevReload
 		invalidateTokenCache = prevInval
 		credentialPollInterval = prevPoll
-		resolveAPIKey = prevResolve
 	})
 	viper.Set(commonParams.AstAPIKey, "")
 	reloadConfig = func() {}
@@ -328,7 +328,7 @@ func TestRunBridge_UnauthAnswersInitializeLocally(t *testing.T) {
 	setupBridgeTest(t)
 	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}` + "\n")
 	var out syncBuffer
-	err := runBridgeIO(in, &out, &http.Client{}, "1.2.3", "")
+	err := runBridgeIO(in, &out, &http.Client{}, "1.2.3", "", func() string { return "" })
 	assert.NoError(t, err)
 
 	lines := decodeLines(t, out.String())
@@ -350,7 +350,7 @@ func TestRunBridge_UnauthToolsListEmpty(t *testing.T) {
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}` + "\n" +
 			`{"jsonrpc":"2.0","id":2,"method":"tools/list"}` + "\n")
 	var out syncBuffer
-	assert.NoError(t, runBridgeIO(in, &out, &http.Client{}, "1.0", ""))
+	assert.NoError(t, runBridgeIO(in, &out, &http.Client{}, "1.0", "", func() string { return "" }))
 
 	lines := decodeLines(t, out.String())
 	assert.Len(t, lines, 2)
@@ -364,11 +364,11 @@ func TestRunBridge_UnauthToolsListEmpty(t *testing.T) {
 func TestWatcher_SelfHeal_EndToEnd(t *testing.T) {
 	setupBridgeTest(t)
 
-	// Simulate the credential appearing via the resolveAPIKey seam (mutex-guarded) so
-	// the watcher's poll never races the test write — viper itself is not concurrent-safe.
+	// Simulate the credential appearing via the injected resolveKey seam (mutex-guarded)
+	// so the watcher's poll never races the test write — viper itself is not concurrent-safe.
 	var credMu sync.Mutex
 	cred := ""
-	resolveAPIKey = func() string { credMu.Lock(); defer credMu.Unlock(); return cred }
+	resolveKey := func() string { credMu.Lock(); defer credMu.Unlock(); return cred }
 	setCred := func(v string) { credMu.Lock(); cred = v; credMu.Unlock() }
 
 	var mu sync.Mutex
@@ -413,7 +413,7 @@ func TestWatcher_SelfHeal_EndToEnd(t *testing.T) {
 	var out syncBuffer
 	done := make(chan struct{})
 	go func() {
-		_ = runBridgeIO(pr, &out, &http.Client{}, "9.9.9", "")
+		_ = runBridgeIO(pr, &out, &http.Client{}, "9.9.9", "", resolveKey)
 		close(done)
 	}()
 
@@ -447,7 +447,7 @@ func TestWatcher_SelfHeal_EndToEnd(t *testing.T) {
 func TestWatcher_StaysDegraded_NoCredential(t *testing.T) {
 	setupBridgeTest(t)
 	var out syncBuffer
-	s := &bridgeSession{writer: newSyncWriter(&out), state: stateUnauth}
+	s := &bridgeSession{writer: newSyncWriter(&out), state: stateUnauth, resolveKey: func() string { return "" }}
 	stop := make(chan struct{})
 	done := make(chan struct{})
 	go func() {
@@ -495,7 +495,7 @@ func TestDispatch_AuthedPathUnchanged(t *testing.T) {
 
 	run := func(srvURL string) *syncBuffer {
 		var out syncBuffer
-		s := &bridgeSession{state: stateConnected, apiKey: initialKey, mcpURL: srvURL, writer: newSyncWriter(&out)}
+		s := &bridgeSession{state: stateConnected, apiKey: initialKey, mcpURL: srvURL, writer: newSyncWriter(&out), resolveKey: productionResolveAPIKey}
 		s.dispatch(&http.Client{}, body)
 		return &out
 	}
@@ -552,7 +552,7 @@ func TestDispatch_AuthedPathUnchanged(t *testing.T) {
 }
 
 // TestAuthedSelfHeal_ReReadsDisk proves the 401/403 path re-reads config from DISK
-// (reloadConfig) BEFORE resolveAPIKey — the new key only becomes visible after the
+// (reloadConfig) BEFORE resolveKey — the new key only becomes visible after the
 // disk re-read, so a token rotated by another process is actually picked up (this
 // fails without reloadConfig because viper is a stale startup snapshot).
 func TestAuthedSelfHeal_ReReadsDisk(t *testing.T) {
@@ -575,7 +575,7 @@ func TestAuthedSelfHeal_ReReadsDisk(t *testing.T) {
 	defer srv.Close()
 
 	var out syncBuffer
-	s := &bridgeSession{state: stateConnected, apiKey: oldKey, mcpURL: srv.URL, writer: newSyncWriter(&out)}
+	s := &bridgeSession{state: stateConnected, apiKey: oldKey, mcpURL: srv.URL, writer: newSyncWriter(&out), resolveKey: productionResolveAPIKey}
 	s.dispatch(&http.Client{}, []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`))
 
 	assert.Equal(t, []string{oldKey, newKey}, seenAuth) // retry used the disk-refreshed key

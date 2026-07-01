@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -14,6 +16,34 @@ import (
 )
 
 const ContentLengthLimit = 1000000 // 1mb in bytes
+
+// logTimestampLayout is the date/time layout for log records. Go's stdlib log
+// flags can only emit slash-separated, fixed-format timestamps, so we disable
+// them (log.SetFlags(0)) and prepend our own UTC, ISO-8601-style stamp via
+// timestampedWriter — producing e.g. "2026-06-30 14:23:01 UTC".
+const logTimestampLayout = "2006-01-02 15:04:05"
+
+// timestampedWriter prepends a UTC timestamp to each log record. The stdlib log
+// package issues exactly one Write per log call, so each line gets one stamp.
+type timestampedWriter struct {
+	w io.Writer
+}
+
+func (tw *timestampedWriter) Write(p []byte) (int, error) {
+	prefix := time.Now().UTC().Format(logTimestampLayout) + " UTC "
+	if _, err := io.WriteString(tw.w, prefix); err != nil {
+		return 0, err
+	}
+	return tw.w.Write(p)
+}
+
+// init disables the stdlib log timestamp (so it isn't duplicated) and routes the
+// default logger through timestampedWriter on stderr. This covers --debug console
+// output, where SetOutput is never called.
+func init() {
+	log.SetFlags(0)
+	log.SetOutput(&timestampedWriter{w: os.Stderr})
+}
 
 var sanitizeFlags = []string{
 	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
@@ -77,7 +107,8 @@ func sanitizeLogs(msg string) string {
 	return msg
 }
 
-// SetOutput sets the output destination for the logger.
+// SetOutput sets the output destination for the logger, wrapping it so every
+// record is prefixed with a UTC timestamp (see timestampedWriter).
 func SetOutput(w io.Writer) {
-	log.SetOutput(w)
+	log.SetOutput(&timestampedWriter{w: w})
 }
