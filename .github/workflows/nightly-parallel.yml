@@ -259,7 +259,7 @@ jobs:
       - name: Install pre-commit
         if: matrix.needs_precommit == 'true'
         run: |
-          pip install pre-commit
+          pip install --index-url https://pypi.echohq.com/simple/ pre-commit
           pre-commit install
 
       - name: Start Squid proxy
