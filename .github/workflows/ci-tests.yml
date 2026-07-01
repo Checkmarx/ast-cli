@@ -50,8 +50,8 @@ jobs:
         run: go install github.com/wadey/gocovmerge@latest
       - name: Install pre-commit
         run: |
-          pip install --index-url https://pypi.echohq.com/simple pre-commit
-          pre-commit install
+          pip config set global.index-url https://__token__:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
+          pip install pre-commit
       - name: Go Integration test
         shell: bash
         env:
