@@ -18,6 +18,7 @@ func TestNewHooksCommand(t *testing.T) {
 	mockRealtime := &mock.RealtimeScannerMockWrapper{}
 	cmd := NewHooksCommand(mockJWT, mockFF, mockRealtime, mockTelemetry, mockRealtime)
 
+
 	assert.NotNil(t, cmd)
 	assert.Equal(t, "hooks", cmd.Use)
 	assert.Contains(t, cmd.Short, "Manage Git hooks")
