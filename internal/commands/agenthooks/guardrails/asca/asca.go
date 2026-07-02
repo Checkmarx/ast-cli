@@ -34,13 +34,16 @@ func isSupportedByASCA(filePath string) bool {
 // any-vuln for new writes). Findings the user already suppressed via
 // `cx ignore-vulnerability` (the realtime ignore file) are filtered out before the
 // verdict. Fail-open on infrastructure errors (ASCA install fail, engine unavailable, panic).
-func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context string) {
+func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context string) {
+	findingCount := 0
+
 	defer func() {
 		if r := recover(); r != nil {
 			blocked = false
 			reason = ""
 			context = ""
 		}
+		logASCATelemetry(telemetryWrapper, agent, findingCount)
 	}()
 
 	if !isSupportedByASCA(ev.FilePath) {
@@ -89,6 +92,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
 		r, c := formatFindings(ev.FilePath, newResult.ScanDetails, ev.WorkDir)
+		findingCount = len(newResult.ScanDetails)
 		return true, r, c
 	}
 
@@ -111,10 +115,12 @@ func ScanFileEdit(ev agenthooks.FileEditEvent) (blocked bool, reason, context st
 
 	newFindings := NewFindings(origDetails, newResult.ScanDetails)
 	if len(newFindings) == 0 {
+		findingCount = 0
 		return false, "", ""
 	}
 
 	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir)
+	findingCount = len(newFindings)
 	return true, r, c
 }
 
@@ -134,4 +140,34 @@ func existingIgnoreFilePath(workDir string) string {
 func shouldUpdateVersion() bool {
 	v := viper.GetString(params.DisableASCALatestVersionKey)
 	return v != "true"
+}
+
+// logASCATelemetry sends a telemetry event for ASCA scan results.
+// Called once after ASCA scan is performed with the actual finding count.
+func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent string, totalCount int) {
+	if telemetryWrapper == nil || totalCount == 0 {
+		return
+	}
+
+	telemetryData := &wrappers.DataForAITelemetry{
+
+		//agent = aiProvider
+		//hooks-detect for detection
+		//subtype = scan
+		//  hooks-remeditae
+		//subType = fixWithAIchet
+
+		Agent:      agent + "-cli",
+		AIProvider: agent,
+		Engine:     "Asca",
+		TotalCount: totalCount,
+		UniqueID:   wrappers.GetUniqueID(),
+		Type:       "hooks-detect",
+		SubType:    "scan",
+		ScanType:   "asca",
+	}
+
+	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
+		// fail-open
+	}
 }

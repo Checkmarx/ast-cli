@@ -5,11 +5,9 @@ on:
     inputs:
       tag:
         description: "Next release tag"
-        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: "Is dev build"
         description: "Is dev build"
         required: false
         default: true
@@ -55,11 +53,9 @@ on:
     inputs:
       tag:
         description: "Next release tag"
-        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: "Is dev build"
         description: "Is dev build"
         required: false
         default: true
@@ -81,11 +77,6 @@ jobs:
       COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
-      - name: Install Harden Runner
-        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
-        with:
-          use-policy-store: true
-          api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
       - name: Install Harden Runner
         uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
         with:
