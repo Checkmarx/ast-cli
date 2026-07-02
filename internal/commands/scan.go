@@ -65,7 +65,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.20"
+	containerImage                          = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -136,6 +136,10 @@ const (
 	jsonExt                      = ".json"
 	xmlExt                       = ".xml"
 	sbomScanTypeErrMsg           = "The --sbom-only flag can only be used when the scan type is sca"
+	sbomFirstResolverFlag        = "--sbom-first"
+	sbomOutputPathResolverFlag   = "--sbom-output-path"
+	sbomOutputNameResolverFlag   = "--sbom-output-name"
+	defaultSbomOutputName        = "cx-sbom.json"
 	BranchPrimaryPrefix          = "--branch-primary="
 	OverridePolicyManagement     = "override-policy-management"
 	defaultScanEnqueueRetryDelay = 5
@@ -144,6 +148,7 @@ const (
 
 var (
 	scaResolverResultsFile  = ""
+	sbomAbsoluteExcludes    []string
 	actualScanTypes         = "sast,kics,sca,scs"
 	filterScanListFlagUsage = fmt.Sprintf(
 		"Filter the list of scans. Use ';' as the delimeter for arrays. Available filters are: %s",
@@ -180,6 +185,7 @@ func NewScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	riskOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	scaRealTimeWrapper wrappers.ScaRealTimeWrapper,
 	policyWrapper wrappers.PolicyWrapper,
@@ -214,6 +220,7 @@ func NewScanCommand(
 		groupsWrapper,
 		riskOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		jwtWrapper,
 		policyWrapper,
 		accessManagementWrapper,
@@ -674,6 +681,7 @@ func scanCreateSubCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -708,6 +716,7 @@ func scanCreateSubCommand(
 			groupsWrapper,
 			risksOverviewWrapper,
 			scsScanOverviewWrapper,
+			scanSummaryWrapper,
 			jwtWrapper,
 			policyWrapper,
 			accessManagementWrapper,
@@ -783,7 +792,7 @@ func scanCreateSubCommand(
 	)
 	createScanCmd.PersistentFlags().Bool(commonParams.ContainerResolveLocallyFlag, false, "Execute container resolver locally.")
 	createScanCmd.PersistentFlags().String(commonParams.ContainerImagesFlag, "", "List of container images to scan, ex: manuelbcd/vulnapp:latest,debian:10")
-	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security)")
+	createScanCmd.PersistentFlags().String(commonParams.ScanTypes, "", "Scan types, ex: (sast,iac-security,sca,api-security,aisc)")
 
 	createScanCmd.PersistentFlags().String(commonParams.TagList, "", "List of tags, ex: (tagA,tagB:val,etc)")
 	createScanCmd.PersistentFlags().StringP(
@@ -914,6 +923,7 @@ func scanCreateSubCommand(
 
 	// reading sbom-only flag
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
+	createScanCmd.PersistentFlags().Bool(commonParams.NoScanFlag, false, "Prevents CxOne scan from running after SBOM is generated locally. Relevant only when --sbom-first is submitted under --sca-resolver-params. Submitting this flag without --sbom-first causes an error.")
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 
 	return createScanCmd
@@ -1038,6 +1048,11 @@ func setupScanTypeProjectAndConfig(
 		return scsErr
 	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
+	}
+
+	var aiscConfig = addAiscScan(featureFlagsWrapper, resubmitConfig)
+	if aiscConfig != nil {
+		configArr = append(configArr, aiscConfig)
 	}
 
 	info["config"] = configArr
@@ -1165,6 +1180,24 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 	if resubmitLanguageMode := config.Value[configLanguageMode]; resubmitLanguageMode != nil {
 		sastConfig.LanguageMode = resubmitLanguageMode.(string)
 	}
+}
+
+func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
+	//  Add the aisc resubmit config, currently no value is passed in config
+	aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
+	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainGAEnabled.Status {
+		aiscMapConfig := make(map[string]interface{})
+		aiscConfig := wrappers.AISCConfig{}
+		aiscMapConfig[resultsMapType] = commonParams.AiscType
+		aiscMapConfig[resultsMapValue] = &aiscConfig
+		for _, config := range resubmitConfig {
+			if config.Type == commonParams.AiscType && config.Value == nil {
+				continue
+			}
+		}
+		return aiscMapConfig
+	}
+	return nil
 }
 
 func addKicsScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
@@ -1507,6 +1540,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
 
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
+	logger.PrintIfVerbose(fmt.Sprintf("Allowed scan types: %v", allowedEngines))
 
 	isSbomScan, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 
@@ -1780,6 +1814,13 @@ func handleFile(
 	file fs.FileInfo,
 ) error {
 	fileName := parentDir + file.Name()
+	absFilePath := filepath.Clean(fileName)
+	for _, exclude := range sbomAbsoluteExcludes {
+		if strings.EqualFold(absFilePath, exclude) {
+			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
+			return nil
+		}
+	}
 	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
 		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
@@ -1880,6 +1921,93 @@ func filterMatched(filters []string, fileName string) bool {
 		}
 	}
 	return matched
+}
+
+// parseSbomResolverArgs extracts --sbom-first, --sbom-output-path, and --sbom-output-name
+// from the raw scaResolverParams string that is forwarded to the SCA Resolver executable.
+func parseSbomResolverArgs(scaResolverParams string) (sbomFirst bool, outputPath, outputName string) {
+	outputName = defaultSbomOutputName
+	args := parseArgs(scaResolverParams)
+	for i, arg := range args {
+		switch arg {
+		case sbomFirstResolverFlag:
+			sbomFirst = true
+		case sbomOutputPathResolverFlag:
+			if i+1 < len(args) {
+				outputPath = args[i+1]
+			}
+		case sbomOutputNameResolverFlag:
+			if i+1 < len(args) {
+				outputName = args[i+1]
+			}
+		}
+	}
+	return
+}
+
+// validateSbomOutputPath returns an error if sbomOutputPath exists and is not a directory.
+func validateSbomOutputPath(sbomOutputPath string) error {
+	if sbomOutputPath == "" {
+		return nil
+	}
+	info, err := os.Stat(sbomOutputPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return errors.Errorf("--sbom-output-path %q: %v", sbomOutputPath, err)
+	}
+	if !info.IsDir() {
+		return errors.Errorf("--sbom-output-path %q must be a directory, not a file", sbomOutputPath)
+	}
+	return nil
+}
+
+// computeSbomExclusions builds the list of absolute paths that the SCA Resolver may have
+// written the SBOM to. All candidates that fall inside directoryPath are returned so that
+// compressFolder can exclude them from the upload zip.
+// Multiple candidates are needed because the SCA Resolver is an external binary and may
+// interpret --sbom-output-path as a directory, a full file path, or fall back to defaults.
+func computeSbomExclusions(directoryPath, sbomOutputPath, sbomOutputName string) []string {
+	dirPath := filepath.Clean(directoryPath)
+
+	resolveDir := func(p string) string {
+		if p == "" {
+			return dirPath
+		}
+		if !filepath.IsAbs(p) {
+			return filepath.Clean(filepath.Join(dirPath, p))
+		}
+		return filepath.Clean(p)
+	}
+
+	outDir := resolveDir(sbomOutputPath)
+
+	candidates := []string{
+		// resolver treats --sbom-output-path as directory and honours --sbom-output-name
+		filepath.Join(outDir, sbomOutputName),
+		// resolver treats --sbom-output-path as directory but uses default name
+		filepath.Join(outDir, defaultSbomOutputName),
+		// resolver ignores --sbom-output-path and writes to project dir with given name
+		filepath.Join(dirPath, sbomOutputName),
+		// hard default: always exclude cx-sbom.json from project root
+		filepath.Join(dirPath, defaultSbomOutputName),
+	}
+
+	seen := make(map[string]bool)
+	var result []string
+	for _, c := range candidates {
+		c = filepath.Clean(c)
+		if seen[c] {
+			continue
+		}
+		seen[c] = true
+		rel, err := filepath.Rel(dirPath, c)
+		if err == nil && !strings.HasPrefix(rel, "..") {
+			result = append(result, c)
+		}
+	}
+	return result
 }
 
 func runScaResolver(sourceDir, scaResolver, scaResolverParams, projectName string, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
@@ -2026,6 +2154,33 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	if directoryPath != "" {
 		var dirPathErr error
 
+		// Compute SBOM exclusions before zipping so the generated SBOM file is not
+		// bundled into the upload even if it lands inside the project directory.
+		// The default cx-sbom.json is always excluded as a safety net even when
+		// --sbom-first is not passed, because the SCA Resolver may still write it.
+		sbomFirst, sbomOutputPath, sbomOutputName := parseSbomResolverArgs(scaResolverParams)
+		if err := validateSbomOutputPath(sbomOutputPath); err != nil {
+			return "", "", err
+		}
+		sbomAbsoluteExcludes = computeSbomExclusions(directoryPath, sbomOutputPath, sbomOutputName)
+		logger.PrintIfVerbose(fmt.Sprintf("SBOM exclusion paths: %v", sbomAbsoluteExcludes))
+
+		var expectedSbomPath string
+		if sbomFirst {
+			absDirPath, absErr := filepath.Abs(directoryPath)
+			if absErr != nil {
+				absDirPath = directoryPath
+			}
+			expectedSbomDir := sbomOutputPath
+			if expectedSbomDir == "" {
+				expectedSbomDir = absDirPath
+			} else if !filepath.IsAbs(expectedSbomDir) {
+				expectedSbomDir = filepath.Join(absDirPath, expectedSbomDir)
+			}
+			expectedSbomPath = filepath.Clean(filepath.Join(expectedSbomDir, sbomOutputName))
+			logger.PrintIfVerbose(fmt.Sprintf("SBOM will be generated and saved to: %s", expectedSbomPath))
+		}
+
 		// execute scaResolver only in sca type of scans
 		if strings.Contains(actualScanTypes, commonParams.ScaType) {
 			scaErr := runScaResolver(directoryPath, scaResolver, scaResolverParams, projectName, featureFlagsWrapper)
@@ -2035,6 +2190,28 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 				}
 				return "", "", errors.Wrapf(scaErr, "ScaResolver error")
 			}
+		}
+
+		if sbomFirst {
+			if _, statErr := os.Stat(expectedSbomPath); statErr == nil {
+				logger.Print(fmt.Sprintf("SBOM generated and saved to: %s", expectedSbomPath))
+			} else {
+				logger.PrintIfVerbose(fmt.Sprintf("SBOM file not found at expected path after resolver ran: %s", expectedSbomPath))
+			}
+		}
+
+		// --no-scan: the SBOM has already been produced locally by the resolver above.
+		// Skip source compression and upload entirely. No scan will be submitted, so zipping
+		// and uploading the source would be wasted work and would needlessly send source code
+		// to the server. We still clean up any temporary unzip directory.
+		if noScan, _ := cmd.Flags().GetBool(commonParams.NoScanFlag); noScan {
+			logger.PrintIfVerbose("--no-scan set: skipping source compression and upload.")
+			if unzip {
+				if cleanupErr := cleanTempUnzipDirectory(directoryPath); cleanupErr != nil {
+					return "", "", cleanupErr
+				}
+			}
+			return "", "", nil
 		}
 
 		if containerScanTriggered && containerResolveLocally {
@@ -2395,6 +2572,7 @@ func runCreateScanCommand(
 	groupsWrapper wrappers.GroupsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	policyWrapper wrappers.PolicyWrapper,
 	accessManagementWrapper wrappers.AccessManagementWrapper,
@@ -2407,6 +2585,19 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+
+		noScan, _ := cmd.Flags().GetBool(commonParams.NoScanFlag)
+		if noScan {
+			scaResolverParams, _ := cmd.Flags().GetString(commonParams.ScaResolverParamsFlag)
+			sbomFirst, _, _ := parseSbomResolverArgs(scaResolverParams)
+			if !sbomFirst {
+				logger.PrintIfVerbose("--no-scan flag was passed without --sbom-first: No SBOM was generated and the CxOne scan was skipped. " +
+					"Submit --sbom-first under --sca-resolver-params to generate an SBOM.")
+				return errors.Errorf("--no-scan flag was passed without --sbom-first: No SBOM was generated and the CxOne scan was skipped. " +
+					"Submit --sbom-first under --sca-resolver-params to generate an SBOM.")
+			}
+		}
+
 		err = validateCreateScanFlags(cmd)
 		if err != nil {
 			return err
@@ -2452,10 +2643,16 @@ func runCreateScanCommand(
 			jwtWrapper,
 			tenantWrapper,
 		)
+
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
 		}
+		if noScan {
+			logger.Print("--no-scan set: skipping scan submission.")
+			return nil
+		}
+
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
 		if err != nil {
 			return errors.Wrapf(err, "%s", failedCreating)
@@ -2487,6 +2684,7 @@ func runCreateScanCommand(
 				resultsWrapper,
 				risksOverviewWrapper,
 				scsScanOverviewWrapper,
+				scanSummaryWrapper,
 				featureFlagsWrapper,
 				ignorePolicyFlagOmit)
 			if err != nil {
@@ -2501,7 +2699,7 @@ func runCreateScanCommand(
 			}
 
 			results, reportErr := createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper,
-				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
+				resultsWrapper, risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, policyResponseModel, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if reportErr != nil {
 				return reportErr
 			}
@@ -2513,7 +2711,7 @@ func runCreateScanCommand(
 			}
 		} else {
 			_, err = createReportsAfterScan(cmd, scanResponseModel.ID, scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-				risksOverviewWrapper, scsScanOverviewWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
+				risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, nil, featureFlagsWrapper, ignorePolicyFlagOmit)
 			if err != nil {
 				return err
 			}
@@ -2565,6 +2763,7 @@ func createScanModel(
 	scanModel := wrappers.Scan{}
 	// Try to parse to a scan model in order to manipulate the request payload
 	err = json.Unmarshal(input, &scanModel)
+
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "%s: Input in bad format", failedCreating)
 	}
@@ -2621,7 +2820,9 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 
 		scanHandler.UploadURL = uploadURL
 	}
-	logger.Print("Temporary zip file path: " + zipFilePath)
+	if zipFilePath != "" {
+		logger.Print("Temporary zip file path: " + zipFilePath)
+	}
 
 	var err error
 
@@ -2675,6 +2876,7 @@ func handleWait(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
 ) error {
@@ -2689,6 +2891,7 @@ func handleWait(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		cmd,
 		featureFlagsWrapper,
 		ignorePolicyFlagOmit)
@@ -2714,6 +2917,7 @@ func createReportsAfterScan(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	policyResponseModel *wrappers.PolicyResponseModel,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
@@ -2751,6 +2955,7 @@ func createReportsAfterScan(
 		resultsWrapper,
 		risksOverviewWrapper,
 		scsScanOverviewWrapper,
+		scanSummaryWrapper,
 		exportWrapper,
 		policyResponseModel,
 		resultsPdfReportsWrapper,
@@ -2926,6 +3131,7 @@ func waitForScanCompletion(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverviewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 	ignorePolicyFlagOmit bool,
@@ -2943,7 +3149,7 @@ func waitForScanCompletion(
 		logger.PrintfIfVerbose("Sleeping %v before polling", waitDuration)
 		time.Sleep(waitDuration)
 		running, err := isScanRunning(scansWrapper, exportWrapper, resultsPdfReportsWrapper, resultsJSONReportsWrapper, resultsWrapper,
-			risksOverviewWrapper, scsScanOverviewWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
+			risksOverviewWrapper, scsScanOverviewWrapper, scanSummaryWrapper, scanResponseModel.ID, cmd, featureFlagsWrapper, ignorePolicyFlagOmit)
 		if err != nil {
 			return err
 		}
@@ -2975,6 +3181,7 @@ func isScanRunning(
 	resultsWrapper wrappers.ResultsWrapper,
 	risksOverViewWrapper wrappers.RisksOverviewWrapper,
 	scsScanOverviewWrapper wrappers.ScanOverviewWrapper,
+	scanSummaryWrapper wrappers.ScanSummaryWrapper,
 	scanID string,
 	cmd *cobra.Command,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
@@ -3010,6 +3217,7 @@ func isScanRunning(
 			resultsWrapper,
 			risksOverViewWrapper,
 			scsScanOverviewWrapper,
+			scanSummaryWrapper,
 			nil, featureFlagsWrapper, ignorePolicyFlagOmit) // check this partial case, how to handle it
 		if reportErr != nil {
 			return false, errors.New("unable to create report for partial scan")

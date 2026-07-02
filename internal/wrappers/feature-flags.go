@@ -22,6 +22,9 @@ const maxRetries = 3
 const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
 
+// AISupplyChainGAEnabled is the feature flag for AI Supply Chain Engine GA.
+const AISupplyChainGAEnabled = "AI_SUPPLY_CHAIN_ENGINE_GA_ENABLED"
+
 var DefaultFFLoad bool = false
 
 var FeatureFlagsBaseMap = []CommandFlags{
@@ -107,8 +110,10 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 		if len(featureFlags) == 0 || DefaultFFLoad {
 			_ = HandleFeatureFlags(featureFlagsWrapper)
 		}
-		// Take the value from FeatureFlags
-		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
+		defaultValue := featureFlags[flagName]
+		featureFlagsCache[flagName] = defaultValue // prevent re-fetch on next call
+		return &FeatureFlagResponseModel{Name: flagName, Status: defaultValue}, nil
+
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)

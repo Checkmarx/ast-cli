@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
@@ -87,6 +90,16 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 		return &model, nil
 	case http.StatusNotFound:
 		return nil, errors.New("feature flags not found")
+	case http.StatusTooManyRequests:
+		waitSeconds := defaultRateLimitWaitSeconds
+		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+			if parsed, parseErr := strconv.Atoi(retryAfter); parseErr == nil && parsed > 0 {
+				waitSeconds = parsed
+			}
+		}
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flags rate limited (429). Waiting %d seconds before retry.", waitSeconds))
+		time.Sleep(time.Duration(waitSeconds) * time.Second)
+		return nil, errors.New("failed to load feature flags for tenant")
 	default:
 		return nil, errors.New("failed to load feature flags for tenant")
 	}

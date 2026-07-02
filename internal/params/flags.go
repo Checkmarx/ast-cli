@@ -65,6 +65,7 @@ const (
 	MainBranchFlag                 = "branch"
 	ScaResolverFlag                = "sca-resolver"
 	ScaResolverParamsFlag          = "sca-resolver-params"
+	NoScanFlag                     = "no-scan"
 	AccessKeyIDFlag                = "client-id"
 	AccessKeySecretFlag            = "client-secret"
 	AccessKeyIDFlagUsage           = "The OAuth2 client ID"
@@ -324,6 +325,7 @@ const (
 const (
 	SastType                       = "sast"
 	KicsType                       = "kics"
+	AiscType                       = "aisc"
 	APISecurityType                = "api-security"
 	AIProtectionType               = "AI Protection"
 	CheckmarxOneAssistType         = "Checkmarx One Assist"
