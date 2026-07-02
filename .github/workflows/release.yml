@@ -12,6 +12,43 @@ on:
         required: false
         default: true
         type: boolean
+    secrets:
+      AC_PASSWORD:
+        required: true
+      AC_USER:
+        required: true
+      APPLE_DEVELOPER_CERTIFICATE_P12_BASE64:
+        required: true
+      APPLE_DEVELOPER_CERTIFICATE_PASSWORD:
+        required: true
+      AWS_ASSUME_ROLE_ARN:
+        required: true
+      AWS_ASSUME_ROLE_REGION:
+        required: true
+      COSIGN_PASSWORD:
+        required: true
+      COSIGN_PRIVATE_KEY:
+        required: true
+      COSIGN_PUBLIC_KEY:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      DOCKER_USERNAME:
+        required: true
+      PERSONAL_ACCESS_TOKEN:
+        required: true
+      S3_BUCKET_NAME:
+        required: true
+      S3_BUCKET_REGION:
+        required: true
+      SIGNING_HSM_CREDS:
+        required: true
+      SIGNING_REMOTE_SSH_HOST:
+        required: true
+      SIGNING_REMOTE_SSH_PRIVATE_KEY:
+        required: true
+      SIGNING_REMOTE_SSH_USER:
+        required: true
   workflow_dispatch:
     inputs:
       tag:
