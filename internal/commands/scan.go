@@ -65,7 +65,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.20"
+	containerImage                          = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -1184,9 +1184,8 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 
 func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
 	//  Add the aisc resubmit config, currently no value is passed in config
-	aiSupplyChainEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainEnabled)
 	aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
-	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainEnabled.Status && aiSupplyChainGAEnabled.Status {
+	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainGAEnabled.Status {
 		aiscMapConfig := make(map[string]interface{})
 		aiscConfig := wrappers.AISCConfig{}
 		aiscMapConfig[resultsMapType] = commonParams.AiscType
