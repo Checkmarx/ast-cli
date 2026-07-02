@@ -78,6 +78,7 @@ type bridgeSession struct {
 	clientProto string // protocolVersion the client requested at initialize
 	remoteReady bool   // the remote initialize handshake has completed
 	version     string // cx binary version, for the synthetic serverInfo
+	urlOverride string // --mcp-url / CX_MCP_URL override, immutable after construction
 	writer      *syncWriter
 
 	// resolveKey returns the credential cx resolved. Injected (not a package
@@ -187,8 +188,23 @@ and connects automatically once you run 'cx auth login' — no restart needed.`,
 	return cmd
 }
 
+// newBridgeClient builds the HTTP client used to reach the remote Security MCP. When a cx proxy is
+// configured — the config-file cx_http_proxy or the HTTP_PROXY/CX_HTTP_PROXY env, including NTLM /
+// Kerberos auth types — it reuses the CLI's proxy-aware client (wrappers.GetClient), so a single
+// `cx configure`-based proxy setup covers both the CLI and the MCP. Otherwise it keeps the default
+// transport, which already honors HTTPS_PROXY / HTTP_PROXY / NO_PROXY — so no existing env-var proxy
+// behavior is lost.
+func newBridgeClient() *http.Client {
+	if strings.TrimSpace(viper.GetString(commonParams.ProxyKey)) != "" {
+		c := wrappers.GetClient(uint(bridgeRequestTimeout / time.Second))
+		c.Timeout = bridgeRequestTimeout // preserve the exact bridge timeout
+		return c
+	}
+	return &http.Client{Timeout: bridgeRequestTimeout}
+}
+
 func runBridge(version, urlOverride string) error {
-	return runBridgeIO(os.Stdin, os.Stdout, &http.Client{Timeout: bridgeRequestTimeout}, version, urlOverride, productionResolveAPIKey)
+	return runBridgeIO(os.Stdin, os.Stdout, newBridgeClient(), version, urlOverride, productionResolveAPIKey)
 }
 
 // runBridgeIO is the testable core: it wires the session to the given streams,
@@ -196,7 +212,7 @@ func runBridge(version, urlOverride string) error {
 // read loop. It never exits the process on a missing credential. resolveKey is the
 // credential resolver, injected so tests can stub it without racing viper.
 func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlOverride string, resolveKey func() string) error {
-	sess := &bridgeSession{writer: newSyncWriter(out), version: version, resolveKey: resolveKey}
+	sess := &bridgeSession{writer: newSyncWriter(out), version: version, resolveKey: resolveKey, urlOverride: urlOverride}
 
 	apiKey := sess.resolveKey()
 	mcpURL, err := deriveMCPURL(apiKey, urlOverride)
@@ -446,10 +462,27 @@ func (s *bridgeSession) proxy(client *http.Client, mcpURL, apiKey string, body [
 		reloadConfig() // re-read disk so a token rotated by another process is visible
 		reloaded := s.resolveKey()
 		if reloaded != "" && reloaded != apiKey {
+			// A rotated credential may target a different tenant/realm, so
+			// re-derive the realm-scoped URL rather than replaying the stale
+			// one. Invalidate the cached access token first (as tryHeal does)
+			// so the ast-base-url claim is re-fetched for the new tenant instead
+			// of reusing the old tenant's cached base. If the URL actually
+			// changes, the previous Mcp-Session-Id is scoped to the old tenant
+			// and must not be reused — drop it so the remote issues a fresh
+			// session for the new tenant.
+			invalidateTokenCache()
+			retryURL := mcpURL
+			if derived, derr := deriveMCPURL(reloaded, s.urlOverride); derr == nil && derived != "" {
+				retryURL = derived
+			}
 			s.mu.Lock()
 			s.apiKey = reloaded
+			if retryURL != s.mcpURL {
+				s.mcpURL = retryURL
+				s.id = ""
+			}
 			s.mu.Unlock()
-			retry, retryErr := s.post(client, mcpURL, reloaded, body)
+			retry, retryErr := s.post(client, retryURL, reloaded, body)
 			if retryErr != nil {
 				fmt.Fprintf(os.Stderr, "cx mcp bridge: retry after credential reload failed: %v\n", retryErr)
 				s.writeError(body, "")
