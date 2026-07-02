@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
+﻿<img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/banner.png">
 <br />
 <div  align="center" >
 
@@ -24,11 +24,11 @@
 <p align="center">
     Checkmarx CLI is a standalone Checkmarx tool. 
 <br />
-    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs »</strong></a>
+    <a href="https://checkmarx.com/resource/documents/en/34965-68620-checkmarx-one-cli-tool.html"><strong>Explore the docs Â»</strong></a>
     <br />
     <br />
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Report Bug</a>
-    ·
+    Â·
     <a href="https://github.com/Checkmarx/ast-cli/issues/new/choose">Request Feature</a>
 </p>
 
@@ -119,7 +119,7 @@ Checkmarx One Integrations Team
 
 Project Link: [https://github.com/Checkmarx/ast-cli](https://github.com/Checkmarx/ast-cli).
 
-© 2026 Checkmarx Ltd. All Rights Reserved.
+Â© 2026 Checkmarx Ltd. All Rights Reserved.
 
 
 [docker-shield]: https://img.shields.io/docker/pulls/checkmarx/ast-cli
