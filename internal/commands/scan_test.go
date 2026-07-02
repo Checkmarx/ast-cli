@@ -836,7 +836,7 @@ func TestAddAiscScan_WhenAiscEnabledAndFeatureFlagEnabled_ShouldReturnConfig(t *
 	var resubmitConfig []wrappers.Config
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -862,7 +862,7 @@ func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -878,7 +878,7 @@ func TestAddAiscScan_WhenFeatureFlagDisabled_ShouldReturnNil(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: false,
 	}
 	defer clearFlags()
@@ -900,7 +900,7 @@ func TestAddAiscScan_WithResubmitConfig_ShouldHandleCorrectly(t *testing.T) {
 		},
 	}
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -919,7 +919,7 @@ func TestAddAiscScan_ConfigStructure_ShouldHaveCorrectFormat(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
