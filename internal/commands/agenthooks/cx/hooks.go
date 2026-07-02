@@ -9,6 +9,7 @@ import (
 	"github.com/CheckmarxDev/ast-cx-hooks/cursor"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -17,6 +18,12 @@ import (
 // It is set by RegisterGuardrails so the handlers (free functions registered
 // with the agenthooks library) can reach it without an injection mechanism.
 var scaScanner *sca.Scanner
+
+// kicsScanner is the package-level KICS scanner used by the file-edit guardrail.
+// It is set by RegisterGuardrails and cleared by RegisterPassThrough.
+var kicsScanner *kics.Scanner
+
+var telemetryWrapper wrappers.TelemetryWrapper
 
 // cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
 func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
@@ -38,6 +45,8 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 	}
 	if scaScanner != nil {
 		if finding, remediation := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir); finding != "" {
+			agent := agentToString(ev.Agent)
+			logRemediationTelemetry(agent, "SCA", finding, remediation)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -49,7 +58,8 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //
 //  1. File EDITS (Claude / Windsurf / Droid / Gemini) — ev.Changes is populated.
 //     Enforce blast_radius_limit, files_limits.max_total_file_size_kb, the ASCA
-//     guardrail (AI-introduced code vulnerabilities), and the SCA guardrail
+//     guardrail (AI-introduced code vulnerabilities), the KICS guardrail
+//     (IaC security vulnerabilities), and the SCA guardrail
 //     (malicious / vulnerable manifest additions) before any bytes are written
 //     to disk. MultiEdit and multi-file edits are handled uniformly by iterating
 //     ev.Changes.
@@ -78,12 +88,20 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	if blocked, reason := guardrails.CheckAndIncrementTotalFileSize(totalBytes); blocked {
 		return agenthooks.RejectEdit(reason)
 	}
-	if blocked, reason, context := asca.ScanFileEdit(ev); blocked {
+	agent := agentToString(ev.Agent)
+	if blocked, reason, context := asca.ScanFileEdit(ev, telemetryWrapper, agent); blocked {
+		logRemediationTelemetry(agent, "Asca", reason, context)
 		return agenthooks.RejectEditWithContext(reason, context)
+	}
+	if kicsScanner != nil {
+		if blocked, reason, context := kics.ScanFileEdit(ev, kicsScanner); blocked {
+			return agenthooks.RejectEditWithContext(reason, context)
+		}
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
 			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir); finding != "" {
+				logRemediationTelemetry(agent, "Oss", finding, remediation)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -171,9 +189,11 @@ func promptWorkspaceRoots(raw any) []string {
 }
 
 // RegisterGuardrails wires the four guardrail handlers and instantiates the
-// SCA scanner used by the Bash and FileEdit handlers.
-func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper) {
+// SCA and KICS scanners used by the Bash and FileEdit handlers.
+func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
 	scaScanner = sca.NewScanner(jwt, ff, rt)
+	kicsScanner = kics.NewScanner(jwt, ff)
+	telemetryWrapper = tel
 	agenthooks.WhenAgentIdle(cxWhenAgentIdle)
 	agenthooks.BeforeToolCall(cxBeforeToolCall)
 	agenthooks.BeforeFileEdit(cxBeforeFileEdit)
@@ -184,8 +204,56 @@ func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper
 // Used when the license check fails so we still emit valid JSON (fail-open).
 func RegisterPassThrough() {
 	scaScanner = nil
+	kicsScanner = nil
 	agenthooks.WhenAgentIdle(func(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict { return agenthooks.Resume() })
 	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
 	agenthooks.BeforeFileEdit(func(_ agenthooks.FileEditEvent) agenthooks.FileEditVerdict { return agenthooks.AcceptEdit() })
 	agenthooks.BeforePrompt(func(_ agenthooks.PromptEvent) agenthooks.PromptVerdict { return agenthooks.AcceptPrompt() })
+}
+
+// logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
+func logRemediationTelemetry(agent, engine, finding, remediationContext string) {
+	if telemetryWrapper == nil {
+		return
+	}
+
+	telemetryData := &wrappers.DataForAITelemetry{
+		//agent = aiProvider
+		//hooks-detect for detection
+		//subtype = scan
+		//  hooks-remeditae
+		//subType = fixWithAIchet
+
+		AIProvider: agent,
+		Agent:      agent + "-cli",
+		Engine:     engine,
+		ScanType:   strings.ToLower(engine),
+		UniqueID:   wrappers.GetUniqueID(),
+		Type:       "hooks-remediate",
+		SubType:    "fixWithAIAssist",
+	}
+
+	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
+		// fail-open
+	}
+}
+
+// agentToString converts agenthooks.AgentID enum to string representation for telemetry.
+func agentToString(agent agenthooks.AgentID) string {
+	switch agent {
+	case agenthooks.AgentClaude:
+		return "Claude"
+	case agenthooks.AgentCopilot:
+		return "Copilot"
+	case agenthooks.AgentCursor:
+		return "Cursor"
+	case agenthooks.AgentGemini:
+		return "Gemini"
+	case agenthooks.AgentDroid:
+		return "Droid"
+	case agenthooks.AgentWindsurf:
+		return "Windsurf"
+	default:
+		return "Unknown"
+	}
 }
