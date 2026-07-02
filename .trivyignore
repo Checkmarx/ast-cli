@@ -1,0 +1,50 @@
+# Trivy Ignore File
+# These vulnerabilities are accepted risks or false positives in the build
+
+# CVE-2026-33481 (MEDIUM): Syft improper temporary file cleanup
+# Library: github.com/anchore/syft v1.21.0
+# Status: Fixed in v1.42.3, but only affects SBOM generation
+# Risk: Low - temporary file cleanup only affects scanning operations, not CLI runtime
+CVE-2026-33481 exp:2026-12-31
+
+# CVE-2026-34040 (HIGH): Moby Authorization bypass vulnerability
+# Library: github.com/docker/docker v28.0.3+incompatible
+# Status: Unfixed, fix available in v29.3.1
+# Risk: Accepted - Docker SDK is only used for container image scanning
+# Impact: Only relevant when used as a container registry client
+CVE-2026-34040 exp:2026-12-31
+
+# CVE-2026-33997 (MEDIUM): Moby Privilege validation bypass during plugin installation
+# Library: github.com/docker/docker v28.0.3+incompatible
+# Status: Unfixed
+# Risk: Accepted - CLI does not use Docker plugin functionality
+# Impact: Only affects Docker daemon with untrusted plugins
+CVE-2026-33997 exp:2026-12-31
+
+# CVE-2026-50151 (HIGH): oras-go blob upload vulnerable to credential forwarding
+# Library: oras.land/oras-go/v2 v2.6.0
+# Status: Fixed in v2.6.1
+# Risk: Low - only affects registry credential forwarding via unvalidated Location header
+# Impact: Container image scanning with registry redirects
+CVE-2026-50151 exp:2026-12-31
+
+# CVE-2026-50162 (MEDIUM): oras-go file store write outside workingDir via symlink traversal
+# Library: oras.land/oras-go/v2 v2.6.0
+# Status: Fixed in v2.6.1
+# Risk: Accepted - symlink traversal only affects local filesystem operations in scanning
+# Impact: Container image analysis with malicious symbolic links
+CVE-2026-50162 exp:2026-12-31
+
+# GHSA-vh4v-2xq2-g5cg (MEDIUM): ORAS Go forwards registry credentials across registry redirects
+# Library: oras.land/oras-go/v2 v2.6.0
+# Status: Fixed in v2.6.1
+# Risk: Accepted - requires malicious registry redirect, container scanning only
+# Impact: Credential exposure in container registry operations
+GHSA-vh4v-2xq2-g5cg exp:2026-12-31
+
+# CVE-2026-48978 (LOW): oras-go malicious registry can hijack realm to exfiltrate credentials
+# Library: oras.land/oras-go/v2 v2.6.0
+# Status: Fixed in v2.6.1
+# Risk: Low - requires attacker-controlled registry, container scanning only
+# Impact: Credential exfiltration in container registry operations
+CVE-2026-48978 exp:2026-12-31
