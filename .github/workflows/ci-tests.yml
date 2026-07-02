@@ -46,8 +46,9 @@ jobs:
       - run: go version
       - name: Install pre-commit
         run: |
-          pip config set global.extra-index-url https://__token__:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
-          pip install pre-commit==4.6.0
+           pip config set global.index-url https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@pypi.echohq.com/simple
+           pip index versions pre-commit
+           pip install pre-commit==4.6.0
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Install gocovmerge
