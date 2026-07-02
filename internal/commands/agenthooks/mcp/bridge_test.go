@@ -21,6 +21,32 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewBridgeClient(t *testing.T) {
+	t.Run("no proxy configured keeps the default transport", func(t *testing.T) {
+		viper.Set(commonParams.ProxyKey, "")
+		c := newBridgeClient()
+		assert.Equal(t, bridgeRequestTimeout, c.Timeout)
+		// nil transport → Go's default, which honors HTTPS_PROXY / HTTP_PROXY / NO_PROXY at request time.
+		assert.Nil(t, c.Transport)
+	})
+
+	t.Run("configured proxy routes through the proxy-aware client", func(t *testing.T) {
+		viper.Set(commonParams.ProxyKey, "http://proxy.corp:8080")
+		defer viper.Set(commonParams.ProxyKey, "")
+		c := newBridgeClient()
+		assert.Equal(t, bridgeRequestTimeout, c.Timeout)
+		tr, ok := c.Transport.(*http.Transport)
+		assert.True(t, ok, "expected a proxy-aware *http.Transport")
+		assert.NotNil(t, tr.Proxy, "expected a proxy resolver")
+		req, err := http.NewRequest(http.MethodGet, "https://mcp.example.com", nil)
+		assert.NoError(t, err)
+		proxyURL, err := tr.Proxy(req)
+		assert.NoError(t, err)
+		assert.NotNil(t, proxyURL)
+		assert.Equal(t, "http://proxy.corp:8080", proxyURL.String())
+	})
+}
+
 func TestBuildSecurityMCPURL(t *testing.T) {
 	tests := []struct {
 		name    string
