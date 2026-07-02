@@ -5,61 +5,20 @@ on:
     inputs:
       tag:
         description: "Next release tag"
-        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: "Is dev build"
         description: "Is dev build"
         required: false
         default: true
         type: boolean
-    secrets:
-      AC_PASSWORD:
-        required: true
-      AC_USER:
-        required: true
-      APPLE_DEVELOPER_CERTIFICATE_P12_BASE64:
-        required: true
-      APPLE_DEVELOPER_CERTIFICATE_PASSWORD:
-        required: true
-      AWS_ASSUME_ROLE_ARN:
-        required: true
-      AWS_ASSUME_ROLE_REGION:
-        required: true
-      COSIGN_PASSWORD:
-        required: true
-      COSIGN_PRIVATE_KEY:
-        required: true
-      COSIGN_PUBLIC_KEY:
-        required: true
-      DOCKER_PASSWORD:
-        required: true
-      DOCKER_USERNAME:
-        required: true
-      PERSONAL_ACCESS_TOKEN:
-        required: true
-      S3_BUCKET_NAME:
-        required: true
-      S3_BUCKET_REGION:
-        required: true
-      SIGNING_HSM_CREDS:
-        required: true
-      SIGNING_REMOTE_SSH_HOST:
-        required: true
-      SIGNING_REMOTE_SSH_PRIVATE_KEY:
-        required: true
-      SIGNING_REMOTE_SSH_USER:
-        required: true
   workflow_dispatch:
     inputs:
       tag:
         description: "Next release tag"
-        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: "Is dev build"
         description: "Is dev build"
         required: false
         default: true
@@ -81,11 +40,6 @@ jobs:
       COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
-      - name: Install Harden Runner
-        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
-        with:
-          use-policy-store: true
-          api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
       - name: Install Harden Runner
         uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
         with:
@@ -233,12 +187,3 @@ jobs:
   #    release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
   #    jira_product_name: ASTCLI
   #  secrets: inherit
-
-  dispatch_auto_release:
-    name: Update Plugins With new Cli Version
-    if: inputs.dev == false && 1 == 0
-    #needs: notify
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
-    with:
-      cli_version: ${{ inputs.tag }}
-    secrets: inherit
