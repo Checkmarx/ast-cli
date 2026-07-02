@@ -44,10 +44,13 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go version
+      - name: Check Python version
+        run: python --version
       - name: Install pre-commit
         run: |
           pip config set global.index-url https://:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
-          pip install pre-commit==4.6.0 --index-url https://:${{ secrets.ECHO_ACCESS_KEY }}@pypi.echohq.com/simple
+          pip index versions pre-commit
+          pip install pre-commit==4.6.0
       - name: Go Build
         run: go build -o ./bin/cx ./cmd
       - name: Install gocovmerge
