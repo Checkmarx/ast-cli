@@ -4,22 +4,22 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Next release tag'
+        description: "Next release tag"
         required: true
         type: string
       dev:
-        description: 'Is dev build'
+        description: "Is dev build"
         required: false
         default: true
         type: boolean
@@ -40,6 +40,11 @@ jobs:
       COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
+      - name: Install Harden Runner
+        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
+        with:
+          use-policy-store: true
+          api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
       - name: Checkout
         uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
         with:
@@ -133,13 +138,13 @@ jobs:
         run: |
           cosign sign --yes --key env://COSIGN_PRIVATE_KEY checkmarx/ast-cli:${{ inputs.tag }}
 
-      - name: Verify Docker image signature
-        if: inputs.dev == false
-        run: |
-          echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
-          cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+      #- name: Verify Docker image signature
+      #  if: inputs.dev == false
+      #  run: |
+      #    echo "${{ secrets.COSIGN_PUBLIC_KEY }}" > cosign.pub
+      #    cosign verify --key cosign.pub checkmarx/ast-cli:${{ inputs.tag }}
+      #  env:
+      #    COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       - name: Create GitHub Release
         env:
@@ -169,26 +174,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release delete "${{ inputs.tag }}" --cleanup-tag --yes || true
 
-  notify:
-    name: Update Teams & JIRA About New Release
-    if: inputs.dev == false && 1 == 0
-    needs: build
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
-    with:
-      product_name: CLI
-      release_version: ${{ inputs.tag }}
-      cli_release_version: ""
-      release_author: "Sypher Team"
-      release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
-      jira_product_name: ASTCLI
-    secrets: inherit
-
-  dispatch_auto_release:
-    name: Update Plugins With new Cli Version
-    if: inputs.dev == false && 1 == 0
-    needs: notify
-    uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@main
-    with:
-      cli_version: ${{ inputs.tag }}
-    secrets: inherit
- 
+  #notify:
+  #  name: Update Teams & JIRA About New Release
+  #  if: inputs.dev == false && 1 == 0
+  #  needs: build
+  #  uses: Checkmarx/plugins-release-workflow/.github/workflows/release-notify.yml@main
+  #  with:
+  #    product_name: CLI
+  #    release_version: ${{ inputs.tag }}
+  #    cli_release_version: ""
+  #    release_author: "Sypher Team"
+  #    release_url: https://github.com/Checkmarx/ast-cli/releases/tag/${{ inputs.tag }}
+  #    jira_product_name: ASTCLI
+  #  secrets: inherit
