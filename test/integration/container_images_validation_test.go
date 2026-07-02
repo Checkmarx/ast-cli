@@ -37,7 +37,7 @@ func TestContainerImageValidation_ValidFormats(t *testing.T) {
 		},
 		{
 			name:        "ImageWithNamespaceAndTag",
-			imageFormat: "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1", // v2.1.20
+			imageFormat: "checkmarx/kics:v2.1.11",
 			description: "Image with namespace and tag should be valid",
 		},
 		{

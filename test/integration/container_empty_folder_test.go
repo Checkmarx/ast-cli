@@ -86,7 +86,7 @@ func TestContainerScan_EmptyFolderWithRegistryImages(t *testing.T) {
 		"scan", "create",
 		flag(params.ProjectName), getProjectNameForScanTests(),
 		flag(params.SourcesFlag), "data/empty-folder.zip",
-		flag(params.ContainerImagesFlag), "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1", // v2.1.20
+		flag(params.ContainerImagesFlag), "checkmarx/kics:v2.1.11",
 		flag(params.BranchFlag), "dummy_branch",
 		flag(params.ScanTypes), params.ContainersTypeFlag,
 		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
