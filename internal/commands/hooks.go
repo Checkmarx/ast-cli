@@ -37,6 +37,11 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper, featureFlagsWrapper))
 	hooksCmd.AddCommand(NewAgentHooksCommand())
 
+	// Hidden machine-readable readiness probe: cx hooks check-auth
+	// Lets a plugin tell whether the agent-hook scanner is authenticated/licensed
+	// from an exit code + JSON, instead of scraping a --debug log marker.
+	hooksCmd.AddCommand(NewHookCheckAuthCommand(jwtWrapper))
+
 	// Register all hidden hook dispatch subcommands so that cx itself acts as
 	// the hook binary. Agents invoke: cx hooks <route-name>
 	// e.g. cx hooks claude-pre-tool-use

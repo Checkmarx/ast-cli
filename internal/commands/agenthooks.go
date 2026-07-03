@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -19,9 +20,38 @@ import (
 // License check
 // =============================================================================
 
-// isLicensed loads CLI config silently and checks whether the token carries
-// a CxOne Assist, AI Protection, or Developer Assist license.
-func isLicensed(jwt wrappers.JWTWrapper) bool {
+// scannerAuthState is the agent-hook scanner's readiness. It separates the two
+// cases the old boolean check conflated: a credential that cannot authenticate
+// at all vs. a valid credential that merely lacks the AI-feature license.
+type scannerAuthState int
+
+const (
+	scannerReady           scannerAuthState = iota // authenticated AND AI-licensed → real guardrails run
+	scannerUnlicensed                              // authenticated, but no AI-feature license
+	scannerUnauthenticated                         // could not authenticate the credential at all
+)
+
+func (s scannerAuthState) String() string {
+	switch s {
+	case scannerReady:
+		return "ready"
+	case scannerUnlicensed:
+		return "unlicensed"
+	default:
+		return "unauthenticated"
+	}
+}
+
+// scannerAuth loads CLI config silently and resolves the hook scanner's
+// auth/license state: whether the token carries a CxOne Assist, AI Protection,
+// or Developer Assist license. A failure to authenticate the credential
+// (IsAllowedEngine returns an error) is reported as scannerUnauthenticated,
+// distinct from a valid-but-unlicensed credential (scannerUnlicensed).
+//
+// The --debug log lines are kept verbatim so any consumer still scraping them
+// keeps working while it migrates to the machine-readable `cx hooks check-auth`
+// signal.
+func scannerAuth(jwt wrappers.JWTWrapper) scannerAuthState {
 	if err := configuration.LoadConfiguration(); err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("hooks: config load warning - %v", err))
 	}
@@ -41,15 +71,85 @@ func isLicensed(jwt wrappers.JWTWrapper) bool {
 		}
 		if ok {
 			logger.PrintIfVerbose(fmt.Sprintf("hooks: AI feature license found (%s)", engine))
-			return true
+			return scannerReady
 		}
 	}
 	if authErrorLogged {
 		logger.PrintIfVerbose("hooks: running in pass-through mode (not authenticated)")
-	} else {
-		logger.PrintIfVerbose("hooks: running in pass-through mode (no AI feature license)")
+		return scannerUnauthenticated
 	}
-	return false
+	logger.PrintIfVerbose("hooks: running in pass-through mode (no AI feature license)")
+	return scannerUnlicensed
+}
+
+// isLicensed reports whether real guardrails should run (authenticated AND
+// AI-licensed). Behavior is unchanged for the existing dispatch and MCP callers.
+func isLicensed(jwt wrappers.JWTWrapper) bool {
+	return scannerAuth(jwt) == scannerReady
+}
+
+// hookCheckAuthResult is the machine-readable payload emitted by
+// `cx hooks check-auth` so an AI-agent plugin can read the scanner's readiness
+// from JSON instead of scraping a --debug log marker.
+type hookCheckAuthResult struct {
+	ScannerReady  bool   `json:"scannerReady"`
+	Authenticated bool   `json:"authenticated"`
+	Licensed      bool   `json:"licensed"`
+	State         string `json:"state"`
+}
+
+// check-auth exit codes let a caller branch on the numeric code alone, without
+// parsing stdout: 0 = ready, 1 = authenticated but unlicensed, 2 = not
+// authenticated. These are the probe's own contract and are never returned by a
+// scan (check-auth performs no scan).
+const (
+	checkAuthExitReady           = 0
+	checkAuthExitUnlicensed      = 1
+	checkAuthExitUnauthenticated = 2
+)
+
+func buildCheckAuthResult(state scannerAuthState) hookCheckAuthResult {
+	return hookCheckAuthResult{
+		ScannerReady:  state == scannerReady,
+		Authenticated: state != scannerUnauthenticated,
+		Licensed:      state == scannerReady,
+		State:         state.String(),
+	}
+}
+
+func checkAuthExitCode(state scannerAuthState) int {
+	switch state {
+	case scannerReady:
+		return checkAuthExitReady
+	case scannerUnlicensed:
+		return checkAuthExitUnlicensed
+	default:
+		return checkAuthExitUnauthenticated
+	}
+}
+
+// NewHookCheckAuthCommand adds the hidden `cx hooks check-auth` probe. It reports
+// whether the agent-hook scanner is authenticated and AI-licensed — as JSON on
+// stdout plus a distinct exit code — so a plugin can reliably tell whether the
+// native scanner will actually scan, instead of scraping the --debug stderr
+// marker. Purely additive: it does not change how `cx hooks <route>` dispatch or
+// the local MCP server behave.
+func NewHookCheckAuthCommand(jwt wrappers.JWTWrapper) *cobra.Command {
+	return &cobra.Command{
+		Use:    "check-auth",
+		Short:  "Report whether the agent-hook scanner is authenticated and AI-licensed",
+		Hidden: true,
+		// Match the dispatch routes: skip the root PersistentPreRunE so no config
+		// output can corrupt the JSON on stdout.
+		PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
+		Run: func(cmd *cobra.Command, _ []string) {
+			state := scannerAuth(jwt)
+			if data, err := json.Marshal(buildCheckAuthResult(state)); err == nil {
+				_, _ = fmt.Fprintln(cmd.OutOrStdout(), string(data))
+			}
+			os.Exit(checkAuthExitCode(state))
+		},
+	}
 }
 
 // =============================================================================
