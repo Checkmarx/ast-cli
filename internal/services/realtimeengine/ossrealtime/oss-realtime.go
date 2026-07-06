@@ -95,11 +95,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	if ignoredFilePath != "" {
 		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
 		if err != nil {
-			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+			logger.PrintfIfVerbose("oss-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
+			ignoreMap := buildIgnoreMap(ignoredPkgs)
+			response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 		}
-
-		ignoreMap := buildIgnoreMap(ignoredPkgs)
-		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 	}
 
 	return response, nil

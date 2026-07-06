@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	cxmcp "github.com/checkmarx/ast-cli/internal/commands/agenthooks/mcp"
 	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
@@ -249,8 +250,13 @@ func NewAstCLI(
 	triageCmd := NewResultsPredicatesCommand(resultsPredicatesWrapper, featureFlagsWrapper, customStatesWrapper)
 
 	chatCmd := NewChatCommand(chatWrapper, tenantWrapper)
-	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper)
+	hooksCmd := NewHooksCommand(jwtWrapper, featureFlagsWrapper, realTimeWrapper, telemetryWrapper)
 	telemetryCmd := NewTelemetryCommand(telemetryWrapper)
+
+	// MCP server — directly uses the exported guardrail functions from agenthooks.go.
+	mcpServerCmd := cxmcp.NewMCPCommand(params.Version, func() bool { return isLicensed(jwtWrapper) })
+
+	ignoreVulnerabilityCmd := NewIgnoreVulnerabilityCommand(telemetryWrapper)
 	rootCmd.AddCommand(
 		scanCmd,
 		projectCmd,
@@ -264,6 +270,8 @@ func NewAstCLI(
 		chatCmd,
 		hooksCmd,
 		telemetryCmd,
+		ignoreVulnerabilityCmd,
+		mcpServerCmd,
 	)
 
 	rootCmd.SilenceUsage = true
@@ -432,7 +440,7 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 	} else {
 		multiWriter = io.MultiWriter(file)
 	}
-	log.SetOutput(multiWriter)
+	logger.SetOutput(multiWriter)
 	return nil
 }
 func CheckPreferredCredentials(cmd *cobra.Command) {

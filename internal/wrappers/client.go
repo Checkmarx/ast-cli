@@ -72,12 +72,14 @@ type ClientCredentialsError struct {
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
 const BaseAuthURLPrefix = "auth/realms/organization"
-const baseURLKey = "ast-base-url"
+// BaseURLKey is the JWT claim that carries the AST base URL. It is present only
+// on the exchanged access token (see GetURL), not on the stored refresh token.
+const BaseURLKey = "ast-base-url"
 
 const audienceClaimKey = "aud"
 
-var CachedAccessToken string
-var CachedAccessTime time.Time
+var cachedAccessToken string
+var cachedAccessTime time.Time
 var Domains = make(map[string]struct{})
 
 func retryHTTPRequest(requestFunc func() (*http.Response, error), retries int, baseDelayInMilliSec time.Duration) (*http.Response, error) {
@@ -640,13 +642,24 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 	logger.PrintIfVerbose("Checking cache for API access token.")
 
-	expired := time.Since(CachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
+	expired := time.Since(cachedAccessTime) > time.Duration(tokenExpirySeconds-expiryGraceSeconds)*time.Second
 	if !expired {
 		logger.PrintIfVerbose("Using cached API access token!")
-		return CachedAccessToken
+		return cachedAccessToken
 	}
 	logger.PrintIfVerbose("API access token not found in cache!")
 	return ""
+}
+
+// InvalidateAccessTokenCache forces the next GetAccessToken to re-exchange the
+// stored credential instead of returning a cached access token. Used after a fresh
+// `cx auth login` (which may target a different tenant) so the new ast-base-url
+// claim is re-derived. Guarded by the same mutex that protects the cache writes.
+func InvalidateAccessTokenCache() {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+	cachedAccessToken = ""
+	cachedAccessTime = time.Time{}
 }
 
 func writeCredentialsToCache(accessToken string) {
@@ -655,8 +668,24 @@ func writeCredentialsToCache(accessToken string) {
 
 	logger.PrintIfVerbose("Storing API access token to cache.")
 	viper.Set(commonParams.AstToken, accessToken)
-	CachedAccessToken = accessToken
-	CachedAccessTime = time.Now()
+	cachedAccessToken = accessToken
+	cachedAccessTime = time.Now()
+}
+
+// SetCachedAccessTokenForTest seeds (token != "") or clears (token == "") the
+// in-memory access-token cache. Exported solely so tests in other packages can
+// control the cache without reaching into unexported state. Guarded by the same
+// mutex that protects the cache writes.
+func SetCachedAccessTokenForTest(token string) {
+	credentialsMutex.Lock()
+	defer credentialsMutex.Unlock()
+	if token == "" {
+		cachedAccessToken = ""
+		cachedAccessTime = time.Time{}
+		return
+	}
+	cachedAccessToken = token
+	cachedAccessTime = time.Now()
 }
 
 func getNewToken(credentialsPayload, authServerURI string) (string, error) {
@@ -878,13 +907,19 @@ func hasRedirectStatusCode(resp *http.Response) bool {
 	return resp.StatusCode == http.StatusTemporaryRedirect || resp.StatusCode == http.StatusMovedPermanently
 }
 
-func GetAuthURI() (string, error) {
+func GetRealmURL() (string, error) {
 	var authURI string
 	var err error
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-	if len(apiKey) > 0 {
+	// When override is set (e.g. `cx auth login`, which forces ApikeyOverrideFlag
+	// so the explicit --base-auth-uri/--tenant win), do NOT decode the stored API
+	// key. Decoding it here would surface a stale/malformed cx_apikey as a hard
+	// "failed to resolve IAM realm URL" error before the override branch below can
+	// build the realm from the flags — defeating the very purpose of the override
+	// and making login impossible until the bad key is manually cleared.
+	if len(apiKey) > 0 && !override {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)
 		if err != nil {
@@ -925,7 +960,15 @@ func GetAuthURI() (string, error) {
 
 	authURI = strings.Trim(authURI, "/")
 	logger.PrintIfVerbose(fmt.Sprintf("Base Auth URI - %s ", authURI))
-	return fmt.Sprintf("%s/%s", authURI, BaseAuthURLSuffix), nil
+	return authURI, nil
+}
+
+func GetAuthURI() (string, error) {
+	realmURL, err := GetRealmURL()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", realmURL, BaseAuthURLSuffix), nil
 }
 
 func GetURL(path, accessToken string) (string, error) {
@@ -934,7 +977,7 @@ func GetURL(path, accessToken string) (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 	if accessToken != "" {
 		logger.PrintIfVerbose("Base URI - Extract from JWT token")
-		cleanURL, err = ExtractFromTokenClaims(accessToken, baseURLKey)
+		cleanURL, err = ExtractFromTokenClaims(accessToken, BaseURLKey)
 		if err != nil {
 			return "", err
 		}
@@ -965,9 +1008,28 @@ func ExtractFromTokenClaims(accessToken, claim string) (string, error) {
 		return "", errors.Errorf(APIKeyDecodeErrorFormat, err)
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && claims[claim] != nil {
-		value = strings.TrimSpace(claims[claim].(string))
-	} else {
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok || claims[claim] == nil {
+		return "", errors.Errorf(jwtError, claim)
+	}
+
+	// A claim value can be a string or, per the OIDC spec (notably "aud"), an
+	// array of strings. Handle both without a type assertion that would panic.
+	switch v := claims[claim].(type) {
+	case string:
+		value = strings.TrimSpace(v)
+	case []interface{}:
+		for _, item := range v {
+			if s, isStr := item.(string); isStr && strings.TrimSpace(s) != "" {
+				value = strings.TrimSpace(s)
+				break
+			}
+		}
+	default:
+		return "", errors.Errorf(jwtError, claim)
+	}
+
+	if value == "" {
 		return "", errors.Errorf(jwtError, claim)
 	}
 

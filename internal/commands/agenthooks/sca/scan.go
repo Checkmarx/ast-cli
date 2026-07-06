@@ -1,0 +1,119 @@
+package sca
+
+import (
+	"os"
+
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+)
+
+// statusOK and statusUnknown are the only Status values that the SCA hooks
+// treat as "clean". Everything else is either Malicious (escalates the deny
+// message) or generic Vulnerable. The literal strings come from the upstream
+// realtime-scanner API and match the values used in oss-realtime tests.
+const (
+	statusOK        = "OK"
+	statusMalicious = "Malicious"
+	statusUnknown   = "Unknown"
+)
+
+// Scanner runs oss-realtime scans on behalf of the SCA guardrails. It holds
+// the wrappers needed to construct an OssRealtimeService per call. Tests
+// substitute scan via NewScannerWithFunc.
+type Scanner struct {
+	JWT  wrappers.JWTWrapper
+	FF   wrappers.FeatureFlagsWrapper
+	RT   wrappers.RealtimeScannerWrapper
+	scan func(path string) (*ossrealtime.OssPackageResults, error)
+	// workDir is the workspace root reported by the hook event (its "cwd"). The
+	// Check* entry points set it so the ignore-file lookup is anchored to the
+	// workspace rather than the hook process's own working directory. A hook runs
+	// as a one-shot process handling a single event, so this single field is safe.
+	workDir string
+}
+
+// NewScanner returns a Scanner backed by the given wrappers. The scan call
+// goes through ossrealtime.NewOssRealtimeService.RunOssRealtimeScan.
+func NewScanner(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper) *Scanner {
+	s := &Scanner{JWT: jwt, FF: ff, RT: rt}
+	s.scan = s.runRealScan
+	return s
+}
+
+// NewScannerWithFunc returns a Scanner whose scan call is replaced with f.
+// For unit tests only.
+func NewScannerWithFunc(f func(path string) (*ossrealtime.OssPackageResults, error)) *Scanner {
+	return &Scanner{scan: f}
+}
+
+func (s *Scanner) runRealScan(path string) (*ossrealtime.OssPackageResults, error) {
+	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.FF, s.RT)
+	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath(s.workDir))
+}
+
+// existingIgnoreFilePath returns the realtime ignore-file path (anchored at the
+// hook event's workDir) only when it exists on disk. Passing a missing path to
+// RunOssRealtimeScan is harmless but consistent with the ASCA pattern of only
+// enabling filtering once the file exists.
+func existingIgnoreFilePath(workDir string) string {
+	p := ignore.PathFor(workDir)
+	if _, err := os.Stat(p); err == nil {
+		return p
+	}
+	return ""
+}
+
+// ScanPackages synthesises a temp manifest from pkgs and scans it. Returns
+// (malicious, vulnerable) buckets. On error the buckets are nil and the error
+// is propagated — callers fail open by treating errors as "no findings".
+func (s *Scanner) ScanPackages(format Format, pkgs []Package) (malicious, vulnerable []ossrealtime.OssPackage, err error) {
+	if len(pkgs) == 0 {
+		return nil, nil, nil
+	}
+	dir, err := os.MkdirTemp("", "sca-scan-")
+	if err != nil {
+		return nil, nil, err
+	}
+	defer os.RemoveAll(dir)
+
+	// Versions are passed through exactly as parsed. The realtime scanner matches
+	// on the literal version string, so padding (e.g. Maven 1.7 -> 1.7.0) makes the
+	// backend mismatch / time out. Callers that need bare-version handling (bash
+	// installs, e.g. parseNpmSpec) normalize at parse time instead.
+	path, err := Synthesize(format, pkgs, dir)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.scanAndBucket(path)
+}
+
+// ScanFile scans an existing manifest at path (used for `pip install -r ...`
+// and for the Cursor post-write audit).
+func (s *Scanner) ScanFile(path string) (malicious, vulnerable []ossrealtime.OssPackage, err error) {
+	return s.scanAndBucket(path)
+}
+
+func (s *Scanner) scanAndBucket(path string) (malicious, vulnerable []ossrealtime.OssPackage, err error) {
+	if s == nil || s.scan == nil {
+		return nil, nil, nil
+	}
+	results, err := s.scan(path)
+	if err != nil {
+		return nil, nil, err
+	}
+	if results == nil {
+		return nil, nil, nil
+	}
+	for _, p := range results.Packages {
+		switch p.Status {
+		case statusMalicious:
+			malicious = append(malicious, p)
+		case statusOK, statusUnknown, "":
+			// clean / not classified — ignore
+		default:
+			vulnerable = append(vulnerable, p)
+		}
+	}
+	return malicious, vulnerable, nil
+}
