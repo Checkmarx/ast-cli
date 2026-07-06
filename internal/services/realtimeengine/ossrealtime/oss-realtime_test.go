@@ -388,3 +388,145 @@ func TestOssRealtimeScan_CsprojFile_ReturnsLocations(t *testing.T) {
 			"Location %d endIndex should be %d", i, expected.endIndex)
 	}
 }
+
+// Tests for validateSupportedManifestFile function
+func TestValidateSupportedManifestFile_ValidExtensions(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+		isValid  bool
+	}{
+		{
+			name:     "CsprojExtension",
+			filePath: "project.csproj",
+			isValid:  true,
+		},
+		{
+			name:     "SbtExtension",
+			filePath: "build.sbt",
+			isValid:  true,
+		},
+		{
+			name:     "CsprojWithPath",
+			filePath: "/path/to/project.csproj",
+			isValid:  true,
+		},
+		{
+			name:     "SbtWithPath",
+			filePath: "src/build.sbt",
+			isValid:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSupportedManifestFile(tt.filePath)
+			if tt.isValid {
+				assert.Nil(t, err, "Should accept %s file", tt.filePath)
+			} else {
+				assert.NotNil(t, err, "Should reject %s file", tt.filePath)
+			}
+		})
+	}
+}
+
+func TestValidateSupportedManifestFile_ValidFilenames(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+	}{
+		{name: "PomXml", filePath: "pom.xml"},
+		{name: "PackageJson", filePath: "package.json"},
+		{name: "GoMod", filePath: "go.mod"},
+		{name: "BuildGradle", filePath: "build.gradle"},
+		{name: "BuildGradleKts", filePath: "build.gradle.kts"},
+		{name: "LibsVersionsToml", filePath: "libs.versions.toml"},
+		{name: "SetupCfg", filePath: "setup.cfg"},
+		{name: "SetupPy", filePath: "setup.py"},
+		{name: "PyprojectToml", filePath: "pyproject.toml"},
+		{name: "PackagesConfig", filePath: "packages.config"},
+		{name: "DirectoryPackagesProps", filePath: "Directory.Packages.props"},
+		{name: "PomXmlWithPath", filePath: "/path/to/pom.xml"},
+		{name: "PackageJsonWithPath", filePath: "src/package.json"},
+		{name: "GoModWithPath", filePath: "project/go.mod"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSupportedManifestFile(tt.filePath)
+			assert.Nil(t, err, "Should accept %s file", tt.filePath)
+		})
+	}
+}
+
+func TestValidateSupportedManifestFile_ValidTxtFilesWithPrefixes(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+	}{
+		{name: "RequirementsTxt", filePath: "requirements.txt"},
+		{name: "RequirementsDevTxt", filePath: "requirements-dev.txt"},
+		{name: "PackagesTxt", filePath: "packages.txt"},
+		{name: "ConstraintsTxt", filePath: "constraints.txt"},
+		{name: "RequirementsWithPath", filePath: "/path/to/requirements.txt"},
+		{name: "PackagesWithPath", filePath: "config/packages.txt"},
+		{name: "ConstraintsWithPath", filePath: "src/constraints.txt"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSupportedManifestFile(tt.filePath)
+			assert.Nil(t, err, "Should accept %s file", tt.filePath)
+		})
+	}
+}
+
+func TestValidateSupportedManifestFile_InvalidTxtFilesWithoutPrefixes(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+	}{
+		{name: "UnrelatedTxt", filePath: "readme.txt"},
+		{name: "DataTxt", filePath: "data.txt"},
+		{name: "ConfigTxt", filePath: "config.txt"},
+		{name: "InfoTxt", filePath: "info.txt"},
+		{name: "UnrelatedTxtWithPath", filePath: "/path/to/random.txt"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSupportedManifestFile(tt.filePath)
+			assert.NotNil(t, err, "Should reject %s file (missing prefix)", tt.filePath)
+			// Verify error message indicates unsupported format
+			assert.Contains(t, err.Error(), "OSS Realtime scanner doesn't currently support scanning")
+		})
+	}
+}
+
+func TestValidateSupportedManifestFile_UnsupportedFormats(t *testing.T) {
+	tests := []struct {
+		name     string
+		filePath string
+	}{
+		{name: "RubyGemfile", filePath: "Gemfile"},
+		{name: "PHPComposer", filePath: "composer.json"},
+		{name: "RustCargo", filePath: "Cargo.toml"},
+		{name: "PythonPipfile", filePath: "Pipfile"},
+		{name: "JavaGradleProperties", filePath: "gradle.properties"},
+		{name: "NodeNpmLock", filePath: "package-lock.json"},
+		{name: "YarnLock", filePath: "yarn.lock"},
+		{name: "UnsupportedExtension", filePath: "manifest.xml"},
+		{name: "RandomFile", filePath: "random.txt"},
+		{name: "NoPyproject", filePath: "pyproject.yaml"},
+		{name: "PomWithDifferentName", filePath: "maven.xml"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateSupportedManifestFile(tt.filePath)
+			assert.NotNil(t, err, "Should reject %s file (unsupported format)", tt.filePath)
+			// Verify error message indicates unsupported format
+			assert.Contains(t, err.Error(), "OSS Realtime scanner doesn't currently support scanning")
+		})
+	}
+}
