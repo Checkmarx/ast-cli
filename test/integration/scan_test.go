@@ -2747,3 +2747,80 @@ func TestCreateScan_AsMultipartUpload_Success(t *testing.T) {
 	log.SetOutput(os.Stderr)
 	assert.Assert(t, strings.Contains(buf.String(), "Uploading source code in multiple parts"), "Test for uploading file in multiple parts failed.")
 }
+
+// Scenario 1: Test scan creation with a project already associated with an application
+// Pre-condition: Project and application exist and are already linked
+// Verifies the CLI skips reassociation and logs the expected message during scan creation.
+func TestScanCreate_ProjectAlreadyAssociatedWithApplication_SkipsAssociation(t *testing.T) {
+	// Capture debug output to verify log messages
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "TestProjectAppAssign", // Pre-existing project
+		flag(params.ApplicationName), "TestApplicationProAssign", // Pre-existing, already associated application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "main",
+		flag(params.DebugFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with already-associated project and application should succeed")
+
+	logOutput := buf.String()
+	assert.Assert(t, strings.Contains(logOutput, "Project is already associated with the application. Skipping association"),
+		"Expected log message about skipping association not found. Log output: %s", logOutput)
+}
+
+// Scenario 2: Create a scan with a new project and an existing application
+// Pre-condition: Application already exists
+// Verifies the project is created, linked to the application, and a success message is logged.
+func TestScanCreate_NewProjectWithExistingApplication_SuccessfullyUpdatesApplication(t *testing.T) {
+	// Capture debug output to verify log messages
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+	defer deleteProjectByName(t, projectName)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName, // NEW project (created at runtime)
+		flag(params.ApplicationName), "TestApplicationForProject", // PRE-EXISTING application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "main",
+		flag(params.DebugFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with new project and existing application should succeed")
+
+	logOutput := buf.String()
+	assert.Assert(t, strings.Contains(logOutput, "Successfully updated the application"),
+		"Expected log message about successful application update not found. Log output: %s", logOutput)
+}
+
+// Scenario 3: Test scan creation using manually provided existing project and application with --branch-primary and --project-tags.
+// Verifies that project parameters are updated successfully (when application-level query override is performed) and the scan completes without errors.
+// this test only validates successful execution, not specific log messages.
+func TestScanCreate_ProjectAlreadyAssociatedWithApplication_BranchPrimaryQueryOverride(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "TestProjectQueryOverride", // Pre-existing, manually provided project
+		flag(params.ApplicationName), "TestApplicationQueryOverride", // Pre-existing, manually provided application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), "sast,iac-security", // Scan types as comma-separated value
+		flag(params.BranchFlag), "main",
+		flag(params.BranchPrimaryFlag), // Branch primary flag
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with branch-primary and query override flags should succeed without error")
+}
