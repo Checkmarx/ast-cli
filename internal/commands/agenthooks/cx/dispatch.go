@@ -3,7 +3,7 @@ package cx
 import (
 	"os"
 
-	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 )
 
 // DispatchRoute calls the handler registered under route without requiring the
