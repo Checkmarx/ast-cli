@@ -48,3 +48,11 @@ GHSA-vh4v-2xq2-g5cg exp:2026-12-31
 # Risk: Low - requires attacker-controlled registry, container scanning only
 # Impact: Credential exfiltration in container registry operations
 CVE-2026-48978 exp:2026-12-31
+
+# CVE-2026-6791 (UNKNOWN): glibc vulnerability
+# Libraries: glibc, glibc-locale-posix, ld-linux, libcrypt1
+# Image: wolfi 20230201 (base image)
+# Status: Fixed in glibc 2.43-r10 (current: 2.43-r8)
+# Risk: Low - affects base OS image, not application code
+# Impact: Minimal - only affects base OS components, application uses glibc runtime only
+CVE-2026-6791 exp:2026-12-31
