@@ -17,6 +17,7 @@ var (
 
 var allowedOptionalKeys = map[string]bool{
 	"asca-location": true,
+	"aiProvider":    true,
 }
 
 // CleanURL returns a cleaned url removing double slashes

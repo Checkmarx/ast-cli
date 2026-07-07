@@ -106,10 +106,11 @@ func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredF
 	if ignoredFilePath != "" {
 		ignored, err := loadIgnoredContainerFindings(ignoredFilePath)
 		if err != nil {
-			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored containers").Error()
+			logger.PrintfIfVerbose("containers-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
+			ignoreMap := buildContainerIgnoreMap(ignored)
+			results.Images = filterIgnoredContainers(results.Images, ignoreMap)
 		}
-		ignoreMap := buildContainerIgnoreMap(ignored)
-		results.Images = filterIgnoredContainers(results.Images, ignoreMap)
 	}
 
 	return results, nil

@@ -9,17 +9,19 @@ require (
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
 	github.com/Checkmarx/manifest-parser v0.1.3
 	github.com/Checkmarx/secret-detection v1.2.1
+	github.com/CheckmarxDev/ast-cx-hooks v1.0.3
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
 	github.com/bouk/monkey v1.0.0
 	github.com/checkmarx/2ms/v3 v3.21.0
 	github.com/gofrs/flock v0.13.0
-	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/gomarkdown/markdown v0.0.0-20260417124207-7d523f7318df
 	github.com/google/uuid v1.6.0
 	github.com/gookit/color v1.6.0
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/jsumners/go-getport v1.0.0
+	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/mssola/user_agent v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.10.2
@@ -50,6 +52,7 @@ require (
 	github.com/docker/go-events v0.0.0-20250808211157-605354379745 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
+	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/knqyf263/go-rpmdb v0.1.1 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
@@ -60,6 +63,9 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/saferwall/pe v1.5.6 // indirect
 	github.com/secDre4mer/pkcs7 v0.0.0-20240322103146-665324a4461d // indirect
+	github.com/segmentio/asm v1.1.3 // indirect
+	github.com/segmentio/encoding v0.5.4 // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.2 // indirect
 )
 
@@ -103,7 +109,7 @@ require (
 	github.com/becheran/wildmatch-go v1.0.0 // indirect
 	github.com/bitnami/go-version v0.0.0-20250324202741-04b9d491e744 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bwmarrin/discordgo v0.27.1 // indirect
 	github.com/chai2010/gettext-go v1.0.3 // indirect
 	github.com/charmbracelet/colorprofile v0.4.1 // indirect

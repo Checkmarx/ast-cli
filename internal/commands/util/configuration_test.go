@@ -139,6 +139,73 @@ func TestWriteSingleConfigKeyStringNonExistingFile_CreatingTheFileAndWritesTheKe
 	asserts.NotNil(t, file)
 }
 
+func TestLoadConfigEmptyFile_ZeroByteConfig_ReturnsEmptyMapWithoutError(t *testing.T) {
+	configFilePath := "empty-config-file.yaml"
+
+	// A zero-byte config file is the state that previously caused
+	// "error decoding YAML: EOF" when cx auth login persisted a fresh token.
+	file, err := os.Create(configFilePath)
+	assert.NilError(t, err)
+	_ = file.Close()
+	defer func() {
+		_ = os.Remove(configFilePath)
+		_ = os.Remove(configFilePath + ".lock")
+	}()
+
+	loaded, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, 0, len(loaded), "an empty file must load as an empty config, not an error")
+}
+
+func TestWriteSingleConfigKeyStringEmptyFile_ZeroByteConfig_WritesKeyWithoutEOFError(t *testing.T) {
+	configFilePath := "empty-config-write.yaml"
+
+	file, err := os.Create(configFilePath)
+	assert.NilError(t, err)
+	_ = file.Close()
+	defer func() {
+		_ = os.Remove(configFilePath)
+		_ = os.Remove(configFilePath + ".lock")
+	}()
+
+	// Previously failed with "error loading config: error decoding YAML: EOF".
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, cxScsScanOverviewPath, defaultScsScanOverviewPath)
+	assert.NilError(t, err)
+
+	config, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, defaultScsScanOverviewPath, config[cxScsScanOverviewPath])
+}
+
+func TestLoadConfigMalformedYaml_CorruptConfig_StillReturnsError(t *testing.T) {
+	configFilePath := "malformed-config.yaml"
+	// Only the empty-file (io.EOF) case is special-cased. A genuinely corrupt
+	// config must still error — this pins that narrow behavior so a future
+	// change can't broaden it into silently swallowing (and then truncating)
+	// a real config.
+	err := os.WriteFile(configFilePath, []byte("foo: [bar"), 0600)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(configFilePath) }()
+
+	cfg, err := configuration.LoadConfig(configFilePath)
+	asserts.NotNil(t, err)
+	asserts.Nil(t, cfg)
+	asserts.True(t, strings.Contains(err.Error(), "error decoding YAML"), "corrupt YAML must still report a decode error")
+}
+
+func TestLoadConfigCommentOnlyFile_EffectivelyEmpty_ReturnsEmptyMap(t *testing.T) {
+	configFilePath := "comment-only-config.yaml"
+	// A comment-only / whitespace-only file decodes to io.EOF in yaml.v3, the
+	// same as a zero-byte file — it must load as an empty config, not an error.
+	err := os.WriteFile(configFilePath, []byte("# only a comment\n"), 0600)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(configFilePath) }()
+
+	cfg, err := configuration.LoadConfig(configFilePath)
+	assert.NilError(t, err)
+	asserts.Equal(t, 0, len(cfg))
+}
+
 func TestChangedOnlyScsScanOverviewPathInConfigFile_ConfigFileExistsWithDefaultValues_OnlyScsScanOverviewPathChangedSuccess(t *testing.T) {
 	err := configuration.LoadConfiguration()
 	assert.NilError(t, err)
