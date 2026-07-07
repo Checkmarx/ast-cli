@@ -1,7 +1,7 @@
 package cx
 
 import (
-	"github.com/CheckmarxDev/ast-cx-hooks/install"
+	"github.com/Checkmarx/ast-cx-hooks/install"
 )
 
 // Route is a single hook dispatch route exposed as a hidden `cx hooks <Use>`

@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 )
 
 // proposedContent returns the file content that would exist after ev.Changes are applied.
