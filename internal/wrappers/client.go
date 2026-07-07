@@ -129,7 +129,13 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 }
 
 func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
-	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+
+	var agentStr = ""
+	if strings.Contains(viper.GetString(commonParams.AgentNameKey), "_") {
+	agentStr = viper.GetString(commonParams.AgentNameKey) + "/ASTCLI_" + commonParams.Version
+	}else {
+		agentStr = viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+	}
 	req.Header.Set("User-Agent", agentStr)
 
 	originStr := viper.GetString(commonParams.OriginKey)
