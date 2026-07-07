@@ -11,7 +11,7 @@ import (
 )
 
 // findingKey is the deduplication tuple used for delta detection.
-// Mirrors the cx-security plugin's matching logic.
+// Mirrors the cx-devassist plugin's matching logic.
 type findingKey struct {
 	ruleID          uint32
 	problematicLine string // TrimSpace applied
@@ -115,7 +115,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"Do not bypass the scan by writing the same content through another tool or shell command. "+
 			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
 			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"For each real finding, invoke the cx-security:cx-security-asca skill — "+
+			"For each real finding, invoke the cx-devassist:cx-devassist-asca skill — "+
 			"the findings are already in context so it will skip the scan and go directly to "+
 			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
 			"If that skill is not available in this session, call mcp__Checkmarx__codeRemediation directly:\n"+

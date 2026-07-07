@@ -72,6 +72,7 @@ type ClientCredentialsError struct {
 const FailedToAuth = "Failed to authenticate - please provide an %s"
 const BaseAuthURLSuffix = "protocol/openid-connect/token"
 const BaseAuthURLPrefix = "auth/realms/organization"
+
 // BaseURLKey is the JWT claim that carries the AST base URL. It is present only
 // on the exchanged access token (see GetURL), not on the stored refresh token.
 const BaseURLKey = "ast-base-url"
@@ -129,7 +130,13 @@ func retryHTTPForIAMRequest(requestFunc func() (*http.Response, error), retries 
 }
 
 func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
-	agentStr := viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+
+	var agentStr string
+	if strings.Contains(viper.GetString(commonParams.AgentNameKey), "_") {
+		agentStr = viper.GetString(commonParams.AgentNameKey) + "/ASTCLI_" + commonParams.Version
+	} else {
+		agentStr = viper.GetString(commonParams.AgentNameKey) + "/" + commonParams.Version
+	}
 	req.Header.Set("User-Agent", agentStr)
 
 	originStr := viper.GetString(commonParams.OriginKey)

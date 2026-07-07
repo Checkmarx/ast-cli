@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -72,6 +73,10 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
+	}
+
+	if err := validateSupportedManifestFile(filePath); err != nil {
+		return nil, err
 	}
 
 	pkgs, err := parseManifest(filePath)
@@ -172,6 +177,55 @@ func getPackageEntryFromPackageMap(
 		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
 	}
 	return &entry
+}
+
+// validateSupportedManifestFile checks if the manifest file format is supported by OSS realtime scanner.
+func validateSupportedManifestFile(filePath string) error {
+	manifestFileName := filepath.Base(filePath)
+	manifestFileExtension := filepath.Ext(manifestFileName)
+
+	// Check supported extensions
+	supportedExtensions := map[string]bool{
+		".csproj": true,
+		".sbt":    true,
+	}
+
+	// Check supported filenames
+	supportedFilenames := map[string]bool{
+		"pom.xml":                  true,
+		"package.json":             true,
+		"Directory.Packages.props": true,
+		"packages.config":          true,
+		"go.mod":                   true,
+		"build.gradle":             true,
+		"build.gradle.kts":         true,
+		"libs.versions.toml":       true,
+		"setup.cfg":                true,
+		"setup.py":                 true,
+		"pyproject.toml":           true,
+	}
+
+	// Check by extension
+	if supportedExtensions[manifestFileExtension] {
+		return nil
+	}
+
+	// Check by filename
+	if supportedFilenames[manifestFileName] {
+		return nil
+	}
+
+	// Special handling for .txt files (check prefix)
+	if manifestFileExtension == ".txt" {
+		if strings.HasPrefix(manifestFileName, "requirement") ||
+			strings.HasPrefix(manifestFileName, "packages") ||
+			strings.HasPrefix(manifestFileName, "constraint") {
+			return nil
+		}
+	}
+
+	// Manifest format is not supported
+	return errorconstants.NewRealtimeEngineError(fmt.Sprintf("OSS Realtime scanner doesn't currently support scanning '%s' file.", manifestFileName)).Error()
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
