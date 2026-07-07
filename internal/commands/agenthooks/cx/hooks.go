@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	agenthooks "github.com/CheckmarxDev/ast-cx-hooks"
-	"github.com/CheckmarxDev/ast-cx-hooks/cursor"
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/Checkmarx/ast-cx-hooks/cursor"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
