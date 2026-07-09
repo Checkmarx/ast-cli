@@ -1,4 +1,4 @@
-name: AST Cli Release
+name: AST CLI Release
 
 on:
   workflow_call:
@@ -67,6 +67,7 @@ permissions:
 
 jobs:
   build:
+    name: Build, Sign & Publish Release
     runs-on: macos-15-intel
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
@@ -83,9 +84,10 @@ jobs:
           use-policy-store: true
           api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
       - name: Checkout
-        uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 #v4.0.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Install Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:

@@ -14,7 +14,11 @@ jobs:
       body: ${{ github.event.issue.body }}
       html_url: ${{ github.event.issue.html_url }}
       repo: ${{ github.event.repository.full_name }}
-    secrets: inherit
+    secrets:
+      AST_JIRA_API_TOKEN: ${{ secrets.AST_JIRA_API_TOKEN }}
+      AST_JIRA_USER_EMAIL: ${{ secrets.AST_JIRA_USER_EMAIL }}
+      JIRA_FIELDS_BUG: ${{ secrets.JIRA_FIELDS_BUG }}
+      JIRA_FIELDS_OTHER: ${{ secrets.JIRA_FIELDS_OTHER }}
 
   close_jira:
     if: github.event.action == 'closed'
@@ -23,4 +27,6 @@ jobs:
     with:
       issue_number: ${{ github.event.issue.number }}
       repo: ${{ github.event.repository.full_name }}
-    secrets: inherit
+    secrets:
+      AST_JIRA_API_TOKEN: ${{ secrets.AST_JIRA_API_TOKEN }}
+      AST_JIRA_USER_EMAIL: ${{ secrets.AST_JIRA_USER_EMAIL }}

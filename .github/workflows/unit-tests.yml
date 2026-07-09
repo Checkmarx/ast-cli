@@ -1,0 +1,108 @@
+name: AST-CLI Unit Tests
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unit-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIN_COVERAGE: "85"
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: cx-public-ubuntu-x64
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      - run: go version
+
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@v1.12.0
+
+      - name: Run unit tests with coverage
+        id: run_tests
+        shell: bash
+        run: |
+          sudo chmod +x ./internal/commands/.scripts/up.sh
+          ./internal/commands/.scripts/up.sh
+          echo "test_exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Compute coverage percentage
+        id: coverage
+        if: always()
+        shell: bash
+        run: |
+          if [ -f cover.out ]; then
+            CODE_COV=$(go tool cover -func cover.out | grep total | awk '{print substr($3, 1, length($3)-1)}')
+            go tool cover -html=cover.out -o coverage.html
+          else
+            CODE_COV="0"
+          fi
+          echo "coverage=$CODE_COV" >> "$GITHUB_OUTPUT"
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          python3 ./internal/commands/.scripts/print_test_summary.py \
+            junit.xml \
+            "${{ steps.coverage.outputs.coverage }}" \
+            "${{ env.MIN_COVERAGE }}" \
+            "${{ steps.run_tests.outputs.test_exit_code }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: unit-tests-coverage
+          path: coverage.html
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: unit-tests-junit
+          path: junit.xml
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Enforce test and coverage gate
+        if: always()
+        shell: bash
+        run: |
+          FAILED=0
+
+          if [ "${{ steps.run_tests.outputs.test_exit_code }}" != "0" ]; then
+            echo "::error::Unit tests failed. See the job summary above for the failing test cases."
+            FAILED=1
+          fi
+
+          CODE_COV="${{ steps.coverage.outputs.coverage }}"
+          EXPECTED_CODE_COV="${{ env.MIN_COVERAGE }}"
+          if awk -v cov="$CODE_COV" -v min="$EXPECTED_CODE_COV" 'BEGIN{ exit !(cov < min) }'; then
+            echo "::error::Code coverage is too low. Coverage percentage is: ${CODE_COV}% (required >= ${EXPECTED_CODE_COV}%)"
+            FAILED=1
+          else
+            echo "Code coverage passed! Coverage percentage is: ${CODE_COV}%"
+          fi
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
