@@ -16,7 +16,7 @@
 <br />
 <p align="center">
   <a href="">
-    <img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://raw.githubusercontent.com/Checkmarx/ci-cd-integrations/main/.images/xIcon.jpg" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">Checkmarx One CLI</h3>
