@@ -179,6 +179,14 @@ func getPackageEntryFromPackageMap(
 	return &entry
 }
 
+// IsSupportedManifestFile reports whether filePath names a manifest file the
+// OSS realtime scanner is able to parse and scan. Exported so other callers
+// (e.g. the agent-hooks SCA guardrails) can gate on the same rule set instead
+// of re-implementing their own list of supported manifest files.
+func IsSupportedManifestFile(filePath string) bool {
+	return validateSupportedManifestFile(filePath) == nil
+}
+
 // validateSupportedManifestFile checks if the manifest file format is supported by OSS realtime scanner.
 func validateSupportedManifestFile(filePath string) error {
 	manifestFileName := filepath.Base(filePath)

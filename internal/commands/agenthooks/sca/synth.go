@@ -36,6 +36,12 @@ func Synthesize(format Format, pkgs []Package, dir string) (string, error) {
 		content = synthDirectoryPackagesProps(pkgs)
 	case FormatDotnetPackagesConfig:
 		content = synthPackagesConfig(pkgs)
+	case FormatGradleBuild:
+		content = synthGradleBuild(pkgs)
+	case FormatGradleVersionCatalog:
+		content = synthGradleVersionCatalog(pkgs)
+	case FormatSbtBuild:
+		content = synthSbt(pkgs)
 	default:
 		return "", fmt.Errorf("sca: unsupported synth format %d", format)
 	}
@@ -145,5 +151,52 @@ func synthPackagesConfig(pkgs []Package) []byte {
 		fmt.Fprintf(&b, "  <package id=\"%s\" version=\"%s\" />\n", p.Name, p.Version)
 	}
 	b.WriteString("</packages>\n")
+	return []byte(b.String())
+}
+
+// synthGradleBuild writes one `implementation 'group:artifact:version'` line
+// per package — the simplest form the Gradle parser's dependency regexes
+// recognise. Name is "group:artifact" (mirrors Maven's groupId:artifactId).
+func synthGradleBuild(pkgs []Package) []byte {
+	var b strings.Builder
+	for _, p := range pkgs {
+		group, artifact := splitMavenName(p.Name)
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		fmt.Fprintf(&b, "implementation '%s:%s:%s'\n", group, artifact, v)
+	}
+	return []byte(b.String())
+}
+
+// synthGradleVersionCatalog writes a minimal libs.versions.toml [libraries]
+// section — one inline "group:artifact:version" entry per package.
+func synthGradleVersionCatalog(pkgs []Package) []byte {
+	var b strings.Builder
+	b.WriteString("[libraries]\n")
+	for i, p := range pkgs {
+		group, artifact := splitMavenName(p.Name)
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		fmt.Fprintf(&b, "dep%d = \"%s:%s:%s\"\n", i, group, artifact, v)
+	}
+	return []byte(b.String())
+}
+
+// synthSbt writes one `libraryDependencies += "group" % "artifact" % "version"`
+// line per package, the form the SBT parser's dependency regex recognises.
+func synthSbt(pkgs []Package) []byte {
+	var b strings.Builder
+	for _, p := range pkgs {
+		group, artifact := splitMavenName(p.Name)
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		fmt.Fprintf(&b, "libraryDependencies += \"%s\" %% \"%s\" %% \"%s\"\n", group, artifact, v)
+	}
 	return []byte(b.String())
 }

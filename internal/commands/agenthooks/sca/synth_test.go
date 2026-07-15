@@ -86,6 +86,27 @@ func TestSynthesize_PackagesConfig(t *testing.T) {
 	})
 }
 
+func TestSynthesize_GradleBuild(t *testing.T) {
+	roundTrip(t, FormatGradleBuild, []Package{
+		{Name: "com.example:foo", Version: "1.0.0"},
+		{Name: "com.example:bar", Version: "2.0.0"},
+	})
+}
+
+func TestSynthesize_GradleVersionCatalog(t *testing.T) {
+	roundTrip(t, FormatGradleVersionCatalog, []Package{
+		{Name: "com.example:foo", Version: "1.0.0"},
+		{Name: "com.example:bar", Version: "2.0.0"},
+	})
+}
+
+func TestSynthesize_Sbt(t *testing.T) {
+	roundTrip(t, FormatSbtBuild, []Package{
+		{Name: "com.example:foo", Version: "1.0.0"},
+		{Name: "com.example:bar", Version: "2.0.0"},
+	})
+}
+
 func TestSynthesize_UnsupportedFormat(t *testing.T) {
 	dir, _ := os.MkdirTemp("", "synth-test-")
 	defer os.RemoveAll(dir)
