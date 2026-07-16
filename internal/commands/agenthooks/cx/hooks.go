@@ -58,7 +58,6 @@ func touchSessionFindingsMarker() {
 	}
 }
 
-
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
 // It is set by RegisterGuardrails so the handlers (free functions registered
 // with the agenthooks library) can reach it without an injection mechanism.
@@ -73,7 +72,6 @@ var telemetryWrapper wrappers.TelemetryWrapper
 func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
 	return agenthooks.Resume()
 }
-
 
 // sessionIDFromToolCall recovers the Claude session id for a ToolCall event. Unlike FileEditEvent,
 // the library's ToolCallEvent carries no SessionID field; only Claude's raw payload is assertable
