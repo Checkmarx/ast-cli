@@ -488,7 +488,8 @@ func ResolveRestrictedPaths(globalPaths, rulePaths []string, strategy string) []
 // strip the leading slash before a drive letter so PathUnderAny's prefix match
 // lines up with policy entries like "C:\\foo\\bar\\".
 func NormalizeWorkspaceRoot(root string) string {
-	r := filepath.ToSlash(root)
+	// Explicit replace (not filepath.ToSlash) so backslashes normalize on any host OS, not just Windows.
+	r := strings.ReplaceAll(root, "\\", "/")
 	if len(r) >= 3 && r[0] == '/' && isASCIILetter(r[1]) && r[2] == ':' {
 		r = r[1:]
 	}

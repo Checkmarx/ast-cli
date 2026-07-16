@@ -53,7 +53,7 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 		return "", ""
 	}
 	before, _ := os.ReadFile(filePath) // missing → empty before
-	added, err := AddedPackages(format, before, afterContent)
+	added, err := AddedPackages(filePath, before, afterContent)
 	if err != nil || len(added) == 0 {
 		return "", ""
 	}
