@@ -9,10 +9,6 @@ import (
 	"github.com/Checkmarx/ast-cx-hooks/claude"
 )
 
-// NOTE: the session-summary tests (TestCxWhenAgentIdle_*, TestEmitSessionSummary_*) and their
-// helpers were removed when the session summary was disabled in hooks.go (see the DISABLED notes
-// there, commit 21d62843). Restore them from git history if the summary is re-enabled.
-
 func TestSessionIDFromToolCall(t *testing.T) {
 	claudeEv := agenthooks.ToolCallEvent{
 		Raw: &claude.PreToolUseEvent{EventBase: claude.EventBase{SessionID: "S9"}},

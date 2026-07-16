@@ -58,43 +58,6 @@ func touchSessionFindingsMarker() {
 	}
 }
 
-// DISABLED (was commit 21d62843): the session summary — both the machine audit log and the
-// forced final "Security Scan Session Summary" turn — is turned off because the forced turn
-// fired mid-work and disrupted the agent. Kept commented (not deleted) so it can be re-enabled.
-//
-// sessionSummaryPrompt is injected into Claude as a mandatory final turn when
-// the session marker is present at session end (exit code 2 from cxWhenAgentIdle).
-/*
-const sessionSummaryPrompt = `Checkmarx DevAssist — REQUIRED FINAL OUTPUT
-
-One or more Checkmarx scanner findings were blocked and remediated in this session.
-You MUST now output the Security Scan Session Summary before this session ends.
-
-Count from this session's context:
-- "Vulnerabilities Found" = number of distinct findings that the Checkmarx hook blocked
-  (each blocking message from ASCA, SCA, or any other engine is one finding per rule/package)
-- "Remediations Applied" = number of those findings you successfully fixed
-  (each completed mcp__Checkmarx__codeRemediation or mcp__Checkmarx__packageRemediation call
-   that produced and applied a fix counts as one remediation)
-
-Output the following table, filling in the counts. Omit a row only if that engine had
-zero findings AND zero remediations this session. Include the Total row whenever two or
-more engine rows are present.
-
-Security Scan Session Summary
-═══════════════════════════════════════════════════════════════════
-Engine          │ Vulnerabilities Found │ Remediations Applied
-────────────────┼──────────────────────┼───────────────────────
-ASCA (SAST)     │ ?                    │ ?
-SCA (OSS)       │ ?                    │ ?
-KICS (IaC)      │ ?                    │ ?
-────────────────┼──────────────────────┼───────────────────────
-Total           │ ?                    │ ?
-═══════════════════════════════════════════════════════════════════
-
-Replace each ? with the actual count. Do not output anything else after this table.
-`
-*/
 
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
 // It is set by RegisterGuardrails so the handlers (free functions registered
@@ -107,128 +70,10 @@ var kicsScanner *kics.Scanner
 
 var telemetryWrapper wrappers.TelemetryWrapper
 
-// cxWhenAgentIdle: fires at session end (claude-stop).
-// If the session findings marker exists, at least one real Checkmarx finding was
-// blocked this session. Consume the marker and return Interrupt(sessionSummaryPrompt),
-// which serialises to {"decision":"block","reason":"..."} via the agenthooks library
-// and exits 0. The harness injects the reason as feedback that forces one final turn
-// where Claude outputs the summary, then the stop hook fires again with no marker
-// and returns Resume() — clean stop.
-//
-//nolint:gocritic // summary disabled; body kept commented for easy re-enable
 func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
-	// DISABLED (was commit 21d62843): both the machine summary (tally Load/Clear + emitSessionSummary)
-	// and the human summary (findings-marker → Interrupt(sessionSummaryPrompt)) are turned off. The
-	// forced final summary turn fired mid-work and disrupted the agent, so the Stop hook now always
-	// Resumes. Kept commented (not deleted) so the feature can be re-enabled.
-	/*
-		// A repeat/looping idle fire (Claude's stop_hook_active, etc.) must never emit telemetry again or
-		// re-interrupt: the library exposes IsLooping() precisely to break Stop-hook loops. Guarding on it
-		// makes emit-once and interrupt-once independent of whether the first fire's marker/tally removal
-		// succeeded — a failed os.Remove can no longer cause a double-emit or an infinite continuation
-		// loop. Emit + interrupt happen only on the first (non-looping) fire.
-		if ev.IsLooping() {
-			return agenthooks.Resume()
-		}
-
-		// (1) Machine telemetry: fold this session's per-engine tally, clear it (so the second Stop fire
-		// — the one after the forced summary turn — finds nothing and does not double-emit), then emit
-		// under a hard time budget. Load/Clear happen BEFORE emit so the verdict is never hostage to a
-		// slow telemetry backend.
-		sid := ev.SessionID
-		tally := sessiontally.Load(sid)
-		sessiontally.Clear(sid)
-		emitSessionSummary(ev, tally)
-
-		// (2) Human summary: unchanged — if a real finding was blocked this session, force one final turn
-		// where the agent prints the summary table, then the next Stop fire finds no marker → Resume.
-		markerPath := sessionFindingsMarkerPath()
-		if markerPath != "" {
-			if _, err := os.Stat(markerPath); err == nil {
-				_ = os.Remove(markerPath)
-				return agenthooks.Interrupt(sessionSummaryPrompt)
-			}
-		}
-	*/
 	return agenthooks.Resume()
 }
 
-// DISABLED (was commit 21d62843): the session-summary writers below are turned off together with
-// cxWhenAgentIdle. Kept commented (not deleted) so the feature can be re-enabled; re-add the
-// "encoding/json" and "time" imports when uncommenting.
-/*
-// emitSessionSummary writes the per-engine session summary to the local audit log. It intentionally
-// does NOT POST to the telemetry API: the backend has not confirmed support for the aiAgentSessionId
-// field or a session-summary event type, so this data is kept local-only until it does. Nothing here
-// affects the idle verdict.
-func emitSessionSummary(ev agenthooks.AgentIdleEvent, tally map[string]sessiontally.Counts) {
-	if len(tally) == 0 {
-		return
-	}
-	// The per-engine counts and aiAgentSessionId are written to disk so an operator can `cat` what
-	// each session found/remediated. This is deliberately local-only — see the function comment.
-	logSessionSummaryLocal(ev, tally)
-}
-
-// sessionSummaryRecord is the on-disk audit line written at session end, mirroring the aiTelemetry
-// payload's key fields (aiAgentSessionId + per-engine counts) so they are visible locally without a
-// network capture. Written to cx-session-summary.jsonl alongside the plugin's own logs.
-type sessionSummaryRecord struct {
-	TS               string                         `json:"ts"`
-	Event            string                         `json:"event"`
-	AiAgentSessionID string                         `json:"aiAgentSessionId"`
-	Agent            string                         `json:"agent"`
-	Engines          map[string]sessiontally.Counts `json:"engines"`
-}
-
-// agentLogDir mirrors the plugin's cx_log.py convention: CX_LOG_DIR override, else
-// ~/.checkmarx/agent-logs/<CX_ASSISTANT or "claude">. Returns "" if the home dir is unavailable.
-func agentLogDir() string {
-	if d := os.Getenv("CX_LOG_DIR"); d != "" {
-		return d
-	}
-	assistant := os.Getenv("CX_ASSISTANT")
-	if assistant == "" {
-		assistant = "claude"
-	}
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return ""
-	}
-	return filepath.Join(home, ".checkmarx", "agent-logs", assistant)
-}
-
-// logSessionSummaryLocal appends one best-effort JSONL record of the session summary. Never returns
-// or panics — a logging failure must not affect the Stop verdict.
-func logSessionSummaryLocal(ev agenthooks.AgentIdleEvent, tally map[string]sessiontally.Counts) {
-	defer func() { _ = recover() }()
-	dir := agentLogDir()
-	if dir == "" {
-		return
-	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return
-	}
-	rec := sessionSummaryRecord{
-		TS:               time.Now().UTC().Format(time.RFC3339),
-		Event:            "session_summary",
-		AiAgentSessionID: ev.SessionID,
-		Agent:            agentToString(ev.Agent),
-		Engines:          tally,
-	}
-	line, err := json.Marshal(rec)
-	if err != nil {
-		return
-	}
-	f, err := os.OpenFile(filepath.Join(dir, "cx-session-summary.jsonl"),
-		os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
-	if err != nil {
-		return
-	}
-	defer func() { _ = f.Close() }()
-	_, _ = f.Write(append(line, '\n'))
-}
-*/
 
 // sessionIDFromToolCall recovers the Claude session id for a ToolCall event. Unlike FileEditEvent,
 // the library's ToolCallEvent carries no SessionID field; only Claude's raw payload is assertable
