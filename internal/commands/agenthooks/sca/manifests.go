@@ -28,6 +28,13 @@ const (
 	FormatSbtBuild
 )
 
+// gradleBuildFileName and gradleVersionCatalogFileName are the canonical basenames for the Gradle
+// manifest formats, shared between the classifier switch below and SynthFileName.
+const (
+	gradleBuildFileName          = "build.gradle"
+	gradleVersionCatalogFileName = "libs.versions.toml"
+)
+
 // IsManifest reports whether path names a manifest file the OSS realtime
 // scanner can analyse. ossrealtime.IsSupportedManifestFile is the single
 // source of truth for which filenames the scanner accepts — it is also used
@@ -72,9 +79,9 @@ func IsManifest(path string) (Format, bool) {
 		return FormatDotnetPackagesConfig, true
 	case base == "go.mod":
 		return FormatGoMod, true
-	case base == "build.gradle", base == "build.gradle.kts":
+	case base == gradleBuildFileName, base == gradleBuildFileName+".kts":
 		return FormatGradleBuild, true
-	case base == "libs.versions.toml":
+	case base == gradleVersionCatalogFileName:
 		return FormatGradleVersionCatalog, true
 	case base == "setup.cfg", base == "setup.py", base == "pyproject.toml":
 		return FormatPypiRequirements, true
@@ -124,9 +131,9 @@ func (f Format) SynthFileName() string {
 	case FormatDotnetPackagesConfig:
 		return "packages.config"
 	case FormatGradleBuild:
-		return "build.gradle"
+		return gradleBuildFileName
 	case FormatGradleVersionCatalog:
-		return "libs.versions.toml"
+		return gradleVersionCatalogFileName
 	case FormatSbtBuild:
 		return "synth.sbt"
 	}

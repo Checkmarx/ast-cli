@@ -43,8 +43,8 @@ func TestCheckBashInstall_MaliciousMentionsMCP(t *testing.T) {
 	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
 		t.Errorf("expected remediation to reference MCP tool, got %q", remediation)
 	}
-	if !strings.Contains(remediation, "install or enable") {
-		t.Errorf("expected remediation to mention installing/enabling MCP, got %q", remediation)
+	if !strings.Contains(remediation, "recover it yourself") {
+		t.Errorf("expected remediation to mention self-recovering MCP, got %q", remediation)
 	}
 	if !strings.Contains(remediation, "Dev Assist") {
 		t.Errorf("expected remediation to mention Dev Assist fallback, got %q", remediation)

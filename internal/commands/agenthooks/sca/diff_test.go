@@ -6,6 +6,9 @@ import (
 	"testing"
 )
 
+// wantComExampleBar is the added-package name shared by the Gradle and Sbt "added package" tests.
+const wantComExampleBar = "com.example:bar"
+
 func TestAddedPackages_Npm_AddedNewPackage(t *testing.T) {
 	before := []byte(`{"name":"x","version":"1.0.0","dependencies":{"lodash":"4.17.21"}}`)
 	after := []byte(`{"name":"x","version":"1.0.0","dependencies":{"lodash":"4.17.21","axios":"1.0.0"}}`)
@@ -72,7 +75,7 @@ func TestAddedPackages_Gradle_AddedPackage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddedPackages: %v", err)
 	}
-	if len(added) != 1 || added[0].Name != "com.example:bar" {
+	if len(added) != 1 || added[0].Name != wantComExampleBar {
 		t.Errorf("got added=%v, want [com.example:bar]", added)
 	}
 }
@@ -85,7 +88,7 @@ func TestAddedPackages_Sbt_AddedPackage(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AddedPackages: %v", err)
 	}
-	if len(added) != 1 || added[0].Name != "com.example:bar" {
+	if len(added) != 1 || added[0].Name != wantComExampleBar {
 		t.Errorf("got added=%v, want [com.example:bar]", added)
 	}
 }

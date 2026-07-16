@@ -25,6 +25,13 @@ const (
 	engineKics = "Kics"
 )
 
+// markerDirPerm / markerFilePerm are the permissions used when creating the session findings
+// marker file's directory and the file itself.
+const (
+	markerDirPerm  = 0o700
+	markerFilePerm = 0o600
+)
+
 // sessionFindingsMarker is the path of the per-session marker file that records
 // whether at least one real Checkmarx finding was blocked this session.
 // cxBeforeFileEdit / cxBeforeToolCall create it on any scanner denial;
@@ -44,8 +51,8 @@ func touchSessionFindingsMarker() {
 	if path == "" {
 		return
 	}
-	_ = os.MkdirAll(filepath.Dir(path), 0o700)
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	_ = os.MkdirAll(filepath.Dir(path), markerDirPerm)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, markerFilePerm)
 	if err == nil {
 		_ = f.Close()
 	}
@@ -227,7 +234,7 @@ func logSessionSummaryLocal(ev agenthooks.AgentIdleEvent, tally map[string]sessi
 // the library's ToolCallEvent carries no SessionID field; only Claude's raw payload is assertable
 // (mirrors promptWorkspaceRoots' Raw type-assertion). Every non-Claude agent falls back to "" (the
 // shared default tally bucket), which the Stop handler also reads and clears.
-func sessionIDFromToolCall(ev agenthooks.ToolCallEvent) string {
+func sessionIDFromToolCall(ev *agenthooks.ToolCallEvent) string {
 	if e, ok := ev.Raw.(*claude.PreToolUseEvent); ok {
 		return e.SessionID
 	}
@@ -251,7 +258,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		if finding, remediation := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir); finding != "" {
 			touchSessionFindingsMarker()
 			agent := agentToString(ev.Agent)
-			sid := sessionIDFromToolCall(ev)
+			sid := sessionIDFromToolCall(&ev)
 			sessiontally.Add(sid, engineSca, 1, 1)
 			logRemediationTelemetry(agent, "SCA", finding, remediation)
 			return agenthooks.DenyWithContext(finding, remediation)

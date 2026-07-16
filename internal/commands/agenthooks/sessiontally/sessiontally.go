@@ -42,6 +42,12 @@ const (
 	defaultKey  = "default"
 	maxAgeHours = 24
 	maxIDLen    = 128
+	dirPerm     = 0o700
+	filePerm    = 0o600
+	// scanBufSize/scanMaxSize bound bufio.Scanner's growth when folding a tally file:
+	// start at 64KiB, allow growth up to 1MiB per line before Scan reports an error.
+	scanBufSize = 64 * 1024
+	scanMaxSize = 1024 * 1024
 )
 
 // Only filename-safe characters survive; everything else (path separators, "..", spaces, control
@@ -89,14 +95,14 @@ func Add(sessionID, engine string, foundDelta, remOfferedDelta int) {
 	if !ok {
 		return
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), dirPerm); err != nil {
 		return
 	}
 	line, err := json.Marshal(record{Engine: engine, Found: foundDelta, RemOffered: remOfferedDelta})
 	if err != nil {
 		return
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, filePerm)
 	if err != nil {
 		return
 	}
@@ -130,7 +136,7 @@ func foldFile(path string, out map[string]Counts) {
 	}
 	defer func() { _ = f.Close() }()
 	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	sc.Buffer(make([]byte, 0, scanBufSize), scanMaxSize)
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		if line == "" {
