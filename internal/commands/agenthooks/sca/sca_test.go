@@ -43,8 +43,11 @@ func TestCheckBashInstall_MaliciousMentionsMCP(t *testing.T) {
 	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
 		t.Errorf("expected remediation to reference MCP tool, got %q", remediation)
 	}
-	if !strings.Contains(remediation, "recover it yourself") {
-		t.Errorf("expected remediation to mention self-recovering MCP, got %q", remediation)
+	if !strings.Contains(remediation, "cx-devassist:cx-devassist-sca") {
+		t.Errorf("expected remediation to reference cx-devassist-sca skill, got %q", remediation)
+	}
+	if !strings.Contains(remediation, "cx_mcp_register.sh") {
+		t.Errorf("expected remediation to mention MCP registration script, got %q", remediation)
 	}
 	if !strings.Contains(remediation, "Dev Assist") {
 		t.Errorf("expected remediation to mention Dev Assist fallback, got %q", remediation)
@@ -59,6 +62,9 @@ func TestCheckBashInstall_Vulnerable(t *testing.T) {
 	}
 	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
 		t.Errorf("expected remediation to reference MCP tool, got %q", remediation)
+	}
+	if !strings.Contains(remediation, "cx-devassist:cx-devassist-sca") {
+		t.Errorf("expected remediation to reference cx-devassist-sca skill, got %q", remediation)
 	}
 	if !strings.Contains(remediation, "ignore-vulnerability") {
 		t.Errorf("expected remediation to include ignore command, got %q", remediation)
