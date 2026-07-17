@@ -5,6 +5,8 @@ package sca
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
 
 // Format identifies one of the manifest shapes that the SCA guardrails care
@@ -21,26 +23,51 @@ const (
 	FormatDotnetCsproj
 	FormatDotnetDirectoryPackagesProps
 	FormatDotnetPackagesConfig
+	FormatGradleBuild
+	FormatGradleVersionCatalog
+	FormatSbtBuild
+)
+
+// gradleBuildFileName and gradleVersionCatalogFileName are the canonical basenames for the Gradle
+// manifest formats, shared between the classifier switch below and SynthFileName.
+const (
+	gradleBuildFileName          = "build.gradle"
+	gradleVersionCatalogFileName = "libs.versions.toml"
 )
 
 // IsManifest reports whether path names a manifest file the OSS realtime
-// scanner can analyse. The rules mirror manifest-parser's selectManifestFile:
+// scanner can analyse. ossrealtime.IsSupportedManifestFile is the single
+// source of truth for which filenames the scanner accepts — it is also used
+// to gate the actual scan, so hooks and the scanner can never drift apart on
+// what counts as a supported manifest. The switch below only classifies an
+// already-accepted path into the Format the guardrails need to re-synthesise
+// a minimal manifest for the added packages (see Synthesize).
 //
-//   - *.csproj                        → Dotnet csproj
-//   - requirements*.txt, packages*.txt → Pypi requirements
-//   - pom.xml                          → Maven
-//   - package.json                     → Npm
-//   - Directory.Packages.props         → Dotnet central package management
-//   - packages.config                  → Dotnet legacy
-//   - go.mod                           → Go modules
+//   - *.csproj                                      → Dotnet csproj
+//   - *.sbt                                          → Sbt build
+//   - requirements*.txt, packages*.txt, constraint*.txt → Pypi requirements
+//   - setup.cfg, setup.py, pyproject.toml            → Pypi (alt. formats)
+//   - pom.xml                                        → Maven
+//   - package.json                                   → Npm
+//   - Directory.Packages.props                       → Dotnet central package management
+//   - packages.config                                → Dotnet legacy
+//   - go.mod                                          → Go modules
+//   - build.gradle, build.gradle.kts                 → Gradle build
+//   - libs.versions.toml                             → Gradle version catalog
 func IsManifest(path string) (Format, bool) {
+	if !ossrealtime.IsSupportedManifestFile(path) {
+		return FormatUnknown, false
+	}
+
 	base := filepath.Base(path)
 	ext := filepath.Ext(base)
 
 	switch {
 	case ext == ".csproj":
 		return FormatDotnetCsproj, true
-	case ext == ".txt" && (strings.HasPrefix(base, "requirement") || strings.HasPrefix(base, "packages")):
+	case ext == ".sbt":
+		return FormatSbtBuild, true
+	case ext == ".txt" && (strings.HasPrefix(base, "requirement") || strings.HasPrefix(base, "packages") || strings.HasPrefix(base, "constraint")):
 		return FormatPypiRequirements, true
 	case base == "pom.xml":
 		return FormatMavenPom, true
@@ -52,6 +79,12 @@ func IsManifest(path string) (Format, bool) {
 		return FormatDotnetPackagesConfig, true
 	case base == "go.mod":
 		return FormatGoMod, true
+	case base == gradleBuildFileName, base == gradleBuildFileName+".kts":
+		return FormatGradleBuild, true
+	case base == gradleVersionCatalogFileName:
+		return FormatGradleVersionCatalog, true
+	case base == "setup.cfg", base == "setup.py", base == "pyproject.toml":
+		return FormatPypiRequirements, true
 	}
 	return FormatUnknown, false
 }
@@ -70,6 +103,10 @@ func (f Format) ManagerName() string {
 		return "maven"
 	case FormatDotnetCsproj, FormatDotnetDirectoryPackagesProps, FormatDotnetPackagesConfig:
 		return "nuget"
+	case FormatGradleBuild, FormatGradleVersionCatalog:
+		return "gradle"
+	case FormatSbtBuild:
+		return "sbt"
 	}
 	return ""
 }
@@ -93,6 +130,12 @@ func (f Format) SynthFileName() string {
 		return "Directory.Packages.props"
 	case FormatDotnetPackagesConfig:
 		return "packages.config"
+	case FormatGradleBuild:
+		return gradleBuildFileName
+	case FormatGradleVersionCatalog:
+		return gradleVersionCatalogFileName
+	case FormatSbtBuild:
+		return "synth.sbt"
 	}
 	return ""
 }

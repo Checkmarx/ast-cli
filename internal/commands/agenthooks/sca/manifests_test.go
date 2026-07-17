@@ -21,6 +21,16 @@ func TestIsManifest(t *testing.T) {
 		{"Project.csproj", true, FormatDotnetCsproj},
 		{"Directory.Packages.props", true, FormatDotnetDirectoryPackagesProps},
 		{"packages.config", true, FormatDotnetPackagesConfig},
+		{"build.gradle", true, FormatGradleBuild},
+		{"build.gradle.kts", true, FormatGradleBuild},
+		{"/repo/app/build.gradle.kts", true, FormatGradleBuild},
+		{"libs.versions.toml", true, FormatGradleVersionCatalog},
+		{"build.sbt", true, FormatSbtBuild},
+		{"plugins.sbt", true, FormatSbtBuild},
+		{"constraints.txt", true, FormatPypiRequirements},
+		{"setup.cfg", true, FormatPypiRequirements},
+		{"setup.py", true, FormatPypiRequirements},
+		{"pyproject.toml", true, FormatPypiRequirements},
 
 		// Negatives.
 		{"main.go", false, FormatUnknown},

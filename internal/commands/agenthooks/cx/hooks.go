@@ -3,16 +3,60 @@ package cx
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/Checkmarx/ast-cx-hooks/claude"
 	"github.com/Checkmarx/ast-cx-hooks/cursor"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
+
+// canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
+// the per-event remediation telemetry; ASCA already uses "Asca").
+const (
+	engineAsca = "Asca"
+	engineSca  = "Sca"
+	engineKics = "Kics"
+)
+
+// markerDirPerm / markerFilePerm are the permissions used when creating the session findings
+// marker file's directory and the file itself.
+const (
+	markerDirPerm  = 0o700
+	markerFilePerm = 0o600
+)
+
+// sessionFindingsMarker is the path of the per-session marker file that records
+// whether at least one real Checkmarx finding was blocked this session.
+// cxBeforeFileEdit / cxBeforeToolCall create it on any scanner denial;
+// cxWhenAgentIdle consumes it to decide whether to force a summary turn.
+func sessionFindingsMarkerPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".checkmarx", ".session-cx-findings")
+}
+
+// touchSessionFindingsMarker creates the marker file best-effort.
+// A write failure must never affect the scan decision that called it.
+func touchSessionFindingsMarker() {
+	path := sessionFindingsMarkerPath()
+	if path == "" {
+		return
+	}
+	_ = os.MkdirAll(filepath.Dir(path), markerDirPerm)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, markerFilePerm)
+	if err == nil {
+		_ = f.Close()
+	}
+}
 
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
 // It is set by RegisterGuardrails so the handlers (free functions registered
@@ -25,9 +69,19 @@ var kicsScanner *kics.Scanner
 
 var telemetryWrapper wrappers.TelemetryWrapper
 
-// cxWhenAgentIdle: agent finished its turn. Nothing to enforce yet.
 func cxWhenAgentIdle(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict {
 	return agenthooks.Resume()
+}
+
+// sessionIDFromToolCall recovers the Claude session id for a ToolCall event. Unlike FileEditEvent,
+// the library's ToolCallEvent carries no SessionID field; only Claude's raw payload is assertable
+// (mirrors promptWorkspaceRoots' Raw type-assertion). Every non-Claude agent falls back to "" (the
+// shared default tally bucket), which the Stop handler also reads and clears.
+func sessionIDFromToolCall(ev *agenthooks.ToolCallEvent) string {
+	if e, ok := ev.Raw.(*claude.PreToolUseEvent); ok {
+		return e.SessionID
+	}
+	return ""
 }
 
 // cxBeforeToolCall gates shell execution against the organization's blacklist,
@@ -45,7 +99,10 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 	}
 	if scaScanner != nil {
 		if finding, remediation := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir); finding != "" {
+			touchSessionFindingsMarker()
 			agent := agentToString(ev.Agent)
+			sid := sessionIDFromToolCall(&ev)
+			sessiontally.Add(sid, engineSca, 1, 1)
 			logRemediationTelemetry(agent, "SCA", finding, remediation)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
@@ -90,17 +147,23 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	}
 	agent := agentToString(ev.Agent)
 	if blocked, reason, context := asca.ScanFileEdit(ev, telemetryWrapper, agent); blocked {
+		touchSessionFindingsMarker()
+		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
 		logRemediationTelemetry(agent, "Asca", reason, context)
 		return agenthooks.RejectEditWithContext(reason, context)
 	}
 	if kicsScanner != nil {
 		if blocked, reason, context := kics.ScanFileEdit(ev, kicsScanner); blocked {
+			touchSessionFindingsMarker()
+			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
 			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir); finding != "" {
+				touchSessionFindingsMarker()
+				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
 				logRemediationTelemetry(agent, "Oss", finding, remediation)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}

@@ -11,16 +11,17 @@ import (
 // before, keyed by name+version. A version bump on an existing package is
 // reported as added (its new version is new).
 //
-// Both before and after are parsed via manifest-parser's factory; we write
-// them to temp files using a name that matches the format so the factory
-// selects the right parser. An empty/missing before parses as zero packages
-// (so every after-package is "added").
-func AddedPackages(format Format, before, after []byte) ([]Package, error) {
-	beforePkgs, err := parseManifestBytes(format, before)
+// manifestPath is the real path of the edited file — used only for its
+// basename, so manifest-parser's factory picks the parser that matches the
+// file being diffed (IsManifest already confirmed it recognises the name).
+// Both before and after are parsed via that same parser. An empty/missing
+// before parses as zero packages (so every after-package is "added").
+func AddedPackages(manifestPath string, before, after []byte) ([]Package, error) {
+	beforePkgs, err := parseManifestBytes(manifestPath, before)
 	if err != nil {
 		return nil, err
 	}
-	afterPkgs, err := parseManifestBytes(format, after)
+	afterPkgs, err := parseManifestBytes(manifestPath, after)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +40,7 @@ func AddedPackages(format Format, before, after []byte) ([]Package, error) {
 	return added, nil
 }
 
-func parseManifestBytes(format Format, content []byte) ([]Package, error) {
+func parseManifestBytes(manifestPath string, content []byte) ([]Package, error) {
 	if len(content) == 0 {
 		return nil, nil
 	}
@@ -49,7 +50,7 @@ func parseManifestBytes(format Format, content []byte) ([]Package, error) {
 	}
 	defer os.RemoveAll(dir)
 
-	path := filepath.Join(dir, format.SynthFileName())
+	path := filepath.Join(dir, filepath.Base(manifestPath))
 	if writeErr := os.WriteFile(path, content, 0600); writeErr != nil {
 		return nil, writeErr
 	}
