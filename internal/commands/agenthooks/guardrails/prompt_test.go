@@ -133,6 +133,117 @@ func TestResolveReferencedFile_GlobMatchesMixedRegularAndDir(t *testing.T) {
 	}
 }
 
+// --------------------------------------------------------------------------
+// ScanForSecrets — 2ms scan over raw prompt text
+// --------------------------------------------------------------------------
+
+func TestScanForSecrets_BlocksOnJWT(t *testing.T) {
+	reason := ScanForSecrets("token = " + sampleJWT)
+	if reason == "" {
+		t.Fatal("expected block: text contains a JWT")
+	}
+	if !strings.Contains(reason, "secret(s)") {
+		t.Fatalf("expected secret count in reason, got %q", reason)
+	}
+}
+
+func TestScanForSecrets_CleanText_NoBlock(t *testing.T) {
+	if reason := ScanForSecrets("please refactor this function"); reason != "" {
+		t.Fatalf("expected no block for clean text, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanReferencedFiles — resolves + scans files mentioned in prompt text
+// --------------------------------------------------------------------------
+
+func TestScanReferencedFiles_NoPathsInText_ReturnsEmpty(t *testing.T) {
+	if reason := ScanReferencedFiles("please refactor this function", nil); reason != "" {
+		t.Fatalf("expected no-op with no file references, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_ReferencedFileHasSecret_Blocks(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "creds.env")
+	mustWrite(t, target, "token = "+sampleJWT)
+
+	reason := ScanReferencedFiles("please check @"+target, nil)
+	if reason == "" {
+		t.Fatal("expected block: referenced file contains a JWT")
+	}
+	if !strings.Contains(reason, "creds.env") {
+		t.Fatalf("reason should cite the file path, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_ReferencedFileClean_NoBlock(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "notes.txt")
+	mustWrite(t, target, "just some plain notes")
+
+	if reason := ScanReferencedFiles("please check @"+target, nil); reason != "" {
+		t.Fatalf("expected no block for clean referenced file, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_MissingFile_FailOpen(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "does-not-exist.env")
+	if reason := ScanReferencedFiles("please check @"+missing, nil); reason != "" {
+		t.Fatalf("expected fail-open for missing referenced file, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanPrompt — orchestrates all prompt guardrails
+// --------------------------------------------------------------------------
+
+func TestScanPrompt_CleanText_ReturnsEmpty(t *testing.T) {
+	if reason := ScanPrompt("please explain how this function works"); reason != "" {
+		t.Fatalf("expected clean prompt to pass, got %q", reason)
+	}
+}
+
+func TestScanPrompt_SecretInText_Blocks(t *testing.T) {
+	reason := ScanPrompt("here is my token: " + sampleJWT)
+	if reason == "" {
+		t.Fatal("expected block: prompt contains a JWT")
+	}
+	if !strings.Contains(reason, "secret(s)") {
+		t.Fatalf("expected secret-scanner reason, got %q", reason)
+	}
+}
+
+func TestScanPrompt_BlockedExtensionReferenced_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{Enabled: true, Extensions: []string{".env"}}
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("please review @config.env for me")
+	if reason == "" {
+		t.Fatal("expected block: prompt references a blocked extension")
+	}
+	if !strings.Contains(reason, "blocked extensions") {
+		t.Fatalf("expected blocked-extension reason, got %q", reason)
+	}
+}
+
+func TestScanPrompt_TooManyFilesReferenced_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("please review @a.go and @b.go and @c.go")
+	if reason == "" {
+		t.Fatal("expected block: prompt references more files than the policy allows")
+	}
+	if !strings.Contains(reason, "exceeding the policy limit") {
+		t.Fatalf("expected files-limit reason, got %q", reason)
+	}
+}
+
 func mustWrite(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {

@@ -3,7 +3,10 @@ package util
 import (
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/cobra"
 	asserts "github.com/stretchr/testify/assert"
 
 	"gotest.tools/assert"
@@ -236,4 +239,167 @@ func TestValidateAzureOnPremParameters_WhenParametersAreValid_ShouldReturnNil(t 
 func TestValidateAzureOnPremParameters_WhenParametersAreNotValid_ShouldReturnError(t *testing.T) {
 	err := validateAzureOnPremParameters("", "username")
 	asserts.NotNil(t, err)
+}
+
+// ── policiesToPrPolicies (included branch) ──────────────────────────────────
+
+func TestPoliciesToPrPolicies_IncludesViolatedPolicies(t *testing.T) {
+	policy := &wrappers.PolicyResponseModel{
+		Policies: []wrappers.Policy{
+			{Name: "clean-policy", RulesViolated: []string{}},
+			{Name: "violated-policy", BreakBuild: true, RulesViolated: []string{"rule-1", "rule-2"}},
+		},
+	}
+	result := policiesToPrPolicies(policy)
+	asserts.Len(t, result, 1)
+	asserts.Equal(t, "violated-policy", result[0].Name)
+	asserts.True(t, result[0].BreakBuild)
+	asserts.Equal(t, []string{"rule-1", "rule-2"}, result[0].RulesNames)
+}
+
+// ── createBBPRModel ──────────────────────────────────────────────────────────
+
+func TestCreateBBPRModel_Cloud_ReturnsCloudModel(t *testing.T) {
+	model := createBBPRModel(true, "scan-1", "token", "my-namespace", "My Repo Name", 7, "", "", nil)
+	cloudModel, ok := model.(*wrappers.BitbucketCloudPRModel)
+	asserts.True(t, ok, "expected *wrappers.BitbucketCloudPRModel")
+	asserts.Equal(t, "My-Repo-Name", cloudModel.RepoName)
+	asserts.Equal(t, "my-namespace", cloudModel.Namespace)
+	asserts.Equal(t, 7, cloudModel.PRID)
+}
+
+func TestCreateBBPRModel_Server_ReturnsServerModel(t *testing.T) {
+	model := createBBPRModel(false, "scan-1", "token", "my-namespace", "My Repo", 9, "https://bb.example.com", "PROJ", nil)
+	serverModel, ok := model.(*wrappers.BitbucketServerPRModel)
+	asserts.True(t, ok, "expected *wrappers.BitbucketServerPRModel")
+	asserts.Equal(t, "My-Repo", serverModel.RepoName)
+	asserts.Equal(t, "PROJ", serverModel.ProjectKey)
+	asserts.Equal(t, "https://bb.example.com", serverModel.ServerURL)
+	asserts.Equal(t, 9, serverModel.PRID)
+}
+
+// ── getScanViolatedPolicies ──────────────────────────────────────────────────
+
+func TestGetScanViolatedPolicies_ScanWrapperError_ReturnsError(t *testing.T) {
+	cmd := &cobra.Command{}
+	_, err := getScanViolatedPolicies(&mock.ScansMockWrapper{}, &mock.PolicyMockWrapper{}, "fake-error-id", cmd)
+	asserts.Error(t, err, "fake error message")
+}
+
+// ── PR decoration commands: fast paths that never reach policy evaluation ──
+
+func TestRunPRDecorationGithub_ScanRunning_SkipsDecoration(t *testing.T) {
+	cmd := PRDecorationGithub(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRNumberFlag, "1"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestRunPRDecorationGithub_ScanWrapperError_ReturnsError(t *testing.T) {
+	cmd := PRDecorationGithub(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "fake-error-id"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRNumberFlag, "1"))
+
+	asserts.Error(t, cmd.RunE(cmd, nil), "fake error message")
+}
+
+func TestRunPRDecorationGithub_Success_PostsDecoration(t *testing.T) {
+	cmd := PRDecorationGithub(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRNumberFlag, "1"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestRunPRDecorationGitlab_ScanRunning_SkipsDecoration(t *testing.T) {
+	cmd := PRDecorationGitlab(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRIidFlag, "1"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRGitlabProjectFlag, "100"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestRunPRDecorationGitlab_Success_PostsDecoration(t *testing.T) {
+	cmd := PRDecorationGitlab(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRIidFlag, "1"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRGitlabProjectFlag, "100"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestRunPRDecorationBitbucket_MissingNamespaceForCloud_ReturnsError(t *testing.T) {
+	cmd := PRDecorationBitbucket(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRBBIDFlag, "1"))
+	// namespace intentionally omitted, apiURL empty => cloud, requires namespace
+
+	err := cmd.RunE(cmd, nil)
+	asserts.Error(t, err, "namespace is required for Bitbucket Cloud")
+}
+
+func TestRunPRDecorationBitbucket_Success_PostsDecoration(t *testing.T) {
+	cmd := PRDecorationBitbucket(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.RepoNameFlag, "repo"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRBBIDFlag, "1"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestRunPRDecorationAzure_OnPremParamsInvalid_ReturnsError(t *testing.T) {
+	cmd := PRDecorationAzure(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.AzureProjectFlag, "proj"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRNumberFlag, "1"))
+	// code-repository-username set without code-repository-url => invalid
+	asserts.NoError(t, cmd.Flags().Set(params.CodeRespositoryUsernameFlag, "someuser"))
+
+	err := cmd.RunE(cmd, nil)
+	asserts.Error(t, err, errorAzureOnPremParams)
+}
+
+func TestRunPRDecorationAzure_Success_PostsDecoration(t *testing.T) {
+	cmd := PRDecorationAzure(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	asserts.NoError(t, cmd.Flags().Set(params.ScanIDFlag, "ScanNotRunning"))
+	asserts.NoError(t, cmd.Flags().Set(params.SCMTokenFlag, "tok"))
+	asserts.NoError(t, cmd.Flags().Set(params.NamespaceFlag, "ns"))
+	asserts.NoError(t, cmd.Flags().Set(params.AzureProjectFlag, "proj"))
+	asserts.NoError(t, cmd.Flags().Set(params.PRNumberFlag, "1"))
+
+	asserts.NoError(t, cmd.RunE(cmd, nil))
+}
+
+func TestNewPRDecorationCommand_HasAllSubcommands(t *testing.T) {
+	cmd := NewPRDecorationCommand(&mock.PRMockWrapper{}, &mock.PolicyMockWrapper{}, &mock.ScansMockWrapper{})
+	names := map[string]bool{}
+	for _, sub := range cmd.Commands() {
+		names[sub.Name()] = true
+	}
+	asserts.True(t, names["github"])
+	asserts.True(t, names["gitlab"])
+	asserts.True(t, names["azure"])
 }

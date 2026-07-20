@@ -67,3 +67,85 @@ func TestExportSbomResults(t *testing.T) {
 		})
 	}
 }
+
+func TestGetExportPackage_InitiateExportRequestError_ReturnsError(t *testing.T) {
+	result, err := GetExportPackage(&mock.ExportMockWrapper{}, "err-scan-id", false, &mock.FeatureFlagsMockWrapper{})
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestGetExportPackage_MinioDisabled_UsesExportIDAsFilePath(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.MinioEnabled, Status: false}
+
+	var capturedFilePath string
+	var capturedAuth bool
+	exportWrapper := &mock.ExportMockWrapper{
+		CustomGetScaPackageCollectionExport: func(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error) {
+			capturedFilePath = fileURL
+			capturedAuth = auth
+			return &wrappers.ScaPackageCollectionExport{}, nil
+		},
+	}
+
+	result, err := GetExportPackage(exportWrapper, "scan-id-123", false, &mock.FeatureFlagsMockWrapper{})
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "id123456", capturedFilePath)
+	assert.False(t, capturedAuth)
+}
+
+func TestGetExportPackage_MinioEnabled_UsesFileURLAsFilePath(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.MinioEnabled, Status: true}
+
+	var capturedFilePath string
+	var capturedAuth bool
+	exportWrapper := &mock.ExportMockWrapper{
+		CustomGetScaPackageCollectionExport: func(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error) {
+			capturedFilePath = fileURL
+			capturedAuth = auth
+			return &wrappers.ScaPackageCollectionExport{}, nil
+		},
+	}
+
+	result, err := GetExportPackage(exportWrapper, "scan-id-123", true, &mock.FeatureFlagsMockWrapper{})
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Equal(t, "url", capturedFilePath)
+	assert.True(t, capturedAuth)
+}
+
+func TestGetExportPackage_NoResultsFound_ReturnsEmptyCollectionWithoutError(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.MinioEnabled, Status: false}
+
+	exportWrapper := &mock.ExportMockWrapper{
+		CustomGetExportReportStatus: func(exportID string) (*wrappers.ExportPollingResponse, error) {
+			return &wrappers.ExportPollingResponse{
+				ExportStatus: completedStatus,
+				ErrorMessage: "No results were found for the scan",
+			}, nil
+		},
+	}
+
+	result, err := GetExportPackage(exportWrapper, "scan-id-123", false, &mock.FeatureFlagsMockWrapper{})
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.Empty(t, result.Packages)
+}
+
+func TestGetExportPackage_PollForCompletionError_ReturnsError(t *testing.T) {
+	exportWrapper := &mock.ExportMockWrapper{
+		CustomGetExportReportStatus: func(exportID string) (*wrappers.ExportPollingResponse, error) {
+			return nil, fmt.Errorf("polling failed")
+		},
+	}
+
+	result, err := GetExportPackage(exportWrapper, "scan-id-123", false, &mock.FeatureFlagsMockWrapper{})
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
