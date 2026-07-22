@@ -135,6 +135,7 @@ jobs:
         uses: step-security/cosign-installer@8c02650536457a1c912424ab6cb9734aa3eceb56 # v4.1.1
 
       - name: Configure AWS Credentials
+        if: inputs.dev == false
         uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355 #v2
         with:
           role-to-assume: ${{ secrets.AWS_ASSUME_ROLE_ARN }}
