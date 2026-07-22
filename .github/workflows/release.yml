@@ -68,7 +68,7 @@ permissions:
 jobs:
   build:
     name: Build, Sign & Publish Release
-    runs-on: macos-15-intel
+    runs-on: cx-public-macos-15-x64
     env:
       AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
       AC_USER: ${{ secrets.AC_USER }}
@@ -79,7 +79,7 @@ jobs:
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
       - name: Install Harden Runner
-        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
+        uses: checkmarx/harden-runner-action@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
         with:
           use-policy-store: true
           api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
