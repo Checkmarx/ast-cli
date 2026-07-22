@@ -18,6 +18,11 @@ const sampleJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
 	"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
 	"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
+const (
+	testOSWindows      = "windows"
+	testJiraConfigFile = "application-jira.yml"
+)
+
 // resolveReferencedFile is the resolver behind ScanReferencedFiles. We exercise
 // it directly because the scanner integration is unchanged — only the resolver
 // logic shifted from "literal stat" to "literal stat + glob fallback".
@@ -35,12 +40,12 @@ func TestResolveReferencedFile_LiteralAbsoluteHit(t *testing.T) {
 
 func TestResolveReferencedFile_GlobFallbackFindsSibling(t *testing.T) {
 	dir := t.TempDir()
-	mustWrite(t, filepath.Join(dir, "application-jira.yml"), "k: v")
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
 
 	typed := filepath.Join(dir, "application-jira") // no extension
 	got := resolveReferencedFile(typed, nil)
 
-	if len(got) != 1 || filepath.Base(got[0]) != "application-jira.yml" {
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
 		t.Fatalf("expected glob fallback to find application-jira.yml, got %v", got)
 	}
 }
@@ -81,10 +86,10 @@ func TestResolveReferencedFile_TypedPathIsDirectory(t *testing.T) {
 
 func TestResolveReferencedFile_RelativePathResolvesAgainstWorkspaceRoot(t *testing.T) {
 	dir := t.TempDir()
-	mustWrite(t, filepath.Join(dir, "application-jira.yml"), "k: v")
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
 
 	got := resolveReferencedFile("application-jira", []string{dir})
-	if len(got) != 1 || filepath.Base(got[0]) != "application-jira.yml" {
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
 		t.Fatalf("expected glob fallback under workspace root to find application-jira.yml, got %v", got)
 	}
 }
@@ -102,17 +107,17 @@ func TestResolveReferencedFile_RelativeStopsAtFirstMatchingRoot(t *testing.T) {
 }
 
 func TestResolveReferencedFile_CursorStyleWindowsRootNormalised(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != testOSWindows {
 		t.Skip("Cursor /c:/ root form is Windows-specific")
 	}
 	dir := t.TempDir()
-	mustWrite(t, filepath.Join(dir, "application-jira.yml"), "k: v")
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
 
 	// Cursor reports Windows roots as "/c:/foo"; NormalizeWorkspaceRoot strips
 	// the leading slash. Confirm the resolver still finds the file via glob.
 	cursorRoot := "/" + filepath.ToSlash(dir)
 	got := resolveReferencedFile("application-jira", []string{cursorRoot})
-	if len(got) != 1 || filepath.Base(got[0]) != "application-jira.yml" {
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
 		t.Fatalf("expected glob fallback under Cursor-style root, got %v", got)
 	}
 }
@@ -218,7 +223,7 @@ func TestScanPrompt_BlockedExtensionReferenced_Blocks(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{Enabled: true, Extensions: []string{".env"}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("please review @config.env for me")
 	if reason == "" {
@@ -233,7 +238,7 @@ func TestScanPrompt_TooManyFilesReferenced_Blocks(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("please review @a.go and @b.go and @c.go")
 	if reason == "" {
@@ -272,7 +277,7 @@ func itoa(i int) string {
 // writePolicyHelper writes a HooksPolicy to a temp ~/.checkmarx/policyhooks.json
 // and redirects the home dir so LoadPolicy() picks it up. Returns a cleanup
 // function that must be invoked (typically via defer) to restore the env.
-func writePolicyHelper(t *testing.T, policy HooksPolicy) func() {
+func writePolicyHelper(t *testing.T, policy *HooksPolicy) func() {
 	t.Helper()
 	data, err := json.Marshal(policy)
 	if err != nil {
@@ -286,24 +291,28 @@ func writePolicyHelper(t *testing.T, policy HooksPolicy) func() {
 	if err := os.WriteFile(filepath.Join(cxDir, "policyhooks.json"), data, 0o644); err != nil {
 		t.Fatalf("write policy: %v", err)
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == testOSWindows {
 		orig, had := os.LookupEnv("USERPROFILE")
-		os.Setenv("USERPROFILE", dir)
+		if err := os.Setenv("USERPROFILE", dir); err != nil {
+			t.Fatalf("setenv USERPROFILE: %v", err)
+		}
 		return func() {
 			if had {
-				os.Setenv("USERPROFILE", orig)
+				_ = os.Setenv("USERPROFILE", orig)
 			} else {
-				os.Unsetenv("USERPROFILE")
+				_ = os.Unsetenv("USERPROFILE")
 			}
 		}
 	}
 	orig, had := os.LookupEnv("HOME")
-	os.Setenv("HOME", dir)
+	if err := os.Setenv("HOME", dir); err != nil {
+		t.Fatalf("setenv HOME: %v", err)
+	}
 	return func() {
 		if had {
-			os.Setenv("HOME", orig)
+			_ = os.Setenv("HOME", orig)
 		} else {
-			os.Unsetenv("HOME")
+			_ = os.Unsetenv("HOME")
 		}
 	}
 }
@@ -446,7 +455,7 @@ func TestScanWorkspaceFilesByPromptName_SizePolicyViolation_BlocksWithoutSecrets
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	ws := makeWorkspace(t, map[string]string{
 		"Kedar.txt": strings.Repeat("a", 5*1024), // 5 KB, no secrets
@@ -464,7 +473,7 @@ func TestScanWorkspaceFilesByPromptName_SizePolicyAtCap_NotBlocked(t *testing.T)
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	ws := makeWorkspace(t, map[string]string{
 		"Kedar.txt": strings.Repeat("a", 3*1024), // exactly at cap
@@ -491,7 +500,7 @@ func TestScanWorkspaceFilesByPromptName_NoWorkspaceRoots_NoOp(t *testing.T) {
 }
 
 func TestScanWorkspaceFilesByPromptName_CursorStyleWindowsRoot(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != testOSWindows {
 		t.Skip("Cursor /c:/foo root form is Windows-specific")
 	}
 	ws := makeWorkspace(t, map[string]string{
@@ -631,7 +640,7 @@ func TestScanFileForSecrets_OverPolicyCap_BlocksOnSize(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "big.txt")
@@ -650,7 +659,7 @@ func TestScanFileForSecrets_AtPolicyCap_Allowed(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	dir := t.TempDir()
 	path := filepath.Join(dir, "exact.txt")

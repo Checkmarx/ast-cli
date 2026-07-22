@@ -38,7 +38,7 @@ func TestNewBridgeClient(t *testing.T) {
 		tr, ok := c.Transport.(*http.Transport)
 		assert.True(t, ok, "expected a proxy-aware *http.Transport")
 		assert.NotNil(t, tr.Proxy, "expected a proxy resolver")
-		req, err := http.NewRequest(http.MethodGet, "https://mcp.example.com", nil)
+		req, err := http.NewRequest(http.MethodGet, "https://mcp.example.com", http.NoBody)
 		assert.NoError(t, err)
 		proxyURL, err := tr.Proxy(req)
 		assert.NoError(t, err)

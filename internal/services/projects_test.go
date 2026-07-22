@@ -191,7 +191,6 @@ func Test_updateProject(t *testing.T) {
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
-		applicationsWrapper     wrappers.ApplicationsWrapper
 		projectName             string
 		applicationID           []string
 		projectTags             string

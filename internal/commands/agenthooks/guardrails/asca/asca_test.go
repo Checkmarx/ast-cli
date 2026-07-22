@@ -106,14 +106,16 @@ func TestProposedContent_MultiEdit(t *testing.T) {
 
 // ── stageForScan / safeSessionTag ───────────────────────────────────────────
 
+const wantAnonTag = "anon"
+
 func TestSafeSessionTag_Empty(t *testing.T) {
-	if got := safeSessionTag(""); got != "anon" {
+	if got := safeSessionTag(""); got != wantAnonTag {
 		t.Fatalf("want anon, got %q", got)
 	}
 }
 
 func TestSafeSessionTag_AllSpecialChars(t *testing.T) {
-	if got := safeSessionTag("!!!???"); got != "anon" {
+	if got := safeSessionTag("!!!???"); got != wantAnonTag {
 		t.Fatalf("want anon, got %q", got)
 	}
 }
@@ -124,8 +126,9 @@ func TestSafeSessionTag_UUID(t *testing.T) {
 		t.Fatalf("expected ≤8 chars, got %q (len %d)", got, len(got))
 	}
 	for _, r := range got {
-		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-			(r >= '0' && r <= '9') || r == '-' || r == '_') {
+		isAllowedChar := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '-' || r == '_'
+		if !isAllowedChar {
 			t.Fatalf("unexpected char %q in tag %q", r, got)
 		}
 	}
@@ -177,6 +180,34 @@ func TestStageForScan_CleanupRemovesDir(t *testing.T) {
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatal("expected temp dir to be removed after cleanup")
 	}
+}
+
+func TestStageForScan_EmptyOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("", "content", "sess")
+	if err == nil {
+		t.Fatal("expected error for empty original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup() // must be safe to call (noop) even on the error path
+}
+
+func TestStageForScan_DotDotOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("..", "content", "sess")
+	if err == nil {
+		t.Fatal("expected error for '..' original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup()
 }
 
 func TestStageForScan_FileMode(t *testing.T) {
