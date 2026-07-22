@@ -9,6 +9,7 @@ on:
 
 jobs:
   update-trivy-db:
+    name: Update Trivy Vulnerability DB Cache
     runs-on: cx-public-ubuntu-x64
     steps:
       - name: Setup oras
