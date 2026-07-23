@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
@@ -45,6 +46,7 @@ func isSupportedByKICS(filePath string) bool {
 func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reason, context string) {
 	defer func() {
 		if r := recover(); r != nil {
+			logger.PrintfIfVerbose("kics guardrail: recovered from panic, failing open: %v", r)
 			blocked = false
 			reason = ""
 			context = ""
@@ -70,6 +72,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	newResults, err := svc.scan(stagedNew)
 	if err != nil {
 		// Fail open: Docker unavailable, image pull failure, feature flag disabled, etc.
+		logger.PrintfIfVerbose("kics guardrail: scan of proposed content failed, failing open: %v", err)
 		return false, "", ""
 	}
 	if len(newResults) == 0 {
@@ -92,6 +95,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	origResults, err := svc.scan(stagedOrig)
 	if err != nil {
 		// Fail open on original scan error
+		logger.PrintfIfVerbose("kics guardrail: scan of original content failed, failing open: %v", err)
 		return false, "", ""
 	}
 
