@@ -369,6 +369,59 @@ func TestParseSarifEmptyResultSast(t *testing.T) {
 	}
 }
 
+func TestParseSarifResultSastClampsZeroColumns(t *testing.T) {
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			Nodes: []*wrappers.ScanResultNode{
+				{FileName: "/src/app.go", Line: 10, Column: 0, Length: 0},
+				{FileName: "/src/app.go", Line: 12, Column: 0, Length: 5},
+			},
+		},
+	}
+
+	sarifResults := parseSarifResultSast(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Assert(t, len(sarifResults[0].Locations) == 1)
+
+	primary := sarifResults[0].Locations[0].PhysicalLocation.Region
+	assert.Equal(t, uint(1), primary.StartColumn)
+	assert.Equal(t, uint(2), primary.EndColumn)
+
+	threadLocations := sarifResults[0].CodeFlows[0].ThreadFlows[0].Locations
+	assert.Equal(t, uint(1), threadLocations[0].Location.PhysicalLocation.Region.StartColumn)
+	assert.Equal(t, uint(2), threadLocations[0].Location.PhysicalLocation.Region.EndColumn)
+	assert.Equal(t, uint(1), threadLocations[1].Location.PhysicalLocation.Region.StartColumn)
+	assert.Equal(t, uint(6), threadLocations[1].Location.PhysicalLocation.Region.EndColumn)
+}
+
+func TestParseSarifResultKicsClampsZeroStartLine(t *testing.T) {
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			Filename: "/Dockerfile",
+			Line:     0,
+		},
+	}
+
+	sarifResults := parseSarifResultKics(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Equal(t, uint(1), sarifResults[0].Locations[0].PhysicalLocation.Region.StartLine)
+}
+
+func TestParseSarifResultsSscsClampsZeroStartLine(t *testing.T) {
+	result := &wrappers.ScanResult{
+		Type:        params.SCSSecretDetectionType,
+		Description: "secret found",
+		ScanResultData: wrappers.ScanResultData{
+			Filename: "config.yaml",
+			Line:     0,
+		},
+	}
+
+	sarifResults := parseSarifResultsSscs(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Equal(t, uint(1), sarifResults[0].Locations[0].PhysicalLocation.Region.StartLine)
+}
+
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
 	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "sonar")
 	// Remove generated sonar file
