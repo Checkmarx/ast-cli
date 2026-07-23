@@ -12,6 +12,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	grpcs "github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +53,7 @@ func downloadFile(downloadURLPath, filePath string) error {
 // InstallOrUpgrade Checks the version according to the hash file,
 // downloads the RealTime installation if the version is not up-to-date,
 // Extracts the RealTime installation according to the operating system type
-func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (NewSuccessfulInstallation, error) {
+func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, ascaWrapper grpcs.AscaWrapper) (NewSuccessfulInstallation, error) {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
 	if downloadNotNeeded(installationConfiguration) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
@@ -75,6 +76,11 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (New
 	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
 		return false, err
+	}
+
+	if ascaWrapper != nil {
+		logger.PrintIfVerbose("Shutting down ASCA wrapper before unzipping or extracting files...")
+		_ = ascaWrapper.ShutDown()
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
