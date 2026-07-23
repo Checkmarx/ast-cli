@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -79,8 +80,7 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 	}
 
 	if ascaWrapper != nil {
-		logger.PrintIfVerbose("Shutting down ASCA wrapper before unzipping or extracting files...")
-		_ = ascaWrapper.ShutDown()
+		shutDownAndWait(ascaWrapper)
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
@@ -172,4 +172,28 @@ func downloadHashFile(hashURL, zipFileNameHash string) error {
 	}
 
 	return nil
+}
+
+// shutDownAndWait sends a shutdown signal and polls until the service is no longer reachable,
+// ensuring the process has released its file handles before the caller replaces the binary.
+func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
+	const (
+		maxAttempts  = 20
+		pollInterval = 500 * time.Millisecond
+	)
+
+	logger.PrintIfVerbose("Shutting down Vorpal service before replacing binary...")
+	_ = ascaWrapper.ShutDown()
+
+	port := ascaWrapper.GetPort()
+	for i := 0; i < maxAttempts; i++ {
+		// ConfigurePort resets the cached 'serving' flag, forcing a live connection attempt.
+		ascaWrapper.ConfigurePort(port)
+		if err := ascaWrapper.HealthCheck(); err != nil {
+			logger.PrintIfVerbose("Vorpal service has stopped.")
+			return
+		}
+		time.Sleep(pollInterval)
+	}
+	logger.PrintIfVerbose("Timed out waiting for Vorpal service to stop; proceeding anyway.")
 }
