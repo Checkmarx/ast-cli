@@ -2,18 +2,11 @@ package params
 
 // Flags
 const (
-	// OAuth browser login (cx auth login) + session storage modes
+	// OAuth browser login (cx auth login)
 	LoginPortFlag           = "port"
 	LoginPortFlagUsage      = "Local port for the OAuth callback listener (0 = pick a free port)"
 	LoginNoBrowserFlag      = "no-browser"
 	LoginNoBrowserFlagUsage = "Print the authorization URL instead of opening a browser"
-	SessionFlag             = "session"
-	SessionLocalValue       = "local"
-	SessionGlobalValue      = "global"
-	SessionYamlValue        = "yaml"
-	SessionGlobalFileName   = "session_global"
-	ActiveModeFileName      = "active_mode"
-	SessionLoginFlagUsage   = "Session mode: 'local' keeps the refresh token only in the current shell's environment (requires Invoke-Expression / eval wrapper); 'global' persists it to a dedicated file readable by every shell on the machine until explicit logout."
 
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"

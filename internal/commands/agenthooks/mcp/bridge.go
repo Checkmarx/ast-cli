@@ -124,7 +124,7 @@ var (
 		configMu.Lock()
 		defer configMu.Unlock()
 		_ = configuration.LoadConfiguration()
-		wrappers.LoadActiveCredential()
+		
 	}
 	invalidateTokenCache   = wrappers.InvalidateAccessTokenCache
 	credentialPollInterval = 3 * time.Second
@@ -224,8 +224,7 @@ func runBridgeIO(in io.Reader, out io.Writer, client *http.Client, version, urlO
 		sess.state = stateUnauth
 		// Degraded notice goes to STDERR only (stdout is the protocol channel).
 		fmt.Fprintln(os.Stderr, "cx mcp bridge: no usable Checkmarx credential yet — serving in a degraded state. "+
-			"Log in with 'cx auth login' (or /cx-cli-setup) using the default (yaml) or '--session global' mode "+
-			"(NOT '--session local', which this process can't see); Checkmarx tools appear automatically once authenticated. "+
+			"Log in with 'cx auth login' (or /cx-cli-setup); Checkmarx tools appear automatically once authenticated. "+
 			"For on-prem/custom domains, set CX_MCP_URL or pass --mcp-url.")
 		stop := make(chan struct{})
 		var wg sync.WaitGroup

@@ -93,6 +93,37 @@ func PromptConfiguration() {
 	}
 }
 
+// PromptAuthConnection prompts for base-uri, base-auth-uri, and tenant (what cx auth
+// login needs), like cx configure. Blank keeps the default; non-interactive stdin sets nothing.
+func PromptAuthConnection() {
+	reader := bufio.NewReader(os.Stdin)
+	baseURI := viper.GetString(params.BaseURIKey)
+	baseURISrc := baseURI
+	baseAuthURI := viper.GetString(params.BaseAuthURIKey)
+	tenant := viper.GetString(params.TenantKey)
+
+	fmt.Printf("AST Base URI [%s]: ", baseURI)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.BaseURIKey, v)
+	}
+	if baseAuthURI == "" {
+		baseAuthURI = baseURISrc
+	}
+	fmt.Printf("AST Base Auth URI (IAM) [%s]: ", baseAuthURI)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.BaseAuthURIKey, v)
+	}
+	fmt.Printf("AST Tenant [%s]: ", tenant)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.TenantKey, v)
+	}
+}
+
+func readLine(reader *bufio.Reader) string {
+	s, _ := reader.ReadString('\n')
+	return strings.TrimSpace(s)
+}
+
 func obfuscateString(str string) string {
 	if len(str) > obfuscateLimit {
 		return "******" + str[len(str)-4:]

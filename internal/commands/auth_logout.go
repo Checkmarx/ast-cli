@@ -4,62 +4,36 @@ import (
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-// audClaim is the OIDC "audience" JWT claim. For Keycloak refresh tokens it
-// holds the realm URL — exactly the URL we POST to for revocation.
-const audClaim = "aud"
 
 func newAuthLogoutCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "logout",
-		Short: "Revoke the current refresh token and clear stored credentials",
-		Long: "Revokes the current refresh token at Checkmarx One IAM and clears every storage " +
-			"location: yaml cx_apikey, the global session file, and emits a shell-evaluable " +
-			"clear of CX_APIKEY for users who logged in via --session local. One universal " +
-			"logout — no --session flag needed; the active mode tells the CLI what to clean up.",
+		Short: "Clear the stored Checkmarx One credential",
+		Long: "Clears the cx_apikey stored in the config file. Idempotent — running it when no " +
+			"credential is stored is a no-op. Credentials provided via the CX_APIKEY or " +
+			"CX_CLIENT_ID/CX_CLIENT_SECRET environment variables are not affected.",
 		Example: heredoc.Doc(`
-			# Default usage (clears yaml and the global file, revokes server-side)
 			$ cx auth logout
-
-			# If the current shell was logged in via --session local, also wrap the
-			# logout with Invoke-Expression so $env:CX_APIKEY gets cleared too
-			# PowerShell:
-			$ Invoke-Expression (cx auth logout)
-			# bash / zsh:
-			$ eval "$(cx auth logout)"
 		`),
 		RunE: runAuthLogout,
 	}
 }
 
-// runAuthLogout is the universal logout: it nukes every storage location's
-// credential (server-side revoke + local clear), deletes the active-mode
-// metadata file, and emits a shell-clear line so users who wrap the call
-// with Invoke-Expression / eval also have CX_APIKEY cleared in their shell.
+// runAuthLogout clears the cx_apikey field in the yaml config file. The
+// client-credentials and env-provided credentials are intentionally left alone.
 func runAuthLogout(cmd *cobra.Command, _ []string) error {
-	clientID := viper.GetString(params.AccessKeyIDConfigKey)
-	if clientID == "" {
-		clientID = defaultLoginClientID
+	configPath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		return errors.Wrap(err, "failed to resolve config file path")
 	}
-
-	nukeAllStorages(clientID)
-
-	if err := wrappers.ClearActiveMode(); err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("failed to remove active-mode file: %v", err))
+	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AstAPIKey, ""); err != nil {
+		return errors.Wrap(err, "failed to clear stored credential")
 	}
-
-	// Always emit a shell-clear of CX_APIKEY to stdout. Wrapping the logout
-	// with Invoke-Expression (PowerShell) or eval (bash) clears the env var
-	// in the current shell. Without the wrapper the line just prints — no
-	// harm done for users who didn't use --session local.
-	shell := detectShell()
-	_, _ = fmt.Fprintln(cmd.OutOrStdout(), formatEnvAssignment(shell, params.AstAPIKeyEnv, ""))
-	_, _ = fmt.Fprintln(cmd.ErrOrStderr(), "Logged out. If you used --session local in this shell, wrap with Invoke-Expression (PowerShell) or eval (bash) to clear CX_APIKEY.")
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Successfully logged out of Checkmarx One server!")
 	return nil
 }
