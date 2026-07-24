@@ -29,12 +29,12 @@ func isSupportedByASCA(filePath string) bool {
 }
 
 // ScanFileEdit runs ASCA on the proposed post-edit content.
-// Returns blocked=true with a formatted reason and remediation context when ASCA
+// Returns blocked=true with a formatted reason, remediation context, and highest severity when ASCA
 // finds *new* vulnerabilities introduced by ev.Changes (delta-detection for edits;
 // any-vuln for new writes). Findings the user already suppressed via
 // `cx ignore-vulnerability` (the realtime ignore file) are filtered out before the
 // verdict. Fail-open on infrastructure errors (ASCA install fail, engine unavailable, panic).
-func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context string) {
+func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, severity string) {
 	findingCount := 0
 
 	defer func() {
@@ -43,16 +43,16 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.Telemet
 			reason = ""
 			context = ""
 		}
-		logASCATelemetry(telemetryWrapper, agent, findingCount)
+		logASCATelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
 	}()
 
 	if !isSupportedByASCA(ev.FilePath) {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
-	newContent, originalContent, err := ProposedContent(ev.FilePath, ev.Changes)
+	newContent, originalContent, err := ProposedContent(ev.FilePath, ev.Changes, ev.Agent)
 	if err != nil || newContent == "" {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
 	wrapperParams := services.AscaWrappersParam{
@@ -71,42 +71,42 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.Telemet
 	}
 
 	// Stage and scan the proposed (new) content
-	stagedNew, cleanupNew, err := stageForScan(ev.FilePath, newContent, ev.SessionID)
+	stagedNew, cleanupNew, err := stageForScan(ev.FilePath, newContent, ev.SessionID, ev.Agent)
 	if err != nil {
-		return false, "", ""
+		return false, "", "", ""
 	}
 	defer cleanupNew()
 
 	ascaParams.FilePath = stagedNew
 	newResult, err := services.CreateASCAScanRequest(ascaParams, wrapperParams)
 	if err != nil || newResult == nil {
-		return false, "", ""
+		return false, "", "", ""
 	}
 	if newResult.Error != nil {
-		return false, "", ""
+		return false, "", "", ""
 	}
 	if len(newResult.ScanDetails) == 0 {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
-		r, c := formatFindings(ev.FilePath, newResult.ScanDetails, ev.WorkDir)
+		r, c := formatFindings(ev.FilePath, newResult.ScanDetails, ev.WorkDir, agent, ev.SessionID)
 		findingCount = len(newResult.ScanDetails)
-		return true, r, c
+		return true, r, c, highestSeverity(newResult.ScanDetails)
 	}
 
 	// Delta: scan original content and find only newly introduced findings
-	stagedOrig, cleanupOrig, err := stageForScan(ev.FilePath, originalContent, ev.SessionID)
+	stagedOrig, cleanupOrig, err := stageForScan(ev.FilePath, originalContent, ev.SessionID, ev.Agent)
 	if err != nil {
-		return false, "", ""
+		return false, "", "", ""
 	}
 	defer cleanupOrig()
 
 	ascaParams.FilePath = stagedOrig
 	origResult, err := services.CreateASCAScanRequest(ascaParams, wrapperParams)
 	if err != nil || origResult == nil {
-		return false, "", ""
+		return false, "", "", ""
 	}
 	var origDetails []grpcs.ScanDetail
 	if origResult.Error == nil {
@@ -116,12 +116,27 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.Telemet
 	newFindings := NewFindings(origDetails, newResult.ScanDetails)
 	if len(newFindings) == 0 {
 		findingCount = 0
-		return false, "", ""
+		return false, "", "", ""
 	}
 
-	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir)
+	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir, agent, ev.SessionID)
 	findingCount = len(newFindings)
-	return true, r, c
+	return true, r, c, highestSeverity(newFindings)
+}
+
+// highestSeverity returns the highest severity level across the given ASCA findings.
+// Order: Critical > High > Medium > Low > (anything else).
+func highestSeverity(findings []grpcs.ScanDetail) string {
+	rank := map[string]int{"Critical": 4, "High": 3, "Medium": 2, "Low": 1}
+	best := ""
+	bestRank := -1
+	for _, f := range findings {
+		if r, ok := rank[f.Severity]; ok && r > bestRank {
+			bestRank = r
+			best = f.Severity
+		}
+	}
+	return best
 }
 
 // existingIgnoreFilePath returns the default realtime ignore-file path only when it
@@ -144,27 +159,21 @@ func shouldUpdateVersion() bool {
 
 // logASCATelemetry sends a telemetry event for ASCA scan results.
 // Called once after ASCA scan is performed with the actual finding count.
-func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent string, totalCount int) {
+func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
 
 	telemetryData := &wrappers.DataForAITelemetry{
-
-		//agent = aiProvider
-		//hooks-detect for detection
-		//subtype = scan
-		//  hooks-remeditae
-		//subType = fixWithAIchet
-
-		Agent:      agent + "-cli",
-		AIProvider: agent,
-		Engine:     "Asca",
-		TotalCount: totalCount,
-		UniqueID:   wrappers.GetUniqueID(),
-		Type:       "hooks-detect",
-		SubType:    "scan",
-		ScanType:   "asca",
+		Agent:            agent + "-cli",
+		AIProvider:       agent,
+		Engine:           "Asca",
+		TotalCount:       totalCount,
+		UniqueID:         wrappers.GetUniqueID(),
+		Type:             "hooks-detect",
+		SubType:          "scan",
+		ScanType:         "asca",
+		AiAgentSessionId: sessionID,
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {

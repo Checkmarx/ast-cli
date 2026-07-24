@@ -20,7 +20,7 @@ func scannerWith(pkgs ...ossrealtime.OssPackage) *Scanner {
 
 func TestCheckBashInstall_NoInstallCommand(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "anything", Status: "Malicious"})
-	finding, _ := s.CheckBashInstall("ls -la", "")
+	finding, _, _ := s.CheckBashInstall("ls -la", "", "", "")
 	if finding != "" {
 		t.Errorf("expected empty for non-install command, got %q", finding)
 	}
@@ -28,7 +28,7 @@ func TestCheckBashInstall_NoInstallCommand(t *testing.T) {
 
 func TestCheckBashInstall_CleanInstall(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "lodash", Status: "OK"})
-	finding, _ := s.CheckBashInstall("npm install lodash", "")
+	finding, _, _ := s.CheckBashInstall("npm install lodash", "", "", "")
 	if finding != "" {
 		t.Errorf("expected empty for clean install, got %q", finding)
 	}
@@ -36,7 +36,7 @@ func TestCheckBashInstall_CleanInstall(t *testing.T) {
 
 func TestCheckBashInstall_MaliciousMentionsMCP(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "lodash", PackageVersion: "4.17.21", Status: "Malicious"})
-	finding, remediation := s.CheckBashInstall("npm install lodash@4.17.21", "")
+	finding, remediation, severity := s.CheckBashInstall("npm install lodash@4.17.21", "", "Claude", "")
 	if !strings.Contains(finding, "MALICIOUS") {
 		t.Errorf("expected finding to mention MALICIOUS, got %q", finding)
 	}
@@ -46,17 +46,23 @@ func TestCheckBashInstall_MaliciousMentionsMCP(t *testing.T) {
 	if !strings.Contains(remediation, "cx-devassist:cx-devassist-sca") {
 		t.Errorf("expected remediation to reference cx-devassist-sca skill, got %q", remediation)
 	}
-	if !strings.Contains(remediation, "cx_mcp_register.sh") {
-		t.Errorf("expected remediation to mention MCP registration script, got %q", remediation)
+	if !strings.Contains(remediation, "restart Claude Code") {
+		t.Errorf("expected the per-agent reconnect phrase for Claude, got %q", remediation)
+	}
+	if strings.Contains(remediation, "cx_mcp_register.sh") {
+		t.Errorf("cx_mcp_register.sh must not appear (removed), got %q", remediation)
 	}
 	if !strings.Contains(remediation, "Dev Assist") {
 		t.Errorf("expected remediation to mention Dev Assist fallback, got %q", remediation)
+	}
+	if severity != "Malicious" {
+		t.Errorf("expected severity Malicious, got %q", severity)
 	}
 }
 
 func TestCheckBashInstall_Vulnerable(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "axios", PackageVersion: "0.21.0", Status: "Vulnerable"})
-	finding, remediation := s.CheckBashInstall("npm install axios@0.21.0", "")
+	finding, remediation, _ := s.CheckBashInstall("npm install axios@0.21.0", "", "Claude", "")
 	if !strings.Contains(finding, "vulnerabilities") {
 		t.Errorf("expected vulnerable finding, got %q", finding)
 	}
@@ -74,12 +80,33 @@ func TestCheckBashInstall_Vulnerable(t *testing.T) {
 	}
 }
 
+func TestRemediation_PerAgentReconnectPhrase(t *testing.T) {
+	s := scannerWith(ossrealtime.OssPackage{PackageName: "axios", PackageVersion: "0.21.0", Status: "Vulnerable"})
+	_, remediation, _ := s.CheckBashInstall("npm install axios@0.21.0", "", "Copilot", "")
+	// The remediation message is the same for every agent — the skill line and MCP fallback are always present.
+	if !strings.Contains(remediation, "cx-devassist:cx-devassist-sca") {
+		t.Errorf("expected the shared skill line for all agents, got %q", remediation)
+	}
+	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
+		t.Errorf("expected the MCP-tool fallback for all agents, got %q", remediation)
+	}
+	// Only the reconnect hint is agent-specific, and the removed script/env/Claude-restart must be gone.
+	if !strings.Contains(remediation, "Copilot CLI") {
+		t.Errorf("expected the Copilot reconnect phrase, got %q", remediation)
+	}
+	for _, forbidden := range []string{"cx_mcp_register.sh", "CLAUDE_PLUGIN_ROOT", "restart Claude Code"} {
+		if strings.Contains(remediation, forbidden) {
+			t.Errorf("remediation must not contain %q, got %q", forbidden, remediation)
+		}
+	}
+}
+
 func TestCheckBashInstall_MaliciousTakesPrecedence(t *testing.T) {
 	s := scannerWith(
 		ossrealtime.OssPackage{PackageName: "vuln", Status: "Vulnerable"},
 		ossrealtime.OssPackage{PackageName: "bad", Status: "Malicious"},
 	)
-	finding, _ := s.CheckBashInstall("npm install vuln bad", "")
+	finding, _, _ := s.CheckBashInstall("npm install vuln bad", "", "", "")
 	if !strings.Contains(finding, "MALICIOUS") {
 		t.Errorf("expected MALICIOUS message when both present, got %q", finding)
 	}
@@ -99,7 +126,7 @@ func TestCheckBashInstall_CompoundWithCleanThenBad(t *testing.T) {
 			{PackageName: "evil", Status: "Malicious"},
 		}}, nil
 	})
-	finding, _ := s.CheckBashInstall("npm install lodash && pip install evil", "")
+	finding, _, _ := s.CheckBashInstall("npm install lodash && pip install evil", "", "", "")
 	if !strings.Contains(finding, "MALICIOUS") {
 		t.Errorf("expected deny on second segment, got %q", finding)
 	}
@@ -112,7 +139,7 @@ func TestCheckBashInstall_FailOpenOnScannerError(t *testing.T) {
 	s := NewScannerWithFunc(func(string) (*ossrealtime.OssPackageResults, error) {
 		return nil, errBoom
 	})
-	finding, _ := s.CheckBashInstall("npm install lodash", "")
+	finding, _, _ := s.CheckBashInstall("npm install lodash", "", "", "")
 	if finding != "" {
 		t.Errorf("expected fail-open empty on scanner error, got %q", finding)
 	}
@@ -120,7 +147,7 @@ func TestCheckBashInstall_FailOpenOnScannerError(t *testing.T) {
 
 func TestCheckManifestEdit_NonManifestNoop(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "x", Status: "Malicious"})
-	finding, _ := s.CheckManifestEdit("/repo/main.go", []byte("anything"), "")
+	finding, _, _ := s.CheckManifestEdit("/repo/main.go", []byte("anything"), "", "", "")
 	if finding != "" {
 		t.Errorf("non-manifest: expected empty, got %q", finding)
 	}
@@ -142,12 +169,15 @@ func TestCheckManifestEdit_NewMaliciousAddition(t *testing.T) {
 	after := []byte(`{"name":"x","dependencies":{"lodash":"4.17.21","evil-pkg":"1.0.0"}}`)
 
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "evil-pkg", PackageVersion: "1.0.0", Status: "Malicious"})
-	finding, remediation := s.CheckManifestEdit(pkgJSON, after, "")
+	finding, remediation, severity := s.CheckManifestEdit(pkgJSON, after, "", "", "")
 	if !strings.Contains(finding, "MALICIOUS") {
 		t.Errorf("expected MALICIOUS finding, got %q", finding)
 	}
 	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
 		t.Errorf("expected remediation to reference MCP tool, got %q", remediation)
+	}
+	if severity != "Malicious" {
+		t.Errorf("expected severity Malicious, got %q", severity)
 	}
 }
 
@@ -166,7 +196,7 @@ func TestCheckManifestEdit_OnlyVersionBumpOfCleanPkg(t *testing.T) {
 	// Even though it's only a bump, the new version is "new" and gets scanned.
 	// If the scanner returns OK, the edit is accepted.
 	s := scannerWith(ossrealtime.OssPackage{PackageName: "lodash", PackageVersion: "4.17.21", Status: "OK"})
-	finding, _ := s.CheckManifestEdit(pkgJSON, after, "")
+	finding, _, _ := s.CheckManifestEdit(pkgJSON, after, "", "", "")
 	if finding != "" {
 		t.Errorf("expected accept for clean version bump, got %q", finding)
 	}
@@ -176,7 +206,7 @@ func TestDenyVulnerable_IgnoreCommandIncludesPackageData(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "pip", PackageName: "requests", PackageVersion: "2.19.0"},
 	}
-	_, remediation := DenyVulnerable(pkgs, "")
+	_, remediation := DenyVulnerable(pkgs, "", "", "")
 	if !strings.Contains(remediation, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability in remediation, got %q", remediation)
 	}
@@ -191,12 +221,27 @@ func TestDenyVulnerable_IgnoreCommandIncludesPackageData(t *testing.T) {
 	}
 }
 
+func TestDenyVulnerable_EmitsProvenanceOptionalFlags(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "", "Cursor", "sess-9")
+	want := ` --optional-flags "aiProvider=Cursor;agent=Cursor-cli;aiAgentSessionId=sess-9"`
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected provenance flags %q in ignore command, got %q", want, remediation)
+	}
+	// Empty agent → no provenance fragment (backward-compatible default).
+	if _, noAgent := DenyVulnerable(pkgs, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
+		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
 func TestDenyVulnerable_MultiplePackages_EachGetsIgnoreCommand(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.0"},
 		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
 	}
-	_, remediation := DenyVulnerable(pkgs, "")
+	_, remediation := DenyVulnerable(pkgs, "", "", "")
 	if strings.Count(remediation, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 packages, got %q", remediation)
 	}
@@ -213,7 +258,7 @@ func TestDenyVulnerable_PinsIgnoredFilePathToWorkDir(t *testing.T) {
 		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
 	}
 	workDir := filepath.Join("repo", "ws")
-	_, remediation := DenyVulnerable(pkgs, workDir)
+	_, remediation := DenyVulnerable(pkgs, workDir, "", "")
 	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
 	if !strings.Contains(remediation, want) {
 		t.Errorf("expected remediation to pin %q, got %q", want, remediation)
@@ -224,7 +269,7 @@ func TestDenyVulnerable_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
 	}
-	_, remediation := DenyVulnerable(pkgs, "")
+	_, remediation := DenyVulnerable(pkgs, "", "", "")
 	if strings.Contains(remediation, "--ignored-file-path") {
 		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", remediation)
 	}
@@ -234,7 +279,7 @@ func TestDenyMalicious_StillMentionsDevAssist(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageName: "evil-pkg", PackageVersion: "1.0.0"},
 	}
-	_, remediation := DenyMalicious(pkgs)
+	_, remediation := DenyMalicious(pkgs, "Claude")
 	if !strings.Contains(remediation, "Dev Assist") {
 		t.Errorf("malicious remediation should still mention Dev Assist, got %q", remediation)
 	}
@@ -255,7 +300,7 @@ func TestCheckManifestEdit_VulnerableContainsIgnoreCommand(t *testing.T) {
 	s := scannerWith(ossrealtime.OssPackage{
 		PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0", Status: "Vulnerable",
 	})
-	finding, remediation := s.CheckManifestEdit(pkgJSON, after, "")
+	finding, remediation, _ := s.CheckManifestEdit(pkgJSON, after, "", "", "")
 	if !strings.Contains(finding, "vulnerabilities") {
 		t.Errorf("expected vulnerable finding, got %q", finding)
 	}

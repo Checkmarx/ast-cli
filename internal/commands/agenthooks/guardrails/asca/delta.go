@@ -64,14 +64,14 @@ func findingsSummary(findings []grpcs.ScanDetail) string {
 // human-readable deny reason (rendered as permissionDecisionReason) and the
 // remediation guidance injected into the agent's context (additionalContext).
 // ast-cx-hooks v1.0.3 carries these as distinct fields via RejectEditWithContext.
-func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir string) (reason, context string) {
+func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) (reason, context string) {
 	summary := findingsSummary(findings)
 	cxExe, err := os.Executable()
 	cxBinary := "cx"
 	if err == nil {
 		cxBinary = cxExe
 	}
-	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings, workDir)
+	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
 }
 
 // ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
@@ -88,6 +88,21 @@ func ignoredFilePathFlag(workDir string) string {
 	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
 }
 
+// optionalFlagsFragment carries the suppression's provenance (AI provider, agent, session id) to the
+// child `cx ignore-vulnerability` process via --optional-flags, which reads them through
+// utils.GetOptionalParam and logs them — matching logRemediationTelemetry's aiProvider/agent/session.
+// Empty agent → no fragment (nothing to attribute).
+func optionalFlagsFragment(agent, sessionID string) string {
+	if agent == "" {
+		return ""
+	}
+	pairs := "aiProvider=" + agent + ";agent=" + agent + "-cli"
+	if sessionID != "" {
+		pairs += ";aiAgentSessionId=" + sessionID
+	}
+	return fmt.Sprintf(" --optional-flags \"%s\"", pairs)
+}
+
 // permissionDecisionReason is the human-readable deny message shown to the user.
 // Contains only the findings — no agent instructions.
 func permissionDecisionReason(filePath, summary string) string {
@@ -99,8 +114,9 @@ func permissionDecisionReason(filePath, summary string) string {
 
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user.
-func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir string) string {
+func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
 	ignoreFlag := ignoredFilePathFlag(workDir)
+	provenance := optionalFlagsFragment(agent, sessionID)
 	var suppressCmds strings.Builder
 	for _, f := range findings {
 		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
@@ -108,7 +124,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			Line:     f.Line,
 			RuleID:   f.RuleID,
 		})
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s\n", cxBinary, string(data), ignoreFlag)
+		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
 	}
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
@@ -129,8 +145,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"    \"type\": \"sast\"\n"+
 			"  }\n"+
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n"+
-			suppressCmds.String(),
-		filePath,
+			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
+		filePath, suppressCmds.String(),
 	)
 }

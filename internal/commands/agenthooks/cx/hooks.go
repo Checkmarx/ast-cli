@@ -3,7 +3,6 @@ package cx
 import (
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
@@ -24,39 +23,6 @@ const (
 	engineSca  = "Sca"
 	engineKics = "Kics"
 )
-
-// markerDirPerm / markerFilePerm are the permissions used when creating the session findings
-// marker file's directory and the file itself.
-const (
-	markerDirPerm  = 0o700
-	markerFilePerm = 0o600
-)
-
-// sessionFindingsMarker is the path of the per-session marker file that records
-// whether at least one real Checkmarx finding was blocked this session.
-// cxBeforeFileEdit / cxBeforeToolCall create it on any scanner denial;
-// cxWhenAgentIdle consumes it to decide whether to force a summary turn.
-func sessionFindingsMarkerPath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".checkmarx", ".session-cx-findings")
-}
-
-// touchSessionFindingsMarker creates the marker file best-effort.
-// A write failure must never affect the scan decision that called it.
-func touchSessionFindingsMarker() {
-	path := sessionFindingsMarkerPath()
-	if path == "" {
-		return
-	}
-	_ = os.MkdirAll(filepath.Dir(path), markerDirPerm)
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, markerFilePerm)
-	if err == nil {
-		_ = f.Close()
-	}
-}
 
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
 // It is set by RegisterGuardrails so the handlers (free functions registered
@@ -98,12 +64,11 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		return agenthooks.Deny(reason)
 	}
 	if scaScanner != nil {
-		if finding, remediation := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir); finding != "" {
-			touchSessionFindingsMarker()
-			agent := agentToString(ev.Agent)
-			sid := sessionIDFromToolCall(&ev)
+		agent := agentToString(ev.Agent)
+		sid := sessionIDFromToolCall(&ev)
+		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" {
 			sessiontally.Add(sid, engineSca, 1, 1)
-			logRemediationTelemetry(agent, "SCA", finding, remediation)
+			logRemediationTelemetry(agent, "SCA", finding, remediation, severity, sid)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -146,25 +111,22 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		return agenthooks.RejectEdit(reason)
 	}
 	agent := agentToString(ev.Agent)
-	if blocked, reason, context := asca.ScanFileEdit(ev, telemetryWrapper, agent); blocked {
-		touchSessionFindingsMarker()
+	if blocked, reason, context, severity := asca.ScanFileEdit(ev, telemetryWrapper, agent); blocked {
 		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-		logRemediationTelemetry(agent, "Asca", reason, context)
+		logRemediationTelemetry(agent, "Asca", reason, context, severity, ev.SessionID)
 		return agenthooks.RejectEditWithContext(reason, context)
 	}
 	if kicsScanner != nil {
 		if blocked, reason, context := kics.ScanFileEdit(ev, kicsScanner); blocked {
-			touchSessionFindingsMarker()
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
-			if finding, remediation := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir); finding != "" {
-				touchSessionFindingsMarker()
+			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
-				logRemediationTelemetry(agent, "Oss", finding, remediation)
+				logRemediationTelemetry(agent, "Oss", finding, remediation, severity, ev.SessionID)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -275,25 +237,21 @@ func RegisterPassThrough() {
 }
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
-func logRemediationTelemetry(agent, engine, finding, remediationContext string) {
+func logRemediationTelemetry(agent, engine, finding, remediationContext, severity, sessionID string) {
 	if telemetryWrapper == nil {
 		return
 	}
 
 	telemetryData := &wrappers.DataForAITelemetry{
-		//agent = aiProvider
-		//hooks-detect for detection
-		//subtype = scan
-		//  hooks-remeditae
-		//subType = fixWithAIchet
-
-		AIProvider: agent,
-		Agent:      agent + "-cli",
-		Engine:     engine,
-		ScanType:   strings.ToLower(engine),
-		UniqueID:   wrappers.GetUniqueID(),
-		Type:       "hooks-remediate",
-		SubType:    "fixWithAIAssist",
+		AIProvider:       agent,
+		Agent:            agent + "-cli",
+		Engine:           engine,
+		ScanType:         strings.ToLower(engine),
+		UniqueID:         wrappers.GetUniqueID(),
+		Type:             "hooks-remediate",
+		SubType:          "fixWithAIAssist",
+		ProblemSeverity:  severity,
+		AiAgentSessionId: sessionID,
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
@@ -307,6 +265,8 @@ func agentToString(agent agenthooks.AgentID) string {
 	case agenthooks.AgentClaude:
 		return "Claude"
 	case agenthooks.AgentCopilot:
+		return "Copilot"
+	case agenthooks.AgentCopilotCLI:
 		return "Copilot"
 	case agenthooks.AgentCursor:
 		return "Cursor"
