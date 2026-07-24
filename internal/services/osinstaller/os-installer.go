@@ -9,9 +9,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	grpcs "github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +54,7 @@ func downloadFile(downloadURLPath, filePath string) error {
 // InstallOrUpgrade Checks the version according to the hash file,
 // downloads the RealTime installation if the version is not up-to-date,
 // Extracts the RealTime installation according to the operating system type
-func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (NewSuccessfulInstallation, error) {
+func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, ascaWrapper grpcs.AscaWrapper) (NewSuccessfulInstallation, error) {
 	logger.PrintIfVerbose("Handling RealTime Installation...")
 	if downloadNotNeeded(installationConfiguration) {
 		logger.PrintIfVerbose("RealTime installation already exists and is up to date. Skipping download.")
@@ -75,6 +77,10 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration) (New
 	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
 		return false, err
+	}
+
+	if ascaWrapper != nil {
+		shutDownAndWait(ascaWrapper)
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
@@ -166,4 +172,28 @@ func downloadHashFile(hashURL, zipFileNameHash string) error {
 	}
 
 	return nil
+}
+
+// shutDownAndWait sends a shutdown signal and polls until the service is no longer reachable,
+// ensuring the process has released its file handles before the caller replaces the binary.
+func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
+	const (
+		maxAttempts  = 20
+		pollInterval = 500 * time.Millisecond
+	)
+
+	logger.PrintIfVerbose("Shutting down Vorpal service before replacing binary...")
+	_ = ascaWrapper.ShutDown()
+
+	port := ascaWrapper.GetPort()
+	for i := 0; i < maxAttempts; i++ {
+		// ConfigurePort resets the cached 'serving' flag, forcing a live connection attempt.
+		ascaWrapper.ConfigurePort(port)
+		if err := ascaWrapper.HealthCheck(); err != nil {
+			logger.PrintIfVerbose("Vorpal service has stopped.")
+			return
+		}
+		time.Sleep(pollInterval)
+	}
+	logger.PrintIfVerbose("Timed out waiting for Vorpal service to stop; proceeding anyway.")
 }
