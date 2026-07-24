@@ -3,7 +3,7 @@ module github.com/checkmarx/ast-cli
 go 1.26.5
 
 require (
-	github.com/Checkmarx/ast-cx-hooks v1.0.4
+	github.com/Checkmarx/ast-cx-hooks v1.0.5
 	github.com/Checkmarx/containers-resolver v1.0.34
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63

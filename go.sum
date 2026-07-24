@@ -65,8 +65,8 @@ github.com/BurntSushi/toml v0.4.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbi
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Checkmarx/ast-cx-hooks v1.0.4 h1:rxzUea+wT4kxGbwzlgSJmVswod+HuWOALgxQtjY6P0c=
-github.com/Checkmarx/ast-cx-hooks v1.0.4/go.mod h1:GPHk8IJHQlCW7l8ye9/Bij57zYQGRG+pxJPiGgsR8cY=
+github.com/Checkmarx/ast-cx-hooks v1.0.5 h1:4Og5JeBBg3SynAErAP76oGKrjoWrlduWRgg1V9IXjWo=
+github.com/Checkmarx/ast-cx-hooks v1.0.5/go.mod h1:GPHk8IJHQlCW7l8ye9/Bij57zYQGRG+pxJPiGgsR8cY=
 github.com/Checkmarx/containers-images-extractor v1.0.22 h1:kJZgwk28LwJZ7Xky+kzwL+JSZOlpwrGsZQhhz4L2t6s=
 github.com/Checkmarx/containers-images-extractor v1.0.22/go.mod h1:HyzVb8TtTDf56hGlSakalPXtzjJ6VhTYe9fmAcOS+V8=
 github.com/Checkmarx/containers-resolver v1.0.34 h1:KULN8s8xb1tQtdH4yzHVdwN8GyLqtPCAkFWra10k7V0=
