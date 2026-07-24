@@ -100,7 +100,7 @@ func optionalFlagsFragment(agent, sessionID string) string {
 	if sessionID != "" {
 		pairs += ";aiAgentSessionId=" + sessionID
 	}
-	return fmt.Sprintf(" --optional-flags %q", pairs)
+	return fmt.Sprintf(" --optional-flags \"%s\"", pairs)
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.

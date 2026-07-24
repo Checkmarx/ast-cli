@@ -34,7 +34,7 @@ func isSupportedByASCA(filePath string) bool {
 // any-vuln for new writes). Findings the user already suppressed via
 // `cx ignore-vulnerability` (the realtime ignore file) are filtered out before the
 // verdict. Fail-open on infrastructure errors (ASCA install fail, engine unavailable, panic).
-func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, severity string) {
+func ScanFileEdit(ev agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, severity string) {
 	findingCount := 0
 
 	defer func() {
@@ -96,8 +96,25 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 		return true, r, c, highestSeverity(newResult.ScanDetails)
 	}
 
-	newFindings, err := deltaFindings(ev, originalContent, ascaParams, wrapperParams, newResult.ScanDetails)
-	if err != nil || len(newFindings) == 0 {
+	// Delta: scan original content and find only newly introduced findings
+	stagedOrig, cleanupOrig, err := stageForScan(ev.FilePath, originalContent, ev.SessionID, ev.Agent)
+	if err != nil {
+		return false, "", "", ""
+	}
+	defer cleanupOrig()
+
+	ascaParams.FilePath = stagedOrig
+	origResult, err := services.CreateASCAScanRequest(ascaParams, wrapperParams)
+	if err != nil || origResult == nil {
+		return false, "", "", ""
+	}
+	var origDetails []grpcs.ScanDetail
+	if origResult.Error == nil {
+		origDetails = origResult.ScanDetails
+	}
+
+	newFindings := NewFindings(origDetails, newResult.ScanDetails)
+	if len(newFindings) == 0 {
 		findingCount = 0
 		return false, "", "", ""
 	}
@@ -107,39 +124,16 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 	return true, r, c, highestSeverity(newFindings)
 }
 
-// deltaFindings scans the original (pre-edit) content and returns only the findings
-// newly introduced by ev.Changes relative to newDetails.
-func deltaFindings(ev *agenthooks.FileEditEvent, originalContent string, ascaParams services.AscaScanParams,
-	wrapperParams services.AscaWrappersParam, newDetails []grpcs.ScanDetail) ([]grpcs.ScanDetail, error) {
-	stagedOrig, cleanupOrig, err := stageForScan(ev.FilePath, originalContent, ev.SessionID, ev.Agent)
-	if err != nil {
-		return nil, err
-	}
-	defer cleanupOrig()
-
-	ascaParams.FilePath = stagedOrig
-	origResult, err := services.CreateASCAScanRequest(ascaParams, wrapperParams)
-	if err != nil || origResult == nil {
-		return nil, err
-	}
-	var origDetails []grpcs.ScanDetail
-	if origResult.Error == nil {
-		origDetails = origResult.ScanDetails
-	}
-
-	return NewFindings(origDetails, newDetails), nil
-}
-
 // highestSeverity returns the highest severity level across the given ASCA findings.
 // Order: Critical > High > Medium > Low > (anything else).
 func highestSeverity(findings []grpcs.ScanDetail) string {
 	rank := map[string]int{"Critical": 4, "High": 3, "Medium": 2, "Low": 1}
 	best := ""
 	bestRank := -1
-	for i := range findings {
-		if r, ok := rank[findings[i].Severity]; ok && r > bestRank {
+	for _, f := range findings {
+		if r, ok := rank[f.Severity]; ok && r > bestRank {
 			bestRank = r
-			best = findings[i].Severity
+			best = f.Severity
 		}
 	}
 	return best

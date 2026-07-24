@@ -68,7 +68,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		sid := sessionIDFromToolCall(&ev)
 		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" {
 			sessiontally.Add(sid, engineSca, 1, 1)
-			logRemediationTelemetry(agent, "SCA", severity, sid)
+			logRemediationTelemetry(agent, "SCA", finding, remediation, severity, sid)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -111,9 +111,9 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		return agenthooks.RejectEdit(reason)
 	}
 	agent := agentToString(ev.Agent)
-	if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked {
+	if blocked, reason, context, severity := asca.ScanFileEdit(ev, telemetryWrapper, agent); blocked {
 		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
+		logRemediationTelemetry(agent, "Asca", reason, context, severity, ev.SessionID)
 		return agenthooks.RejectEditWithContext(reason, context)
 	}
 	if kicsScanner != nil {
@@ -126,7 +126,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		for _, diff := range ev.Changes {
 			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
-				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
+				logRemediationTelemetry(agent, "Oss", finding, remediation, severity, ev.SessionID)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -237,7 +237,7 @@ func RegisterPassThrough() {
 }
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
-func logRemediationTelemetry(agent, engine, severity, sessionID string) {
+func logRemediationTelemetry(agent, engine, finding, remediationContext, severity, sessionID string) {
 	if telemetryWrapper == nil {
 		return
 	}
