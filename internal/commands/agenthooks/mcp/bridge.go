@@ -124,7 +124,7 @@ var (
 		configMu.Lock()
 		defer configMu.Unlock()
 		_ = configuration.LoadConfiguration()
-
+		
 	}
 	invalidateTokenCache   = wrappers.InvalidateAccessTokenCache
 	credentialPollInterval = 3 * time.Second
