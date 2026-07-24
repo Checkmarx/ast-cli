@@ -7,6 +7,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFindProject(t *testing.T) {
@@ -190,7 +191,6 @@ func Test_updateProject(t *testing.T) {
 		projectsWrapper         wrappers.ProjectsWrapper
 		groupsWrapper           wrappers.GroupsWrapper
 		accessManagementWrapper wrappers.AccessManagementWrapper
-		applicationsWrapper     wrappers.ApplicationsWrapper
 		projectName             string
 		applicationID           []string
 		projectTags             string
@@ -319,4 +319,16 @@ func TestGetProjectsCollectionByProjectName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVerifyApplicationAssociationDone_AlreadyAssociated_ReturnsNil(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	err := verifyApplicationAssociationDone(mock.ExistingApplication, "ID-newProject", applicationWrapper)
+	assert.NoError(t, err)
+}
+
+func TestVerifyApplicationAssociationDone_WrapperError_ReturnsError(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	err := verifyApplicationAssociationDone(mock.NoPermissionApp, "any-project-id", applicationWrapper)
+	assert.Error(t, err)
 }

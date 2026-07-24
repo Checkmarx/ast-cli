@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -94,5 +95,178 @@ func Test_AssociateProjectToApplication_ProjectAlreadyAssociated(t *testing.T) {
 	applicationName := "app-1"
 	applicationWrapper := &mock.ApplicationsMockWrapper{}
 	err := associateProjectToApplication(applicationName, projectID, applicationWrapper)
+	assert.NilError(t, err)
+}
+
+func resetFeatureFlagState() {
+	mock.Flags = nil
+	mock.Flag = wrappers.FeatureFlagResponseModel{}
+	mock.FFErr = nil //nolint:gocritic // resetting shared mock package state between tests
+	mock.TenantConfiguration = nil
+	wrappers.ClearCache()
+}
+
+func TestGetApplication_EmptyName_ReturnsNilNil(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	application, err := GetApplication("", applicationWrapper)
+	assert.NilError(t, err)
+	assert.Assert(t, application == nil)
+}
+
+func TestGetApplication_NotFound_ReturnsNilNil(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	application, err := GetApplication("anyApplication", applicationWrapper)
+	assert.NilError(t, err)
+	assert.Assert(t, application == nil)
+}
+
+func TestGetApplication_Found_ReturnsApplication(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	application, err := GetApplication("MOCK", applicationWrapper)
+	assert.NilError(t, err)
+	assert.Assert(t, application != nil)
+	assert.Equal(t, application.Name, "MOCK")
+}
+
+func TestGetApplication_NoExactNameMatch_ReturnsNil(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	application, err := GetApplication("some-other-application-name", applicationWrapper)
+	assert.NilError(t, err)
+	assert.Assert(t, application == nil)
+}
+
+func TestGetApplication_WrapperError_ReturnsError(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	application, err := GetApplication(mock.NoPermissionApp, applicationWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, application == nil)
+}
+
+func TestGetApplicationID_EmptyName_ReturnsNilNil(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	ids, err := getApplicationID("", applicationWrapper)
+	assert.NilError(t, err)
+	assert.Assert(t, ids == nil)
+}
+
+func TestGetApplicationID_Found_ReturnsID(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	ids, err := getApplicationID("MOCK", applicationWrapper)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, ids, []string{"mockID"})
+}
+
+func TestGetApplicationID_NotFound_ReturnsError(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	ids, err := getApplicationID("anyApplication", applicationWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, ids == nil)
+}
+
+func TestGetApplicationID_WrapperError_ReturnsError(t *testing.T) {
+	applicationWrapper := &mock.ApplicationsMockWrapper{}
+	ids, err := getApplicationID(mock.NoPermissionApp, applicationWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, ids == nil)
+}
+
+func TestCheckDirectAssociationEnabled_DirectFlagEnabled_ReturnsTrue(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: true},
+		{Name: wrappers.DaMigrationEnabled, Status: false},
+	}
+	enabled, err := checkDirectAssociationEnabled(&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+	assert.Assert(t, enabled)
+}
+
+func TestCheckDirectAssociationEnabled_BothDisabled_ReturnsFalse(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: false},
+		{Name: wrappers.DaMigrationEnabled, Status: false},
+	}
+	enabled, err := checkDirectAssociationEnabled(&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+	assert.Assert(t, !enabled)
+}
+
+func TestCheckDirectAssociationEnabled_MigrationEnabledWithConfig_ReturnsTrue(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: false},
+		{Name: wrappers.DaMigrationEnabled, Status: true},
+	}
+	enabled, err := checkDirectAssociationEnabled(&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+	assert.Assert(t, enabled)
+}
+
+func TestCheckDirectAssociationEnabled_MigrationEnabledWrapperError_ReturnsError(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: false},
+		{Name: wrappers.DaMigrationEnabled, Status: true},
+	}
+	tenantWrapper := &mock.TenantConfigurationMockWrapper{
+		CustomGetTenantConfiguration: func() (*[]*wrappers.TenantConfigurationResponse, *wrappers.WebError, error) {
+			return nil, nil, errors.New("tenant configuration request failed")
+		},
+	}
+	enabled, err := checkDirectAssociationEnabled(&mock.FeatureFlagsMockWrapper{}, tenantWrapper)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, !enabled)
+}
+
+func TestFindApplicationAndUpdate_EmptyName_ReturnsNil(t *testing.T) {
+	err := findApplicationAndUpdate("", &mock.ApplicationsMockWrapper{}, "project-name", "project-id",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+}
+
+func TestFindApplicationAndUpdate_ApplicationNotFound_ReturnsError(t *testing.T) {
+	err := findApplicationAndUpdate("anyApplication", &mock.ApplicationsMockWrapper{}, "project-name", "project-id",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.Assert(t, err != nil)
+}
+
+func TestFindApplicationAndUpdate_GetApplicationError_ReturnsError(t *testing.T) {
+	err := findApplicationAndUpdate(mock.NoPermissionApp, &mock.ApplicationsMockWrapper{}, "project-name", "project-id",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.Assert(t, err != nil)
+}
+
+func TestFindApplicationAndUpdate_AlreadyAssociated_ReturnsNil(t *testing.T) {
+	err := findApplicationAndUpdate(mock.ExistingApplication, &mock.ApplicationsMockWrapper{}, "project-name", "ID-newProject",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+}
+
+func TestFindApplicationAndUpdate_DirectAssociationEnabled_AssociatesProject(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: true},
+		{Name: wrappers.DaMigrationEnabled, Status: false},
+	}
+	err := findApplicationAndUpdate("MOCK", &mock.ApplicationsMockWrapper{}, "project-name", "brand-new-project-id",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
+	assert.NilError(t, err)
+}
+
+func TestFindApplicationAndUpdate_DirectAssociationDisabled_UpdatesApplication(t *testing.T) {
+	resetFeatureFlagState()
+	defer resetFeatureFlagState()
+	mock.Flags = wrappers.FeatureFlagsResponseModel{
+		{Name: wrappers.DirectAssociationEnabled, Status: false},
+		{Name: wrappers.DaMigrationEnabled, Status: false},
+	}
+	err := findApplicationAndUpdate("MOCK", &mock.ApplicationsMockWrapper{}, "project-name", "brand-new-project-id-2",
+		&mock.FeatureFlagsMockWrapper{}, &mock.TenantConfigurationMockWrapper{})
 	assert.NilError(t, err)
 }
