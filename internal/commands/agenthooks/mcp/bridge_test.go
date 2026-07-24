@@ -585,7 +585,7 @@ func TestAuthedSelfHeal_ReReadsDisk(t *testing.T) {
 	setupBridgeTest(t)
 	const oldKey = "old-key"
 	const newKey = "new-key"
-	viper.Set(commonParams.AstAPIKey, oldKey)            // stale in-memory value
+	viper.Set(commonParams.AstAPIKey, oldKey)                           // stale in-memory value
 	reloadConfig = func() { viper.Set(commonParams.AstAPIKey, newKey) } // disk re-read brings the new token
 
 	var seenAuth []string

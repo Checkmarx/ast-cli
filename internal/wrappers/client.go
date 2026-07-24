@@ -659,9 +659,7 @@ func getClientCredentialsFromCache(tokenExpirySeconds int) string {
 }
 
 // InvalidateAccessTokenCache forces the next GetAccessToken to re-exchange the
-// stored credential instead of returning a cached access token. Used after a fresh
-// `cx auth login` (which may target a different tenant) so the new ast-base-url
-// claim is re-derived. Guarded by the same mutex that protects the cache writes.
+// stored credential (e.g. after a login that may target a different tenant).
 func InvalidateAccessTokenCache() {
 	credentialsMutex.Lock()
 	defer credentialsMutex.Unlock()
@@ -679,10 +677,8 @@ func writeCredentialsToCache(accessToken string) {
 	cachedAccessTime = time.Now()
 }
 
-// SetCachedAccessTokenForTest seeds (token != "") or clears (token == "") the
-// in-memory access-token cache. Exported solely so tests in other packages can
-// control the cache without reaching into unexported state. Guarded by the same
-// mutex that protects the cache writes.
+// SetCachedAccessTokenForTest seeds (or clears, when empty) the access-token
+// cache for tests in other packages.
 func SetCachedAccessTokenForTest(token string) {
 	credentialsMutex.Lock()
 	defer credentialsMutex.Unlock()
@@ -920,12 +916,8 @@ func GetRealmURL() (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey := viper.GetString(commonParams.AstAPIKey)
-	// When override is set (e.g. `cx auth login`, which forces ApikeyOverrideFlag
-	// so the explicit --base-auth-uri/--tenant win), do NOT decode the stored API
-	// key. Decoding it here would surface a stale/malformed cx_apikey as a hard
-	// "failed to resolve IAM realm URL" error before the override branch below can
-	// build the realm from the flags — defeating the very purpose of the override
-	// and making login impossible until the bad key is manually cleared.
+	// On override, skip decoding the stored key so the flags win and a stale key
+	// can't block login with a decode error.
 	if len(apiKey) > 0 && !override {
 		logger.PrintIfVerbose("Base Auth URI - Extract from API KEY")
 		authURI, err = ExtractFromTokenClaims(apiKey, audienceClaimKey)

@@ -444,6 +444,18 @@ func setLogOutputFromFlag(flag, dirPath string) error {
 	return nil
 }
 func CheckPreferredCredentials(cmd *cobra.Command) {
+	// Startup loads stored secrets via viper.Set (override precedence); re-assert
+	// explicit secret flags so a user-passed flag still wins over the stored value.
+	if cmd.Flags().Changed(params.AstAPIKeyFlag) {
+		if v, err := cmd.Flags().GetString(params.AstAPIKeyFlag); err == nil {
+			viper.Set(params.AstAPIKey, v)
+		}
+	}
+	if cmd.Flags().Changed(params.AccessKeySecretFlag) {
+		if v, err := cmd.Flags().GetString(params.AccessKeySecretFlag); err == nil {
+			viper.Set(params.AccessKeySecretConfigKey, v)
+		}
+	}
 	if cmd.Flags().Changed(params.AccessKeyIDFlag) &&
 		cmd.Flags().Changed(params.AccessKeySecretFlag) {
 		viper.Set(params.PreferredCredentialTypeKey, "oauth")

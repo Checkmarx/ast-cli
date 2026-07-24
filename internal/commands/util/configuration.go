@@ -118,8 +118,13 @@ func runSetValue() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		propName, _ := cmd.Flags().GetString(propNameFlag)
 		propValue, _ := cmd.Flags().GetString(propValFlag)
-		if Properties[strings.ToLower(propName)] {
-			configuration.SetConfigProperty(propName, propValue)
+		lowered := strings.ToLower(propName)
+		if Properties[lowered] {
+			if lowered == params.AstAPIKey || lowered == params.AccessKeySecretConfigKey {
+				configuration.SetSecretProperty(lowered, propValue)
+			} else {
+				configuration.SetConfigProperty(propName, propValue)
+			}
 		} else {
 			return errors.Errorf("%s: unknown property or bad value", failedSettingProp)
 		}

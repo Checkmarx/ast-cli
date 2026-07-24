@@ -69,9 +69,9 @@ func PromptConfiguration() {
 		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
 		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
 		if len(accessAPIKey) > 0 {
-			setConfigPropertyQuiet(params.AstAPIKey, accessAPIKey)
+			setSecretQuiet(params.AstAPIKey, accessAPIKey)
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
-			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
+			clearSecretQuiet(params.AccessKeySecretConfigKey)
 		}
 	} else {
 		fmt.Printf("Checkmarx One Client ID [%s]: ", obfuscateString(accessKey))
@@ -80,17 +80,48 @@ func PromptConfiguration() {
 		accessKey = strings.Replace(accessKey, "\r", "", -1)
 		if len(accessKey) > 0 {
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
-			setConfigPropertyQuiet(params.AstAPIKey, "")
+			clearSecretQuiet(params.AstAPIKey)
 		}
 		fmt.Printf("Client Secret [%s]: ", obfuscateString(accessKeySecret))
 		accessKeySecret, _ = reader.ReadString('\n')
 		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
 		accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
 		if len(accessKeySecret) > 0 {
-			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
-			setConfigPropertyQuiet(params.AstAPIKey, "")
+			setSecretQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+			clearSecretQuiet(params.AstAPIKey)
 		}
 	}
+}
+
+// PromptAuthConnection prompts for base-uri, base-auth-uri, and tenant (what cx auth
+// login needs), like cx configure. Blank keeps the default; non-interactive stdin sets nothing.
+func PromptAuthConnection() {
+	reader := bufio.NewReader(os.Stdin)
+	baseURI := viper.GetString(params.BaseURIKey)
+	baseURISrc := baseURI
+	baseAuthURI := viper.GetString(params.BaseAuthURIKey)
+	tenant := viper.GetString(params.TenantKey)
+
+	fmt.Printf("AST Base URI [%s]: ", baseURI)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.BaseURIKey, v)
+	}
+	if baseAuthURI == "" {
+		baseAuthURI = baseURISrc
+	}
+	fmt.Printf("AST Base Auth URI (IAM) [%s]: ", baseAuthURI)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.BaseAuthURIKey, v)
+	}
+	fmt.Printf("AST Tenant [%s]: ", tenant)
+	if v := readLine(reader); v != "" {
+		setConfigPropertyQuiet(params.TenantKey, v)
+	}
+}
+
+func readLine(reader *bufio.Reader) string {
+	s, _ := reader.ReadString('\n')
+	return strings.TrimSpace(s)
 }
 
 func obfuscateString(str string) string {
@@ -120,6 +151,43 @@ func setConfigPropertyQuiet(propName, propValue string) {
 func SetConfigProperty(propName, propValue string) {
 	fmt.Println("Setting property [", propName, "] to value [", propValue, "]")
 	setConfigPropertyQuiet(propName, propValue)
+}
+
+// SecretStore lives here, in the lowest-level config package, so secrets can be
+// routed to the keyring without an import cycle.
+type SecretStore interface {
+	SetSecret(key, value string) error
+	DeleteSecret(key string) error
+}
+
+// Secrets, when non-nil, routes secret keys to the keyring instead of plaintext yaml.
+var Secrets SecretStore
+
+// SetSecretProperty stores a secret config value without echoing it.
+func SetSecretProperty(propName, propValue string) {
+	fmt.Printf("Setting property [ %s ]\n", propName)
+	setSecretQuiet(propName, propValue)
+}
+
+// setSecretQuiet routes to the store (blanking any yaml copy first), falling back
+// to a yaml write on store failure so the credential is never lost.
+func setSecretQuiet(key, value string) {
+	if Secrets != nil {
+		setConfigPropertyQuiet(key, "")
+		if err := Secrets.SetSecret(key, value); err != nil {
+			setConfigPropertyQuiet(key, value)
+		}
+		return
+	}
+	setConfigPropertyQuiet(key, value)
+}
+
+// clearSecretQuiet deletes a secret from the store and blanks its yaml key.
+func clearSecretQuiet(key string) {
+	if Secrets != nil {
+		_ = Secrets.DeleteSecret(key)
+	}
+	setConfigPropertyQuiet(key, "")
 }
 
 func LoadConfiguration() error {
