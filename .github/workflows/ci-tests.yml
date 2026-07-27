@@ -533,42 +533,42 @@ jobs:
       - name: Post-run project cleanup
         run: go test -v github.com/checkmarx/ast-cli/test/cleandata
 
-  # ─────────────────────────────────────────────────────────────────────────────
-  # Job D: Write a GitHub Actions Job Summary when any job in the chain fails.
-  #        No external service required — everything goes to GITHUB_STEP_SUMMARY.
-  # ─────────────────────────────────────────────────────────────────────────────
-  notify-on-failure:
-    name: Notify on Failure
-    needs: [integration-tests, merge-coverage]
-    runs-on: cx-public-ubuntu-x64
-    if: failure()
-    steps:
-      - name: Write failure summary
-        env:
-          INTEGRATION_RESULT: ${{ toJson(needs.integration-tests) }}
-          MERGE_RESULT: ${{ toJson(needs.merge-coverage) }}
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
-          ## AST-CLI Integration Tests — FAILED
+  # # ─────────────────────────────────────────────────────────────────────────────
+  # # Job D: Write a GitHub Actions Job Summary when any job in the chain fails.
+  # #        No external service required — everything goes to GITHUB_STEP_SUMMARY.
+  # # ─────────────────────────────────────────────────────────────────────────────
+  # notify-on-failure:
+  #   name: Notify on Failure
+  #   needs: [integration-tests, merge-coverage]
+  #   runs-on: cx-public-ubuntu-x64
+  #   if: failure()
+  #   steps:
+  #     - name: Write failure summary
+  #       env:
+  #         INTEGRATION_RESULT: ${{ toJson(needs.integration-tests) }}
+  #         MERGE_RESULT: ${{ toJson(needs.merge-coverage) }}
+  #       run: |
+  #         cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
+  #         ## AST-CLI Integration Tests — FAILED
 
-          | Field | Value |
-          |-------|-------|
-          | Run | ${{ github.run_id }} |
-          | Triggered by | ${{ github.event_name }} |
-          | Branch | ${{ github.ref_name }} |
-          | Commit | ${{ github.sha }} |
-          SUMMARY
+  #         | Field | Value |
+  #         |-------|-------|
+  #         | Run | ${{ github.run_id }} |
+  #         | Triggered by | ${{ github.event_name }} |
+  #         | Branch | ${{ github.ref_name }} |
+  #         | Commit | ${{ github.sha }} |
+  #         SUMMARY
 
-          printf '\n### integration-tests result\n```json\n%s\n```\n' "$INTEGRATION_RESULT" \
-            >> "$GITHUB_STEP_SUMMARY"
-          printf '\n### merge-coverage result\n```json\n%s\n```\n' "$MERGE_RESULT" \
-            >> "$GITHUB_STEP_SUMMARY"
+  #         printf '\n### integration-tests result\n```json\n%s\n```\n' "$INTEGRATION_RESULT" \
+  #           >> "$GITHUB_STEP_SUMMARY"
+  #         printf '\n### merge-coverage result\n```json\n%s\n```\n' "$MERGE_RESULT" \
+  #           >> "$GITHUB_STEP_SUMMARY"
 
-          cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
+  #         cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
 
-          ### Next Steps
-          1. Click each failed matrix group in the job list above to inspect its logs.
-          2. Download the `test-logs-<group>` artifact for the full `go test` output.
-          3. Retry a specific group manually via **Run workflow** (`workflow_dispatch`).
-          4. If the failure is consistent, open an issue referencing this run.
-          SUMMARY
+  #         ### Next Steps
+  #         1. Click each failed matrix group in the job list above to inspect its logs.
+  #         2. Download the `test-logs-<group>` artifact for the full `go test` output.
+  #         3. Retry a specific group manually via **Run workflow** (`workflow_dispatch`).
+  #         4. If the failure is consistent, open an issue referencing this run.
+  #         SUMMARY
