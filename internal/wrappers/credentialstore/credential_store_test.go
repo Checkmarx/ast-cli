@@ -7,6 +7,11 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+const (
+	fromPrimary  = "from-primary"
+	fromFallback = "from-fallback"
+)
+
 // fakeStore is an in-memory CredentialStore with an optional forced error.
 type fakeStore struct {
 	m       map[string]string
@@ -39,11 +44,11 @@ func (f *fakeStore) DeleteSecret(key string) error {
 func TestChain_GetPrefersPrimary(t *testing.T) {
 	primary := newFakeStore()
 	fallback := newFakeStore()
-	primary.m["k"] = "from-primary"
-	fallback.m["k"] = "from-fallback"
+	primary.m["k"] = fromPrimary
+	fallback.m["k"] = fromFallback
 
 	got, err := NewChainStore(primary, fallback).GetSecret("k")
-	if err != nil || got != "from-primary" {
+	if err != nil || got != fromPrimary {
 		t.Fatalf("got %q err %v, want from-primary", got, err)
 	}
 }
@@ -51,10 +56,10 @@ func TestChain_GetPrefersPrimary(t *testing.T) {
 func TestChain_GetFallsBackWhenPrimaryEmpty(t *testing.T) {
 	primary := newFakeStore()
 	fallback := newFakeStore()
-	fallback.m["k"] = "from-fallback"
+	fallback.m["k"] = fromFallback
 
 	got, _ := NewChainStore(primary, fallback).GetSecret("k")
-	if got != "from-fallback" {
+	if got != fromFallback {
 		t.Fatalf("got %q, want from-fallback", got)
 	}
 }
@@ -62,10 +67,10 @@ func TestChain_GetFallsBackWhenPrimaryEmpty(t *testing.T) {
 func TestChain_GetFallsBackWhenPrimaryErrors(t *testing.T) {
 	primary := &fakeStore{m: map[string]string{}, failGet: true}
 	fallback := newFakeStore()
-	fallback.m["k"] = "from-fallback"
+	fallback.m["k"] = fromFallback
 
 	got, err := NewChainStore(primary, fallback).GetSecret("k")
-	if err != nil || got != "from-fallback" {
+	if err != nil || got != fromFallback {
 		t.Fatalf("got %q err %v, want from-fallback", got, err)
 	}
 }
