@@ -7,6 +7,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	storedAPIKey = "stored-apikey"
+	storedSecret = "stored-secret"
+	fromKeyring  = "from-keyring"
+)
+
 func resetViperSecrets() {
 	viper.Set(params.AstAPIKey, "")
 	viper.Set(params.AccessKeySecretConfigKey, "")
@@ -25,16 +31,16 @@ func TestLoadStoredSecrets_CopiesIntoViper(t *testing.T) {
 	t.Setenv(params.AccessKeySecretEnv, "")
 
 	store := newFakeStore()
-	store.m[params.AstAPIKey] = "stored-apikey"
-	store.m[params.AccessKeySecretConfigKey] = "stored-secret"
+	store.m[params.AstAPIKey] = storedAPIKey
+	store.m[params.AccessKeySecretConfigKey] = storedSecret
 	swapDefault(t, store)
 
 	LoadStoredSecrets()
 
-	if got := viper.GetString(params.AstAPIKey); got != "stored-apikey" {
+	if got := viper.GetString(params.AstAPIKey); got != storedAPIKey {
 		t.Errorf("apikey: got %q", got)
 	}
-	if got := viper.GetString(params.AccessKeySecretConfigKey); got != "stored-secret" {
+	if got := viper.GetString(params.AccessKeySecretConfigKey); got != storedSecret {
 		t.Errorf("secret: got %q", got)
 	}
 }
@@ -44,12 +50,12 @@ func TestLoadStoredSecrets_EnvWins(t *testing.T) {
 	t.Setenv(params.AstAPIKeyEnv, "env-value")
 
 	store := newFakeStore()
-	store.m[params.AstAPIKey] = "stored-apikey"
+	store.m[params.AstAPIKey] = storedAPIKey
 	swapDefault(t, store)
 
 	LoadStoredSecrets()
 
-	if got := viper.GetString(params.AstAPIKey); got == "stored-apikey" {
+	if got := viper.GetString(params.AstAPIKey); got == storedAPIKey {
 		t.Errorf("env should win, stored value was copied: %q", got)
 	}
 }
@@ -61,13 +67,13 @@ func TestLoadStoredSecrets_KeyringWinsOverYaml(t *testing.T) {
 
 	keyringLike := newFakeStore()
 	yamlLike := newFakeStore()
-	keyringLike.m[params.AstAPIKey] = "from-keyring"
+	keyringLike.m[params.AstAPIKey] = fromKeyring
 	yamlLike.m[params.AstAPIKey] = "from-yaml"
 	swapDefault(t, NewChainStore(keyringLike, yamlLike))
 
 	LoadStoredSecrets()
 
-	if got := viper.GetString(params.AstAPIKey); got != "from-keyring" {
+	if got := viper.GetString(params.AstAPIKey); got != fromKeyring {
 		t.Errorf("keyring should win, got %q", got)
 	}
 }

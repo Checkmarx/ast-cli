@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_call:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -255,8 +259,10 @@ jobs:
 
       - name: Install pre-commit
         if: matrix.needs_precommit == 'true'
+        env:
+          ECHO_LIBRARIES_ACCESS_KEY: ${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}
         run: |
-           pip config set global.index-url https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@pypi.echohq.com/simple
+           pip config set global.index-url "https://:${ECHO_LIBRARIES_ACCESS_KEY}@pypi.echohq.com/simple"
            pip index versions pre-commit
            pip install pre-commit==4.6.0
 
@@ -282,17 +288,23 @@ jobs:
 
       - name: Run integration tests (${{ matrix.label }})
         if: matrix.name != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true'
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_LABEL: ${{ matrix.label }}
+          MATRIX_RUN_PATTERN: ${{ matrix.run_pattern }}
+          MATRIX_TIMEOUT: ${{ matrix.timeout }}
+          UNCOVERED_TESTS: ${{ needs.validate-test-coverage.outputs.uncovered_tests }}
         run: |
           set -euo pipefail
 
           # Resolve the -run pattern: catch-all uses Job A output; named groups use matrix field.
-          if [ "${{ matrix.name }}" = "uncovered" ]; then
-            RUN_PATTERN="${{ needs.validate-test-coverage.outputs.uncovered_tests }}"
+          if [ "$MATRIX_NAME" = "uncovered" ]; then
+            RUN_PATTERN="$UNCOVERED_TESTS"
           else
-            RUN_PATTERN="${{ matrix.run_pattern }}"
+            RUN_PATTERN="$MATRIX_RUN_PATTERN"
           fi
 
-          COVER_FILE="cover-${{ matrix.name }}.out"
+          COVER_FILE="cover-${MATRIX_NAME}.out"
 
           run_tests() {
             local pattern="$1" outfile="$2" logfile="$3" timeout_val="$4"
@@ -300,23 +312,23 @@ jobs:
               -tags integration \
               -v \
               -timeout "${timeout_val}" \
-              -coverpkg "${{ env.GO_COVERAGE_PKGS }}" \
+              -coverpkg "$GO_COVERAGE_PKGS" \
               -coverprofile "${outfile}" \
               -run "${pattern}" \
               github.com/checkmarx/ast-cli/test/integration 2>&1 | tee "${logfile}" || true
           }
 
-          echo "::group::Attempt 1 — ${{ matrix.label }}"
-          run_tests "$RUN_PATTERN" "$COVER_FILE" "test_output.log" "${{ matrix.timeout }}"
+          echo "::group::Attempt 1 — ${MATRIX_LABEL}"
+          run_tests "$RUN_PATTERN" "$COVER_FILE" "test_output.log" "$MATRIX_TIMEOUT"
           echo "::endgroup::"
 
           FAILED=$(grep -E "^--- FAIL: " test_output.log | awk '{print $3}' | paste -sd '|' - || true)
 
           # ── Retry 1 ──────────────────────────────────────────────────────────
           if [ -n "$FAILED" ]; then
-            echo "::warning::Retry 1 for ${{ matrix.label }}: $FAILED"
-            COVER_R1="cover-${{ matrix.name }}-r1.out"
-            echo "::group::Attempt 2 — ${{ matrix.label }}"
+            echo "::warning::Retry 1 for ${MATRIX_LABEL}: $FAILED"
+            COVER_R1="cover-${MATRIX_NAME}-r1.out"
+            echo "::group::Attempt 2 — ${MATRIX_LABEL}"
             run_tests "$FAILED" "$COVER_R1" "retry1_output.log" "30m"
             echo "::endgroup::"
 
@@ -330,9 +342,9 @@ jobs:
 
             # ── Retry 2 ────────────────────────────────────────────────────────
             if [ -n "$FAILED2" ]; then
-              echo "::warning::Retry 2 for ${{ matrix.label }}: $FAILED2"
-              COVER_R2="cover-${{ matrix.name }}-r2.out"
-              echo "::group::Attempt 3 — ${{ matrix.label }}"
+              echo "::warning::Retry 2 for ${MATRIX_LABEL}: $FAILED2"
+              COVER_R2="cover-${MATRIX_NAME}-r2.out"
+              echo "::group::Attempt 3 — ${MATRIX_LABEL}"
               run_tests "$FAILED2" "$COVER_R2" "retry2_output.log" "30m"
               echo "::endgroup::"
 
@@ -344,13 +356,13 @@ jobs:
 
               FINAL_FAILED=$(grep -E "^--- FAIL: " retry2_output.log | awk '{print $3}' || true)
               if [ -n "$FINAL_FAILED" ]; then
-                echo "::error::Tests still failing after 2 retries in ${{ matrix.label }}: $FINAL_FAILED"
+                echo "::error::Tests still failing after 2 retries in ${MATRIX_LABEL}: $FINAL_FAILED"
                 exit 1
               fi
             fi
           fi
 
-          echo "All ${{ matrix.label }} tests passed."
+          echo "All ${MATRIX_LABEL} tests passed."
 
       - name: Upload coverage artifact
         if: always() && (matrix.name != 'uncovered' || needs.validate-test-coverage.outputs.has_uncovered == 'true')

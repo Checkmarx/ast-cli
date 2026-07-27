@@ -160,7 +160,7 @@ type SecretStore interface {
 	DeleteSecret(key string) error
 }
 
-// Secrets, when non-nil, routes secret keys to the keyring instead of plaintext yaml.
+// Secrets routes secret keys to the keyring instead of plaintext yaml when non-nil.
 var Secrets SecretStore
 
 // SetSecretProperty stores a secret config value without echoing it.

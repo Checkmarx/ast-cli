@@ -19,4 +19,5 @@ permissions:
 jobs:
   integration-tests: # zizmor: ignore[anonymous-definition]
     uses: ./.github/workflows/ci-tests.yml
-    secrets: inherit
+    # ci-tests.yml requires ~20 CX/SCM secrets; it's a same-repo reusable workflow, not a fork/third-party target.
+    secrets: inherit # zizmor: ignore[secrets-inherit]

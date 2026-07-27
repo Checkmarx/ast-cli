@@ -55,7 +55,7 @@ func TestCheckBashInstall_MaliciousMentionsMCP(t *testing.T) {
 	if !strings.Contains(remediation, "Dev Assist") {
 		t.Errorf("expected remediation to mention Dev Assist fallback, got %q", remediation)
 	}
-	if severity != "Malicious" {
+	if severity != statusMalicious {
 		t.Errorf("expected severity Malicious, got %q", severity)
 	}
 }
@@ -176,7 +176,7 @@ func TestCheckManifestEdit_NewMaliciousAddition(t *testing.T) {
 	if !strings.Contains(remediation, "mcp__Checkmarx__packageRemediation") {
 		t.Errorf("expected remediation to reference MCP tool, got %q", remediation)
 	}
-	if severity != "Malicious" {
+	if severity != statusMalicious {
 		t.Errorf("expected severity Malicious, got %q", severity)
 	}
 }

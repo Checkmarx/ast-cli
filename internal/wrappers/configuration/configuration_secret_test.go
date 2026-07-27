@@ -15,6 +15,8 @@ type fakeSecretStore struct {
 	failSet bool
 }
 
+const testTokenValue = "tok"
+
 func newFakeSecretStore() *fakeSecretStore { return &fakeSecretStore{m: map[string]string{}} }
 
 func (f *fakeSecretStore) SetSecret(key, value string) error {
@@ -43,9 +45,9 @@ func TestSetSecretQuiet_RoutesToStore(t *testing.T) {
 	store := newFakeSecretStore()
 	Secrets = store
 
-	setSecretQuiet(params.AstAPIKey, "tok")
+	setSecretQuiet(params.AstAPIKey, testTokenValue)
 
-	if store.m[params.AstAPIKey] != "tok" {
+	if store.m[params.AstAPIKey] != testTokenValue {
 		t.Errorf("store missing value: %q", store.m[params.AstAPIKey])
 	}
 	if got := viper.GetString(params.AstAPIKey); got != "" {
@@ -57,9 +59,9 @@ func TestSetSecretQuiet_FallsBackToYamlOnError(t *testing.T) {
 	sandboxConfig(t)
 	Secrets = &fakeSecretStore{m: map[string]string{}, failSet: true}
 
-	setSecretQuiet(params.AstAPIKey, "tok")
+	setSecretQuiet(params.AstAPIKey, testTokenValue)
 
-	if got := viper.GetString(params.AstAPIKey); got != "tok" {
+	if got := viper.GetString(params.AstAPIKey); got != testTokenValue {
 		t.Errorf("expected yaml fallback write, got %q", got)
 	}
 }
@@ -67,7 +69,7 @@ func TestSetSecretQuiet_FallsBackToYamlOnError(t *testing.T) {
 func TestClearSecretQuiet_DeletesAndBlanks(t *testing.T) {
 	sandboxConfig(t)
 	store := newFakeSecretStore()
-	store.m[params.AstAPIKey] = "tok"
+	store.m[params.AstAPIKey] = testTokenValue
 	Secrets = store
 
 	clearSecretQuiet(params.AstAPIKey)
@@ -84,9 +86,9 @@ func TestSetSecretQuiet_NilSecretsWritesYaml(t *testing.T) {
 	sandboxConfig(t)
 	Secrets = nil
 
-	setSecretQuiet(params.AstAPIKey, "tok")
+	setSecretQuiet(params.AstAPIKey, testTokenValue)
 
-	if got := viper.GetString(params.AstAPIKey); got != "tok" {
+	if got := viper.GetString(params.AstAPIKey); got != testTokenValue {
 		t.Errorf("expected plain yaml write, got %q", got)
 	}
 }

@@ -57,12 +57,15 @@ jobs:
       - name: Publish job summary
         if: always()
         shell: bash
+        env:
+          COVERAGE: ${{ steps.coverage.outputs.coverage }}
+          TEST_EXIT_CODE: ${{ steps.run_tests.outputs.test_exit_code }}
         run: |
           python3 ./internal/commands/.scripts/print_test_summary.py \
             junit.xml \
-            "${{ steps.coverage.outputs.coverage }}" \
-            "${{ env.MIN_COVERAGE }}" \
-            "${{ steps.run_tests.outputs.test_exit_code }}" \
+            "$COVERAGE" \
+            "$MIN_COVERAGE" \
+            "$TEST_EXIT_CODE" \
             >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage report
@@ -86,16 +89,18 @@ jobs:
       - name: Enforce test and coverage gate
         if: always()
         shell: bash
+        env:
+          TEST_EXIT_CODE: ${{ steps.run_tests.outputs.test_exit_code }}
+          CODE_COV: ${{ steps.coverage.outputs.coverage }}
         run: |
           FAILED=0
 
-          if [ "${{ steps.run_tests.outputs.test_exit_code }}" != "0" ]; then
+          if [ "$TEST_EXIT_CODE" != "0" ]; then
             echo "::error::Unit tests failed. See the job summary above for the failing test cases."
             FAILED=1
           fi
 
-          CODE_COV="${{ steps.coverage.outputs.coverage }}"
-          EXPECTED_CODE_COV="${{ env.MIN_COVERAGE }}"
+          EXPECTED_CODE_COV="$MIN_COVERAGE"
           if awk -v cov="$CODE_COV" -v min="$EXPECTED_CODE_COV" 'BEGIN{ exit !(cov < min) }'; then
             echo "::error::Code coverage is too low. Coverage percentage is: ${CODE_COV}% (required >= ${EXPECTED_CODE_COV}%)"
             FAILED=1

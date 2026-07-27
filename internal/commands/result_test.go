@@ -19,7 +19,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/pkg/errors"
-	assertion "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gotest.tools/assert"
@@ -997,7 +996,14 @@ func assertURINonEmpty(t *testing.T) {
 	var scanResults *wrappers.SarifResultsCollection
 	err = json.Unmarshal(reportBytes, &scanResults)
 	assert.NilError(t, err, "Error unmarshalling SARIF results")
-	assertion.Contains(t, scanResults.Runs[0].Results[10].Locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file")
+
+	for i := range scanResults.Runs[0].Results {
+		locations := scanResults.Runs[0].Results[i].Locations
+		if len(locations) > 0 && strings.Contains(locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file") {
+			return
+		}
+	}
+	assert.Assert(t, false, "expected a SARIF result with the no-associated-file placeholder URI, found none")
 }
 
 func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {

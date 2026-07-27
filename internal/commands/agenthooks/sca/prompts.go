@@ -111,7 +111,7 @@ func optionalFlagsFragment(agent, sessionID string) string {
 	if sessionID != "" {
 		pairs += ";aiAgentSessionId=" + sessionID
 	}
-	return fmt.Sprintf(" --optional-flags \"%s\"", pairs)
+	return fmt.Sprintf(" --optional-flags %q", pairs)
 }
 
 func cxExecutable() string {
