@@ -70,7 +70,7 @@ permissions: {}
 jobs:
   build:
     name: Build, Sign & Publish Release
-    runs-on: cx-public-macos-15-x64
+    runs-on: macos-15-intel
     permissions:
       id-token: write # required for AWS OIDC federation via configure-aws-credentials (HSM signing)
       contents: write # required for `gh release create`/`gh release delete` to manage GitHub Releases
@@ -84,7 +84,7 @@ jobs:
       COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
       - name: Install Harden Runner
-        uses: checkmarx/harden-runner-action@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: checkmarx/harden-runner-action@9af89fc71515a100421586dfdb3dc9c984fbf411 #v2.19.4
         with:
           use-policy-store: true
           api-key: ${{ secrets.STEP_SECURITY_API_KEY }}
@@ -245,14 +245,12 @@ jobs:
   #    jira_product_name: ASTCLI
   #  secrets: inherit
 
-  # dispatch_auto_release:
-  #   name: Update Plugins With new Cli Version
-  #   if: inputs.dev == false && 1 == 0
-  #   #needs: notify
-  #   permissions:
-  #     contents: read # dispatch-workflow.yml itself declares `permissions: contents: read`
-  #   uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@d0ad5e1c4cf1edacf4d91c250c2b7a4a5478baab # main
-  #   with:
-  #     cli_version: ${{ inputs.tag }}
-  #   # dispatch-workflow.yml is a trusted first-party Checkmarx org workflow, not a fork/third-party target.
-  #   secrets: inherit # zizmor: ignore[secrets-inherit]
+  dispatch_auto_release:
+    name: Update Plugins With new Cli Version
+    if: inputs.dev == false && 1 == 0
+    #needs: notify
+    uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@d0ad5e1c4cf1edacf4d91c250c2b7a4a5478baab # main
+    with:
+      cli_version: ${{ inputs.tag }}
+    # dispatch-workflow.yml is a trusted first-party Checkmarx org workflow, not a fork/third-party target.
+    secrets: inherit # zizmor: ignore[secrets-inherit]

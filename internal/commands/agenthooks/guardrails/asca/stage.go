@@ -13,6 +13,12 @@ import (
 // noop is a no-op cleanup func returned on error paths so callers can always defer cleanup().
 var noop = func() {}
 
+// maxASCIICodePoint is the highest code point representable in 7-bit ASCII.
+const maxASCIICodePoint = 127
+
+// stagedFileMode restricts staged scan files to owner read/write only.
+const stagedFileMode = 0o600
+
 // asciiSafe replaces every non-ASCII rune with a space so ASCA's language
 // parsers can tokenise the file. Non-ASCII chars appear in comments or string
 // literals but never in code constructs that ASCA analyses for vulnerabilities;
@@ -21,7 +27,7 @@ func asciiSafe(s string) string {
 	if utf8.ValidString(s) {
 		allASCII := true
 		for _, r := range s {
-			if r > 127 {
+			if r > maxASCIICodePoint {
 				allASCII = false
 				break
 			}
@@ -33,7 +39,7 @@ func asciiSafe(s string) string {
 	var b strings.Builder
 	b.Grow(len(s))
 	for _, r := range s {
-		if r > 127 {
+		if r > maxASCIICodePoint {
 			b.WriteByte(' ')
 		} else {
 			b.WriteRune(r)
@@ -77,7 +83,7 @@ func stageForScan(originalPath, content, sessionID string, agent agenthooks.Agen
 	if agent == agenthooks.AgentCopilotCLI {
 		toWrite = asciiSafe(content)
 	}
-	if err := os.WriteFile(staged, []byte(toWrite), 0o600); err != nil {
+	if err := os.WriteFile(staged, []byte(toWrite), stagedFileMode); err != nil {
 		_ = os.RemoveAll(tempDir)
 		return "", noop, err
 	}
