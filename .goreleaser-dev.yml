@@ -94,6 +94,7 @@ blobs:
     ids:
       - cx
       - cx-mac-universal
+    disable: true
 
 changelog:
   use: github-native

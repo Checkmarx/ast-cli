@@ -65,7 +65,7 @@ internal/
     asca/                     AI-powered code analysis subcommand
     dast/                     DAST environment management
     util/                     Shared utilities, printer, user count
-    .scripts/                 CI test runner scripts (up.sh, integration_up.sh)
+    .scripts/                 CI test runner scripts (up.sh, integration_up.sh, print_test_summary.py)
   services/                   Business logic (projects, applications, groups, export)
   wrappers/                   HTTP API abstractions (30+ wrapper interfaces)
     mock/                     Mock implementations for unit testing
@@ -207,7 +207,7 @@ Integration tests require these environment variables (set via `.env` file or ID
 | `PR_GITHUB_TOKEN`, `PR_GITLAB_TOKEN`, `AZURE_TOKEN` | PR decoration tests |
 | `PROXY_HOST`, `PROXY_PORT`, `PROXY_USERNAME`, `PROXY_PASSWORD` | Proxy tests |
 
-No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lines 55-93) for the full list of required secrets.
+No `.env.example` file exists — refer to the `integration-tests` job's `env:` block in `.github/workflows/ci-tests.yml` (around lines 199-237) for the full list of required secrets.
 
 ## Coding Standards
 
@@ -231,15 +231,15 @@ No `.env.example` file exists — refer to `.github/workflows/ci-tests.yml` (lin
 - Exit codes are engine-specific (SAST=2, SCA=3, KICS=4, API Security=5, multiple=1) — do not change these as CI/CD pipelines and downstream plugins depend on them
 - The `depguard` linter will reject any import not on the allowlist — add new external packages to `.golangci.yml` before using them
 - **Do not break CLI flag names, output formats, or exit codes without coordinating with the plugin ecosystem** — Java wrapper, JavaScript wrapper, and all IDE/CI plugins parse CLI output and depend on stable interfaces
-- Dependabot PRs are auto-merged after CI passes — do not add manual approval gates to dependency update workflows
+- Dependabot is not currently configured for this repo (no `.github/dependabot.yml`, no auto-merge workflow) — dependency updates are manual
 
 ## Testing Strategy
 
 ### Coverage Thresholds
 
-- **Unit tests:** **77.7%** minimum (CI-enforced)
-- **Integration tests:** **75%** minimum (CI-enforced)
-- **CI pipeline order:** Unit tests → Integration tests → Lint (`golangci-lint`) → Vulnerability scan (`govulncheck`) → Docker image scan (Trivy)
+- **Unit tests:** **85%** minimum (CI-enforced in `unit-tests.yml`)
+- **Integration tests:** **75%** minimum (CI-enforced in `ci-tests.yml`)
+- **CI checks on PR:** Unit tests, integration tests, lint, vulnerability scan, and Docker image scan each run as independent workflows (see CI/CD Workflows table below) triggered in parallel on `pull_request` — there is no sequential ordering/dependency between them
 
 ### Test File Creation Rules
 
@@ -299,6 +299,8 @@ func TestScanCreate(t *testing.T) {
 
 **Flaky test handling:** Integration test CI script (`internal/commands/.scripts/integration_up.sh`) includes automatic retry logic for flaky tests and uses `gocovmerge` to merge coverage profiles from retried runs.
 
+**Unit test CI reporting:** `internal/commands/.scripts/up.sh` runs unit tests via `gotestsum` (writes `junit.xml`), and `unit-tests.yml` renders a GitHub Actions job summary — pass/fail counts, coverage %, and a collapsible per-test failure reason — via `internal/commands/.scripts/print_test_summary.py`.
+
 
 ## External Integrations
 
@@ -340,17 +342,19 @@ func TestScanCreate(t *testing.T) {
 
 | Workflow | Purpose |
 |---|---|
-| `ci-tests.yml` | Unit tests, integration tests, lint, govulncheck, Trivy |
+| `unit-tests.yml` | Unit tests via `gotestsum`; job summary with coverage % and per-test failure reasons; 85% coverage gate |
+| `ci-tests.yml` | Full parallel integration-test matrix (13 groups); triggers on `pull_request` and is also reused via `workflow_call` by `nightly-parallel.yml`; 75% coverage gate |
+| `nightly-parallel.yml` | Calls `ci-tests.yml`'s integration matrix on a nightly schedule (plus manual `workflow_dispatch`) |
+| `lint.yml` | `golangci-lint` |
+| `govulncheck.yml` | Go vulnerability scan (`govulncheck`) |
+| `docker-image-scan.yml` | Docker image build + Trivy scan |
+| `checkmarx-one-scan.yml` | Checkmarx One SAST/SCA/IaC scan on PRs, pushes to `main`, and a daily schedule |
+| `trivy-cache.yml` | Refreshes the cached Trivy vulnerability DB daily |
+| `pr-linter.yml` | Enforces PR title (JIRA ID) and branch naming conventions |
+| `issue_automation.yml` | Creates/closes JIRA tickets from GitHub issue open/close events |
 | `release.yml` | Full build, sign, publish, notify pipeline |
-| `issue_automation.yml` | Auto-label and assign issues |
-| `pr-add-reviewers.yml` | Auto-assign reviewers to PRs |
-| `pr-label.yml` | Auto-label PRs |
-| `pr-linter.yml` | Enforce PR guidelines |
-| `checkmarx-one-scan.yml` | Security scan on PRs |
-| `trivy-cache.yml` | Keep Trivy vulnerability definitions current |
-| `ai-code-review.yml` | AI-powered code review on PRs |
-| `dependabot-auto-merge.yml` | Auto-merge Dependabot PRs after CI passes |
-| `nightly-parallel.yml` | Nightly parallel test runs |
+
+Note: `pr-label.yml`, `pr-add-reviewers.yml`, `ai-code-review.yml`, and `dependabot-auto-merge.yml` (along with Dependabot config) have all been removed from this repo; do not assume they exist.
 
 ### JIRA Integration
 
@@ -490,11 +494,6 @@ cx_proxy_ntlm_domain: dm.cx
 ### PR Requirements — Team Members
 
 - Must have a valid JIRA ID in the PR title (e.g., `AST-3432`) — enables JIRA automation and traceability
-- CI workflow must pass: **unit-tests**, **integration-tests**, **lint**, **cx-scan**
+- Required checks (job names, each now defined in its own workflow file — see CI/CD Workflows table): **unit-tests** (`unit-tests.yml`), **integration-tests** (`ci-tests.yml`), **lint** (`lint.yml`), **cx-scan** (`checkmarx-one-scan.yml`)
 - Review by at least one team member
 - Use the PR template (`.github/PULL_REQUEST_TEMPLATE.md`) — includes sections for changes, related issues, testing, and checklist
-
-### PR Requirements — Dependabot
-
-- CI workflow must pass: **unit-tests**, **integration-tests**, **lint**, **cx-scan**
-- Auto-merged after CI passes (no manual review required)

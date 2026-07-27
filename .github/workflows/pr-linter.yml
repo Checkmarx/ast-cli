@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   lint:
+    name: Validate PR Title and Branch Name
     runs-on: cx-public-ubuntu-x64
     steps:
       - name: Check PR Title and Branch

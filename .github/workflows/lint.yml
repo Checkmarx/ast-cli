@@ -1,0 +1,34 @@
+name: Lint
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    permissions:
+      contents: read  # for actions/checkout to fetch code
+      pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
+    name: Lint (golangci-lint)
+    runs-on: cx-public-ubuntu-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Go version
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+      - run: go version
+      - run: go mod tidy
+      - name: golangci-lint
+        uses: step-security/golangci-lint-action@1797facf9ea427614d729a4e9cab0fae1a7852d9 # v9.2.0
+        with:
+          skip-pkg-cache: true
+          version: v2.11.3
+          args: -c .golangci.yml
+            --timeout 10m
+          only-new-issues: true
