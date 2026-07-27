@@ -1375,7 +1375,6 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
-	t.Skip("Skip this test cases due to context deadline exceeded")
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
 	err, _ := executeCommand(t, args...)
@@ -2950,58 +2949,4 @@ func TestScanCreateIncludeFilterIsCaseInsensitive(t *testing.T) {
 		strings.Contains(logText, "Included: ") && strings.Contains(logText, "broken_link.txt"),
 		"uppercase --file-include pattern *.TXT should still match lowercase .txt files on disk",
 	)
-}
-
-// Directory source with --skip-default-filter should scan successfully
-func TestScanCreateSkipDefaultFilterDirectory(t *testing.T) {
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), getProjectNameForScanTests(),
-		flag(params.SourcesFlag), Dir,
-		flag(params.ScanTypes), params.SastType,
-		flag(params.SkipDefaultFilterFlag),
-		flag(params.BranchFlag), "dummy_branch",
-		flag(params.DebugFlag),
-	}
-
-	// Capture log output to assert the skip-default-filter code path actually ran
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
-
-	executeCmdWithTimeOutNilAssertion(t, "Skip default filter scan should complete", timeout, args...)
-
-	assert.Assert(t, strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base exclude file filter."),
-		"expected skip-default-filter log line to be printed")
-	assert.Assert(t, strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base include file filter."),
-		"expected skip-default-filter log line to be printed")
-}
-
-// Zip source with --skip-default-filter should scan successfully
-func TestScanCreateSkipDefaultFilterZip(t *testing.T) {
-	args := []string{
-		"scan", "create",
-		flag(params.ProjectName), getProjectNameForScanTests(),
-		flag(params.SourcesFlag), Zip,
-		flag(params.ScanTypes), params.SastType,
-		flag(params.SkipDefaultFilterFlag),
-		flag(params.BranchFlag), "dummy_branch",
-		flag(params.DebugFlag),
-	}
-
-	// Capture log output to assert the skip-default-filter code path actually ran
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
-
-	executeCmdWithTimeOutNilAssertion(t, "Skip default filter zip scan should complete", timeout, args...)
-
-	assert.Assert(t, !strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base exclude file filter."),
-		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
-	assert.Assert(t, !strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base include file filter."),
-		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
 }

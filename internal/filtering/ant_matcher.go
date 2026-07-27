@@ -14,14 +14,14 @@ import (
 //
 // Patterns use the Ant glob dialect as implemented by bmatcuk/doublestar:
 //
-//   - "*" matches any sequence of non-separator characters within one path
-//     segment ("*.go" matches "main.go" but not "a/b.go")
-//   - "**" matches any sequence of characters including path separators,
-//     including zero segments ("src/**" matches "src" and everything under
-//     it; "**/*.go" matches any .go file at any depth)
-//   - "?" matches exactly one non-separator character
-//   - "[abc]" is a character class
-//   - "{a,b}" is an alternation ("*.{js,ts}" matches .js and .ts files)
+//	*        any sequence of non-separator characters within one path segment
+//	         ("*.go" matches "main.go" but not "a/b.go")
+//	**       any sequence of characters including path separators, including
+//	         zero segments ("src/**" matches "src" and everything under it;
+//	         "**/*.go" matches any .go file at any depth)
+//	?        exactly one non-separator character
+//	[abc]    character class
+//	{a,b}    alternation ("*.{js,ts}" matches .js and .ts files)
 //
 // # Include / exclude semantics (Ant convention)
 //

@@ -927,7 +927,6 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.NoScanFlag, false, "Prevents CxOne scan from running after SBOM is generated locally. Relevant only when --sbom-first is submitted under --sca-resolver-params. Submitting this flag without --sbom-first causes an error.")
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
-	createScanCmd.PersistentFlags().Bool(commonParams.SkipDefaultFilterFlag, false, commonParams.SkipDefaultFilterFlagUsage)
 
 	return createScanCmd
 }
@@ -1644,7 +1643,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter bool) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1654,7 +1653,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	zipWriter := zip.NewWriter(outputFile)
 
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1672,7 +1671,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
 		if err != nil {
 			return "", err
 		}
@@ -1753,19 +1752,11 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 	return empty, err
 }
 
-func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
-	if skipDefaultFilter {
-		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
-		return buildFilters([]string{}, userIncludeFilter)
-	}
+func getIncludeFilters(userIncludeFilter string) []string {
 	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
 }
 
-func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
-	if skipDefaultFilter {
-		logger.PrintIfVerbose("--skip-default-filter set: skipping default base exclude file filter.")
-		return buildFilters([]string{}, userExcludeFilter)
-	}
+func getExcludeFilters(userExcludeFilter string) []string {
 	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
 }
 
@@ -2134,7 +2125,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
-	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
@@ -2200,11 +2190,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	// containerScanTriggered must stay in this condition: without it, a container scan
-	// run with --containers-local-resolution and --skip-default-filter (and no
-	// --file-filter/--file-include) would never unzip the zip source, so local container
-	// resolution would never run. Keeping it here ensures the zip is still unzipped in that case.
-	unzip := ((sourceDirFilter != "" || userIncludeFilter != "" || len(antPatterns) > 0) || containerScanTriggered || !skipDefaultFilter) && userProvidedZip
+	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0 || len(antPatterns) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -2298,7 +2284,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		} else {
 			if !isSbom {
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter)
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher)
 			}
 
 			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
@@ -2668,23 +2654,6 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
-
-		// For --no-scan (with --sbom-first), only the local SBOM generation is required.
-		// Build the scan handler directly instead of calling createScanModel so that no
-		// empty project is created on the server before we skip the scan submission.
-		// This is handled before the policy/timeout/threshold checks below, since none of
-		// those apply when the scan is not submitted (and it avoids an unnecessary policy
-		// permission API call for the no-scan case).
-		if noScan {
-			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
-			defer cleanUpTempZip(zipFilePath)
-			if handlerErr != nil {
-				return errors.Errorf("%s", handlerErr)
-			}
-			logger.Print("--no-scan set: skipping scan submission.")
-			return nil
-		}
-
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 
 		// Check if the user has permission to override policy management if --ignore-policy is set
@@ -2725,6 +2694,10 @@ func runCreateScanCommand(
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
+		}
+		if noScan {
+			logger.Print("--no-scan set: skipping scan submission.")
+			return nil
 		}
 
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
