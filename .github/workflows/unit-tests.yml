@@ -15,8 +15,7 @@ env:
   MIN_COVERAGE: "85"
 
 jobs:
-  unit-tests:
-    name: Unit Tests
+  unit-tests: # zizmor: ignore[anonymous-definition]
     runs-on: cx-public-ubuntu-x64
     steps:
       - name: Checkout the repository

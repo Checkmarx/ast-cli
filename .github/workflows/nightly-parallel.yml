@@ -17,7 +17,6 @@ permissions:
   contents: read
 
 jobs:
-  integration-tests:
-    name: Run Full Integration Test Suite
+  integration-tests: # zizmor: ignore[anonymous-definition]
     uses: ./.github/workflows/ci-tests.yml
     secrets: inherit

@@ -392,68 +392,68 @@ jobs:
             echo "failed_list="       >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Send failure notification to Teams
-        if: always() && steps.failed_tests.outputs.has_failures == 'true'
-        uses: Skitionek/notify-microsoft-teams@9c67757f64d610fb6748d8ff3c11f284355ed7ec #v1.0.8
-        with:
-          webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL_INTEGRATION_TESTS }}
-          raw: >
-            {
-              "type": "message",
-              "attachments": [
-                {
-                  "contentType": "application/vnd.microsoft.card.adaptive",
-                  "content": {
-                    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-                    "type": "AdaptiveCard",
-                    "version": "1.4",
-                    "msteams": {
-                      "width": "Full"
-                    },
-                    "body": [
-                      {
-                        "type": "TextBlock",
-                        "text": "Integration Tests Failed — ${{ matrix.label }}",
-                        "weight": "Bolder",
-                        "size": "Large",
-                        "color": "Attention"
-                      },
-                      {
-                        "type": "FactSet",
-                        "facts": [
-                          { "title": "Repository:", "value": "${{ github.repository }}" },
-                          { "title": "Author:", "value": "${{ github.actor }}" },
-                          { "title": "Branch:", "value": "${{ github.ref_name }}" },
-                          { "title": "Run ID:", "value": "${{ github.run_id }}" },
-                          { "title": "Group:", "value": "${{ matrix.label }} (${{ matrix.name }})" },
-                          { "title": "Failed Tests:", "value": "${{ steps.failed_tests.outputs.fail_count }}" }
-                        ]
-                      },
-                      {
-                        "type": "TextBlock",
-                        "text": "**Failed Test Cases:**",
-                        "weight": "Bolder",
-                        "spacing": "Medium"
-                      },
-                      {
-                        "type": "TextBlock",
-                        "text": "${{ steps.failed_tests.outputs.failed_list }}",
-                        "wrap": true,
-                        "fontType": "Monospace",
-                        "spacing": "Small"
-                      }
-                    ],
-                    "actions": [
-                      {
-                        "type": "Action.OpenUrl",
-                        "title": "View Workflow Run",
-                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                      }
-                    ]
-                  }
-                }
-              ]
-            }
+      # - name: Send failure notification to Teams
+      #   if: always() && steps.failed_tests.outputs.has_failures == 'true'
+      #   uses: Skitionek/notify-microsoft-teams@9c67757f64d610fb6748d8ff3c11f284355ed7ec #v1.0.8
+      #   with:
+      #     webhook_url: ${{ secrets.MS_TEAMS_WEBHOOK_URL_INTEGRATION_TESTS }}
+      #     raw: >
+      #       {
+      #         "type": "message",
+      #         "attachments": [
+      #           {
+      #             "contentType": "application/vnd.microsoft.card.adaptive",
+      #             "content": {
+      #               "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+      #               "type": "AdaptiveCard",
+      #               "version": "1.4",
+      #               "msteams": {
+      #                 "width": "Full"
+      #               },
+      #               "body": [
+      #                 {
+      #                   "type": "TextBlock",
+      #                   "text": "Integration Tests Failed — ${{ matrix.label }}",
+      #                   "weight": "Bolder",
+      #                   "size": "Large",
+      #                   "color": "Attention"
+      #                 },
+      #                 {
+      #                   "type": "FactSet",
+      #                   "facts": [
+      #                     { "title": "Repository:", "value": "${{ github.repository }}" },
+      #                     { "title": "Author:", "value": "${{ github.actor }}" },
+      #                     { "title": "Branch:", "value": "${{ github.ref_name }}" },
+      #                     { "title": "Run ID:", "value": "${{ github.run_id }}" },
+      #                     { "title": "Group:", "value": "${{ matrix.label }} (${{ matrix.name }})" },
+      #                     { "title": "Failed Tests:", "value": "${{ steps.failed_tests.outputs.fail_count }}" }
+      #                   ]
+      #                 },
+      #                 {
+      #                   "type": "TextBlock",
+      #                   "text": "**Failed Test Cases:**",
+      #                   "weight": "Bolder",
+      #                   "spacing": "Medium"
+      #                 },
+      #                 {
+      #                   "type": "TextBlock",
+      #                   "text": "${{ steps.failed_tests.outputs.failed_list }}",
+      #                   "wrap": true,
+      #                   "fontType": "Monospace",
+      #                   "spacing": "Small"
+      #                 }
+      #               ],
+      #               "actions": [
+      #                 {
+      #                   "type": "Action.OpenUrl",
+      #                   "title": "View Workflow Run",
+      #                   "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      #                 }
+      #               ]
+      #             }
+      #           }
+      #         ]
+      #       }
 
       - name: Stop Squid proxy
         if: always()
@@ -537,38 +537,38 @@ jobs:
   # Job D: Write a GitHub Actions Job Summary when any job in the chain fails.
   #        No external service required — everything goes to GITHUB_STEP_SUMMARY.
   # ─────────────────────────────────────────────────────────────────────────────
-  notify-on-failure:
-    name: Notify on Failure
-    needs: [integration-tests, merge-coverage]
-    runs-on: cx-public-ubuntu-x64
-    if: failure()
-    steps:
-      - name: Write failure summary
-        env:
-          INTEGRATION_RESULT: ${{ toJson(needs.integration-tests) }}
-          MERGE_RESULT: ${{ toJson(needs.merge-coverage) }}
-        run: |
-          cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
-          ## AST-CLI Integration Tests — FAILED
+  # notify-on-failure:
+  #   name: Notify on Failure
+  #   needs: [integration-tests, merge-coverage]
+  #   runs-on: cx-public-ubuntu-x64
+  #   if: failure()
+  #   steps:
+  #     - name: Write failure summary
+  #       env:
+  #         INTEGRATION_RESULT: ${{ toJson(needs.integration-tests) }}
+  #         MERGE_RESULT: ${{ toJson(needs.merge-coverage) }}
+  #       run: |
+  #         cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
+  #         ## AST-CLI Integration Tests — FAILED
 
-          | Field | Value |
-          |-------|-------|
-          | Run | ${{ github.run_id }} |
-          | Triggered by | ${{ github.event_name }} |
-          | Branch | ${{ github.ref_name }} |
-          | Commit | ${{ github.sha }} |
-          SUMMARY
+  #         | Field | Value |
+  #         |-------|-------|
+  #         | Run | ${{ github.run_id }} |
+  #         | Triggered by | ${{ github.event_name }} |
+  #         | Branch | ${{ github.ref_name }} |
+  #         | Commit | ${{ github.sha }} |
+  #         SUMMARY
 
-          printf '\n### integration-tests result\n```json\n%s\n```\n' "$INTEGRATION_RESULT" \
-            >> "$GITHUB_STEP_SUMMARY"
-          printf '\n### merge-coverage result\n```json\n%s\n```\n' "$MERGE_RESULT" \
-            >> "$GITHUB_STEP_SUMMARY"
+  #         printf '\n### integration-tests result\n```json\n%s\n```\n' "$INTEGRATION_RESULT" \
+  #           >> "$GITHUB_STEP_SUMMARY"
+  #         printf '\n### merge-coverage result\n```json\n%s\n```\n' "$MERGE_RESULT" \
+  #           >> "$GITHUB_STEP_SUMMARY"
 
-          cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
+  #         cat >> "$GITHUB_STEP_SUMMARY" << 'SUMMARY'
 
-          ### Next Steps
-          1. Click each failed matrix group in the job list above to inspect its logs.
-          2. Download the `test-logs-<group>` artifact for the full `go test` output.
-          3. Retry a specific group manually via **Run workflow** (`workflow_dispatch`).
-          4. If the failure is consistent, open an issue referencing this run.
-          SUMMARY
+  #         ### Next Steps
+  #         1. Click each failed matrix group in the job list above to inspect its logs.
+  #         2. Download the `test-logs-<group>` artifact for the full `go test` output.
+  #         3. Retry a specific group manually via **Run workflow** (`workflow_dispatch`).
+  #         4. If the failure is consistent, open an issue referencing this run.
+  #         SUMMARY

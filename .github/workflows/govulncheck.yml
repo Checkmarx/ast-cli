@@ -7,9 +7,8 @@ permissions:
   contents: read
 
 jobs:
-  govulncheck:
+  govulncheck: # zizmor: ignore[anonymous-definition]
     runs-on: cx-public-ubuntu-x64
-    name: Vulnerability Scan (govulncheck)
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
