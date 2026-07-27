@@ -2823,3 +2823,130 @@ func TestScanCreate_ProjectAlreadyAssociatedWithApplication_BranchPrimaryQueryOv
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Scan creation with branch-primary and query override flags should succeed without error")
 }
+
+// Create a scan using the Ant-style filter (--file-filter-ext) against the
+// existing test/integration/data folder.
+// Assert only files matching the include pattern are kept, and the excluded
+// "manifests" directory (which also contains .json files) is dropped even
+// though its nested files would otherwise match the include pattern.
+func TestScanCreateAntFilterIncludeAndExcludeDirectory(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.AntFilterFlag), "**/*.json,!manifests/**",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with --file-filter-ext include/exclude should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "results.json"),
+		"top-level .json files should be included by the ant filter",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "manifests/") && strings.Contains(logText, "Excluded"),
+		"the manifests/ directory should be excluded by the ant filter, even though it contains .json files",
+	)
+}
+
+// Create a scan using the Ant-style filter with a negation rule that
+// re-includes a subset of an otherwise excluded directory.
+// Assert the re-included direct child is kept while a nested (two-level-deep)
+// file under the same directory remains excluded, and a non-json sibling
+// file is also excluded.
+func TestScanCreateAntFilterExcludeDirectoryWithReinclude(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.AntFilterFlag), "!manifests/**,manifests/*.json",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with --file-filter-ext negation re-include should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "manifests/package.json"),
+		"manifests/package.json should be re-included by the negation rule (direct child)",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Excluded") &&
+			strings.Contains(logText, "manifests/no_dep_packageJson"),
+		"manifests/no_dep_packageJson/package.json is two levels deep and should remain excluded",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Excluded") && strings.Contains(logText, "requirements.txt"),
+		"manifests/requirements.txt is not json and should remain excluded",
+	)
+}
+
+// Case 00280970: whitelist filtering (--file-include) must be case-agnostic.
+// Add an inclusion for an uppercase extension pattern and assert real files
+// on disk with the lowercase extension (under test/integration/data, which
+// has .txt files not covered by the default scannable extension list) are
+// still picked up.
+func TestScanCreateIncludeFilterIsCaseInsensitive(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.IncludeFilterFlag), "*.TXT", // uppercase pattern; actual files on disk are lowercase .txt
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with uppercase --file-include pattern should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "broken_link.txt"),
+		"uppercase --file-include pattern *.TXT should still match lowercase .txt files on disk",
+	)
+}
