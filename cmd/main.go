@@ -15,7 +15,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/checkmarx/ast-cli/internal/wrappers/credentialstore"
 	"github.com/spf13/viper"
 )
 
@@ -31,9 +30,6 @@ func main() {
 	bindKeysToEnvAndDefault()
 	err = configuration.LoadConfiguration()
 	exitIfError(err)
-	credentialstore.Install(credentialstore.NewChainStore(
-		credentialstore.NewKeyringStore(), credentialstore.NewFileStore()))
-	credentialstore.LoadStoredSecrets()
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)
