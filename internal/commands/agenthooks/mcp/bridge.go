@@ -18,7 +18,6 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/checkmarx/ast-cli/internal/wrappers/credentialstore"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -125,7 +124,7 @@ var (
 		configMu.Lock()
 		defer configMu.Unlock()
 		_ = configuration.LoadConfiguration()
-		credentialstore.LoadStoredSecrets() // pick up a token rotated in the keyring
+		
 	}
 	invalidateTokenCache   = wrappers.InvalidateAccessTokenCache
 	credentialPollInterval = 3 * time.Second
