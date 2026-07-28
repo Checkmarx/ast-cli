@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -16,9 +17,7 @@ import (
 	"gotest.tools/assert"
 )
 
-// scaResolverWorkingDirName is deliberately separate from scaconfig.Params.WorkingDirName
-// so downloading/cleaning up the executable for these tests never touches the cache used
-// by the sca-realtime tests (which share the process-wide scaconfig.Params working dir).
+// Separate from scaconfig.Params.WorkingDirName so it never touches the sca-realtime tests' cache dir.
 const scaResolverWorkingDirName = "SCAResolverIntegrationTest"
 
 var (
@@ -48,10 +47,10 @@ func getScaResolverExecutable(t *testing.T) string {
 	return scaResolverPath
 }
 
-// TestScaResolverExecutable_Success runs a real
+// TestCreateScanScaResolverExecutable_Success runs a real
 // `cx scan create --sca-resolver <path> ...` using the actual downloaded ScaResolver
 // executable, rather than a path pre-staged outside the test.
-func TestScaResolverExecutable_Success(t *testing.T) {
+func TestCreateScanScaResolverExecutable_Success(t *testing.T) {
 	resolverPath := getScaResolverExecutable(t)
 
 	args := []string{
@@ -100,13 +99,171 @@ func TestCreateScanNoScanWithoutSbomFirst(t *testing.T) {
 	)
 }
 
-// TestZZZCleanupScaResolverExecutable removes the downloaded executable after every other
-// test in this file has run. It must stay the last test declared in this file, since Go
-// runs tests within a file in source declaration order. It is a no-op unless
-// getScaResolverExecutable actually triggered a download during this run.
-func TestZZZCleanupScaResolverExecutable(t *testing.T) {
-	if scaResolverPath == "" {
-		return
+// --no-scan + --sbom-first (default location): SBOM saved to <source-dir>/cx-sbom.json, no scan submitted.
+func TestCreateScanNoScanWithSbomFirst_DefaultLocation(t *testing.T) {
+	resolverPath := getScaResolverExecutable(t)
+
+	absDir, absErr := filepath.Abs(Dir)
+	assert.NilError(t, absErr)
+	expectedSbomPath := filepath.Clean(filepath.Join(absDir, "cx-sbom.json"))
+	defer func() { _ = os.Remove(expectedSbomPath) }()
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Dir,
+		flag(params.ScaResolverFlag), resolverPath,
+		flag(params.ScaResolverParamsFlag), "--sbom-first",
+		flag(params.ScanTypes), "iac-security,sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.NoScanFlag),
+		flag(params.DebugFlag),
 	}
-	assert.NilError(t, os.RemoveAll(scaResolverConfig.WorkingDir()))
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "scan create with --no-scan + --sbom-first (default location) should succeed")
+
+	logText := buf.String()
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Resolved packages information was saved"),
+		"Expected ScaResolver success message not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "SBOM generated and saved to: "+expectedSbomPath),
+		"Expected SBOM generation confirmation at the default location not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "--no-scan set: skipping source compression and upload."),
+		"Expected source compression/upload skip message not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "--no-scan set: skipping scan submission."),
+		"Expected scan submission skip message not found in logs",
+	)
+
+	_, statErr := os.Stat(expectedSbomPath)
+	assert.NilError(t, statErr, "SBOM file should actually exist at the default location on disk")
 }
+
+// --no-scan + --sbom-first with custom --sbom-output-path/--sbom-output-name: SBOM saved to the custom location, no scan submitted.
+func TestCreateScanNoScanWithSbomFirst_CustomOutputPathAndName(t *testing.T) {
+	resolverPath := getScaResolverExecutable(t)
+
+	// Subdir under the source dir, not t.TempDir(), to avoid OS temp-folder quirks.
+	absSourceDir, absErr := filepath.Abs(Dir)
+	assert.NilError(t, absErr)
+	outputDir := filepath.Join(absSourceDir, "custom-sbom-output")
+	assert.NilError(t, os.MkdirAll(outputDir, 0o755))
+	defer func() { _ = os.RemoveAll(outputDir) }()
+
+	const customSbomName = "my-project-sbom.json"
+	expectedSbomPath := filepath.Clean(filepath.Join(outputDir, customSbomName))
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Dir,
+		flag(params.ScaResolverFlag), resolverPath,
+		flag(params.ScaResolverParamsFlag),
+		"--sbom-first --sbom-output-path " + outputDir + " --sbom-output-name " + customSbomName,
+		flag(params.ScanTypes), "iac-security,sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.NoScanFlag),
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "scan create with --no-scan + custom sbom output path/name should succeed")
+
+	logText := buf.String()
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Resolved packages information was saved"),
+		"Expected ScaResolver success message not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "SBOM generated and saved to: "+expectedSbomPath),
+		"Expected SBOM generation confirmation at the custom path/name not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "--no-scan set: skipping source compression and upload."),
+		"Expected source compression/upload skip message not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "--no-scan set: skipping scan submission."),
+		"Expected scan submission skip message not found in logs",
+	)
+
+	_, statErr := os.Stat(expectedSbomPath)
+	assert.NilError(t, statErr, "SBOM file should actually exist at the custom output path/name on disk")
+}
+
+// --sbom-first without --no-scan: SBOM is generated and the CxOne scan still runs normally.
+func TestCreateScanSbomFirstWithoutNoScan(t *testing.T) {
+	resolverPath := getScaResolverExecutable(t)
+
+	absDir, absErr := filepath.Abs(Dir)
+	assert.NilError(t, absErr)
+	expectedSbomPath := filepath.Clean(filepath.Join(absDir, "cx-sbom.json"))
+	defer func() { _ = os.Remove(expectedSbomPath) }()
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Dir,
+		flag(params.ScaResolverFlag), resolverPath,
+		flag(params.ScaResolverParamsFlag), "--sbom-first",
+		flag(params.ScanTypes), "iac-security,sca",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "scan create with --sbom-first (no --no-scan) should succeed and submit a scan")
+
+	logText := buf.String()
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Resolved packages information was saved"),
+		"Expected ScaResolver success message not found in logs",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "SBOM generated and saved to: "+expectedSbomPath),
+		"Expected SBOM generation confirmation not found in logs",
+	)
+	assert.Assert(
+		t,
+		!strings.Contains(logText, "--no-scan set"),
+		"scan submission/upload should NOT be skipped when --no-scan is not passed",
+	)
+
+	_, statErr := os.Stat(expectedSbomPath)
+	assert.NilError(t, statErr, "SBOM file should actually exist on disk even though the scan was also submitted")
+}
+
