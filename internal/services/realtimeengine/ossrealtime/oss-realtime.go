@@ -18,9 +18,12 @@ import (
 )
 
 const (
-	pkgManagerGradle = "gradle"
-	pkgManagerSbt    = "sbt"
-	pkgManagerMvn    = "mvn"
+	pkgManagerGradle    = "gradle"
+	pkgManagerSbt       = "sbt"
+	pkgManagerMvn       = "mvn"
+	pkgManagerCocoapods = "cocoapods"
+	pkgManagerCarthage  = "carthage"
+	pkgManagerSwift     = "swift"
 )
 
 // convertLocations converts models.Location to realtimeengine.Location
@@ -194,14 +197,19 @@ func validateSupportedManifestFile(filePath string) error {
 
 	// Check supported extensions
 	supportedExtensions := map[string]bool{
-		".csproj": true,
-		".sbt":    true,
+		".csproj":   true,
+		".sbt":      true,
+		".podspec":  true,
+		".resolved": true,
+		".lock":     true,
+		".swift":    true,
 	}
 
 	// Check supported filenames
 	supportedFilenames := map[string]bool{
 		"pom.xml":                  true,
 		"package.json":             true,
+		"bower.json":               true,
 		"Directory.Packages.props": true,
 		"packages.config":          true,
 		"go.mod":                   true,
@@ -211,6 +219,15 @@ func validateSupportedManifestFile(filePath string) error {
 		"setup.cfg":                true,
 		"setup.py":                 true,
 		"pyproject.toml":           true,
+		"Podfile":                  true,
+		"Podfile.lock":             true,
+		"Cartfile":                 true,
+		"Cartfile.resolved":        true,
+		"Gemfile":                  true,		
+		"composer.json":            true,
+		"pubspec.yaml":             true,
+		"pubspec.lock":             true,
+		"Package.swift":            true,
 	}
 
 	// Check by extension
@@ -230,6 +247,11 @@ func validateSupportedManifestFile(filePath string) error {
 			strings.HasPrefix(manifestFileName, "constraint") {
 			return nil
 		}
+	}
+
+	// Special handling for .podspec.json files
+	if strings.HasSuffix(manifestFileName, ".podspec.json") {
+		return nil
 	}
 
 	// Manifest format is not supported
@@ -299,6 +321,9 @@ func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 		if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
 			packageMap[generatePackageMapEntry(pkgManagerMvn, pkg.PackageName, pkg.Version)] = entry
 		}
+		if pkg.PackageManager == pkgManagerCocoapods || pkg.PackageManager == pkgManagerCarthage {
+			packageMap[generatePackageMapEntry(pkgManagerSwift, pkg.PackageName, pkg.Version)] = entry
+		}
 	}
 	return packageMap
 }
@@ -352,6 +377,9 @@ func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
 	pkgManager := pkg.PackageManager
 	if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
 		pkgManager = pkgManagerMvn
+	}
+	if pkg.PackageManager == pkgManagerCocoapods || pkg.PackageManager == pkgManagerCarthage {
+		pkgManager = pkgManagerSwift
 	}
 	return wrappers.RealtimeScannerPackage{
 		PackageManager: pkgManager,
