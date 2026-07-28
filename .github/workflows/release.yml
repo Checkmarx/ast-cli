@@ -248,6 +248,8 @@ jobs:
   dispatch_auto_release:
     name: Update Plugins With new Cli Version
     if: inputs.dev == false && 1 == 0
+    permissions:
+      contents: read
     #needs: notify
     uses: Checkmarx/plugins-release-workflow/.github/workflows/dispatch-workflow.yml@d0ad5e1c4cf1edacf4d91c250c2b7a4a5478baab # main
     with:
