@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const healedToken = "healed-token"
+
 // A degraded bridge picks up a token that later appears in the keyring: reloadConfig
 // runs LoadStoredSecrets, and productionResolveAPIKey then resolves the new token.
 func TestReloadConfig_HealsFromStore(t *testing.T) {
@@ -26,18 +28,18 @@ func TestReloadConfig_HealsFromStore(t *testing.T) {
 	})
 
 	store := mock.NewCredentialStoreMock()
-	_ = store.SetSecret(commonParams.AstAPIKey, "healed-token")
+	_ = store.SetSecret(commonParams.AstAPIKey, healedToken)
 	prev := credentialstore.Default
 	credentialstore.Default = store
 	t.Cleanup(func() { credentialstore.Default = prev })
 
-	if got := productionResolveAPIKey(); got == "healed-token" {
+	if got := productionResolveAPIKey(); got == healedToken {
 		t.Fatalf("precondition: token already resolved before reload")
 	}
 
 	reloadConfig()
 
-	if got := productionResolveAPIKey(); got != "healed-token" {
+	if got := productionResolveAPIKey(); got != healedToken {
 		t.Errorf("expected healed-token after reload, got %q", got)
 	}
 }

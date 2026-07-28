@@ -70,7 +70,7 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, sessionID string) (finding, remediation, severity string) {
 	if len(malicious) > 0 {
 		f, r := DenyMalicious(malicious, agent)
-		return f, r, "Malicious"
+		return f, r, statusMalicious
 	}
 	if len(vulnerable) > 0 {
 		f, r := DenyVulnerable(vulnerable, workDir, agent, sessionID)
@@ -84,8 +84,8 @@ func highestVulnSeverity(pkgs []ossrealtime.OssPackage) string {
 	rank := map[string]int{"Critical": 4, "High": 3, "Medium": 2, "Low": 1}
 	best := ""
 	bestRank := -1
-	for _, p := range pkgs {
-		for _, v := range p.Vulnerabilities {
+	for i := range pkgs {
+		for _, v := range pkgs[i].Vulnerabilities {
 			if r, ok := rank[v.Severity]; ok && r > bestRank {
 				bestRank = r
 				best = v.Severity

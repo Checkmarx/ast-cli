@@ -28,6 +28,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/filtering"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
@@ -925,6 +926,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
 	createScanCmd.PersistentFlags().Bool(commonParams.NoScanFlag, false, "Prevents CxOne scan from running after SBOM is generated locally. Relevant only when --sbom-first is submitted under --sca-resolver-params. Submitting this flag without --sbom-first causes an error.")
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
 
 	return createScanCmd
 }
@@ -1641,7 +1643,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1651,7 +1653,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	zipWriter := zip.NewWriter(outputFile)
 
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1669,7 +1671,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
 		if err != nil {
 			return "", err
 		}
@@ -1701,7 +1703,7 @@ func isSingleContainerScanTriggered() bool {
 }
 
 // isDirEmpty checks if a directory is empty or if all files are filtered out
-func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
+func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher filtering.Matcher) (bool, error) {
 	empty := true
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -1714,20 +1716,32 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, erro
 			return nil
 		}
 
-		// Skip directories
-		if info.IsDir() {
-			return nil
-		}
-
 		// Get relative path
 		relPath, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
 		}
+		relPathSlash := filepath.ToSlash(relPath)
+
+		// Prune excluded directories rather than descending into them.
+		if info.IsDir() {
+			legacyFiltered, fErr := isDirFiltered(info.Name(), excludeFilters)
+			if fErr != nil {
+				return fErr
+			}
+			if legacyFiltered {
+				return filepath.SkipDir
+			}
+			if antMatcher.Excluded(relPathSlash, true) && !antMatcher.MustDescend(relPathSlash) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 
 		// Check if file passes filters
 		filename := filepath.Base(relPath)
-		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
+		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) &&
+			!antMatcher.Excluded(relPathSlash, false) {
 			empty = false
 			return filepath.SkipAll // We found at least one file that will be included
 		}
@@ -1780,7 +1794,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	return nil
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher) error {
 	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -1793,9 +1807,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		}
 
 		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
 		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
 		}
 
 		if err != nil {
@@ -1812,6 +1826,7 @@ func handleFile(
 	filters,
 	includeFilters []string,
 	file fs.FileInfo,
+	antMatcher filtering.Matcher,
 ) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
@@ -1821,7 +1836,9 @@ func handleFile(
 			return nil
 		}
 	}
-	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
+	// relPath is forward-slash path from source root, used by antMatcher.
+	relPath := filepath.ToSlash(baseDir + file.Name())
+	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) && !antMatcher.Excluded(relPath, false) {
 		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
@@ -1852,6 +1869,7 @@ func handleDir(
 	filters,
 	includeFilters []string,
 	file fs.FileInfo,
+	antMatcher filtering.Matcher,
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
@@ -1860,6 +1878,7 @@ func handleDir(
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
 
+	// Legacy exclude filter (e.g. !node_modules from BaseExcludeFilters).
 	isFiltered, err := isDirFiltered(file.Name(), filters)
 	if err != nil {
 		return err
@@ -1868,8 +1887,23 @@ func handleDir(
 		logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
 		return nil
 	}
+
+	// Ant-style pattern exclusion with negation support.
+	// relPath is the forward-slash path from the source root.
+	relPath := filepath.ToSlash(baseDir + file.Name())
+	if antMatcher.Excluded(relPath, true) {
+		// Before pruning the entire sub-tree, check whether a later negation
+		// rule may re-include a descendant. If so, descend and evaluate each
+		// child individually rather than skipping wholesale.
+		if !antMatcher.MustDescend(relPath) {
+			logger.PrintIfVerbose("Excluded (ant-filter): " + parentDir + file.Name() + "/")
+			return nil
+		}
+		logger.PrintIfVerbose("Descending into ant-excluded dir (negation may re-include): " + parentDir + file.Name() + "/")
+	}
+
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher)
 }
 
 func isDirFiltered(filename string, filters []string) (bool, error) {
@@ -1899,10 +1933,13 @@ func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (ne
 func filterMatched(filters []string, fileName string) bool {
 	firstMatch := true
 	matched := true
+	// Normalise to lowercase for case-insensitive matching on all platforms.
+	fileNameLower := strings.ToLower(fileName)
 	for _, filter := range filters {
-		if filter[0] == '!' {
+		filterLower := strings.ToLower(filter)
+		if filterLower[0] == '!' {
 			// it just needs to match one exclusion to be excluded.
-			excluded, _ := path.Match(filter[1:], fileName)
+			excluded, _ := path.Match(filterLower[1:], fileNameLower)
 			if excluded {
 				return false
 			}
@@ -1916,7 +1953,7 @@ func filterMatched(filters []string, fileName string) bool {
 			// We can't immediately return as we can still find an exclusion further down the slice
 			// So we store the match result and never try again
 			if !matched {
-				matched, _ = path.Match(filter, fileName)
+				matched, _ = path.Match(filterLower, fileNameLower)
 			}
 		}
 	}
@@ -2092,6 +2129,16 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
+
+	// Build the Ant-style matcher from --file-filter-ext patterns.
+	// Construction errors are surfaced immediately so the user gets clear
+	// feedback (e.g. if they accidentally used a "!" negation prefix).
+	antPatterns, _ := cmd.Flags().GetStringSlice(commonParams.AntFilterFlag)
+	antMatcher, antErr := filtering.NewAntMatcher(antPatterns)
+	if antErr != nil {
+		return "", "", errors.Wrapf(antErr, failedCreating)
+	}
+
 	var directoryPath string
 	if isSbom {
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -2143,7 +2190,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
+	unzip := ((sourceDirFilter != "" || userIncludeFilter != "" || len(antPatterns) > 0) || containerScanTriggered) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -2237,7 +2284,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		} else {
 			if !isSbom {
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher)
 			}
 
 			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
