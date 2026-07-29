@@ -197,12 +197,9 @@ func validateSupportedManifestFile(filePath string) error {
 
 	// Check supported extensions
 	supportedExtensions := map[string]bool{
-		".csproj":   true,
-		".sbt":      true,
-		".podspec":  true,
-		".resolved": true,
-		".lock":     true,
-		".swift":    true,
+		".csproj":  true,
+		".sbt":     true,
+		".podspec": true,
 	}
 
 	// Check supported filenames
@@ -222,12 +219,14 @@ func validateSupportedManifestFile(filePath string) error {
 		"Podfile":                  true,
 		"Podfile.lock":             true,
 		"Cartfile":                 true,
+		"Cartfile.private":         true,
 		"Cartfile.resolved":        true,
-		"Gemfile":                  true,		
+		"Gemfile":                  true,
 		"composer.json":            true,
 		"pubspec.yaml":             true,
 		"pubspec.lock":             true,
 		"Package.swift":            true,
+		"Package.resolved":         true,
 	}
 
 	// Check by extension
@@ -249,8 +248,13 @@ func validateSupportedManifestFile(filePath string) error {
 		}
 	}
 
-	// Special handling for .podspec.json files
+	// Special handling for .podspec.json files (CocoaPods pod specifications in JSON format)
 	if strings.HasSuffix(manifestFileName, ".podspec.json") {
+		return nil
+	}
+
+	// Special handling for Package@swift-X.Y.swift multi-toolchain variant files
+	if strings.HasPrefix(manifestFileName, "Package@swift-") && strings.HasSuffix(manifestFileName, ".swift") {
 		return nil
 	}
 
