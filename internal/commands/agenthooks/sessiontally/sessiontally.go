@@ -89,7 +89,16 @@ func tallyPath(sessionID string) (string, bool) {
 }
 
 // Add appends one best-effort NDJSON record for (sessionID, engine). Never returns or panics.
+//
+// Disabled: writes are short-circuited so no .session-cx-tallies-* files are created under
+// ~/.checkmarx. The session-end summary that would consume these tallies (via Load) is not wired up
+// anywhere in this codebase yet, so there is no functional loss in keeping this a no-op.
 func Add(sessionID, engine string, foundDelta, remOfferedDelta int) {
+
+	const disabled = true
+	if disabled {
+		return
+	}
 	defer func() { _ = recover() }()
 	path, ok := tallyPath(sessionID)
 	if !ok {

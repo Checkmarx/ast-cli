@@ -115,7 +115,6 @@ jobs:
           export HOMEBREW_NO_AUTO_UPDATE=1
           brew --version
       - name: Install gon
-        if: inputs.dev == false
         run: |
           brew install Bearer/tap/gon
       # New: detect architecture and expose as step output
