@@ -200,13 +200,11 @@ func manageASCAInstallation(ascaParams AscaScanParams, ascaWrappers AscaWrappers
 			_ = ascaWrappers.ASCAWrapper.ShutDown()
 			return err
 		}
-		newInstallation, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params)
+		_, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params, ascaWrappers.ASCAWrapper)
 		if err != nil {
 			return err
 		}
-		if newInstallation {
-			_ = ascaWrappers.ASCAWrapper.ShutDown()
-		}
+
 	}
 	return nil
 }

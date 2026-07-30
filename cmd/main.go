@@ -30,7 +30,6 @@ func main() {
 	bindKeysToEnvAndDefault()
 	err = configuration.LoadConfiguration()
 	exitIfError(err)
-	wrappers.LoadActiveCredential()
 	scans := viper.GetString(params.ScansPathKey)
 	groups := viper.GetString(params.GroupsPathKey)
 	logs := viper.GetString(params.LogsPathKey)

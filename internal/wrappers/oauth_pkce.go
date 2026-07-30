@@ -22,10 +22,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// pkceScopes matches the scopes requested by the Checkmarx One VS Code
-// extension's OAuth flow. The ast-api / iam-api scopes are configured as
-// default client scopes on the ide-integration Keycloak client, so they
-// are granted automatically without being requested explicitly.
+// Keycloak endpoints built directly from the realm URL, matching the IDE
+// plugins (no OIDC .well-known discovery).
+const (
+	authorizeEndpointSuffix = "protocol/openid-connect/auth"
+	tokenEndpointSuffix     = "protocol/openid-connect/token"
+)
+
+// pkceScopes matches the ide-integration client's scopes; offline_access yields
+// the refresh token stored as cx_apikey.
 const pkceScopes = "openid offline_access"
 
 const pkceLoginTimeout = 5 * time.Minute
@@ -46,16 +51,9 @@ type PKCELoginOptions struct {
 	OpenBrowser bool
 }
 
-type oidcDiscovery struct {
-	AuthorizationEndpoint string `json:"authorization_endpoint"`
-	TokenEndpoint         string `json:"token_endpoint"`
-}
-
 // LoginWithPKCE runs an OAuth 2.0 Authorization Code + PKCE flow against the
-// Keycloak realm at opts.RealmURL and returns the token response. The flow
-// starts a one-shot HTTP listener on 127.0.0.1, opens the user's browser to
-// the authorize URL, and waits for the redirect callback. The caller is
-// responsible for persisting or printing the returned tokens.
+// realm: opens the browser, listens on a loopback callback, and exchanges the
+// returned code for tokens. The caller persists the result.
 func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenResponse, error) {
 	if opts.RealmURL == "" {
 		return nil, errors.New("realm URL is required")
@@ -64,10 +62,9 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 		return nil, errors.New("client-id is required")
 	}
 
-	disco, err := discoverOIDC(ctx, opts.RealmURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch OIDC discovery document")
-	}
+	realm := strings.TrimRight(opts.RealmURL, "/")
+	authorizationEndpoint := realm + "/" + authorizeEndpointSuffix
+	tokenEndpoint := realm + "/" + tokenEndpointSuffix
 
 	verifier, challenge, err := newPKCE()
 	if err != nil {
@@ -87,15 +84,10 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	if !ok {
 		return nil, errors.New("local listener did not bind to a TCP address")
 	}
-	// The redirect URI uses the 'localhost' hostname and the '/checkmarx1/callback'
-	// path to match the pattern whitelisted on the 'ide-integration' Keycloak client
-	// — the same pattern used by the Checkmarx One VS Code extension. Because
-	// 'localhost' resolves to ::1 on IPv6-preferring systems, we ALSO bind an IPv6
-	// loopback listener on the same port below (best-effort), so the browser callback
-	// reaches us whichever family 'localhost' resolves to. Both listeners are
-	// loopback-only (safe).
+	// /checkmarx1/callback on localhost matches the ide-integration client's
+	// whitelisted redirect pattern.
 	redirectURI := fmt.Sprintf("http://localhost:%d/checkmarx1/callback", tcpAddr.Port)
-	authURL := buildAuthorizeURL(disco.AuthorizationEndpoint, opts.ClientID, redirectURI, state, challenge)
+	authURL := buildAuthorizeURL(authorizationEndpoint, opts.ClientID, redirectURI, state, challenge)
 
 	type callbackResult struct {
 		code string
@@ -106,12 +98,8 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	mux := http.NewServeMux()
 	mux.HandleFunc("/checkmarx1/callback", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		// Validate the anti-CSRF state FIRST. A request that does not carry our
-		// exact state value is unsolicited (a stray prefetch, a probe, or a CSRF
-		// attempt) and is IGNORED — we do NOT resolve resultCh, so it cannot
-		// abort the pending login, and we do not act on its other parameters.
-		// The genuine callback echoes our state and is the only thing that
-		// completes the flow; if none arrives, the outer timeout fires.
+		// Anti-CSRF: ignore any request without our exact state, so a stray/forged
+		// callback can't complete or abort the pending login.
 		if got := q.Get("state"); got != state {
 			writeBrowserMessage(w, "Authentication failed.", "State mismatch — this request was ignored. You can close this tab.")
 			logger.PrintIfVerbose("OAuth callback: ignoring request with missing/mismatched state")
@@ -135,9 +123,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 
 	server := &http.Server{Handler: mux, ReadHeaderTimeout: 10 * time.Second}
 	go func() { _ = server.Serve(listener) }()
-	// Best-effort IPv6 loopback listener on the same port, so a browser that resolves
-	// 'localhost' to ::1 still reaches the callback. If it fails (no IPv6 stack, or the
-	// port is taken on ::1), proceed IPv4-only — unchanged from the previous behavior.
+	// Best-effort IPv6 loopback so 'localhost' resolving to ::1 still reaches us.
 	if v6Listener, v6Err := net.Listen("tcp6", fmt.Sprintf("[::1]:%d", tcpAddr.Port)); v6Err == nil {
 		defer v6Listener.Close()
 		go func() { _ = server.Serve(v6Listener) }()
@@ -150,10 +136,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 		_ = server.Shutdown(shutdownCtx)
 	}()
 
-	// Diagnostic messages go to stderr so session mode's eval-able stdout
-	// (the env-var assignment line emitted by the caller after this returns)
-	// is not polluted. In default mode the diagnostics are still visible in
-	// the terminal since stderr renders to the console.
+	// Diagnostics to stderr so stdout stays clean for callers that capture it.
 	fmt.Fprintf(os.Stderr, "Opening browser to: %s\n", authURL)
 	fmt.Fprintln(os.Stderr, "If the browser does not open, copy and paste the URL above.")
 	if opts.OpenBrowser {
@@ -176,35 +159,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 		return nil, ctx.Err()
 	}
 
-	return exchangeCodeForToken(ctx, disco.TokenEndpoint, opts.ClientID, code, verifier, redirectURI)
-}
-
-func discoverOIDC(ctx context.Context, realmURL string) (*oidcDiscovery, error) {
-	discoURL := strings.TrimRight(realmURL, "/") + "/.well-known/openid-configuration"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, discoURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	client := GetClient(15)
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.Errorf("realm not found at %s — check --tenant and --base-auth-uri", discoURL)
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("discovery endpoint returned status %d", resp.StatusCode)
-	}
-	var d oidcDiscovery
-	if err := json.NewDecoder(resp.Body).Decode(&d); err != nil {
-		return nil, errors.Wrap(err, "failed to decode discovery document")
-	}
-	if d.AuthorizationEndpoint == "" || d.TokenEndpoint == "" {
-		return nil, errors.New("discovery document is missing authorization_endpoint or token_endpoint")
-	}
-	return &d, nil
+	return exchangeCodeForToken(ctx, tokenEndpoint, opts.ClientID, code, verifier, redirectURI)
 }
 
 func buildAuthorizeURL(authEndpoint, clientID, redirectURI, state, challenge string) string {
@@ -255,47 +210,6 @@ func exchangeCodeForToken(ctx context.Context, tokenEndpoint, clientID, code, ve
 	return &tr, nil
 }
 
-// RevokeRefreshToken invalidates the given refresh token at the Keycloak realm
-// via the OAuth 2.0 Token Revocation endpoint (RFC 7009). This is deliberately
-// the /revoke endpoint and NOT /logout: /logout is RP-initiated logout that
-// ends the entire SSO session and would invalidate every token in that
-// session — including tokens we want to keep alive in other CLI session modes.
-// /revoke targets a single token, leaving sibling tokens in the same session
-// untouched, which is what strict storage independence between --session
-// modes requires.
-//
-// Idempotent: a 400 response (token already invalid) is treated as success
-// so callers can use this as best-effort cleanup during auto-revoke and
-// explicit logout.
-func RevokeRefreshToken(ctx context.Context, realmURL, clientID, refreshToken string) error {
-	endpoint := strings.TrimRight(realmURL, "/") + "/protocol/openid-connect/revoke"
-	form := url.Values{}
-	form.Set("client_id", clientID)
-	form.Set("token", refreshToken)
-	form.Set("token_type_hint", "refresh_token")
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := GetClient(15).Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
-	}
-	if resp.StatusCode == http.StatusBadRequest {
-		return nil
-	}
-	body, _ := io.ReadAll(resp.Body)
-	return errors.Errorf("revoke request failed with status %d: %s", resp.StatusCode, string(body))
-}
-
 func newPKCE() (verifier, challenge string, err error) {
 	verifier, err = randomURLSafe(32)
 	if err != nil {
@@ -314,12 +228,14 @@ func randomURLSafe(byteLen int) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-// openBrowser is a package-level var so tests can intercept the launch and
-// simulate the user completing the OAuth flow without a real browser.
+// openBrowser is a var so tests can intercept the launch.
 var openBrowser = func(targetURL string) error {
 	switch runtime.GOOS {
 	case "windows":
-		return exec.Command("rundll32", "url.dll,FileProtocolHandler", targetURL).Start()
+		// `start` reads a quoted first arg as the window title, so pass an empty
+		// one; escape & to ^& since cmd treats it as a command separator.
+		escaped := strings.ReplaceAll(targetURL, "&", "^&")
+		return exec.Command("cmd", "/c", "start", "", escaped).Start()
 	case "darwin":
 		return exec.Command("open", targetURL).Start()
 	default:
@@ -329,8 +245,7 @@ var openBrowser = func(targetURL string) error {
 
 func writeBrowserMessage(w http.ResponseWriter, title, body string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// Escape both fields: body may contain server-supplied error/description
-	// text, so it must never be reflected into the page as raw HTML.
+	// Escape: body may carry server-supplied error text — never reflect raw HTML.
 	safeTitle := html.EscapeString(title)
 	safeBody := html.EscapeString(body)
 	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><title>%s</title>

@@ -19,7 +19,7 @@ import (
 func TestProposedContent_FullFileWrite(t *testing.T) {
 	newContent, _, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
 		{Before: "", After: "print('hello')"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +31,7 @@ func TestProposedContent_FullFileWrite(t *testing.T) {
 func TestProposedContent_FullFileWrite_OriginalEmpty_WhenFileAbsent(t *testing.T) {
 	_, orig, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
 		{Before: "", After: "new content"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestProposedContent_StringReplaceEdit(t *testing.T) {
 
 	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "y = 2", After: "y = 99"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,12 +71,36 @@ func TestProposedContent_MissingBeforeFailsOpen(t *testing.T) {
 	// Before string not present → returns original unchanged
 	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "NOTHERE", After: "replacement"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if newContent != origContent {
 		t.Fatalf("expected content unchanged, got %q", newContent)
+	}
+}
+
+func TestProposedContent_CopilotCLI_NormalizesLF(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.py")
+	// Disk file has CRLF (Windows)
+	if err := os.WriteFile(path, []byte("x = 1\r\ny = 2\r\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Copilot CLI sends LF-only old_str/new_str
+	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
+		{Before: "y = 2\n", After: "y = 99\n"},
+	}, agenthooks.AgentCopilotCLI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// originalContent should be normalised to LF
+	if strings.Contains(origContent, "\r") {
+		t.Fatalf("originalContent should be LF-normalised, got %q", origContent)
+	}
+	// newContent should have the replacement applied
+	if !strings.Contains(newContent, "y = 99") {
+		t.Fatalf("expected y = 99 in newContent, got %q", newContent)
 	}
 }
 
@@ -90,12 +114,48 @@ func TestProposedContent_MultiEdit(t *testing.T) {
 	newContent, _, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "a", After: "A"},
 		{Before: "b", After: "B"},
-	})
+	}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if newContent != "A\nB\nc\n" {
 		t.Fatalf("unexpected multi-edit result: %q", newContent)
+	}
+}
+
+// ── asciiSafe ────────────────────────────────────────────────────────────────
+
+func TestASCIISafe_PureASCII(t *testing.T) {
+	in := "hello world\nfoo = 'bar';"
+	if got := asciiSafe(in); got != in {
+		t.Fatalf("pure-ASCII input should pass through unchanged, got %q", got)
+	}
+}
+
+func TestASCIISafe_ReplacesNonASCII(t *testing.T) {
+	in := "// comment with em-dash — here\ncode = 1;"
+	got := asciiSafe(in)
+	if strings.ContainsRune(got, '—') {
+		t.Fatal("em-dash should have been replaced")
+	}
+	// Line structure preserved
+	if !strings.Contains(got, "\ncode = 1;") {
+		t.Fatalf("newlines and code should be intact, got %q", got)
+	}
+}
+
+func TestStageForScan_StripsNonASCII(t *testing.T) {
+	content := "class A {\n// — em dash in comment\nint x = 1;\n}"
+	staged, cleanup, err := stageForScan("/some/path/A.java", content, "sess1", agenthooks.AgentCopilotCLI)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+	data, _ := os.ReadFile(staged)
+	for _, b := range data {
+		if b > 127 {
+			t.Fatalf("staged file should contain only ASCII, found byte %d", b)
+		}
 	}
 }
 
@@ -127,7 +187,7 @@ func TestSafeSessionTag_UUID(t *testing.T) {
 }
 
 func TestStageForScan_CreatesFileWithOriginalBasename(t *testing.T) {
-	staged, cleanup, err := stageForScan("/some/path/auth.py", "content", "sess123")
+	staged, cleanup, err := stageForScan("/some/path/auth.py", "content", "sess123", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +206,7 @@ func TestStageForScan_CreatesFileWithOriginalBasename(t *testing.T) {
 }
 
 func TestStageForScan_DirNameContainsSessionTag(t *testing.T) {
-	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "abc123")
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "abc123", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -163,7 +223,7 @@ func TestStageForScan_DirNameContainsSessionTag(t *testing.T) {
 }
 
 func TestStageForScan_CleanupRemovesDir(t *testing.T) {
-	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "sess")
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "sess", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +238,7 @@ func TestStageForScan_FileMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Unix permission bits (0600) are not enforced on Windows; validated on Linux/macOS CI")
 	}
-	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1")
+	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,7 +325,7 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
 	if !strings.Contains(ctx, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
 	}
@@ -280,12 +340,40 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	}
 }
 
+func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "sess-123")
+	want := ` --optional-flags "aiProvider=Claude;agent=Claude-cli;aiAgentSessionId=sess-123"`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected provenance flags %q in ignore command, got %q", want, ctx)
+	}
+	// Empty agent → no provenance fragment (backward-compatible default).
+	if noAgent := additionalContext("billing.py", "cx", findings, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
+		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
+func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a%s.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("a%s.py", "cx", findings, "", "Claude", "sess-1")
+	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
+		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
+	}
+	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
+		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
+	}
+}
+
 func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 		{FileName: "billing.py", Line: 12, RuleID: 4027},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
 	if strings.Count(ctx, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
 	}
@@ -298,7 +386,7 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 }
 
 func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *testing.T) {
-	ctx := additionalContext("main.py", "cx", nil, "")
+	ctx := additionalContext("main.py", "cx", nil, "", "", "")
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
 	}
@@ -309,7 +397,7 @@ func TestAdditionalContext_PinsIgnoredFilePathToWorkDir(t *testing.T) {
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
 	workDir := filepath.Join("repo", "ws")
-	ctx := additionalContext("billing.py", "cx", findings, workDir)
+	ctx := additionalContext("billing.py", "cx", findings, workDir, "", "")
 	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
 	if !strings.Contains(ctx, want) {
 		t.Errorf("expected context to pin %q, got %q", want, ctx)
@@ -320,7 +408,7 @@ func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
 	if strings.Contains(ctx, "--ignored-file-path") {
 		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
 	}

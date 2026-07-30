@@ -2117,7 +2117,7 @@ func translateReportSectionsForImproved(sections []string) []string {
 
 func convertCxResultsToSarif(results *wrappers.ScanResultsCollection) *wrappers.SarifResultsCollection {
 	var sarif = new(wrappers.SarifResultsCollection)
-	sarif.Schema = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+	sarif.Schema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
 	sarif.Version = "2.1.0"
 	sarif.Runs = []wrappers.SarifRun{}
 	sarif.Runs = append(sarif.Runs, createSarifRun(results))
@@ -2558,6 +2558,21 @@ func getSastStartColumn(column uint) uint {
 	return column - 1
 }
 
+func ensureSarifRegionCoordinate(value uint) uint {
+	if value < 1 {
+		return 1
+	}
+	return value
+}
+
+func sarifEndColumn(startColumn, length uint) uint {
+	endColumn := startColumn + length
+	if endColumn <= startColumn {
+		return startColumn + 1
+	}
+	return endColumn
+}
+
 func findRuleID(result *wrappers.ScanResult) (ruleID, ruleName, shortMessage string) {
 	caser := cases.Title(language.English)
 
@@ -2734,7 +2749,7 @@ func parseSarifResultKics(result *wrappers.ScanResult, scanResults []wrappers.Sa
 		1,
 	)
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+	scanLocation.PhysicalLocation.Region.StartLine = ensureSarifRegionCoordinate(result.ScanResultData.Line)
 	scanLocation.PhysicalLocation.Region.StartColumn = 1
 	scanLocation.PhysicalLocation.Region.EndColumn = 2
 	scanResult.Locations = append(scanResult.Locations, scanLocation)
@@ -2759,29 +2774,31 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 			}
 			scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
 			scanLocation.PhysicalLocation.Region.StartLine = node.Line
-			column := node.Column
-			length := node.Length
+			column := ensureSarifRegionCoordinate(node.Column)
 			scanLocation.PhysicalLocation.Region.StartColumn = column
-			scanLocation.PhysicalLocation.Region.EndColumn = column + length
+			scanLocation.PhysicalLocation.Region.EndColumn = sarifEndColumn(column, node.Length)
 
 			allLocations = append(allLocations, scanLocation)
 		}
 	}
 
-	if len(allLocations) > 0 {
-		var threadFlowLocations []wrappers.SarifThreadFlowLocation
-		for _, loc := range allLocations {
-			threadFlowLocations = append(threadFlowLocations, wrappers.SarifThreadFlowLocation{Location: loc})
-		}
-		scanResult.CodeFlows = []wrappers.SarifCodeFlow{
-			{
-				ThreadFlows: []wrappers.SarifThreadFlow{
-					{
-						Locations: threadFlowLocations,
-					},
+	if len(allLocations) == 0 {
+		return scanResults
+	}
+
+	scanResult.Locations = append(scanResult.Locations, allLocations[0])
+	var threadFlowLocations []wrappers.SarifThreadFlowLocation
+	for _, loc := range allLocations {
+		threadFlowLocations = append(threadFlowLocations, wrappers.SarifThreadFlowLocation{Location: loc})
+	}
+	scanResult.CodeFlows = []wrappers.SarifCodeFlow{
+		{
+			ThreadFlows: []wrappers.SarifThreadFlow{
+				{
+					Locations: threadFlowLocations,
 				},
 			},
-		}
+		},
 	}
 
 	scanResults = append(scanResults, scanResult)
@@ -2804,7 +2821,7 @@ func parseSarifResultsSscs(result *wrappers.ScanResult, scanResults []wrappers.S
 	}
 
 	scanLocation.PhysicalLocation.Region = &wrappers.SarifRegion{}
-	scanLocation.PhysicalLocation.Region.StartLine = result.ScanResultData.Line
+	scanLocation.PhysicalLocation.Region.StartLine = ensureSarifRegionCoordinate(result.ScanResultData.Line)
 	scanLocation.PhysicalLocation.Region.StartColumn = 1
 	scanLocation.PhysicalLocation.Region.EndColumn = 2
 	if result.ScanResultData.Snippet != "" {

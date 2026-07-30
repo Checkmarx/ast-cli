@@ -24,6 +24,7 @@ const (
 )
 
 func TestBitbucketUserCountWorkspace(t *testing.T) {
+	t.Skip("Skipping - waiting for a secret token")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -54,6 +55,7 @@ func TestBitbucketUserCountWorkspace(t *testing.T) {
 }
 
 func TestBitbucketUserCountRepos(t *testing.T) {
+	t.Skip("Skipping - waiting for a secret token")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
@@ -86,6 +88,7 @@ func TestBitbucketUserCountRepos(t *testing.T) {
 }
 
 func TestBitbucketUserCountReposDebug(t *testing.T) {
+	t.Skip("Skipping - waiting for a secret token")
 	_ = viper.BindEnv(pat)
 	buffer := executeCmdNilAssertion(
 		t,
