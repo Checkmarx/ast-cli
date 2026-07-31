@@ -217,16 +217,12 @@ func validateSupportedManifestFile(filePath string) error {
 		"setup.py":                 true,
 		"pyproject.toml":           true,
 		"Podfile":                  true,
-		"Podfile.lock":             true,
 		"Cartfile":                 true,
 		"Cartfile.private":         true,
-		"Cartfile.resolved":        true,
 		"Gemfile":                  true,
 		"composer.json":            true,
 		"pubspec.yaml":             true,
-		"pubspec.lock":             true,
 		"Package.swift":            true,
-		"Package.resolved":         true,
 	}
 
 	// Check by extension
