@@ -205,6 +205,16 @@ func executeCommand(t *testing.T, args ...string) (error, *bytes.Buffer) {
 	return err, buffer
 }
 
+// Execute a CLI command with custom timeout, expecting an error and buffer to execute post assertions
+func executeCommandWithTimeout(t *testing.T, timeout time.Duration, args ...string) (error, *bytes.Buffer) {
+
+	cmd, buffer := createRedirectedTestCommand(t)
+
+	err := executeWithTimeout(cmd, timeout, args...)
+
+	return err, buffer
+}
+
 // Execute a CLI command with nil error assertion
 func executeCmdNilAssertion(t *testing.T, infoMsg string, args ...string) *bytes.Buffer {
 	cmd, outputBuffer := createRedirectedTestCommand(t)
