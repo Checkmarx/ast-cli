@@ -1377,7 +1377,7 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 func TestRunScaRealtimeScan(t *testing.T) {
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
-	err, _ := executeCommandWithTimeout(t, 15*time.Minute, args...)
+	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
 
 	// Ensure we have results to read
@@ -1388,7 +1388,7 @@ func TestRunScaRealtimeScan(t *testing.T) {
 	assert.NilError(t, err)
 
 	// Run second time to cover SCA Resolver download not needed code
-	err, _ = executeCommandWithTimeout(t, 15*time.Minute, args...)
+	err, _ = executeCommand(t, args...)
 	assert.NilError(t, err)
 }
 
