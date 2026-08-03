@@ -43,7 +43,7 @@ jobs:
           CP="${CP}|TestContainerEngineScansE2E|TestScanListWith|TestScanShowRequired"
           CP="${CP}|TestRequiredScanId|TestScaResolver|TestInvalidSource|TestIncrementalScan"
           CP="${CP}|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog"
-          CP="${CP}|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScaRealtime"
+          CP="${CP}|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca"
           CP="${CP}|TestScanType|TestValidateScan|TestScanGenerating|TestResult|TestCodeBashing"
           CP="${CP}|TestRiskManagement|TestCreateQueryDescription|TestPR|TestPreReceive"
           CP="${CP}|TestPre_Receive|TestProject|TestCreateEmptyProject|TestCreateAlreadyExisting"
@@ -106,7 +106,7 @@ jobs:
           # 2 ── Scan Operations (list, show, logs, kics, sca; needs pre-run cleanup)
           - name: scan-ops
             label: "Scan Operations"
-            run_pattern: "TestScanListWith|TestScanShowRequired|TestRequiredScanId|TestScaResolver|TestInvalidSource|TestIncrementalScan|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScaRealtime|TestScanType|TestValidateScan|TestScanGenerating"
+            run_pattern: "TestScanListWith|TestScanShowRequired|TestRequiredScanId|TestScaResolver|TestInvalidSource|TestIncrementalScan|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScanType|TestValidateScan|TestScanGenerating"
             timeout: "90m"
             needs_precommit: "false"
             run_cleandata: "true"
@@ -472,12 +472,167 @@ jobs:
         run: docker stop squid && docker rm squid || true
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Job B.1: Run TestRunScaRealtimeScan in parallel but isolated from the 13 test groups.
+  #          This test is resource-intensive and was causing timeouts under parallel load;
+  #          it runs in its own job for dedicated resources to avoid contention.
+  # ─────────────────────────────────────────────────────────────────────────────
+  integration-sca-realtime:
+    name: SCA Realtime Scan (Isolated)
+    runs-on: cx-public-ubuntu-x64
+    if: always()
+    env:
+      CX_BASE_URI: ${{ secrets.CX_BASE_URI }}
+      CX_CLIENT_ID: ${{ secrets.CX_CLIENT_ID }}
+      CX_CLIENT_SECRET: ${{ secrets.CX_CLIENT_SECRET }}
+      CX_BASE_AUTH_URI: ${{ secrets.CX_BASE_AUTH_URI }}
+      CX_AST_USERNAME: ${{ secrets.CX_AST_USERNAME }}
+      CX_AST_PASSWORD: ${{ secrets.CX_AST_PASSWORD }}
+      CX_APIKEY: ${{ secrets.CX_APIKEY }}
+      CX_TENANT: ${{ secrets.CX_TENANT }}
+      CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
+      CX_ORIGIN: "cli-tests"
+      PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      PROXY_HOST: localhost
+      PROXY_PORT: 3128
+      PROXY_USERNAME: ${{ secrets.PROXY_USER }}
+      PROXY_PASSWORD: ${{ secrets.PROXY_PASSWORD }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version: '1.25.x'
+
+      - name: Build binary
+        run: go build -o ./bin/cx ./cmd
+
+      - name: Install gocovmerge
+        run: go install github.com/wadey/gocovmerge@latest
+
+      - name: Start Squid proxy
+        run: |
+          docker run \
+            --name squid \
+            -d \
+            -p 3128:3128 \
+            -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
+            -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
+            ubuntu/squid:5.2-22.04_beta
+
+      - name: Download ScaResolver
+        run: |
+          wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
+          tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
+          rm -rf ScaResolver-linux64.tar.gz
+
+      - name: Pre-test cleanup (SCA Realtime)
+        run: go test -v github.com/checkmarx/ast-cli/test/cleandata
+
+      - name: Run TestRunScaRealtimeScan
+        env:
+          MATRIX_NAME: sca-realtime
+          MATRIX_LABEL: "SCA Realtime Scan"
+          MATRIX_TIMEOUT: "60m"
+        run: |
+          set -euo pipefail
+
+          COVER_FILE="cover-sca-realtime.out"
+
+          run_tests() {
+            local pattern="$1" outfile="$2" logfile="$3" timeout_val="$4"
+            go test \
+              -tags integration \
+              -v \
+              -timeout "${timeout_val}" \
+              -coverpkg "$GO_COVERAGE_PKGS" \
+              -coverprofile "${outfile}" \
+              -run "${pattern}" \
+              github.com/checkmarx/ast-cli/test/integration 2>&1 | tee "${logfile}" || true
+          }
+
+          echo "::group::Attempt 1 — SCA Realtime Scan"
+          run_tests "TestRunScaRealtimeScan" "$COVER_FILE" "test_output.log" "60m"
+          echo "::endgroup::"
+
+          FAILED=$(grep -E "^--- FAIL: " test_output.log | awk '{print $3}' | paste -sd '|' - || true)
+
+          # ── Retry 1 ────────────────────────────────────────────────────────
+          if [ -n "$FAILED" ]; then
+            echo "::warning::Retry 1 for SCA Realtime Scan: $FAILED"
+            COVER_R1="cover-sca-realtime-r1.out"
+            echo "::group::Attempt 2 — SCA Realtime Scan"
+            run_tests "$FAILED" "$COVER_R1" "retry1_output.log" "30m"
+            echo "::endgroup::"
+
+            if [ -f "$COVER_R1" ]; then
+              gocovmerge "$COVER_FILE" "$COVER_R1" > merged.out
+              mv merged.out "$COVER_FILE"
+              rm -f "$COVER_R1"
+            fi
+
+            FAILED2=$(grep -E "^--- FAIL: " retry1_output.log | awk '{print $3}' | paste -sd '|' - || true)
+
+            # ── Retry 2 ────────────────────────────────────────────────────────
+            if [ -n "$FAILED2" ]; then
+              echo "::warning::Retry 2 for SCA Realtime Scan: $FAILED2"
+              COVER_R2="cover-sca-realtime-r2.out"
+              echo "::group::Attempt 3 — SCA Realtime Scan"
+              run_tests "$FAILED2" "$COVER_R2" "retry2_output.log" "30m"
+              echo "::endgroup::"
+
+              if [ -f "$COVER_R2" ]; then
+                gocovmerge "$COVER_FILE" "$COVER_R2" > merged.out
+                mv merged.out "$COVER_FILE"
+                rm -f "$COVER_R2"
+              fi
+
+              FINAL_FAILED=$(grep -E "^--- FAIL: " retry2_output.log | awk '{print $3}' || true)
+              if [ -n "$FINAL_FAILED" ]; then
+                echo "::error::Tests still failing after 2 retries in SCA Realtime Scan: $FINAL_FAILED"
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "All SCA Realtime Scan tests passed."
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: coverage-sca-realtime
+          path: cover-sca-realtime.out
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 #v4
+        with:
+          name: test-logs-sca-realtime
+          path: |
+            test_output.log
+            retry1_output.log
+            retry2_output.log
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop Squid proxy
+        if: always()
+        run: docker stop squid && docker rm squid || true
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Job C: Download all per-group coverage files, merge them, check >= 75%,
   #        upload the HTML report, and run a final project cleanup.
   # ─────────────────────────────────────────────────────────────────────────────
   merge-coverage:
     name: Merge Coverage Reports
-    needs: integration-tests
+    needs: [integration-tests, integration-sca-realtime]
     runs-on: cx-public-ubuntu-x64
     if: always()
     env:
