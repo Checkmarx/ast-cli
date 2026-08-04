@@ -1375,7 +1375,6 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
-	t.Skip("Skip this test cases due to context deadline exceeded")
 	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
 
 	err, _ := executeCommand(t, args...)
@@ -2972,7 +2971,10 @@ func TestScanCreateSkipDefaultFilterDirectory(t *testing.T) {
 	executeCmdWithTimeOutNilAssertion(t, "Skip default filter scan should complete", timeout, args...)
 
 	assert.Assert(t, strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base include/exclude file filter."),
+		"--skip-default-filter set: skipping default base exclude file filter."),
+		"expected skip-default-filter log line to be printed")
+	assert.Assert(t, strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base include file filter."),
 		"expected skip-default-filter log line to be printed")
 }
 
@@ -2995,7 +2997,10 @@ func TestScanCreateSkipDefaultFilterZip(t *testing.T) {
 
 	executeCmdWithTimeOutNilAssertion(t, "Skip default filter zip scan should complete", timeout, args...)
 
-	assert.Assert(t, strings.Contains(buf.String(),
-		"--skip-default-filter set: skipping default base include/exclude file filter."),
-		"expected skip-default-filter log line to be printed")
+	assert.Assert(t, !strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base exclude file filter."),
+		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
+	assert.Assert(t, !strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base include file filter."),
+		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
 }
