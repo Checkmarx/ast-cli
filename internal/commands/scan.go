@@ -1755,6 +1755,7 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 
 func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
 	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
 		return buildFilters([]string{}, userIncludeFilter)
 	}
 	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
@@ -1762,6 +1763,7 @@ func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []strin
 
 func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
 	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base exclude file filter.")
 		return buildFilters([]string{}, userExcludeFilter)
 	}
 	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
@@ -2133,9 +2135,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
 	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
-	if skipDefaultFilter {
-		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include/exclude file filter.")
-	}
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
