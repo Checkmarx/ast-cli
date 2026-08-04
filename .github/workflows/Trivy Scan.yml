@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_call:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -19,7 +23,9 @@ jobs:
       - name: Build the project
         run: go build -o ./cx ./cmd
       - name: Build Docker image
-        run: docker build -t ast-cli:${{ github.sha }} .
+        env:
+          IMAGE_TAG: ast-cli:${{ github.sha }}
+        run: docker build -t "$IMAGE_TAG" .
       - name: Run Trivy scanner without downloading DBs
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 #v0.35.0
         with:

@@ -17,6 +17,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/filtering"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -5343,7 +5344,9 @@ func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "", sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5372,7 +5375,9 @@ func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5403,7 +5408,9 @@ func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "./out", sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5440,7 +5447,9 @@ func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 

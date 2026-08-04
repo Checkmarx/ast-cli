@@ -19,7 +19,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/pkg/errors"
-	assertion "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gotest.tools/assert"
@@ -367,6 +366,59 @@ func TestParseSarifEmptyResultSast(t *testing.T) {
 	if result != nil {
 		t.Errorf("Expected nil result for empty ScanResultData.Nodes, got %v", result)
 	}
+}
+
+func TestParseSarifResultSastClampsZeroColumns(t *testing.T) {
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			Nodes: []*wrappers.ScanResultNode{
+				{FileName: "/src/app.go", Line: 10, Column: 0, Length: 0},
+				{FileName: "/src/app.go", Line: 12, Column: 0, Length: 5},
+			},
+		},
+	}
+
+	sarifResults := parseSarifResultSast(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Assert(t, len(sarifResults[0].Locations) == 1)
+
+	primary := sarifResults[0].Locations[0].PhysicalLocation.Region
+	assert.Equal(t, uint(1), primary.StartColumn)
+	assert.Equal(t, uint(2), primary.EndColumn)
+
+	threadLocations := sarifResults[0].CodeFlows[0].ThreadFlows[0].Locations
+	assert.Equal(t, uint(1), threadLocations[0].Location.PhysicalLocation.Region.StartColumn)
+	assert.Equal(t, uint(2), threadLocations[0].Location.PhysicalLocation.Region.EndColumn)
+	assert.Equal(t, uint(1), threadLocations[1].Location.PhysicalLocation.Region.StartColumn)
+	assert.Equal(t, uint(6), threadLocations[1].Location.PhysicalLocation.Region.EndColumn)
+}
+
+func TestParseSarifResultKicsClampsZeroStartLine(t *testing.T) {
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			Filename: "/Dockerfile",
+			Line:     0,
+		},
+	}
+
+	sarifResults := parseSarifResultKics(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Equal(t, uint(1), sarifResults[0].Locations[0].PhysicalLocation.Region.StartLine)
+}
+
+func TestParseSarifResultsSscsClampsZeroStartLine(t *testing.T) {
+	result := &wrappers.ScanResult{
+		Type:        params.SCSSecretDetectionType,
+		Description: "secret found",
+		ScanResultData: wrappers.ScanResultData{
+			Filename: "config.yaml",
+			Line:     0,
+		},
+	}
+
+	sarifResults := parseSarifResultsSscs(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Equal(t, uint(1), sarifResults[0].Locations[0].PhysicalLocation.Region.StartLine)
 }
 
 func TestRunGetResultsByScanIdSonarFormat(t *testing.T) {
@@ -944,7 +996,14 @@ func assertURINonEmpty(t *testing.T) {
 	var scanResults *wrappers.SarifResultsCollection
 	err = json.Unmarshal(reportBytes, &scanResults)
 	assert.NilError(t, err, "Error unmarshalling SARIF results")
-	assertion.Contains(t, scanResults.Runs[0].Results[10].Locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file")
+
+	for i := range scanResults.Runs[0].Results {
+		locations := scanResults.Runs[0].Results[i].Locations
+		if len(locations) > 0 && strings.Contains(locations[0].PhysicalLocation.ArtifactLocation.URI, "This alert has no associated file") {
+			return
+		}
+	}
+	assert.Assert(t, false, "expected a SARIF result with the no-associated-file placeholder URI, found none")
 }
 
 func assertRulePresentSarif(t *testing.T, ruleID string, scanResultsCollection *wrappers.SarifResultsCollection) {

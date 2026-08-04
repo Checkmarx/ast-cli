@@ -16,8 +16,10 @@ var (
 )
 
 var allowedOptionalKeys = map[string]bool{
-	"asca-location": true,
-	"aiProvider":    true,
+	"asca-location":    true,
+	"aiProvider":       true,
+	"aiAgentSessionId": true,
+	"agent":            true,
 }
 
 // CleanURL returns a cleaned url removing double slashes

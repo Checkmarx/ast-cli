@@ -75,7 +75,7 @@ func RunScaRealtime(scaRealTimeWrapper wrappers.ScaRealTimeWrapper) func(*cobra.
 		fmt.Println("Running SCA Realtime...")
 
 		// Handle SCA Resolver. Checks if it already exists and if it is in the latest version
-		_, err = osinstaller.InstallOrUpgrade(&scaconfig.Params)
+		_, err = osinstaller.InstallOrUpgrade(&scaconfig.Params, nil)
 		if err != nil {
 			return err
 		}
