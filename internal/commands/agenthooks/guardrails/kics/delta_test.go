@@ -20,8 +20,8 @@ func iacResult(title, similarityID, severity string, line int) iacrealtime.IacRe
 	}
 }
 
-func iacResultWithPlatform(title, similarityID, severity, platform string, line int) iacrealtime.IacRealtimeResult {
-	r := iacResult(title, similarityID, severity, line)
+func iacResultWithPlatform(title, platform string) iacrealtime.IacRealtimeResult {
+	r := iacResult(title, "sim1", "HIGH", 1)
 	r.Platform = platform
 	return r
 }
@@ -148,7 +148,7 @@ func TestIsDockerImageFinding_ByPlatform(t *testing.T) {
 	}
 	for _, c := range cases {
 		findings := []iacrealtime.IacRealtimeResult{
-			iacResultWithPlatform("SomeFinding", "sim1", "HIGH", c.platform, 1),
+			iacResultWithPlatform("SomeFinding", c.platform),
 		}
 		// Filename deliberately contradicts platform to prove platform wins.
 		if got := isDockerImageFinding("/project/values.yaml", findings); got != c.want {
@@ -179,7 +179,7 @@ func TestIsDockerImageFinding_FallsBackToFilenameWhenPlatformEmpty(t *testing.T)
 
 func TestFormatFindings_DockerfilePlatformUsesImageRemediation(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{
-		iacResultWithPlatform("VulnerableBaseImage", "sim1", "HIGH", "Dockerfile", 1),
+		iacResultWithPlatform("VulnerableBaseImage", "Dockerfile"),
 	}
 	_, ctx := formatFindings("/project/Dockerfile", findings)
 	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
@@ -192,7 +192,7 @@ func TestFormatFindings_DockerfilePlatformUsesImageRemediation(t *testing.T) {
 
 func TestFormatFindings_DockerComposePlatformUsesImageRemediation(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{
-		iacResultWithPlatform("VulnerableBaseImage", "sim1", "HIGH", "DockerCompose", 1),
+		iacResultWithPlatform("VulnerableBaseImage", "DockerCompose"),
 	}
 	_, ctx := formatFindings("/project/stack.yml", findings)
 	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
@@ -202,7 +202,7 @@ func TestFormatFindings_DockerComposePlatformUsesImageRemediation(t *testing.T) 
 
 func TestFormatFindings_TerraformUsesCodeRemediation(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{
-		iacResultWithPlatform("OpenSecurityGroup", "sim1", "HIGH", "Terraform", 1),
+		iacResultWithPlatform("OpenSecurityGroup", "Terraform"),
 	}
 	_, ctx := formatFindings("/project/main.tf", findings)
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {

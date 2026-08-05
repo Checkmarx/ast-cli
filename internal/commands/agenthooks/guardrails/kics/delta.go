@@ -88,9 +88,9 @@ var dockerImagePlatforms = map[string]bool{
 // back to filename heuristics only when platform is unavailable (e.g. older cached
 // results), since platform is scanner-reported ground truth and filenames can vary.
 func isDockerImageFinding(filePath string, findings []iacrealtime.IacRealtimeResult) bool {
-	for _, f := range findings {
-		if f.Platform != "" {
-			return dockerImagePlatforms[strings.ToLower(f.Platform)]
+	for i := range findings {
+		if findings[i].Platform != "" {
+			return dockerImagePlatforms[strings.ToLower(findings[i].Platform)]
 		}
 	}
 	return isDockerImageFileByName(filePath)
