@@ -4,6 +4,7 @@ package sessiontally
 
 import (
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 )
@@ -17,27 +18,32 @@ func sandbox(t *testing.T) {
 	t.Setenv("USERPROFILE", home)
 }
 
-func TestAddLoadClearRoundTrip(t *testing.T) {
+// Add is currently disabled (see its doc comment): these tests assert that no matter what is passed
+// in, Add never writes a tally file under ~/.checkmarx and Load/Clear stay safe no-ops as a result.
+
+func TestAddIsNoOpAndWritesNoFile(t *testing.T) {
 	sandbox(t)
 	Add("S1", "Asca", 2, 2)
-	Add("S1", "Asca", 1, 1)
 	Add("S1", "Sca", 3, 1)
+	Add("", "Sca", 1, 1)
 
-	got := Load("S1")
-	if got["Asca"].VulnerabilitiesFound != 3 || got["Asca"].RemediationsOffered != 3 {
-		t.Errorf("Asca fold wrong: %+v", got["Asca"])
-	}
-	if got["Sca"].VulnerabilitiesFound != 3 || got["Sca"].RemediationsOffered != 1 {
-		t.Errorf("Sca fold wrong: %+v", got["Sca"])
+	if got := Load("S1"); len(got) != 0 {
+		t.Errorf("expected no tallies recorded, got %+v", got)
 	}
 
-	Clear("S1")
-	if n := len(Load("S1")); n != 0 {
-		t.Errorf("expected empty after Clear, got %d engines", n)
+	dir, ok := baseDir()
+	if !ok {
+		t.Fatal("baseDir unavailable")
+	}
+	if _, err := os.Stat(dir); err == nil {
+		entries, _ := os.ReadDir(dir)
+		if len(entries) != 0 {
+			t.Errorf("expected no files created under %s, got %v", dir, entries)
+		}
 	}
 }
 
-func TestConcurrentAddDoesNotLoseRecords(t *testing.T) {
+func TestConcurrentAddStillNoOp(t *testing.T) {
 	sandbox(t)
 	var wg sync.WaitGroup
 	for i := 0; i < 50; i++ {
@@ -45,20 +51,8 @@ func TestConcurrentAddDoesNotLoseRecords(t *testing.T) {
 		go func() { defer wg.Done(); Add("S1", "Asca", 1, 0) }()
 	}
 	wg.Wait()
-	if got := Load("S1")["Asca"].VulnerabilitiesFound; got != 50 {
-		t.Errorf("concurrent append lost records: got %d want 50", got)
-	}
-}
-
-func TestEmptyIDUsesDefaultBucketAndIsMergedAndCleared(t *testing.T) {
-	sandbox(t)
-	Add("", "Sca", 1, 1) // empty id → shared default bucket
-	if got := Load("S1")["Sca"].VulnerabilitiesFound; got != 1 {
-		t.Errorf("Load should merge the default bucket: got %d", got)
-	}
-	Clear("S1") // Clear removes the default bucket too
-	if n := len(Load("other")); n != 0 {
-		t.Errorf("default bucket not cleared: got %d engines", n)
+	if got := Load("S1")["Asca"].VulnerabilitiesFound; got != 0 {
+		t.Errorf("Add is disabled, expected 0 got %d", got)
 	}
 }
 
@@ -77,16 +71,8 @@ func TestHostileIDStaysInsideCheckmarxDir(t *testing.T) {
 	sandbox(t)
 	id := "../../etc/passwd weird/id"
 	Add(id, "Asca", 1, 1)
-	if Load(id)["Asca"].VulnerabilitiesFound != 1 {
-		t.Errorf("sanitized id round-trip failed")
-	}
-	dir, ok := baseDir()
-	if !ok {
-		t.Fatal("baseDir unavailable")
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil || len(entries) == 0 {
-		t.Fatalf("expected a tally file inside %s (err=%v)", dir, err)
+	if got := Load(id)["Asca"].VulnerabilitiesFound; got != 0 {
+		t.Errorf("Add is disabled, expected 0 got %d", got)
 	}
 	// The traversal must not have created a file outside ~/.checkmarx.
 	if _, err := os.Stat("etc/passwd weird"); err == nil {
@@ -96,16 +82,19 @@ func TestHostileIDStaysInsideCheckmarxDir(t *testing.T) {
 
 func TestMalformedLinesSkipped(t *testing.T) {
 	sandbox(t)
-	Add("S1", "Asca", 1, 1)
+	// Add is disabled, so write the tally file directly to exercise Load's fold/skip logic.
 	path, ok := tallyPath("S1")
 	if !ok {
 		t.Fatal("no tally path")
 	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err := os.MkdirAll(filepath.Dir(path), dirPerm); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, filePerm)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _ = f.WriteString("not json\n{}\n{\"engine\":\"\",\"found\":9}\n")
+	_, _ = f.WriteString("not json\n{}\n{\"engine\":\"\",\"found\":9}\n{\"engine\":\"Asca\",\"found\":1,\"remOffered\":1}\n")
 	_ = f.Close()
 
 	if got := Load("S1")["Asca"].VulnerabilitiesFound; got != 1 {
