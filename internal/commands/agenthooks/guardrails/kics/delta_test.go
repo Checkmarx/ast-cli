@@ -20,6 +20,12 @@ func iacResult(title, similarityID, severity string, line int) iacrealtime.IacRe
 	}
 }
 
+func iacResultWithPlatform(title, platform string) iacrealtime.IacRealtimeResult {
+	r := iacResult(title, "sim1", "HIGH", 1)
+	r.Platform = platform
+	return r
+}
+
 // ── NewFindings ───────────────────────────────────────────────────────────────
 
 func TestNewFindings_NilOriginalReturnsAll(t *testing.T) {
@@ -121,5 +127,88 @@ func TestFormatFindings_ContextContainsDoNotBypass(t *testing.T) {
 	_, ctx := formatFindings("/project/Dockerfile", findings)
 	if !strings.Contains(ctx, "bypass") {
 		t.Errorf("context should warn against bypass, got: %q", ctx)
+	}
+}
+
+// ── isDockerImageFinding / remediation tool routing ────────────────────────────
+
+func TestIsDockerImageFinding_ByPlatform(t *testing.T) {
+	cases := []struct {
+		platform string
+		want     bool
+	}{
+		{"Dockerfile", true},
+		{"DockerCompose", true},
+		{"Docker Compose", true},
+		{"dockerfile", true},
+		{"Terraform", false},
+		{"Kubernetes", false},
+		{"CloudFormation", false},
+		{"Ansible", false},
+	}
+	for _, c := range cases {
+		findings := []iacrealtime.IacRealtimeResult{
+			iacResultWithPlatform("SomeFinding", c.platform),
+		}
+		// Filename deliberately contradicts platform to prove platform wins.
+		if got := isDockerImageFinding("/project/values.yaml", findings); got != c.want {
+			t.Errorf("isDockerImageFinding with platform %q = %v, want %v", c.platform, got, c.want)
+		}
+	}
+}
+
+func TestIsDockerImageFinding_FallsBackToFilenameWhenPlatformEmpty(t *testing.T) {
+	cases := map[string]bool{
+		"/project/Dockerfile":              true,
+		"/project/api.dockerfile":          true,
+		"/project/docker-compose.yml":      true,
+		"/project/docker-compose.yaml":     true,
+		"/project/docker-compose.prod.yml": true,
+		"/project/compose.yaml":            true,
+		"/project/main.tf":                 false,
+		"/project/deployment.yaml":         false,
+		"/project/values.yaml":             false,
+	}
+	for path, want := range cases {
+		findings := []iacrealtime.IacRealtimeResult{iacResult("SomeFinding", "sim1", "HIGH", 1)}
+		if got := isDockerImageFinding(path, findings); got != want {
+			t.Errorf("isDockerImageFinding(%q) with no platform = %v, want %v", path, got, want)
+		}
+	}
+}
+
+func TestFormatFindings_DockerfilePlatformUsesImageRemediation(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{
+		iacResultWithPlatform("VulnerableBaseImage", "Dockerfile"),
+	}
+	_, ctx := formatFindings("/project/Dockerfile", findings)
+	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("Dockerfile context should call imageRemediation, got: %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("Dockerfile context should not call codeRemediation, got: %q", ctx)
+	}
+}
+
+func TestFormatFindings_DockerComposePlatformUsesImageRemediation(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{
+		iacResultWithPlatform("VulnerableBaseImage", "DockerCompose"),
+	}
+	_, ctx := formatFindings("/project/stack.yml", findings)
+	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("docker-compose context should call imageRemediation, got: %q", ctx)
+	}
+}
+
+func TestFormatFindings_TerraformUsesCodeRemediation(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{
+		iacResultWithPlatform("OpenSecurityGroup", "Terraform"),
+	}
+	_, ctx := formatFindings("/project/main.tf", findings)
+	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("Terraform context should call codeRemediation, got: %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("Terraform context should not call imageRemediation, got: %q", ctx)
 	}
 }
