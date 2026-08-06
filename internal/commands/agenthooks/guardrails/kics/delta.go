@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 )
 
@@ -60,9 +61,17 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 }
 
 // formatFindings builds the two verdict fields delivered to the agent.
-func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult) (reason, context string) {
+// Cursor receives cursorAdditionalContext (folded into agent_message); other agents
+// receive the original additionalContext (e.g. Claude additionalContext).
+func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
-	return permissionDecisionReason(filePath, summary), additionalContext(filePath, findings)
+	reason = permissionDecisionReason(filePath, summary)
+	if agent == agenthooks.AgentCursor {
+		context = cursorAdditionalContext(filePath, findings)
+	} else {
+		context = additionalContext(filePath, findings)
+	}
+	return reason, context
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.
@@ -114,6 +123,7 @@ func isDockerImageFileByName(filePath string) bool {
 // KICS is a deterministic IaC rule engine: unlike ASCA, its findings are not caused by
 // missing cross-file context, so the agent is NOT given discretion to treat findings as
 // false positives. Every new finding must be fixed.
+// Used for Claude, Copilot, and other non-Cursor agents.
 func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult) string {
 	var findingList strings.Builder
 	for _, f := range findings {
@@ -166,4 +176,28 @@ func remediationInstructions(filePath string, findings []iacrealtime.IacRealtime
 		"genuinely requires resources outside this file (for example a separate KMS key or " +
 		"a centrally-managed policy), add them as part of your change rather than skipping " +
 		"the finding."
+
+}
+
+// cursorAdditionalContext is remediation guidance for Cursor only. Cursor has no
+// additionalContext field on preToolUse — ast-cx-hooks folds this into agent_message.
+func cursorAdditionalContext(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+	var findingList strings.Builder
+	for _, f := range findings {
+		line := 0
+		if len(f.Locations) > 0 {
+			line = f.Locations[0].Line
+		}
+		fmt.Fprintf(&findingList, "  - line %d [%s] %s: %s\n",
+			line, f.Severity, f.Title, f.Description)
+	}
+	return fmt.Sprintf(
+		"KICS IaC findings in %s — apply the cx-devassist-kics.mdc rule exactly. "+
+			"Do not retry the blocked Write/StrReplace, paste code in chat, or bypass the scan with shell workarounds.\n\n"+
+			"Fix every finding below (deterministic IaC rule matches — not false positives). "+
+			"For each, call mcp__Checkmarx__imageRemediation with type \"iac\" and metadata from the finding "+
+			"(title, description, remediationAdvice), apply remediation_steps, then retry the write:\n"+
+			"%s",
+		filePath, findingList.String(),
+	)
 }

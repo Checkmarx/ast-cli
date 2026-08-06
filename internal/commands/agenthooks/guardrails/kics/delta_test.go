@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 )
@@ -89,7 +90,7 @@ func TestNewFindings_DeltaDedup_SameKeyNotDoubled(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsKICS(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings)
+	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
 	if !strings.Contains(reason, "KICS") {
 		t.Errorf("reason should contain KICS, got: %q", reason)
 	}
@@ -97,7 +98,7 @@ func TestFormatFindings_ReasonContainsKICS(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsFilePath(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings)
+	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
 	if !strings.Contains(reason, "/project/Dockerfile") {
 		t.Errorf("reason should contain file path, got: %q", reason)
 	}
@@ -105,7 +106,7 @@ func TestFormatFindings_ReasonContainsFilePath(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsSeverityAndTitle(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings)
+	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
 	if !strings.Contains(reason, "HIGH") {
 		t.Errorf("reason should contain severity, got: %q", reason)
 	}
@@ -116,7 +117,7 @@ func TestFormatFindings_ReasonContainsSeverityAndTitle(t *testing.T) {
 
 func TestFormatFindings_ContextContainsFixInstruction(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	_, ctx := formatFindings("/project/Dockerfile", findings)
+	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "fix") && !strings.Contains(ctx, "Fix") {
 		t.Errorf("context should contain fix instruction, got: %q", ctx)
 	}
@@ -124,7 +125,7 @@ func TestFormatFindings_ContextContainsFixInstruction(t *testing.T) {
 
 func TestFormatFindings_ContextContainsDoNotBypass(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	_, ctx := formatFindings("/project/Dockerfile", findings)
+	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "bypass") {
 		t.Errorf("context should warn against bypass, got: %q", ctx)
 	}
@@ -210,5 +211,39 @@ func TestFormatFindings_TerraformUsesCodeRemediation(t *testing.T) {
 	}
 	if strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
 		t.Errorf("Terraform context should not call imageRemediation, got: %q", ctx)
+	}
+}
+func TestCursorAdditionalContext_UsesImageRemediation(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	ctx := cursorAdditionalContext("/project/Dockerfile", findings)
+	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("cursor KICS context should use imageRemediation, got: %q", ctx)
+	}
+	if strings.Contains(ctx, "codeRemediation") {
+		t.Errorf("cursor KICS context should not use codeRemediation, got: %q", ctx)
+	}
+	if !strings.Contains(ctx, "cx-devassist-kics.mdc") {
+		t.Errorf("cursor KICS context should reference cx-devassist-kics.mdc rule, got: %q", ctx)
+	}
+}
+
+func TestFormatFindings_RoutesCursorContext(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentCursor)
+	if !strings.Contains(ctx, "cx-devassist-kics.mdc") {
+		t.Fatalf("cursor agent should get context with rule reference, got %q", ctx)
+	}
+	if strings.Contains(ctx, "MANDATORY NEXT STEPS") {
+		t.Fatalf("cursor context should not have verbose MANDATORY NEXT STEPS block, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "imageRemediation") {
+		t.Fatalf("cursor KICS context should reference imageRemediation, got %q", ctx)
+	}
+	_, ctx = formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	if strings.Contains(ctx, "cx-devassist-kics.mdc") {
+		t.Fatalf("claude agent should not get cursor-specific rule reference, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "codeRemediation") {
+		t.Fatalf("claude KICS context should reference codeRemediation, got %q", ctx)
 	}
 }

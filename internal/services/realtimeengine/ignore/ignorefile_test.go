@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,4 +100,50 @@ func TestPathFor_AnchorsAtWorkDir(t *testing.T) {
 
 func TestPathFor_EmptyWorkDirFallsBackToDefault(t *testing.T) {
 	assert.Equal(t, DefaultPath(), PathFor(""))
+}
+
+// TestPathFor_NormalizesCursorPosixStyleWindowsRoot guards against a real production
+// failure: Cursor reports a Windows workspace root as "/c:/foo/bar" (leading slash before
+// the drive letter). Without normalization, filepath.Join produces a path Go's os.ReadFile
+// rejects with "The filename, directory name, or volume label syntax is incorrect."
+func TestPathFor_NormalizesCursorPosixStyleWindowsRoot(t *testing.T) {
+	got := PathFor("/c:/Cx-Flow/Test/JavaVulnerabilityLabE")
+	want := filepath.Join("c:/Cx-Flow/Test/JavaVulnerabilityLabE", ".checkmarx", "checkmarxIgnoredTempList.json")
+	assert.Equal(t, want, got)
+}
+
+func TestNormalizePath(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"posix-style windows root", "/c:/Cx-Flow/Test/JavaVulnerabilityLabE", "c:/Cx-Flow/Test/JavaVulnerabilityLabE"},
+		{"posix-style windows root, uppercase drive", "/C:/Users/dev/project", "C:/Users/dev/project"},
+		{"native windows backslash path", `c:\Users\dev\project`, "c:/Users/dev/project"},
+		{"native windows forward-slash path", "c:/Users/dev/project", "c:/Users/dev/project"},
+		{"posix path, no drive letter", "/home/dev/project", "/home/dev/project"},
+		{"empty", "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, NormalizePath(tc.in))
+		})
+	}
+}
+
+// TestLoad_NormalizesCursorPosixStyleWindowsRoot reproduces the exact reported failure:
+// --ignored-file-path passed as "/c:/…/checkmarxIgnoredTempList.json" must not error with
+// "invalid volume label syntax" — Load should normalize it and read the (missing) file cleanly.
+func TestLoad_NormalizesCursorPosixStyleWindowsRoot(t *testing.T) {
+	dir := t.TempDir()
+	drive := filepath.VolumeName(dir)
+	if drive == "" {
+		t.Skip("no drive letter on this platform")
+	}
+	posixStyle := "/" + strings.TrimSuffix(filepath.ToSlash(dir), "") + "/checkmarxIgnoredTempList.json"
+
+	list, err := Load(posixStyle)
+	require.NoError(t, err)
+	assert.Empty(t, list)
 }
