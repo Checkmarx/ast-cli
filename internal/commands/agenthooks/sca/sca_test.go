@@ -5,6 +5,7 @@ package sca
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -233,6 +234,42 @@ func TestDenyVulnerable_EmitsProvenanceOptionalFlags(t *testing.T) {
 	// Empty agent → no provenance fragment (backward-compatible default).
 	if _, noAgent := DenyVulnerable(pkgs, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
 		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
+func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
+	got := cursorEscapeJSON(`{"PackageName":"axios"}`)
+	if runtime.GOOS == "windows" {
+		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
+		// backslash is not a quote-escape there, so `\"` would corrupt the command.
+		want := `{""PackageName"":""axios""}`
+		if got != want {
+			t.Errorf("expected doubled-quote escaping on windows (PowerShell), got %q", got)
+		}
+	} else {
+		want := `{\"PackageName\":\"axios\"}`
+		if got != want {
+			t.Errorf("expected backslash-escaped quotes on unix (bash), got %q", got)
+		}
+	}
+}
+
+func TestDenyVulnerable_CursorSuppressCommandNeverUsesBackslashEscapingOnWindows(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "", "Cursor", "sess-9")
+	if !strings.Contains(remediation, `ignore-vulnerability --scan-type sca --data "`) {
+		t.Errorf("cursor remediation should use double-quoted suppress command, got %q", remediation)
+	}
+	if runtime.GOOS == "windows" {
+		if strings.Contains(remediation, `\"`) {
+			t.Errorf("cursor suppress command on windows must not use backslash-escaped quotes "+
+				"(PowerShell terminates the string early on them), got %q", remediation)
+		}
+		if !strings.Contains(remediation, `""PackageName""`) {
+			t.Errorf("expected doubled-quote escaping for PowerShell, got %q", remediation)
+		}
 	}
 }
 

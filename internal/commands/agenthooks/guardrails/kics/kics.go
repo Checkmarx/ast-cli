@@ -69,7 +69,8 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	}
 	defer cleanupNew()
 
-	newResults, err := svc.scan(stagedNew)
+	ignoreFilePath := existingIgnoreFilePath(ev.WorkDir)
+	newResults, err := svc.scan(stagedNew, ignoreFilePath)
 	if err != nil {
 		// Fail open: Docker unavailable, image pull failure, feature flag disabled, etc.
 		logger.PrintfIfVerbose("kics guardrail: scan of proposed content failed, failing open: %v", err)
@@ -81,7 +82,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
-		r, c := formatFindings(ev.FilePath, newResults)
+		r, c := formatFindings(ev.FilePath, newResults, ev.Agent)
 		return true, r, c
 	}
 
@@ -92,7 +93,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	}
 	defer cleanupOrig()
 
-	origResults, err := svc.scan(stagedOrig)
+	origResults, err := svc.scan(stagedOrig, ignoreFilePath)
 	if err != nil {
 		// Fail open on original scan error
 		logger.PrintfIfVerbose("kics guardrail: scan of original content failed, failing open: %v", err)
@@ -104,15 +105,16 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 		return false, "", ""
 	}
 
-	r, c := formatFindings(ev.FilePath, newFindings)
+	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent)
 	return true, r, c
 }
 
-// existingIgnoreFilePath returns the default realtime ignore-file path only when it
-// exists on disk. The IaC realtime service logs a warning and skips ignore filtering
-// when a missing path is passed, but we keep the pattern consistent with ASCA.
-func existingIgnoreFilePath() string {
-	p := ignore.DefaultPath()
+// existingIgnoreFilePath returns the realtime ignore-file path anchored at workDir only
+// when it exists on disk. Mirrors the ASCA pattern: anchor to workDir so the hook reads
+// from the same absolute path that `cx ignore-vulnerability` writes to when run from the
+// project root. Returns "" (no filtering) until the user creates the file.
+func existingIgnoreFilePath(workDir string) string {
+	p := ignore.PathFor(workDir)
 	if _, err := os.Stat(p); err == nil {
 		return p
 	}
