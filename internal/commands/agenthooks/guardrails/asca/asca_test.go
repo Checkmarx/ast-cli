@@ -392,6 +392,49 @@ func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *
 	}
 }
 
+func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
+	got := cursorEscapeJSON(`{"FileName":"Demo.java"}`)
+	if runtime.GOOS == "windows" {
+		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
+		// backslash is not a quote-escape there, so `\"` would corrupt the command.
+		want := `{""FileName"":""Demo.java""}`
+		if got != want {
+			t.Errorf("expected doubled-quote escaping on windows (PowerShell), got %q", got)
+		}
+	} else {
+		want := `{\"FileName\":\"Demo.java\"}`
+		if got != want {
+			t.Errorf("expected backslash-escaped quotes on unix (bash), got %q", got)
+		}
+	}
+}
+
+func TestAdditionalContext_CursorSuppressCommandNeverUsesBackslashEscapingOnWindows(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "Demo.java", Line: 5, RuleID: 1027}}
+	ctx := additionalContext("Demo.java", "cx", findings, "", "Cursor", "sess-1")
+	if runtime.GOOS == "windows" {
+		if strings.Contains(ctx, `\"`) {
+			t.Errorf("cursor suppress command on windows must not use backslash-escaped quotes "+
+				"(PowerShell terminates the string early on them), got %q", ctx)
+		}
+		if !strings.Contains(ctx, `""FileName""`) {
+			t.Errorf("expected doubled-quote escaping for PowerShell, got %q", ctx)
+		}
+	}
+}
+
+func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
+	_, ctx := formatFindings("a.py", findings, "", "Cursor", "sess-1")
+	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data "`) {
+		t.Fatalf("cursor agent should get double-quoted suppress command, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", "Claude", "sess-1")
+	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data '`) {
+		t.Fatalf("claude agent should get single-quoted suppress command, got %q", ctx)
+	}
+}
+
 func TestAdditionalContext_PinsIgnoredFilePathToWorkDir(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},

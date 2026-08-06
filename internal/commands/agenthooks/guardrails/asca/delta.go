@@ -4,11 +4,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
+
+// agentCursor identifies Cursor for the shell-quoting branch below. Cursor's CLI
+// reformats single-quoted commands into double-quoted ones (notably on Windows
+// PowerShell), so its suppression commands need double-quoted JSON with the
+// embedded quotes escaped for the shell actually in play (see cursorEscapeJSON) —
+// otherwise the reformatted command corrupts the JSON payload or drops
+// --ignored-file-path, silently sending the suppression to the wrong file.
+const agentCursor = "Cursor"
 
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the cx-devassist plugin's matching logic.
@@ -88,6 +98,34 @@ func ignoredFilePathFlag(workDir string) string {
 	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
 }
 
+// cursorIgnoredFilePathFlag is the Cursor-specific variant of ignoredFilePathFlag. It uses
+// double quotes and converts backslashes to forward slashes so the flag survives Windows
+// PowerShell and cmd.exe without the agent needing to re-quote it. (Cursor agents on Windows
+// tend to reformat single-quoted shell commands into double-quoted form and drop flags that
+// have complex quoting, causing the ignore entry to land in the wrong directory.)
+func cursorIgnoredFilePathFlag(workDir string) string {
+	if workDir == "" {
+		return ""
+	}
+	p := filepath.ToSlash(ignore.PathFor(workDir))
+	return fmt.Sprintf(` --ignored-file-path "%s"`, p)
+}
+
+// cursorEscapeJSON escapes the embedded `"` in a JSON payload so it survives being placed
+// inside a double-quoted argument on the shell that actually runs the Cursor agent's command:
+// PowerShell on Windows, bash/zsh elsewhere. This runs on the developer's own machine (inside
+// the cx process), so runtime.GOOS reflects that shell choice directly. The two shells disagree
+// on how to escape an embedded double quote — bash accepts a backslash-escaped `\"`, but
+// PowerShell's double-quoted strings do NOT treat `\` as an escape character at all: `\"` ends
+// the string early (backslash is literal, then the quote closes it), corrupting everything
+// after the first embedded quote. PowerShell requires the quote to be doubled (`""`) instead.
+func cursorEscapeJSON(data string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ReplaceAll(data, `"`, `""`)
+	}
+	return strings.ReplaceAll(data, `"`, `\"`)
+}
+
 // optionalFlagsFragment carries the suppression's provenance (AI provider, agent, session id) to the
 // child `cx ignore-vulnerability` process via --optional-flags, which reads them through
 // utils.GetOptionalParam and logs them — matching logRemediationTelemetry's aiProvider/agent/session.
@@ -115,7 +153,6 @@ func permissionDecisionReason(filePath, summary string) string {
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user.
 func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
-	ignoreFlag := ignoredFilePathFlag(workDir)
 	provenance := optionalFlagsFragment(agent, sessionID)
 	var suppressCmds strings.Builder
 	for _, f := range findings {
@@ -124,7 +161,14 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			Line:     f.Line,
 			RuleID:   f.RuleID,
 		})
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		if agent == agentCursor {
+			ignoreFlag := cursorIgnoredFilePathFlag(workDir)
+			escapedData := cursorEscapeJSON(string(data))
+			fmt.Fprintf(&suppressCmds, `  %s ignore-vulnerability --scan-type asca --data "%s"%s%s`+"\n", cxBinary, escapedData, ignoreFlag, provenance)
+		} else {
+			ignoreFlag := ignoredFilePathFlag(workDir)
+			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		}
 	}
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+

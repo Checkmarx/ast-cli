@@ -11,7 +11,7 @@ import (
 type Scanner struct {
 	jwt  wrappers.JWTWrapper
 	ff   wrappers.FeatureFlagsWrapper
-	scan func(path string) ([]iacrealtime.IacRealtimeResult, error)
+	scan func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error)
 }
 
 // NewScanner returns a Scanner backed by the given wrappers.
@@ -23,11 +23,11 @@ func NewScanner(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper) *Scann
 
 // NewScannerWithFunc returns a Scanner whose scan call is replaced with f.
 // For unit tests only.
-func NewScannerWithFunc(f func(path string) ([]iacrealtime.IacRealtimeResult, error)) *Scanner {
+func NewScannerWithFunc(f func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error)) *Scanner {
 	return &Scanner{scan: f}
 }
 
-func (s *Scanner) runRealScan(path string) ([]iacrealtime.IacRealtimeResult, error) {
+func (s *Scanner) runRealScan(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
 	svc := iacrealtime.NewIacRealtimeService(s.jwt, s.ff, iacrealtime.NewContainerManager())
-	return svc.RunIacRealtimeScan(path, "", existingIgnoreFilePath())
+	return svc.RunIacRealtimeScan(path, "", ignoreFilePath)
 }
