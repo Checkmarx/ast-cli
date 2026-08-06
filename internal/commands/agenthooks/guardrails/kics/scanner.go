@@ -57,7 +57,7 @@ func resolveContainerEngine() string {
 	return defaultContainerEngine
 }
 
-func (s *Scanner) runRealScan(path string) ([]iacrealtime.IacRealtimeResult, error) {
+func (s *Scanner) runRealScan(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
 	svc := iacrealtime.NewIacRealtimeService(s.jwt, s.ff, iacrealtime.NewContainerManager())
-	return svc.RunIacRealtimeScan(path, resolveContainerEngine(), existingIgnoreFilePath())
+	return svc.RunIacRealtimeScan(path, resolveContainerEngine(), ignoreFilePath)
 }
