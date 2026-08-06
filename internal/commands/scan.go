@@ -927,6 +927,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.NoScanFlag, false, "Prevents CxOne scan from running after SBOM is generated locally. Relevant only when --sbom-first is submitted under --sca-resolver-params. Submitting this flag without --sbom-first causes an error.")
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.SkipDefaultFilterFlag, false, commonParams.SkipDefaultFilterFlagUsage)
 
 	return createScanCmd
 }
@@ -1643,7 +1644,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter bool) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1653,7 +1654,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	zipWriter := zip.NewWriter(outputFile)
 
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1671,7 +1672,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter), antMatcher)
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
 		if err != nil {
 			return "", err
 		}
@@ -1752,11 +1753,19 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 	return empty, err
 }
 
-func getIncludeFilters(userIncludeFilter string) []string {
+func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
+	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
+		return buildFilters([]string{}, userIncludeFilter)
+	}
 	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
 }
 
-func getExcludeFilters(userExcludeFilter string) []string {
+func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
+	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base exclude file filter.")
+		return buildFilters([]string{}, userExcludeFilter)
+	}
 	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
 }
 
@@ -2125,6 +2134,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
@@ -2190,7 +2200,11 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	unzip := ((sourceDirFilter != "" || userIncludeFilter != "" || len(antPatterns) > 0) || containerScanTriggered) && userProvidedZip
+	// containerScanTriggered must stay in this condition: without it, a container scan
+	// run with --containers-local-resolution and --skip-default-filter (and no
+	// --file-filter/--file-include) would never unzip the zip source, so local container
+	// resolution would never run. Keeping it here ensures the zip is still unzipped in that case.
+	unzip := ((sourceDirFilter != "" || userIncludeFilter != "" || len(antPatterns) > 0) || containerScanTriggered || !skipDefaultFilter) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -2284,7 +2298,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		} else {
 			if !isSbom {
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher)
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter)
 			}
 
 			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression

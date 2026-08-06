@@ -56,3 +56,12 @@ CVE-2026-48978 exp:2026-12-31
 # Risk: Low - affects base OS image, not application code
 # Impact: Minimal - only affects base OS components, application uses glibc runtime only
 CVE-2026-6791 exp:2026-12-31
+
+# CVE-2026-58055 (MEDIUM): libnghttp2 HTTP Request/Response Smuggling
+# Library: libnghttp2-14 v1.69.0-r0
+# Image: checkmarx/bash:5.3-r12 (base image)
+# Status: Fixed in libnghttp2-14 >= 1.70.0-r0
+# Risk: MEDIUM - HTTP/1.1 Upgrade smuggling potential
+# Impact: Awaiting checkmarx/bash base image patch
+# Tracking: AST-166372
+CVE-2026-58055 exp:2027-02-28

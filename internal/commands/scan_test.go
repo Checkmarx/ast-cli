@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -5346,7 +5347,7 @@ func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5377,7 +5378,7 @@ func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5410,7 +5411,7 @@ func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5449,7 +5450,7 @@ func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5504,4 +5505,140 @@ func cleanupMockAccessToken() {
 	wrappers.ClearCache()
 	// Reset to default value (300 seconds as per params/binds.go)
 	viper.Set(commonParams.TokenExpirySecondsKey, 300)
+}
+
+// --skip-default-filter tests
+
+func TestGetFilters_SkipDefaultFilter(t *testing.T) {
+	assert.DeepEqual(t, getIncludeFilters("*.foo", true), []string{"*.foo"})
+	assert.DeepEqual(t, getExcludeFilters("!bar", true), []string{"!bar"})
+
+	includeDefault := getIncludeFilters("*.foo", false)
+	assert.Assert(t, slices.Contains(includeDefault, "*.go"))
+	assert.Assert(t, slices.Contains(includeDefault, "*.foo"))
+
+	excludeDefault := getExcludeFilters("!bar", false)
+	assert.Assert(t, slices.Contains(excludeDefault, "!node_modules"))
+	assert.Assert(t, slices.Contains(excludeDefault, "!bar"))
+}
+
+func TestCompressFolder_DefaultBehaviorUnchanged(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-off-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.bin"), []byte("binary"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "asset.bin"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "lib.js"))
+}
+
+func TestCompressFolder_SkipDefaultFilter(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-on-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.bin"), []byte("binary"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.bin"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "lib.js"))
+}
+
+func TestCreateScanSkipDefaultFilter_Wiring(t *testing.T) {
+	execCmdNilAssertion(t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch",
+		"--skip-default-filter",
+	)
+}
+
+// skip-default-filter bypasses base filters, ant exclude pattern still applies.
+func TestCompressFolder_SkipDefaultFilter_WithAntFilterExclude(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-ant-exclude-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+	excludedDir := filepath.Join(projectDir, "excluded_by_ant")
+	assert.NilError(t, os.MkdirAll(excludedDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(excludedDir, "marker.go"), []byte("package excluded"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!excluded_by_ant/**"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "marker.go"))
+}
+
+// skip-default-filter with an ant include-only pattern drops non-matching files too.
+func TestCompressFolder_SkipDefaultFilter_WithAntFilterIncludeOnly(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-ant-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"**/*.customext"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "main.go"))
+}
+
+// file-filter-ext without skip-default-filter: base filters and the ant filter both apply.
+func TestCompressFolder_DefaultFilters_WithAntFilter(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "default-filter-with-ant-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+	keepDir := filepath.Join(projectDir, "keep_dir")
+	assert.NilError(t, os.MkdirAll(keepDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(keepDir, "marker.go"), []byte("package keep"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!keep_dir/**"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "lib.js"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "marker.go"))
 }
