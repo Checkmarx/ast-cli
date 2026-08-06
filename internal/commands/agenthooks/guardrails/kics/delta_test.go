@@ -240,7 +240,10 @@ func TestFormatFindings_RoutesCursorContext(t *testing.T) {
 	if !strings.Contains(ctx, "imageRemediation") {
 		t.Fatalf("cursor KICS context should reference imageRemediation, got %q", ctx)
 	}
-	_, ctx = formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	// Use a non-Docker path for the Claude assertion below: Dockerfile findings
+	// always route through imageRemediation (see isDockerImageFinding), so
+	// asserting codeRemediation here requires a generic IaC file instead.
+	_, ctx = formatFindings("/project/main.tf", findings, agenthooks.AgentClaude)
 	if strings.Contains(ctx, "cx-devassist-kics.mdc") {
 		t.Fatalf("claude agent should not get cursor-specific rule reference, got %q", ctx)
 	}

@@ -200,26 +200,3 @@ func cursorAdditionalContext(filePath string, findings []iacrealtime.IacRealtime
 		filePath, findingList.String(),
 	)
 }
-
-// cursorAdditionalContext is remediation guidance for Cursor only. Cursor has no
-// additionalContext field on preToolUse — ast-cx-hooks folds this into agent_message.
-func cursorAdditionalContext(filePath string, findings []iacrealtime.IacRealtimeResult) string {
-	var findingList strings.Builder
-	for _, f := range findings {
-		line := 0
-		if len(f.Locations) > 0 {
-			line = f.Locations[0].Line
-		}
-		fmt.Fprintf(&findingList, "  - line %d [%s] %s: %s\n",
-			line, f.Severity, f.Title, f.Description)
-	}
-	return fmt.Sprintf(
-		"KICS IaC findings in %s — apply the cx-devassist-kics.mdc rule exactly. "+
-			"Do not retry the blocked Write/StrReplace, paste code in chat, or bypass the scan with shell workarounds.\n\n"+
-			"Fix every finding below (deterministic IaC rule matches — not false positives). "+
-			"For each, call mcp__Checkmarx__imageRemediation with type \"iac\" and metadata from the finding "+
-			"(title, description, remediationAdvice), apply remediation_steps, then retry the write:\n"+
-			"%s",
-		filePath, findingList.String(),
-	)
-}
