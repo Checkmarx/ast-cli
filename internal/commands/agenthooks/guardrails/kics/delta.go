@@ -2,6 +2,7 @@ package kics
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
@@ -72,6 +73,43 @@ func permissionDecisionReason(filePath, summary string) string {
 	)
 }
 
+// dockerImagePlatforms are the KICS "platform" values (result.Platform, sourced from
+// KICS query metadata) whose findings concern container images rather than generic
+// IaC misconfigurations. These line up with the fileType enum accepted by the
+// imageRemediation MCP tool (Dockerfile, DockerCompose).
+var dockerImagePlatforms = map[string]bool{
+	"dockerfile":     true,
+	"dockercompose":  true,
+	"docker compose": true,
+}
+
+// isDockerImageFinding reports whether a finding's KICS platform identifies it as a
+// container image issue (Dockerfile/docker-compose) rather than generic IaC. Falls
+// back to filename heuristics only when platform is unavailable (e.g. older cached
+// results), since platform is scanner-reported ground truth and filenames can vary.
+func isDockerImageFinding(filePath string, findings []iacrealtime.IacRealtimeResult) bool {
+	for i := range findings {
+		if findings[i].Platform != "" {
+			return dockerImagePlatforms[strings.ToLower(findings[i].Platform)]
+		}
+	}
+	return isDockerImageFileByName(filePath)
+}
+
+// isDockerImageFileByName is a filename-based fallback for when KICS platform metadata
+// isn't available. Mirrors the basename conventions in params.KicsBaseFilters plus the
+// docker-compose/compose naming convention (not in KicsBaseFilters since compose files
+// match on the generic .yml/.yaml extensions).
+func isDockerImageFileByName(filePath string) bool {
+	base := strings.ToLower(filepath.Base(filePath))
+	if base == "dockerfile" || strings.HasSuffix(base, ".dockerfile") {
+		return true
+	}
+	name := strings.TrimSuffix(strings.TrimSuffix(base, ".yaml"), ".yml")
+	return name == "docker-compose" || strings.HasPrefix(name, "docker-compose.") ||
+		name == "compose" || strings.HasPrefix(name, "compose.")
+}
+
 // additionalContext is injected into the agent's context window to drive remediation.
 // KICS is a deterministic IaC rule engine: unlike ASCA, its findings are not caused by
 // missing cross-file context, so the agent is NOT given discretion to treat findings as
@@ -94,19 +132,38 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 			"tool or shell command.\n"+
 			"Fix every finding below, then retry the write:\n"+
 			"%s"+
-			"For each finding, call the mcp__Checkmarx__codeRemediation tool with:\n"+
-			"  {\n"+
-			"    \"type\": \"iac\",\n"+
-			"    \"metadata\": {\n"+
-			"      \"title\": \"[Title from finding]\",\n"+
-			"      \"description\": \"[Description from finding]\",\n"+
-			"      \"remediationAdvice\": \"[how to harden this configuration]\"\n"+
-			"    }\n"+
-			"  }\n"+
-			"Apply the remediation guidance the tool returns, then retry the write. If a fix "+
-			"genuinely requires resources outside this file (for example a separate KMS key or "+
-			"a centrally-managed policy), add them as part of your change rather than skipping "+
-			"the finding.",
-		filePath, findingList.String(),
+			"%s",
+		filePath, findingList.String(), remediationInstructions(filePath, findings),
 	)
+}
+
+// remediationInstructions returns the tool-call guidance for the finding's file type.
+// Dockerfile/docker-compose findings are about container images, so they must go
+// through imageRemediation (base image CVEs, safer tags, hardening). All other
+// KICS-supported files (Terraform, Kubernetes manifests, CloudFormation, etc.) are
+// generic IaC misconfigurations and go through codeRemediation.
+func remediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+	if isDockerImageFinding(filePath, findings) {
+		return "For each finding, call the mcp__Checkmarx__imageRemediation tool with:\n" +
+			"  {\n" +
+			"    \"imageName\": \"[image name from the finding/file, without the tag]\",\n" +
+			"    \"imageTag\": \"[image tag from the finding/file, e.g. latest]\",\n" +
+			"    \"fileType\": \"[Dockerfile or DockerCompose, matching this file]\"\n" +
+			"  }\n" +
+			"Apply the remediation guidance the tool returns (safer base image, pinned digest, " +
+			"hardening steps), then retry the write."
+	}
+	return "For each finding, call the mcp__Checkmarx__codeRemediation tool with:\n" +
+		"  {\n" +
+		"    \"type\": \"iac\",\n" +
+		"    \"metadata\": {\n" +
+		"      \"title\": \"[Title from finding]\",\n" +
+		"      \"description\": \"[Description from finding]\",\n" +
+		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n" +
+		"    }\n" +
+		"  }\n" +
+		"Apply the remediation guidance the tool returns, then retry the write. If a fix " +
+		"genuinely requires resources outside this file (for example a separate KMS key or " +
+		"a centrally-managed policy), add them as part of your change rather than skipping " +
+		"the finding."
 }
