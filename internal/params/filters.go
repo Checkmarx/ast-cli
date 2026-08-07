@@ -183,6 +183,8 @@ var BaseIncludeFilters = []string{
 	"*.lua",
 	"*.ec",
 	"*.apxc",
+	"*.tfvars",
+	"*.tfbackend",
 }
 
 var BaseExcludeFilters = []string{
