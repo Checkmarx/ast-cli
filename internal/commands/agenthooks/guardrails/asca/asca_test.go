@@ -581,4 +581,3 @@ func TestScanFileEdit_EmptyContent_Allows(t *testing.T) {
 			blocked, reason, context, severity)
 	}
 }
-

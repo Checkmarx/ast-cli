@@ -203,7 +203,6 @@ func validateSupportedManifestFile(filePath string) error {
 		"pom.xml":                  true,
 		"package.json":             true,
 		"bower.json":               true,
-		"yarn.lock":                true,
 		"Directory.Packages.props": true,
 		"packages.config":          true,
 		"go.mod":                   true,
