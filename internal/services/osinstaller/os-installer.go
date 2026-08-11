@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -73,14 +74,36 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 		return false, err
 	}
 
-	// Download hash file
+	// Hash file serves different purposes: version check for Vorpal, both version check and verification for SCA
 	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
 		return false, err
 	}
 
+	// Must shut down service before replacement to release file locks
 	if ascaWrapper != nil {
 		shutDownAndWait(ascaWrapper)
+	}
+
+	checksumPath, needsArchiveChecksumDownload, err := installationConfiguration.resolveArchiveChecksumVerification()
+	if err != nil {
+		return false, err
+	}
+	if needsArchiveChecksumDownload {
+		err = downloadFile(installationConfiguration.ArchiveChecksumDownloadURL, checksumPath)
+		if err != nil {
+			return false, err
+		}
+	}
+	if checksumPath != "" {
+		err = verifyArchiveAgainstSHA256SumFile(installationConfiguration.BinaryFilePath(), checksumPath, installationConfiguration.DownloadURL)
+		if err != nil {
+			logger.PrintIfVerbose("Removing potentially compromised archive due to checksum verification failure")
+			_ = os.Remove(installationConfiguration.BinaryFilePath())
+			return false, errors.Errorf("Archive integrity verification failed for %s: Checksum verification failed - archive may have been compromised", installationConfiguration.ExecutableFile)
+		}
+	} else {
+		logger.PrintIfVerbose("Skipping archive checksum verification (no sha256sum source configured for this installation)")
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
@@ -196,4 +219,95 @@ func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
 		time.Sleep(pollInterval)
 	}
 	logger.PrintIfVerbose("Timed out waiting for Vorpal service to stop; proceeding anyway.")
+}
+
+// verifyArchiveAgainstSHA256SumFile checks that archivePath matches the digest in a GNU sha256sum-style file.
+// For Vorpal: searches using the platform-specific filename from downloadURL.
+// Supports single-line format (one checksum) or multi-line format (searches for matching filename).
+func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadURL string) error {
+	logger.PrintIfVerbose("Verifying downloaded archive against sha256sum checksum")
+
+	content, err := os.ReadFile(sha256SumFilePath)
+	if err != nil {
+		return errors.Errorf("Failed to read checksum file: %s", err.Error())
+	}
+
+	fileContent := strings.TrimSpace(string(content))
+	if fileContent == "" {
+		return errors.New("Checksum file is empty")
+	}
+
+	// Extract the actual platform-specific filename from downloadURL
+	_, downloadFileName := filepath.Split(downloadURL)
+	logger.PrintIfVerbose("Searching checksum file for: " + downloadFileName)
+	expectedHash := ""
+
+	// Try to find matching filename in checksums file
+	for _, line := range strings.Split(fileContent, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+
+		hash := strings.ToLower(fields[0])
+		filename := fields[len(fields)-1]
+
+		// Check if this line matches the download filename
+		if filename == downloadFileName {
+			logger.PrintIfVerbose("Found matching checksum entry for: " + filename)
+			expectedHash = hash
+			break
+		}
+	}
+
+	// If no exact match found, fall back to first line (single-line format)
+	if expectedHash == "" {
+		fields := strings.Fields(fileContent)
+		if len(fields) < 1 {
+			return errors.New("Invalid checksum file format - no hash found")
+		}
+		expectedHash = strings.ToLower(fields[0])
+	}
+
+	if len(expectedHash) != 64 {
+		return errors.Errorf("Invalid hash length - expected 64 hex characters, got %d", len(expectedHash))
+	}
+
+	actualHash, err := calculateSHA256(archivePath)
+	if err != nil {
+		return errors.Errorf("Failed to calculate archive hash: %s", err.Error())
+	}
+
+	logger.PrintIfVerbose(fmt.Sprintf("Actual Hash in Checksum.txt: %s", expectedHash))
+	logger.PrintIfVerbose(fmt.Sprintf("Actual Hash of Zip: %s", actualHash))
+
+	if !strings.EqualFold(expectedHash, actualHash) {
+		return errors.New("Checksum verification failed - archive may have been tampered with")
+	}
+
+	logger.PrintIfVerbose("Archive Checksum Verification Successful.")
+	return nil
+}
+
+// calculateSHA256 calculates the SHA256 hash of a file
+func calculateSHA256(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
