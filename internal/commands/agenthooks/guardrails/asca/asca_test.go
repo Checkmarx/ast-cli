@@ -10,8 +10,11 @@ import (
 	"testing"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/spf13/viper"
 )
 
 // ── ProposedContent ─────────────────────────────────────────────────────────
@@ -413,3 +416,169 @@ func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
 		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
 	}
 }
+
+// ── isSupportedByASCA ────────────────────────────────────────────────────────
+
+func TestIsSupportedByASCA(t *testing.T) {
+	supported := []string{
+		"a.java", "b.js", "c.jsx", "d.ts", "e.tsx", "f.mjs", "g.cjs",
+		"h.cs", "i.go", "j.py", "k.pyw", "L.PY", "M.Go",
+	}
+	for _, name := range supported {
+		if !isSupportedByASCA(filepath.Join("src", name)) {
+			t.Errorf("expected %q to be supported", name)
+		}
+	}
+	unsupported := []string{"a.txt", "b.md", "c.yaml", "Dockerfile", "pom.xml", "noext"}
+	for _, name := range unsupported {
+		if isSupportedByASCA(filepath.Join("src", name)) {
+			t.Errorf("expected %q to NOT be supported", name)
+		}
+	}
+}
+
+// ── highestSeverity ──────────────────────────────────────────────────────────
+
+func TestHighestSeverity(t *testing.T) {
+	cases := []struct {
+		name     string
+		findings []grpcs.ScanDetail
+		want     string
+	}{
+		{"empty", nil, ""},
+		{"unknown_only", []grpcs.ScanDetail{{Severity: "Info"}}, ""},
+		{"single_high", []grpcs.ScanDetail{{Severity: "High"}}, "High"},
+		{"picks_critical", []grpcs.ScanDetail{
+			{Severity: "Low"}, {Severity: "Critical"}, {Severity: "High"},
+		}, "Critical"},
+		{"picks_medium_over_low", []grpcs.ScanDetail{
+			{Severity: "Low"}, {Severity: "Medium"},
+		}, "Medium"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := highestSeverity(tc.findings); got != tc.want {
+				t.Errorf("highestSeverity = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// ── existingIgnoreFilePath ───────────────────────────────────────────────────
+
+func TestExistingIgnoreFilePath_Missing(t *testing.T) {
+	dir := t.TempDir()
+	if got := existingIgnoreFilePath(dir); got != "" {
+		t.Errorf("expected empty for missing ignore file, got %q", got)
+	}
+}
+
+func TestExistingIgnoreFilePath_Present(t *testing.T) {
+	dir := t.TempDir()
+	want := ignore.PathFor(dir)
+	if err := os.MkdirAll(filepath.Dir(want), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(want, []byte("[]"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := existingIgnoreFilePath(dir); got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// ── shouldUpdateVersion ──────────────────────────────────────────────────────
+
+func TestShouldUpdateVersion(t *testing.T) {
+	key := params.DisableASCALatestVersionKey
+	prev := viper.GetString(key)
+	t.Cleanup(func() { viper.Set(key, prev) })
+
+	viper.Set(key, "")
+	if !shouldUpdateVersion() {
+		t.Fatal("empty disable flag should allow update")
+	}
+	viper.Set(key, "false")
+	if !shouldUpdateVersion() {
+		t.Fatal("false disable flag should allow update")
+	}
+	viper.Set(key, "true")
+	if shouldUpdateVersion() {
+		t.Fatal("true disable flag should skip update")
+	}
+}
+
+// ── logASCATelemetry ─────────────────────────────────────────────────────────
+
+type recordingTelemetry struct {
+	calls []*wrappers.DataForAITelemetry
+	err   error
+}
+
+func (r *recordingTelemetry) SendAIDataToLog(data *wrappers.DataForAITelemetry) error {
+	r.calls = append(r.calls, data)
+	return r.err
+}
+
+func TestLogASCATelemetry(t *testing.T) {
+	t.Run("nil_wrapper", func(t *testing.T) {
+		logASCATelemetry(nil, "Claude", "s1", 3) // must not panic
+	})
+	t.Run("zero_count", func(t *testing.T) {
+		tel := &recordingTelemetry{}
+		logASCATelemetry(tel, "Claude", "s1", 0)
+		if len(tel.calls) != 0 {
+			t.Fatalf("expected no calls for zero count, got %d", len(tel.calls))
+		}
+	})
+	t.Run("sends_payload", func(t *testing.T) {
+		tel := &recordingTelemetry{}
+		logASCATelemetry(tel, "Cursor", "sess-9", 2)
+		if len(tel.calls) != 1 {
+			t.Fatalf("got %d calls, want 1", len(tel.calls))
+		}
+		got := tel.calls[0]
+		if got.AIProvider != "Cursor" || got.Agent != "Cursor-cli" {
+			t.Errorf("AIProvider/Agent = %q/%q", got.AIProvider, got.Agent)
+		}
+		if got.Engine != "Asca" || got.ScanType != "asca" || got.TotalCount != 2 {
+			t.Errorf("Engine/ScanType/TotalCount = %q/%q/%d", got.Engine, got.ScanType, got.TotalCount)
+		}
+		if got.Type != "hooks-detect" || got.SubType != "scan" || got.AiAgentSessionId != "sess-9" {
+			t.Errorf("Type/SubType/session = %q/%q/%q", got.Type, got.SubType, got.AiAgentSessionId)
+		}
+	})
+	t.Run("send_error_fail_open", func(t *testing.T) {
+		tel := &recordingTelemetry{err: os.ErrPermission}
+		logASCATelemetry(tel, "Claude", "s2", 1) // must not panic
+	})
+}
+
+// ── ScanFileEdit (early-return paths only; no production seams) ──────────────
+
+// ScanFileEdit's engine path calls services.CreateASCAScanRequest directly.
+// Without modifying production code we only assert the pure early-return
+// branches that never reach the ASCA engine.
+
+func TestScanFileEdit_UnsupportedExtension_Allows(t *testing.T) {
+	blocked, reason, context, severity := ScanFileEdit(&agenthooks.FileEditEvent{
+		FilePath: "README.md",
+		Changes:  []agenthooks.FileDiff{{Before: "", After: "# hi"}},
+	}, nil, "Claude")
+	if blocked || reason != "" || context != "" || severity != "" {
+		t.Fatalf("unsupported file should allow, got blocked=%v reason=%q context=%q severity=%q",
+			blocked, reason, context, severity)
+	}
+}
+
+func TestScanFileEdit_EmptyContent_Allows(t *testing.T) {
+	blocked, reason, context, severity := ScanFileEdit(&agenthooks.FileEditEvent{
+		FilePath: "app.py",
+		Changes:  []agenthooks.FileDiff{{Before: "", After: ""}},
+	}, nil, "Claude")
+	if blocked || reason != "" || context != "" || severity != "" {
+		t.Fatalf("empty content should fail-open, got blocked=%v reason=%q context=%q severity=%q",
+			blocked, reason, context, severity)
+	}
+}
+
