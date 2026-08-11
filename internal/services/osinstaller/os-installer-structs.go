@@ -60,9 +60,7 @@ func (i *InstallationConfiguration) ArchiveChecksumFilePath() string {
 	return filepath.Join(i.WorkingDir(), i.ArchiveChecksumFileName)
 }
 
-// resolveArchiveChecksumVerification returns the local sha256sum path and whether it still needs to be downloaded.
-// Vorpal uses separate hash files for version checking (hash.txt) and binary verification (checksums.sha256);
-// SCA Resolver uses .sha256sum for both purposes.
+// resolveArchiveChecksumVerification returns the local sha256sum path to verify against, and whether it must be downloaded first.
 func (i *InstallationConfiguration) resolveArchiveChecksumVerification() (localPath string, needsExtraDownload bool, err error) {
 	if i.ArchiveChecksumDownloadURL != "" {
 		if i.ArchiveChecksumFileName == "" {

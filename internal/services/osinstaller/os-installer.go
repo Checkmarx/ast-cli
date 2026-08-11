@@ -221,9 +221,13 @@ func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
 	logger.PrintIfVerbose("Timed out waiting for Vorpal service to stop; proceeding anyway.")
 }
 
-// verifyArchiveAgainstSHA256SumFile checks that archivePath matches the digest in a GNU sha256sum-style file.
-// For Vorpal: searches using the platform-specific filename from downloadURL.
-// Supports single-line format (one checksum) or multi-line format (searches for matching filename).
+const (
+	sha256SumFileMinFields = 2
+	sha256HexLength        = 64
+)
+
+// verifyArchiveAgainstSHA256SumFile checks archivePath against its digest in a GNU sha256sum-style file,
+// matching by downloadURL's filename, or falling back to a single-line checksum format.
 func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadURL string) error {
 	logger.PrintIfVerbose("Verifying downloaded archive against sha256sum checksum")
 
@@ -250,7 +254,7 @@ func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadU
 		}
 
 		fields := strings.Fields(line)
-		if len(fields) < 2 {
+		if len(fields) < sha256SumFileMinFields {
 			continue
 		}
 
@@ -274,7 +278,7 @@ func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadU
 		expectedHash = strings.ToLower(fields[0])
 	}
 
-	if len(expectedHash) != 64 {
+	if len(expectedHash) != sha256HexLength {
 		return errors.Errorf("Invalid hash length - expected 64 hex characters, got %d", len(expectedHash))
 	}
 
