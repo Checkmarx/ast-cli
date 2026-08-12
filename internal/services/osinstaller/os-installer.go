@@ -223,23 +223,22 @@ func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
 }
 
 const (
-	sha256SumFileMinFields    = 2
-	sha256HexLength           = 64
-	ChecksumVerifcationFailed = "Checksum verification failed."
+	sha256SumFileMinFields     = 2
+	sha256HexLength            = 64
+	checksumVerificationFailed = "Checksum verification failed."
 )
 
 // verifyArchiveAgainstSHA256SumFile checks archivePath against its digest in a GNU sha256sum-style file,
 // matching by downloadURL's filename, or falling back to a single-line checksum format.
 func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadURL string) error {
-
 	content, err := os.ReadFile(sha256SumFilePath)
 	if err != nil {
-		return errors.Errorf(ChecksumVerifcationFailed)
+		return errors.Errorf(checksumVerificationFailed)
 	}
 
 	fileContent := strings.TrimSpace(string(content))
 	if fileContent == "" {
-		return errors.New(ChecksumVerifcationFailed)
+		return errors.New(checksumVerificationFailed)
 	}
 
 	// Extract the actual platform-specific filename from downloadURL
@@ -272,22 +271,22 @@ func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadU
 	if expectedHash == "" {
 		fields := strings.Fields(fileContent)
 		if len(fields) < 1 {
-			return errors.New(ChecksumVerifcationFailed)
+			return errors.New(checksumVerificationFailed)
 		}
 		expectedHash = strings.ToLower(fields[0])
 	}
 
 	if len(expectedHash) != sha256HexLength {
-		return errors.Errorf(ChecksumVerifcationFailed)
+		return errors.Errorf(checksumVerificationFailed)
 	}
 
 	actualHash, err := calculateSHA256(archivePath)
 	if err != nil {
-		return errors.Errorf(ChecksumVerifcationFailed)
+		return errors.Errorf(checksumVerificationFailed)
 	}
 
 	if !strings.EqualFold(expectedHash, actualHash) {
-		return errors.New(ChecksumVerifcationFailed)
+		return errors.New(checksumVerificationFailed)
 	}
 	return nil
 }
