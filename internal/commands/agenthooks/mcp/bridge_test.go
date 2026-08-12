@@ -38,7 +38,7 @@ func TestNewBridgeClient(t *testing.T) {
 		tr, ok := c.Transport.(*http.Transport)
 		assert.True(t, ok, "expected a proxy-aware *http.Transport")
 		assert.NotNil(t, tr.Proxy, "expected a proxy resolver")
-		req, err := http.NewRequest(http.MethodGet, "https://mcp.example.com", nil)
+		req, err := http.NewRequest(http.MethodGet, "https://mcp.example.com", http.NoBody)
 		assert.NoError(t, err)
 		proxyURL, err := tr.Proxy(req)
 		assert.NoError(t, err)
@@ -606,6 +606,133 @@ func TestAuthedSelfHeal_ReReadsDisk(t *testing.T) {
 
 	assert.Equal(t, []string{oldKey, newKey}, seenAuth) // retry used the disk-refreshed key
 	assert.Contains(t, out.String(), `"ok":true`)
+}
+
+func TestDefaultProtocolVersion(t *testing.T) {
+	assert.Equal(t, "2025-06-18", defaultProtocolVersion())
+}
+
+func TestNewBridgeCommand_Metadata(t *testing.T) {
+	cmd := NewBridgeCommand("1.2.3")
+	assert.Equal(t, "bridge", cmd.Use)
+	assert.True(t, cmd.Hidden)
+	assert.NotNil(t, cmd.Flags().Lookup(mcpURLFlag))
+}
+
+func TestDispatchLocal_NotificationsInitialized_NoResponse(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.dispatchLocal([]byte(`{"jsonrpc":"2.0","method":"notifications/initialized"}`))
+	assert.Empty(t, out.String())
+}
+
+func TestDispatchLocal_Ping_RespondsWithEmptyResult(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.dispatchLocal([]byte(`{"jsonrpc":"2.0","id":5,"method":"ping"}`))
+	lines := decodeLines(t, out.String())
+	assert.Len(t, lines, 1)
+	assert.Equal(t, float64(5), lines[0]["id"])
+	assert.Equal(t, map[string]interface{}{}, lines[0]["result"])
+}
+
+func TestDispatchLocal_UnknownMethodWithID_WritesError(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.dispatchLocal([]byte(`{"jsonrpc":"2.0","id":7,"method":"tools/call"}`))
+	lines := decodeLines(t, out.String())
+	assert.Len(t, lines, 1)
+	assert.Contains(t, lines[0], "error")
+}
+
+func TestDispatchLocal_UnknownMethodWithoutID_NoResponse(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.dispatchLocal([]byte(`{"jsonrpc":"2.0","method":"notifications/foo"}`))
+	assert.Empty(t, out.String())
+}
+
+func TestDispatchLocal_InvalidJSON_Ignored(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.dispatchLocal([]byte(`not json`))
+	assert.Empty(t, out.String())
+}
+
+func TestEmit_EmptyRaw_NoOutput(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.emit([]byte("   "))
+	assert.Empty(t, out.String())
+}
+
+func TestEmit_InvalidJSON_NoOutput(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.emit([]byte("not json"))
+	assert.Empty(t, out.String())
+}
+
+func TestEmit_ValidJSONWithoutProtocolVersion_EmitsAndLeavesProtoUnset(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	s.emit([]byte(`{"jsonrpc":"2.0","id":1,"result":{"ok":true}}`))
+	assert.Contains(t, out.String(), `"ok":true`)
+	assert.Empty(t, s.proto)
+}
+
+func TestHandleResponse_Accepted_DiscardsBodyNoOutput(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	resp := &http.Response{StatusCode: http.StatusAccepted, Header: http.Header{}, Body: io.NopCloser(strings.NewReader("ignored"))}
+	s.handleResponse(resp)
+	assert.Empty(t, out.String())
+}
+
+func TestHandleResponse_CapturesSessionID(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	header := http.Header{}
+	header.Set("Mcp-Session-Id", "sess-77")
+	resp := &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(strings.NewReader(`{"jsonrpc":"2.0","id":1,"result":{}}`))}
+	s.handleResponse(resp)
+	assert.Equal(t, "sess-77", s.id)
+}
+
+func TestHandleResponse_SSEContentType_PumpsSSE(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	header := http.Header{}
+	header.Set("Content-Type", "text/event-stream")
+	resp := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     header,
+		Body:       io.NopCloser(strings.NewReader("data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n")),
+	}
+	s.handleResponse(resp)
+	lines := decodeLines(t, out.String())
+	assert.Len(t, lines, 1)
+}
+
+func TestPumpSSE_MultipleEvents(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	body := strings.NewReader(
+		"data: {\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{}}\n\n" +
+			"data: {\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{}}\n\n")
+	s.pumpSSE(body)
+	lines := decodeLines(t, out.String())
+	assert.Len(t, lines, 2)
+}
+
+func TestPumpSSE_CommentsIgnored_AndTrailingEventWithoutBlankLineFlushed(t *testing.T) {
+	var out syncBuffer
+	s := &bridgeSession{writer: newSyncWriter(&out)}
+	body := strings.NewReader(": keep-alive comment\ndata: {\"jsonrpc\":\"2.0\",\"id\":9,\"result\":{}}")
+	s.pumpSSE(body)
+	lines := decodeLines(t, out.String())
+	assert.Len(t, lines, 1)
+	assert.Equal(t, float64(9), lines[0]["id"])
 }
 
 // TestEstablishRemoteSession_DoesNotEmitInitResult: the bridge-driven remote
