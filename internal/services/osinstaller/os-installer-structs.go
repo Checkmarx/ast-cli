@@ -73,5 +73,5 @@ func (i *InstallationConfiguration) resolveArchiveChecksumVerification() (localP
 		return i.HashFilePath(), false, nil
 	}
 
-	return "", false, nil
+	return "", false, errors.New("ChecksumFileName is required for sha verification.")
 }

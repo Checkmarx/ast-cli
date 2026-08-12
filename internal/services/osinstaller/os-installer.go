@@ -87,7 +87,8 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 
 	checksumPath, needsArchiveChecksumDownload, err := installationConfiguration.resolveArchiveChecksumVerification()
 	if err != nil {
-		return false, err
+		_ = os.Remove(installationConfiguration.BinaryFilePath())
+		return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
 	}
 	if needsArchiveChecksumDownload {
 		err = downloadFile(installationConfiguration.ArchiveChecksumDownloadURL, checksumPath)
@@ -98,12 +99,12 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 	if checksumPath != "" {
 		err = verifyArchiveAgainstSHA256SumFile(installationConfiguration.BinaryFilePath(), checksumPath, installationConfiguration.DownloadURL)
 		if err != nil {
-			logger.PrintIfVerbose("Removing potentially compromised archive due to checksum verification failure")
 			_ = os.Remove(installationConfiguration.BinaryFilePath())
-			return false, errors.Errorf("Archive integrity verification failed for %s: Checksum verification failed - archive may have been compromised", installationConfiguration.ExecutableFile)
+			return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
 		}
 	} else {
-		logger.PrintIfVerbose("Skipping archive checksum verification (no sha256sum source configured for this installation)")
+		_ = os.Remove(installationConfiguration.BinaryFilePath())
+		return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
@@ -222,28 +223,27 @@ func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
 }
 
 const (
-	sha256SumFileMinFields = 2
-	sha256HexLength        = 64
+	sha256SumFileMinFields    = 2
+	sha256HexLength           = 64
+	ChecksumVerifcationFailed = "Checksum verification failed."
 )
 
 // verifyArchiveAgainstSHA256SumFile checks archivePath against its digest in a GNU sha256sum-style file,
 // matching by downloadURL's filename, or falling back to a single-line checksum format.
 func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadURL string) error {
-	logger.PrintIfVerbose("Verifying downloaded archive against sha256sum checksum")
 
 	content, err := os.ReadFile(sha256SumFilePath)
 	if err != nil {
-		return errors.Errorf("Failed to read checksum file: %s", err.Error())
+		return errors.Errorf(ChecksumVerifcationFailed)
 	}
 
 	fileContent := strings.TrimSpace(string(content))
 	if fileContent == "" {
-		return errors.New("Checksum file is empty")
+		return errors.New(ChecksumVerifcationFailed)
 	}
 
 	// Extract the actual platform-specific filename from downloadURL
 	_, downloadFileName := filepath.Split(downloadURL)
-	logger.PrintIfVerbose("Searching checksum file for: " + downloadFileName)
 	expectedHash := ""
 
 	// Try to find matching filename in checksums file
@@ -263,7 +263,6 @@ func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadU
 
 		// Check if this line matches the download filename
 		if filename == downloadFileName {
-			logger.PrintIfVerbose("Found matching checksum entry for: " + filename)
 			expectedHash = hash
 			break
 		}
@@ -273,28 +272,23 @@ func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadU
 	if expectedHash == "" {
 		fields := strings.Fields(fileContent)
 		if len(fields) < 1 {
-			return errors.New("Invalid checksum file format - no hash found")
+			return errors.New(ChecksumVerifcationFailed)
 		}
 		expectedHash = strings.ToLower(fields[0])
 	}
 
 	if len(expectedHash) != sha256HexLength {
-		return errors.Errorf("Invalid hash length - expected 64 hex characters, got %d", len(expectedHash))
+		return errors.Errorf(ChecksumVerifcationFailed)
 	}
 
 	actualHash, err := calculateSHA256(archivePath)
 	if err != nil {
-		return errors.Errorf("Failed to calculate archive hash: %s", err.Error())
+		return errors.Errorf(ChecksumVerifcationFailed)
 	}
-
-	logger.PrintIfVerbose(fmt.Sprintf("Actual Hash in Checksum.txt: %s", expectedHash))
-	logger.PrintIfVerbose(fmt.Sprintf("Actual Hash of Zip: %s", actualHash))
 
 	if !strings.EqualFold(expectedHash, actualHash) {
-		return errors.New("Checksum verification failed - archive may have been tampered with")
+		return errors.New(ChecksumVerifcationFailed)
 	}
-
-	logger.PrintIfVerbose("Archive Checksum Verification Successful.")
 	return nil
 }
 
