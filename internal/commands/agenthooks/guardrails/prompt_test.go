@@ -559,3 +559,255 @@ func TestScanWorkspaceFilesByPromptName_DenyMessageAppended(t *testing.T) {
 		t.Fatalf("expected DenyMessage no-workaround text in reason, got %q", reason)
 	}
 }
+
+// --------------------------------------------------------------------------
+// severityFromValidation / extractLiteralAnchors / stripGlobMeta
+// --------------------------------------------------------------------------
+
+func TestSeverityFromValidation(t *testing.T) {
+	cases := map[string]string{
+		"Valid":   "Critical",
+		"Invalid": "Medium",
+		"Unknown": "High",
+		"":        "High",
+		"other":   "High",
+	}
+	for in, want := range cases {
+		if got := severityFromValidation(in); got != want {
+			t.Errorf("severityFromValidation(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestExtractLiteralAnchors(t *testing.T) {
+	got := extractLiteralAnchors([]string{
+		"kubeconfig",
+		"/etc/id_rsa",
+		"**/*.pem",
+		"**/secrets/**",
+		"*",
+		"",
+		"kubeconfig", // duplicate
+	})
+	want := map[string]bool{"kubeconfig": true, "id_rsa": true, ".pem": true, "secrets": true}
+	for _, a := range got {
+		if !want[a] {
+			t.Errorf("unexpected anchor %q in %v", a, got)
+		}
+		delete(want, a)
+	}
+	for missing := range want {
+		t.Errorf("missing anchor %q", missing)
+	}
+}
+
+func TestStripGlobMeta(t *testing.T) {
+	if got := stripGlobMeta("modify *.env and id_rsa?"); got != "modify  .env and id_rsa " {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestExtractFilePaths_Scenarios(t *testing.T) {
+	paths := extractFilePaths(`please open @.env and /etc/passwd plus C:\Windows\win.ini and ./rel/config.yml and credentials.json`)
+	joined := strings.Join(paths, "|")
+	for _, want := range []string{".env", "/etc/passwd", "credentials.json"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("expected %q in extracted paths %v", want, paths)
+		}
+	}
+	// Glob meta stripped so "*.env" still surfaces ".env"
+	globPaths := extractFilePaths("edit *.env please")
+	found := false
+	for _, p := range globPaths {
+		if p == ".env" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected .env from globbed prompt, got %v", globPaths)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanForSecrets
+// --------------------------------------------------------------------------
+
+func TestScanForSecrets_BlocksOnJWT(t *testing.T) {
+	reason := ScanForSecrets("here is my token " + sampleJWT)
+	if reason == "" {
+		t.Fatal("expected secrets block")
+	}
+	if !strings.Contains(reason, "secret") {
+		t.Errorf("reason should mention secrets, got %q", reason)
+	}
+}
+
+func TestScanForSecrets_Clean_Allows(t *testing.T) {
+	if reason := ScanForSecrets("please refactor the helper module"); reason != "" {
+		t.Fatalf("clean prompt should allow, got %q", reason)
+	}
+}
+
+func TestScanForSecrets_Empty_Allows(t *testing.T) {
+	if reason := ScanForSecrets(""); reason != "" {
+		t.Fatalf("empty text should allow, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanReferencedFiles
+// --------------------------------------------------------------------------
+
+func TestScanReferencedFiles_NoPaths_Allows(t *testing.T) {
+	if reason := ScanReferencedFiles("hello world", []string{t.TempDir()}); reason != "" {
+		t.Fatalf("got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_CleanFile_Allows(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{"notes.txt": "just notes"})
+	if reason := ScanReferencedFiles("read notes.txt", []string{ws}); reason != "" {
+		t.Fatalf("clean referenced file should allow, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_SecretFile_Blocks(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{"secret.env": "TOKEN=" + sampleJWT})
+	reason := ScanReferencedFiles("please open secret.env", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block for referenced secret file")
+	}
+	if !strings.Contains(reason, "secret") {
+		t.Errorf("reason = %q", reason)
+	}
+	if !strings.Contains(reason, DenyMessage) {
+		t.Errorf("expected DenyMessage in reason, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_AbsolutePath_Blocks(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "creds.txt")
+	mustWrite(t, path, "jwt="+sampleJWT)
+	reason := ScanReferencedFiles("open "+path, nil)
+	if reason == "" {
+		t.Fatal("expected block for absolute referenced secret file")
+	}
+}
+
+func TestScanReferencedFiles_OversizePolicy_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 1}
+	defer writePolicyHelper(t, policy)()
+
+	ws := makeWorkspace(t, map[string]string{
+		"big.txt": strings.Repeat("a", 3*1024),
+	})
+	reason := ScanReferencedFiles("read big.txt", []string{ws})
+	if reason == "" {
+		t.Fatal("expected oversize block")
+	}
+	if !strings.Contains(reason, "size limit") {
+		t.Errorf("reason should cite size limit, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_MissingFile_FailOpen(t *testing.T) {
+	if reason := ScanReferencedFiles("open missing-file-xyz.txt", []string{t.TempDir()}); reason != "" {
+		t.Fatalf("missing file should fail-open, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_AtMention(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{".env": "KEY=" + sampleJWT})
+	reason := ScanReferencedFiles("look at @.env please", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block for @-mentioned secret file")
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanPrompt — ordered guardrail chain
+// --------------------------------------------------------------------------
+
+func TestScanPrompt_Clean_Allows(t *testing.T) {
+	defer writePolicyHelper(t, HooksPolicy{})()
+	if reason := ScanPrompt("please explain this function"); reason != "" {
+		t.Fatalf("clean prompt should allow, got %q", reason)
+	}
+}
+
+func TestScanPrompt_SecretFirst(t *testing.T) {
+	reason := ScanPrompt("token " + sampleJWT)
+	if reason == "" || !strings.Contains(reason, "secret") {
+		t.Fatalf("expected secrets rejection, got %q", reason)
+	}
+}
+
+func TestScanPrompt_PolicyPattern(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.ContentScanning = ContentScanning{
+		Enabled: true,
+		Patterns: []ContentScanPattern{{
+			ID: "ssn", Pattern: `\b\d{3}-\d{2}-\d{4}\b`, Description: "SSN-like",
+		}},
+	}
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("my number is 123-45-6789")
+	if reason == "" || !strings.Contains(reason, "sensitive content") {
+		t.Fatalf("expected policy pattern block, got %q", reason)
+	}
+}
+
+func TestScanPrompt_RestrictedPath(t *testing.T) {
+	policy := HooksPolicy{}
+	setOSPathsPrompt(&policy.DefaultPolicy.RestrictedFiles, []string{"**/*.pem"})
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("open /tmp/certs/server.pem")
+	if reason == "" {
+		t.Fatal("expected restricted path block")
+	}
+}
+
+func TestScanPrompt_BlockedExtension(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{
+		Enabled: true, Extensions: []string{".pem", ".key"},
+	}
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("please read foo.pem")
+	if reason == "" {
+		t.Fatal("expected blocked extension rejection")
+	}
+}
+
+func TestScanPrompt_FilesLimits(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
+	defer writePolicyHelper(t, policy)()
+
+	reason := ScanPrompt("compare a.txt and b.txt")
+	if reason == "" {
+		t.Fatal("expected files-limits rejection")
+	}
+}
+
+// setOSPathsPrompt mirrors setOSPaths from shell_test for prompt package tests.
+func setOSPathsPrompt(pp *PathPolicy, paths []string) {
+	pp.Enabled = true
+	switch runtime.GOOS {
+	case "darwin":
+		pp.Mac = paths
+	case "windows":
+		pp.Windows = paths
+	default:
+		pp.Linux = paths
+	}
+}

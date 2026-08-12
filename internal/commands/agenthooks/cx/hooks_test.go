@@ -26,8 +26,6 @@ const sampleJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
 	"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
 	"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 
-const windowsOS = "windows"
-
 type recordingTelemetry struct {
 	calls []*wrappers.DataForAITelemetry
 	err   error
@@ -56,29 +54,29 @@ func resetHookGlobals(t *testing.T) {
 }
 
 func setHomeDir(dir string) func() {
-	if runtime.GOOS == windowsOS {
+	if runtime.GOOS == "windows" {
 		orig, had := os.LookupEnv("USERPROFILE")
-		_ = os.Setenv("USERPROFILE", dir)
+		os.Setenv("USERPROFILE", dir)
 		return func() {
 			if had {
-				_ = os.Setenv("USERPROFILE", orig)
+				os.Setenv("USERPROFILE", orig)
 			} else {
-				_ = os.Unsetenv("USERPROFILE")
+				os.Unsetenv("USERPROFILE")
 			}
 		}
 	}
 	orig, had := os.LookupEnv("HOME")
-	_ = os.Setenv("HOME", dir)
+	os.Setenv("HOME", dir)
 	return func() {
 		if had {
-			_ = os.Setenv("HOME", orig)
+			os.Setenv("HOME", orig)
 		} else {
-			_ = os.Unsetenv("HOME")
+			os.Unsetenv("HOME")
 		}
 	}
 }
 
-func writePolicy(t *testing.T, policy *guardrails.HooksPolicy) func() {
+func writePolicy(t *testing.T, policy guardrails.HooksPolicy) func() {
 	t.Helper()
 	data, err := json.Marshal(policy)
 	if err != nil {
@@ -99,8 +97,8 @@ func currentOS() string {
 	switch runtime.GOOS {
 	case "darwin":
 		return "mac"
-	case windowsOS:
-		return windowsOS
+	case "windows":
+		return "windows"
 	default:
 		return "linux"
 	}
@@ -146,7 +144,7 @@ func TestCxBeforeToolCall_Blacklisted_Denies(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []guardrails.BlacklistedTool{
 		{Name: "rm -rf", OS: []string{currentOS()}, Category: "destructive", Risk: "wipes files"},
 	}
-	defer writePolicy(t, &policy)()
+	defer writePolicy(t, policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -173,7 +171,7 @@ func TestCxBeforeToolCall_ToolRule_AsksUser(t *testing.T) {
 		OS:          []string{currentOS()},
 		ArgsInclude: []string{"compile", "test"},
 	}}
-	defer writePolicy(t, &policy)()
+	defer writePolicy(t, policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -232,7 +230,7 @@ func TestCxBeforeToolCall_CleanShell_Allows(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []guardrails.BlacklistedTool{
 		{Name: "rm -rf", OS: []string{currentOS()}, Category: "destructive", Risk: "bad"},
 	}
-	defer writePolicy(t, &policy)()
+	defer writePolicy(t, policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -286,7 +284,7 @@ func TestCxBeforeFileEdit_BlastRadius_Rejects(t *testing.T) {
 	resetHookGlobals(t)
 	policy := guardrails.HooksPolicy{}
 	policy.DefaultPolicy.BlastRadiusLimit = guardrails.BlastRadiusLimit{Enabled: true, Threshold: 1}
-	defer writePolicy(t, &policy)()
+	defer writePolicy(t, policy)()
 
 	// Consume the single allowed write so the next edit is blocked.
 	if blocked, _ := guardrails.CheckAndIncrementBlastRadius(); blocked {
@@ -314,7 +312,7 @@ func TestCxBeforeFileEdit_TotalFileSize_Rejects(t *testing.T) {
 		Enabled:            true,
 		MaxTotalFileSizeKB: 1,
 	}
-	defer writePolicy(t, &policy)()
+	defer writePolicy(t, policy)()
 
 	big := strings.Repeat("a", 1100)
 	v := cxBeforeFileEdit(agenthooks.FileEditEvent{
