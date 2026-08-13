@@ -62,29 +62,30 @@ func resetHookGlobals(t *testing.T) {
 }
 
 func setHomeDir(dir string) func() {
-	if runtime.GOOS == "windows" {
+	const osWindows = "windows"
+	if runtime.GOOS == osWindows {
 		orig, had := os.LookupEnv("USERPROFILE")
-		os.Setenv("USERPROFILE", dir)
+		_ = os.Setenv("USERPROFILE", dir)
 		return func() {
 			if had {
-				os.Setenv("USERPROFILE", orig)
+				_ = os.Setenv("USERPROFILE", orig)
 			} else {
-				os.Unsetenv("USERPROFILE")
+				_ = os.Unsetenv("USERPROFILE")
 			}
 		}
 	}
 	orig, had := os.LookupEnv("HOME")
-	os.Setenv("HOME", dir)
+	_ = os.Setenv("HOME", dir)
 	return func() {
 		if had {
-			os.Setenv("HOME", orig)
+			_ = os.Setenv("HOME", orig)
 		} else {
-			os.Unsetenv("HOME")
+			_ = os.Unsetenv("HOME")
 		}
 	}
 }
 
-func writePolicy(t *testing.T, policy guardrails.HooksPolicy) func() {
+func writePolicy(t *testing.T, policy *guardrails.HooksPolicy) func() {
 	t.Helper()
 	data, err := json.Marshal(policy)
 	if err != nil {

@@ -17,8 +17,13 @@ import (
 
 // executeCommandWithContext executes a command with a context that cancels after a timeout.
 // This is used to test blocking operations like the MCP server startup.
+const mcpCommandName = "mcp"
+const bridgeCommandName = "bridge"
+
 func executeCommandWithContext(ctx context.Context, cmd *cobra.Command, args ...string) error {
-	cmd.SetArgs(args)
+	if len(args) > 0 {
+		cmd.SetArgs(args)
+	}
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 	return cmd.ExecuteContext(ctx)
@@ -26,8 +31,8 @@ func executeCommandWithContext(ctx context.Context, cmd *cobra.Command, args ...
 
 func TestNewMCPCommand_Metadata(t *testing.T) {
 	cmd := NewMCPCommand("1.2.3", func() bool { return true })
-	if cmd.Use != "mcp" {
-		t.Errorf("Use = %q, want mcp", cmd.Use)
+	if cmd.Use != mcpCommandName {
+		t.Errorf("Use = %q, want %s", cmd.Use, mcpCommandName)
 	}
 	if cmd.Short == "" {
 		t.Error("expected Short description")
@@ -78,7 +83,7 @@ func TestNewMCPCommand_HasBridgeSubcommand(t *testing.T) {
 	cmd := NewMCPCommand("9.9.9", func() bool { return true })
 	found := false
 	for _, c := range cmd.Commands() {
-		if c.Use == "bridge" || strings.HasPrefix(c.Use, "bridge") {
+		if c.Use == bridgeCommandName || strings.HasPrefix(c.Use, bridgeCommandName) {
 			found = true
 			break
 		}
@@ -125,11 +130,11 @@ func TestNewMCPCommand_VersionCarried(t *testing.T) {
 		t.Run("Version-"+version, func(t *testing.T) {
 			cmd := NewMCPCommand(version, func() bool { return true })
 			if cmd == nil {
-				t.Errorf("failed to create command with version %s", version)
+				t.Fatalf("failed to create command with version %s", version)
 			}
 			// Verify command is created successfully
-			if cmd.Use != "mcp" {
-				t.Errorf("expected Use=mcp, got %s", cmd.Use)
+			if cmd.Use != mcpCommandName {
+				t.Errorf("expected Use=%s, got %s", mcpCommandName, cmd.Use)
 			}
 		})
 	}
@@ -641,9 +646,10 @@ func TestNewMCPCommand_MultipleCallsIndependent(t *testing.T) {
 	for _, cmd := range []*cobra.Command{cmd1, cmd2, cmd3} {
 		if cmd == nil {
 			t.Error("command creation failed")
+			continue
 		}
-		if cmd.Use != "mcp" {
-			t.Errorf("Use should be 'mcp', got %s", cmd.Use)
+		if cmd.Use != mcpCommandName {
+			t.Errorf("Use should be %q, got %q", mcpCommandName, cmd.Use)
 		}
 		if cmd.RunE == nil {
 			t.Error("RunE should be set")
@@ -705,8 +711,8 @@ func TestRun_WithPipeTransport(t *testing.T) {
 
 	// Use a pipe to simulate stdio transport behavior
 	reader, writer := io.Pipe()
-	defer reader.Close()
-	defer writer.Close()
+	defer func() { _ = reader.Close() }()
+	defer func() { _ = writer.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
@@ -808,8 +814,8 @@ func TestNewMCPCommand_FullWorkflow(t *testing.T) {
 	}
 
 	// Step 2: Verify command structure
-	if cmd.Use != "mcp" {
-		t.Errorf("expected Use=mcp, got %s", cmd.Use)
+	if cmd.Use != mcpCommandName {
+		t.Errorf("expected Use=%s, got %s", mcpCommandName, cmd.Use)
 	}
 	if cmd.RunE == nil {
 		t.Error("RunE should be set")

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ExportMockWrapper is a mock implementation of ExportWrapper for testing.
 type ExportMockWrapper struct {
 	CustomGetExportReportStatus         func(exportID string) (*wrappers.ExportPollingResponse, error)
 	CustomGetScaPackageCollectionExport func(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error)

@@ -46,25 +46,26 @@ func TestCheckShellCommand_EmptyCommand_Allows(t *testing.T) {
 }
 
 func TestCheckShellCommand_NoPolicy_Allows(t *testing.T) {
+	const osWindows = "windows"
 	dir := t.TempDir()
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == osWindows {
 		orig, had := os.LookupEnv("USERPROFILE")
-		os.Setenv("USERPROFILE", dir)
+		_ = os.Setenv("USERPROFILE", dir)
 		defer func() {
 			if had {
-				os.Setenv("USERPROFILE", orig)
+				_ = os.Setenv("USERPROFILE", orig)
 			} else {
-				os.Unsetenv("USERPROFILE")
+				_ = os.Unsetenv("USERPROFILE")
 			}
 		}()
 	} else {
 		orig, had := os.LookupEnv("HOME")
-		os.Setenv("HOME", dir)
+		_ = os.Setenv("HOME", dir)
 		defer func() {
 			if had {
-				os.Setenv("HOME", orig)
+				_ = os.Setenv("HOME", orig)
 			} else {
-				os.Unsetenv("HOME")
+				_ = os.Unsetenv("HOME")
 			}
 		}()
 	}

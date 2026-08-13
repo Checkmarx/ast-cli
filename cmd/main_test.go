@@ -120,9 +120,9 @@ func TestBindProxy_EnvironmentVariableBinding(t *testing.T) {
 	viper.Reset()
 
 	// Set a test environment variable
-	testProxy := "http://proxy.example.com:8080"
-	os.Setenv("HTTP_PROXY", testProxy)
-	defer os.Unsetenv("HTTP_PROXY")
+	const testProxy = "http://proxy.example.com:8080"
+	_ = os.Setenv("HTTP_PROXY", testProxy)
+	defer func() { _ = os.Unsetenv("HTTP_PROXY") }()
 
 	// After binding, viper should be able to read it
 	err := viper.BindEnv("test_proxy", "HTTP_PROXY")
@@ -297,8 +297,8 @@ func TestEnvironmentVariableBinding(t *testing.T) {
 	testValue := "test_value"
 
 	// Set environment variable
-	os.Setenv(testKey, testValue)
-	defer os.Unsetenv(testKey)
+	_ = os.Setenv(testKey, testValue)
+	defer func() { _ = os.Unsetenv(testKey) }()
 
 	// Bind it
 	err := viper.BindEnv("test_config", testKey)
@@ -344,9 +344,9 @@ func TestMultipleEnvironmentVariableBinding(t *testing.T) {
 // ============================================================================
 
 func TestProxyEnvironmentVariable_HTTPProxy(t *testing.T) {
-	testProxy := "http://proxy.example.com:8080"
-	os.Setenv("HTTP_PROXY", testProxy)
-	defer os.Unsetenv("HTTP_PROXY")
+	const testProxy = "http://proxy.example.com:8080"
+	_ = os.Setenv("HTTP_PROXY", testProxy)
+	defer func() { _ = os.Unsetenv("HTTP_PROXY") }()
 
 	retrieved := os.Getenv("HTTP_PROXY")
 	if retrieved != testProxy {
@@ -382,7 +382,7 @@ func TestStdoutCapture(t *testing.T) {
 	// Write something to stdout
 	println("test output")
 
-	w.Close()
+	_ = w.Close()
 	os.Stdout = oldStdout
 
 	var buf bytes.Buffer

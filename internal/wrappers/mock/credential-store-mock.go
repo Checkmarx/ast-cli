@@ -10,6 +10,7 @@ func NewCredentialStoreMock() *CredentialStoreMock {
 	return &CredentialStoreMock{Store: map[string]string{}}
 }
 
+// GetSecret retrieves a secret value from the in-memory store.
 func (m *CredentialStoreMock) GetSecret(key string) (string, error) {
 	if m.Store == nil {
 		return "", nil
@@ -17,6 +18,7 @@ func (m *CredentialStoreMock) GetSecret(key string) (string, error) {
 	return m.Store[key], nil
 }
 
+// SetSecret stores a secret value in the in-memory store.
 func (m *CredentialStoreMock) SetSecret(key, value string) error {
 	if m.Store == nil {
 		m.Store = map[string]string{}
@@ -25,6 +27,7 @@ func (m *CredentialStoreMock) SetSecret(key, value string) error {
 	return nil
 }
 
+// DeleteSecret removes a secret value from the in-memory store.
 func (m *CredentialStoreMock) DeleteSecret(key string) error {
 	delete(m.Store, key)
 	return nil

@@ -215,7 +215,7 @@ func TestIsSSHURL(t *testing.T) {
 func TestIsDirOrSymLinkToDir_RegularDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "test-dir-*")
 	assert.NilError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	fileInfo, err := os.Stat(tempDir)
 	assert.NilError(t, err)
@@ -228,8 +228,8 @@ func TestIsDirOrSymLinkToDir_RegularDirectory(t *testing.T) {
 func TestIsDirOrSymLinkToDir_RegularFile(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "test-file-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name())
-	tempFile.Close()
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+	_ = tempFile.Close()
 
 	fileInfo, err := os.Stat(tempFile.Name())
 	assert.NilError(t, err)
@@ -242,7 +242,7 @@ func TestIsDirOrSymLinkToDir_RegularFile(t *testing.T) {
 func TestIsDirOrSymLinkToDir_NestedDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "test-nested-*")
 	assert.NilError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	nestedDir := filepath.Join(tempDir, "subdir")
 	err = os.Mkdir(nestedDir, os.ModePerm)
@@ -259,7 +259,7 @@ func TestIsDirOrSymLinkToDir_NestedDirectory(t *testing.T) {
 func TestIsDirOrSymLinkToDir_SymLinkToDirectory(t *testing.T) {
 	tempDir, err := os.MkdirTemp("", "test-target-*")
 	assert.NilError(t, err)
-	defer os.RemoveAll(tempDir)
+	defer func() { _ = os.RemoveAll(tempDir) }()
 
 	// Create symlink to directory
 	linkPath := tempDir + "_link"
@@ -268,7 +268,7 @@ func TestIsDirOrSymLinkToDir_SymLinkToDirectory(t *testing.T) {
 		// Symlinks might not be available on all systems
 		t.Skip("Symlinks not available on this system")
 	}
-	defer os.Remove(linkPath)
+	defer func() { _ = os.Remove(linkPath) }()
 
 	fileInfo, err := os.Lstat(linkPath)
 	assert.NilError(t, err)
@@ -281,8 +281,8 @@ func TestIsDirOrSymLinkToDir_SymLinkToDirectory(t *testing.T) {
 func TestIsDirOrSymLinkToDir_SymLinkToFile(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "test-link-target-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name())
-	tempFile.Close()
+	defer func() { _ = os.Remove(tempFile.Name()) }()
+	_ = tempFile.Close()
 
 	// Create symlink to file
 	linkPath := tempFile.Name() + "_link"
@@ -291,7 +291,7 @@ func TestIsDirOrSymLinkToDir_SymLinkToFile(t *testing.T) {
 		// Symlinks might not be available on all systems
 		t.Skip("Symlinks not available on this system")
 	}
-	defer os.Remove(linkPath)
+	defer func() { _ = os.Remove(linkPath) }()
 
 	fileInfo, err := os.Lstat(linkPath)
 	assert.NilError(t, err)
@@ -356,16 +356,16 @@ func TestCompressFile_WithValidFile(t *testing.T) {
 	// Create a temporary source file
 	sourceFile, err := os.CreateTemp("", "source-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(sourceFile.Name())
+	defer func() { _ = os.Remove(sourceFile.Name()) }()
 
 	_, err = sourceFile.WriteString("test content for compression")
 	assert.NilError(t, err)
-	sourceFile.Close()
+	_ = sourceFile.Close()
 
 	// Compress the file
 	zipPath, err := CompressFile(sourceFile.Name(), "compressed.txt", "test-")
 	assert.NilError(t, err)
-	defer os.Remove(zipPath)
+	defer func() { _ = os.Remove(zipPath) }()
 
 	// Verify zip file exists and has content
 	assert.Assert(t, zipPath != "")
@@ -378,14 +378,14 @@ func TestCompressFile_WithValidFile(t *testing.T) {
 func TestCompressFile_WithCustomPrefix(t *testing.T) {
 	sourceFile, err := os.CreateTemp("", "source-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(sourceFile.Name())
+	defer func() { _ = os.Remove(sourceFile.Name()) }()
 
-	sourceFile.WriteString("custom prefix test")
-	sourceFile.Close()
+	_, _ = sourceFile.WriteString("custom prefix test")
+	_ = sourceFile.Close()
 
 	zipPath, err := CompressFile(sourceFile.Name(), "output.txt", "myprefix-")
 	assert.NilError(t, err)
-	defer os.Remove(zipPath)
+	defer func() { _ = os.Remove(zipPath) }()
 
 	assert.Assert(t, strings.Contains(zipPath, "myprefix-"), "Zip path should contain custom prefix")
 }
@@ -395,12 +395,12 @@ func TestReadFileAsString_WithContent(t *testing.T) {
 	// Create a test file with known content
 	tempFile, err := os.CreateTemp("", "content-test-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name())
+	defer func() { _ = os.Remove(tempFile.Name()) }()
 
 	content := "This is test content for reading"
 	_, err = tempFile.WriteString(content)
 	assert.NilError(t, err)
-	tempFile.Close()
+	_ = tempFile.Close()
 
 	// Read the file
 	readContent, err := ReadFileAsString(tempFile.Name())

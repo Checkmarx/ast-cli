@@ -793,7 +793,7 @@ func TestContainerManager_ImplementsInterface(t *testing.T) {
 	cm := NewContainerManager()
 
 	// Verify it implements IContainerManager
-	var _ IContainerManager = cm
+	var _ IContainerManager = cm //nolint:staticcheck // intentional interface check
 }
 
 func TestMockContainerManager_ImplementsInterface(t *testing.T) {

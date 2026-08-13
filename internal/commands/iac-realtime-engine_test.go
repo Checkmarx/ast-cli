@@ -86,8 +86,8 @@ func TestRunScanIacRealtimeCommand_ValidFileSource_Success(t *testing.T) {
 	cmd.Flags().String(commonParams.EngineFlag, "kics", "engine")
 
 	// Set the flags
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "kics")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "kics")
 
 	err = handler(cmd, []string{})
 
@@ -124,9 +124,9 @@ func TestRunScanIacRealtimeCommand_WithIgnoredFilePath(t *testing.T) {
 	cmd.Flags().String(commonParams.IgnoredFilePathFlag, ignoredFile, "ignored file path")
 	cmd.Flags().String(commonParams.EngineFlag, "kics", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.IgnoredFilePathFlag, ignoredFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "kics")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.IgnoredFilePathFlag, ignoredFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "kics")
 
 	err = handler(cmd, []string{})
 
@@ -510,9 +510,9 @@ func TestRunScanIacRealtimeCommand_FullFlow_WithAllFlags(t *testing.T) {
 	cmd.Flags().String(commonParams.IgnoredFilePathFlag, ignoredFile, "ignored file path")
 	cmd.Flags().String(commonParams.EngineFlag, "kics", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.IgnoredFilePathFlag, ignoredFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "kics")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.IgnoredFilePathFlag, ignoredFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "kics")
 
 	err = handler(cmd, []string{})
 

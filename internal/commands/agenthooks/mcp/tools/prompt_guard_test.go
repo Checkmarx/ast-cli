@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+const blockedResponse = "blocked"
+
 // ============================================================================
 // NewPromptGuardTool Tests
 // ============================================================================
@@ -134,7 +136,7 @@ func TestPromptGuardTool_Handle_InvokesGuardFunction(t *testing.T) {
 	})
 	ctx := context.Background()
 
-	tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
+	_ = tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
 
 	if !invoked {
 		t.Error("guard function should be invoked")
@@ -342,7 +344,7 @@ func TestPromptGuardTool_ResultStructure_Clean(t *testing.T) {
 }
 
 func TestPromptGuardTool_ResultStructure_Blocked(t *testing.T) {
-	tool := NewPromptGuardTool(func(text string) string { return "blocked" })
+	tool := NewPromptGuardTool(func(text string) string { return blockedResponse })
 	ctx := context.Background()
 
 	_, result, _ := tool.Handle(ctx, nil, PromptGuardInput{Text: "test"})
