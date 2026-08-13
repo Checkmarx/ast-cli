@@ -138,7 +138,7 @@ func TestShellGuardTool_Handle_InvokesGuardFunction(t *testing.T) {
 	})
 	ctx := context.Background()
 
-	_ = tool.Handle(ctx, nil, ShellGuardInput{Command: "git status"})
+	_, _, _ = tool.Handle(ctx, nil, ShellGuardInput{Command: "git status"})
 
 	if !invoked {
 		t.Error("guard function should be invoked")

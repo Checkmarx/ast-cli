@@ -136,7 +136,7 @@ func TestPromptGuardTool_Handle_InvokesGuardFunction(t *testing.T) {
 	})
 	ctx := context.Background()
 
-	_ = tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
+	_, _, _ = tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
 
 	if !invoked {
 		t.Error("guard function should be invoked")
