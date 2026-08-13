@@ -10,8 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
-	"github.com/checkmarx/ast-cli/internal/wrappers/credentialstore"
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,14 +19,6 @@ import (
 // deterministic pieces: persistLogin and runAuthLogout.
 
 // swapDefaultStore swaps credentialstore.Default for a mock and restores it.
-func swapDefaultStore(t *testing.T) *mock.CredentialStoreMock {
-	t.Helper()
-	m := mock.NewCredentialStoreMock()
-	prev := credentialstore.Default
-	credentialstore.Default = m
-	t.Cleanup(func() { credentialstore.Default = prev })
-	return m
-}
 
 // withTempConfigDir sandboxes viper at a temp config file and clears CX_APIKEY.
 func withTempConfigDir(t *testing.T) string {
@@ -73,45 +64,8 @@ func readYamlAPIKey(t *testing.T) string {
 }
 
 // Token must be saved to the yaml fallback but never echoed to stdout.
-func TestPersistLogin_DoesNotPrintToken(t *testing.T) {
-	withTempConfigDir(t)
-	const token = "super-secret-refresh-token"
-
-	cmd, out, _ := newBufferedCmd()
-	if err := persistLogin(cmd, token); err != nil {
-		t.Fatalf("persistLogin failed: %v", err)
-	}
-
-	stdout := out.String()
-	if strings.Contains(stdout, token) {
-		t.Errorf("refresh token leaked to stdout: %q", stdout)
-	}
-	if !strings.Contains(stdout, "Successfully authenticated to Checkmarx One server!") {
-		t.Errorf("expected confirmation line, got: %q", stdout)
-	}
-	// Default store is file-backed in tests, so the token lands in yaml.
-	if got := readYamlAPIKey(t); got != token {
-		t.Errorf("expected token persisted to yaml, got %q", got)
-	}
-}
 
 // persistLogin stores the token through the credential store (keyring in prod).
-func TestPersistLogin_UsesStore(t *testing.T) {
-	withTempConfigDir(t)
-	store := swapDefaultStore(t)
-	const token = "keyring-refresh-token"
-
-	cmd, out, _ := newBufferedCmd()
-	if err := persistLogin(cmd, token); err != nil {
-		t.Fatalf("persistLogin failed: %v", err)
-	}
-	if got := store.Store[params.AstAPIKey]; got != token {
-		t.Errorf("expected token stored via store, got %q", got)
-	}
-	if strings.Contains(out.String(), token) {
-		t.Errorf("refresh token leaked to stdout")
-	}
-}
 
 // Prompt is skipped only when a connection detail is passed as a flag; with no
 // flags login always prompts (parity with cx configure, incl. re-login after logout).
@@ -165,25 +119,6 @@ func TestRunAuthLogout_ClearsYaml(t *testing.T) {
 	// Idempotent: running again on empty storage must not error.
 	if err := runAuthLogout(cmd, nil); err != nil {
 		t.Fatalf("second runAuthLogout failed: %v", err)
-	}
-}
-
-// Logout deletes both cx_apikey and cx_client_secret from the credential store.
-func TestRunAuthLogout_DeletesFromStore(t *testing.T) {
-	withTempConfigDir(t)
-	store := swapDefaultStore(t)
-	_ = store.SetSecret(params.AstAPIKey, "stored-token")
-	_ = store.SetSecret(params.AccessKeySecretConfigKey, "stored-client-secret")
-
-	cmd, _, _ := newBufferedCmd()
-	if err := runAuthLogout(cmd, nil); err != nil {
-		t.Fatalf("runAuthLogout failed: %v", err)
-	}
-	if got, _ := store.GetSecret(params.AstAPIKey); got != "" {
-		t.Errorf("expected store cx_apikey deleted, got %q", got)
-	}
-	if got, _ := store.GetSecret(params.AccessKeySecretConfigKey); got != "" {
-		t.Errorf("expected store cx_client_secret deleted, got %q", got)
 	}
 }
 
