@@ -5,6 +5,7 @@ import "github.com/checkmarx/ast-cli/internal/wrappers"
 var TenantConfiguration []*wrappers.TenantConfigurationResponse
 
 type TenantConfigurationMockWrapper struct {
+	CustomGetTenantConfiguration func() (*[]*wrappers.TenantConfigurationResponse, *wrappers.WebError, error)
 }
 
 func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
@@ -12,6 +13,9 @@ func (t TenantConfigurationMockWrapper) GetTenantConfiguration() (
 	*wrappers.WebError,
 	error,
 ) {
+	if t.CustomGetTenantConfiguration != nil {
+		return t.CustomGetTenantConfiguration()
+	}
 	if len(TenantConfiguration) == 0 {
 		TenantConfiguration = []*wrappers.TenantConfigurationResponse{
 			{
