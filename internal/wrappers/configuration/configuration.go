@@ -69,9 +69,9 @@ func PromptConfiguration() {
 		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
 		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
 		if len(accessAPIKey) > 0 {
-			setSecretQuiet(params.AstAPIKey, accessAPIKey)
+			setConfigPropertyQuiet(params.AstAPIKey, accessAPIKey)
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
-			clearSecretQuiet(params.AccessKeySecretConfigKey)
+			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
 		}
 	} else {
 		fmt.Printf("Checkmarx One Client ID [%s]: ", obfuscateString(accessKey))
@@ -80,15 +80,15 @@ func PromptConfiguration() {
 		accessKey = strings.Replace(accessKey, "\r", "", -1)
 		if len(accessKey) > 0 {
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
-			clearSecretQuiet(params.AstAPIKey)
+			setConfigPropertyQuiet(params.AstAPIKey, "")
 		}
 		fmt.Printf("Client Secret [%s]: ", obfuscateString(accessKeySecret))
 		accessKeySecret, _ = reader.ReadString('\n')
 		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
 		accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
 		if len(accessKeySecret) > 0 {
-			setSecretQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
-			clearSecretQuiet(params.AstAPIKey)
+			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
+			setConfigPropertyQuiet(params.AstAPIKey, "")
 		}
 	}
 }
@@ -151,43 +151,6 @@ func setConfigPropertyQuiet(propName, propValue string) {
 func SetConfigProperty(propName, propValue string) {
 	fmt.Println("Setting property [", propName, "] to value [", propValue, "]")
 	setConfigPropertyQuiet(propName, propValue)
-}
-
-// SecretStore lives here, in the lowest-level config package, so secrets can be
-// routed to the keyring without an import cycle.
-type SecretStore interface {
-	SetSecret(key, value string) error
-	DeleteSecret(key string) error
-}
-
-// Secrets, when non-nil, routes secret keys to the keyring instead of plaintext yaml.
-var Secrets SecretStore
-
-// SetSecretProperty stores a secret config value without echoing it.
-func SetSecretProperty(propName, propValue string) {
-	fmt.Printf("Setting property [ %s ]\n", propName)
-	setSecretQuiet(propName, propValue)
-}
-
-// setSecretQuiet routes to the store (blanking any yaml copy first), falling back
-// to a yaml write on store failure so the credential is never lost.
-func setSecretQuiet(key, value string) {
-	if Secrets != nil {
-		setConfigPropertyQuiet(key, "")
-		if err := Secrets.SetSecret(key, value); err != nil {
-			setConfigPropertyQuiet(key, value)
-		}
-		return
-	}
-	setConfigPropertyQuiet(key, value)
-}
-
-// clearSecretQuiet deletes a secret from the store and blanks its yaml key.
-func clearSecretQuiet(key string) {
-	if Secrets != nil {
-		_ = Secrets.DeleteSecret(key)
-	}
-	setConfigPropertyQuiet(key, "")
 }
 
 func LoadConfiguration() error {
