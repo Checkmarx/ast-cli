@@ -41,6 +41,14 @@ const (
 const (
 	gradleBuildFileName          = "build.gradle"
 	gradleVersionCatalogFileName = "libs.versions.toml"
+	cocoaPodsPodfileName         = "Podfile"
+	carthageCartfileName         = "Cartfile"
+	carthageCartfilePrivateName  = "Cartfile.private"
+	swiftPackageFileName         = "Package.swift"
+	bowerJsonFileName            = "bower.json"
+	composerJsonFileName         = "composer.json"
+	pubspecYamlFileName          = "pubspec.yaml"
+	gemfileName                  = "Gemfile"
 )
 
 // IsManifest reports whether path names a manifest file the OSS realtime
@@ -95,23 +103,23 @@ func IsManifest(path string) (Format, bool) {
 		return FormatGradleVersionCatalog, true
 	case base == "setup.cfg", base == "setup.py", base == "pyproject.toml":
 		return FormatPypiRequirements, true
-	case base == "Podfile":
+	case base == cocoaPodsPodfileName:
 		return FormatCocoaPodsPodfile, true
-	case base == "Cartfile", base == "Cartfile.private":
+	case base == carthageCartfileName, base == carthageCartfilePrivateName:
 		return FormatCarthage, true
-	case base == "Package.swift":
+	case base == swiftPackageFileName:
 		return FormatSwiftPackageManager, true
 	case strings.HasPrefix(base, "Package@swift-") && strings.HasSuffix(base, ".swift"):
 		return FormatSwiftPackageManager, true
 	case strings.HasSuffix(base, ".podspec.json"):
 		return FormatCocoaPodsPodspec, true
-	case base == "bower.json":
+	case base == bowerJsonFileName:
 		return FormatBower, true
-	case base == "composer.json":
+	case base == composerJsonFileName:
 		return FormatComposerJson, true
-	case base == "pubspec.yaml":
+	case base == pubspecYamlFileName:
 		return FormatPubspecYaml, true
-	case base == "Gemfile":
+	case base == gemfileName:
 		return FormatGemfile, true
 	}
 	return FormatUnknown, false
@@ -179,21 +187,21 @@ func (f Format) SynthFileName() string {
 	case FormatSbtBuild:
 		return "synth.sbt"
 	case FormatCocoaPodsPodfile:
-		return "Podfile"
+		return cocoaPodsPodfileName
 	case FormatCocoaPodsPodspec:
 		return "synth.podspec"
 	case FormatCarthage:
-		return "Cartfile"
+		return carthageCartfileName
 	case FormatSwiftPackageManager:
-		return "Package.swift"
+		return swiftPackageFileName
 	case FormatBower:
-		return "bower.json"
+		return bowerJsonFileName
 	case FormatComposerJson:
-		return "composer.json"
+		return composerJsonFileName
 	case FormatPubspecYaml:
-		return "pubspec.yaml"
+		return pubspecYamlFileName
 	case FormatGemfile:
-		return "Gemfile"
+		return gemfileName
 	}
 	return ""
 }
