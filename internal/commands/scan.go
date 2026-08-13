@@ -2668,6 +2668,23 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+
+		// For --no-scan (with --sbom-first), only the local SBOM generation is required.
+		// Build the scan handler directly instead of calling createScanModel so that no
+		// empty project is created on the server before we skip the scan submission.
+		// This is handled before the policy/timeout/threshold checks below, since none of
+		// those apply when the scan is not submitted (and it avoids an unnecessary policy
+		// permission API call for the no-scan case).
+		if noScan {
+			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+			defer cleanUpTempZip(zipFilePath)
+			if handlerErr != nil {
+				return errors.Errorf("%s", handlerErr)
+			}
+			logger.Print("--no-scan set: skipping scan submission.")
+			return nil
+		}
+
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 
 		// Check if the user has permission to override policy management if --ignore-policy is set
@@ -2708,10 +2725,6 @@ func runCreateScanCommand(
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
-		}
-		if noScan {
-			logger.Print("--no-scan set: skipping scan submission.")
-			return nil
 		}
 
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
