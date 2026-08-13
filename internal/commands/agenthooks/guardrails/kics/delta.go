@@ -219,7 +219,8 @@ func cursorAdditionalContext(filePath string, findings []iacrealtime.IacRealtime
 			line, f.Severity, f.Title, f.Description)
 	}
 	return fmt.Sprintf(
-		"KICS IaC findings in %s — apply the cx-devassist-kics.mdc rule exactly as written: do not "+
+		"KICS IaC findings in %s — apply the cx-hook-deny.mdc rule for this deny, and the "+
+			"cx-devassist-kics.mdc rule exactly as written: do not "+
 			"skip, abbreviate, or reorder its steps, and always show its Step 5 IaC Remediation Summary "+
 			"to the user verbatim when done. "+
 			"Do not retry the blocked Write/StrReplace, paste code in chat, or bypass the scan with shell workarounds.\n\n"+

@@ -221,11 +221,20 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"Do not bypass the scan by writing the same content through another tool or shell command. "+
 			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
 			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"Apply the cx-devassist-asca.mdc rule: for each real finding, invoke the "+
-			"cx-devassist:cx-devassist-asca skill exactly as written — do not skip, abbreviate, or "+
-			"reimplement its steps inline. The findings are already in context so it will skip the "+
-			"scan and go directly to MCP-driven remediation; the skill also handles MCP unavailability "+
-			"and self-recovery. Always show its Step 5 Remediation Summary to the user verbatim when done. "+
+			"Follow the cx-hook-deny.mdc rule for this deny. "+
+			"ASK THE USER FIRST, for every real finding, before taking any action: \"A security "+
+			"vulnerability was detected. Would you like to remediate it (apply an MCP-driven code fix) "+
+			"or suppress it (mark as a confirmed false positive and unblock the write)?\" and wait for "+
+			"their answer. Do not decide this yourself — an intentionally-inserted vulnerability (e.g. "+
+			"in a lab/demo/training file the user asked for on purpose) is NOT the same as a confirmed "+
+			"false positive: suppress only on the user's explicit instruction, never because the "+
+			"request seems intentional. "+
+			"Apply the cx-devassist-asca.mdc rule: for each finding the user asks you to remediate, "+
+			"invoke the cx-devassist:cx-devassist-asca skill exactly as written — do not skip, "+
+			"abbreviate, or reimplement its steps inline. The findings are already in context so it "+
+			"will skip the scan and go directly to MCP-driven remediation; the skill also handles MCP "+
+			"unavailability and self-recovery. Always show its Step 5 Remediation Summary to the user "+
+			"verbatim when done. "+
 			"If that skill is not available in this session, call %s directly:\n"+
 			"  {\n"+
 			"    \"language\": \"[auto-detected programming language]\",\n"+
@@ -237,7 +246,7 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"    \"type\": \"sast\"\n"+
 			"  }\n"+
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
+			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
 		filePath, tool, suppressCmds.String(),
 	)
 }

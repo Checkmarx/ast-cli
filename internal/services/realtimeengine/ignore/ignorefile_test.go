@@ -107,8 +107,8 @@ func TestPathFor_EmptyWorkDirFallsBackToDefault(t *testing.T) {
 // the drive letter). Without normalization, filepath.Join produces a path Go's os.ReadFile
 // rejects with "The filename, directory name, or volume label syntax is incorrect."
 func TestPathFor_NormalizesCursorPosixStyleWindowsRoot(t *testing.T) {
-	got := PathFor("/c:/Cx-Flow/Test/JavaVulnerabilityLabE")
-	want := filepath.Join("c:/Cx-Flow/Test/JavaVulnerabilityLabE", ".checkmarx", "checkmarxIgnoredTempList.json")
+	got := PathFor("/c:/MyProject/Test/JavaVulnerabilityLabE")
+	want := filepath.Join("c:/MyProject/Test/JavaVulnerabilityLabE", ".checkmarx", "checkmarxIgnoredTempList.json")
 	assert.Equal(t, want, got)
 }
 
@@ -118,7 +118,7 @@ func TestNormalizePath(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"posix-style windows root", "/c:/Cx-Flow/Test/JavaVulnerabilityLabE", "c:/Cx-Flow/Test/JavaVulnerabilityLabE"},
+		{"posix-style windows root", "/c:/MyProject/Test/JavaVulnerabilityLabE", "c:/MyProject/Test/JavaVulnerabilityLabE"},
 		{"posix-style windows root, uppercase drive", "/C:/Users/dev/project", "C:/Users/dev/project"},
 		{"native windows backslash path", `c:\Users\dev\project`, "c:/Users/dev/project"},
 		{"native windows forward-slash path", "c:/Users/dev/project", "c:/Users/dev/project"},
