@@ -26,6 +26,14 @@ const (
 	FormatGradleBuild
 	FormatGradleVersionCatalog
 	FormatSbtBuild
+	FormatCocoaPodsPodfile
+	FormatCocoaPodsPodspec
+	FormatCarthage
+	FormatSwiftPackageManager
+	FormatBower
+	FormatComposerJson
+	FormatPubspecYaml
+	FormatGemfile
 )
 
 // gradleBuildFileName and gradleVersionCatalogFileName are the canonical basenames for the Gradle
@@ -67,6 +75,8 @@ func IsManifest(path string) (Format, bool) {
 		return FormatDotnetCsproj, true
 	case ext == ".sbt":
 		return FormatSbtBuild, true
+	case ext == ".podspec":
+		return FormatCocoaPodsPodspec, true
 	case ext == ".txt" && (strings.HasPrefix(base, "requirement") || strings.HasPrefix(base, "packages") || strings.HasPrefix(base, "constraint")):
 		return FormatPypiRequirements, true
 	case base == "pom.xml":
@@ -85,6 +95,24 @@ func IsManifest(path string) (Format, bool) {
 		return FormatGradleVersionCatalog, true
 	case base == "setup.cfg", base == "setup.py", base == "pyproject.toml":
 		return FormatPypiRequirements, true
+	case base == "Podfile":
+		return FormatCocoaPodsPodfile, true
+	case base == "Cartfile", base == "Cartfile.private":
+		return FormatCarthage, true
+	case base == "Package.swift":
+		return FormatSwiftPackageManager, true
+	case strings.HasPrefix(base, "Package@swift-") && strings.HasSuffix(base, ".swift"):
+		return FormatSwiftPackageManager, true
+	case strings.HasSuffix(base, ".podspec.json"):
+		return FormatCocoaPodsPodspec, true
+	case base == "bower.json":
+		return FormatBower, true
+	case base == "composer.json":
+		return FormatComposerJson, true
+	case base == "pubspec.yaml":
+		return FormatPubspecYaml, true
+	case base == "Gemfile":
+		return FormatGemfile, true
 	}
 	return FormatUnknown, false
 }
@@ -107,6 +135,20 @@ func (f Format) ManagerName() string {
 		return "gradle"
 	case FormatSbtBuild:
 		return "sbt"
+	case FormatCocoaPodsPodfile, FormatCocoaPodsPodspec:
+		return "cocoapods"
+	case FormatCarthage:
+		return "carthage"
+	case FormatSwiftPackageManager:
+		return "swift"
+	case FormatBower:
+		return "npm"
+	case FormatComposerJson:
+		return "packagist"
+	case FormatPubspecYaml:
+		return "pub"
+	case FormatGemfile:
+		return "rubygems"
 	}
 	return ""
 }
@@ -136,6 +178,22 @@ func (f Format) SynthFileName() string {
 		return gradleVersionCatalogFileName
 	case FormatSbtBuild:
 		return "synth.sbt"
+	case FormatCocoaPodsPodfile:
+		return "Podfile"
+	case FormatCocoaPodsPodspec:
+		return "synth.podspec"
+	case FormatCarthage:
+		return "Cartfile"
+	case FormatSwiftPackageManager:
+		return "Package.swift"
+	case FormatBower:
+		return "bower.json"
+	case FormatComposerJson:
+		return "composer.json"
+	case FormatPubspecYaml:
+		return "pubspec.yaml"
+	case FormatGemfile:
+		return "Gemfile"
 	}
 	return ""
 }
