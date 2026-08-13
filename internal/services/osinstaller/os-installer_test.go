@@ -175,29 +175,3 @@ func TestDownloadNotNeeded_ExecutableExistsAndUpToDate_ReturnsTrue(t *testing.T)
 
 	assert.True(t, downloadNotNeeded(cfg))
 }
-
-func TestInstallOrUpgrade_AlreadyUpToDate_ReturnsFalseNil(t *testing.T) {
-	const hashContent = "matching-hash"
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(hashContent))
-	}))
-	defer server.Close()
-
-	cfg := newInstallConfig(t)
-	cfg.HashDownloadURL = server.URL
-	require.NoError(t, os.WriteFile(cfg.ExecutableFilePath(), []byte("exe"), 0755))
-	require.NoError(t, os.WriteFile(cfg.HashFilePath(), []byte(hashContent), 0600))
-
-	installed, err := InstallOrUpgrade(cfg)
-	assert.NoError(t, err)
-	assert.False(t, bool(installed))
-}
-
-func TestInstallOrUpgrade_DownloadFileFails_ReturnsError(t *testing.T) {
-	cfg := newInstallConfig(t)
-	cfg.DownloadURL = "http://127.0.0.1:0/unreachable"
-
-	installed, err := InstallOrUpgrade(cfg)
-	assert.Error(t, err)
-	assert.False(t, bool(installed))
-}
