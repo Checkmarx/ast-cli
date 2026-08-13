@@ -231,11 +231,11 @@ func TestValidateSbomOptions(t *testing.T) {
 // TestPreparePayload tests the preparePayload function
 func TestPreparePayload(t *testing.T) {
 	tests := []struct {
-		name               string
-		scanID             string
-		formatSbomOptions  string
-		expectedFormat     string
-		wantErr            bool
+		name              string
+		scanID            string
+		formatSbomOptions string
+		expectedFormat    string
+		wantErr           bool
 	}{
 		{
 			name:              "Default format",

@@ -20,10 +20,7 @@ import (
 const mcpCommandName = "mcp"
 const bridgeCommandName = "bridge"
 
-func executeCommandWithContext(ctx context.Context, cmd *cobra.Command, args ...string) error {
-	if len(args) > 0 {
-		cmd.SetArgs(args)
-	}
+func executeCommandWithContext(ctx context.Context, cmd *cobra.Command, _ ...string) error {
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 	return cmd.ExecuteContext(ctx)

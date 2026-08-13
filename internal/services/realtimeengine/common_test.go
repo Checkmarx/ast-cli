@@ -12,8 +12,12 @@ import (
 )
 
 func TestIsFeatureFlagEnabled_Success(t *testing.T) {
-	mock.FFErr = nil //nolint:gocritic // resetting shared mock package state between tests
-	defer func() { mock.FFErr = nil }() //nolint:gocritic // resetting shared mock package state between tests
+	// nolint:gocritic // resetting shared mock package state between tests
+	mock.FFErr = nil
+	defer func() {
+		// nolint:gocritic // resetting shared mock package state between tests
+		mock.FFErr = nil
+	}()
 	mock.Flag.Name = "SOME_FLAG"
 	mock.Flag.Status = true
 

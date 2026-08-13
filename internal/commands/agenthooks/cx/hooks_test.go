@@ -138,7 +138,6 @@ func TestCxWhenAgentIdle(t *testing.T) {
 	}
 }
 
-
 func TestCxBeforeToolCall_Blacklisted_Denies(t *testing.T) {
 	resetHookGlobals(t)
 	policy := guardrails.HooksPolicy{}

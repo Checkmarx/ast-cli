@@ -144,9 +144,9 @@ func TestConstants_ExitCodes(t *testing.T) {
 		t.Errorf("failureExitCode should be 1, got %d", failureExitCode)
 	}
 
-	expectedKillCmd := "kill"
-	if killCommand != expectedKillCmd {
-		t.Errorf("killCommand should be %q, got %q", expectedKillCmd, killCommand)
+	const expectedKill = "kill"
+	if killCommand != expectedKill {
+		t.Errorf("killCommand should be %q, got %q", expectedKill, killCommand)
 	}
 }
 
@@ -247,9 +247,9 @@ func TestSignalConstants(t *testing.T) {
 }
 
 func TestKillCommand_Constant(t *testing.T) {
-	expectedKillCmd := "kill"
-	if killCommand != expectedKillCmd {
-		t.Errorf("killCommand should be %q, got %q", expectedKillCmd, killCommand)
+	const expectedKill = "kill"
+	if killCommand != expectedKill {
+		t.Errorf("killCommand should be %q, got %q", expectedKill, killCommand)
 	}
 
 	// Verify it's a valid docker subcommand name

@@ -217,7 +217,7 @@ func TestRunScanIacRealtimeCommand_WithEmptyEngine_Default(t *testing.T) {
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 	cmd.Flags().String(commonParams.EngineFlag, "", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
 
 	err = handler(cmd, []string{})
 
@@ -250,8 +250,8 @@ func TestRunScanIacRealtimeCommand_OutputBuffer(t *testing.T) {
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 	cmd.Flags().String(commonParams.EngineFlag, "kics", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "kics")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "kics")
 
 	err = handler(cmd, []string{})
 
@@ -308,8 +308,8 @@ func TestRunScanIacRealtimeCommand_PathWithSpaces(t *testing.T) {
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 	cmd.Flags().String(commonParams.EngineFlag, "kics", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "kics")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "kics")
 
 	err = handler(cmd, []string{})
 
