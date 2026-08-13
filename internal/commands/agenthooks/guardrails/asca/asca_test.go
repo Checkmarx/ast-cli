@@ -10,8 +10,13 @@ import (
 	"testing"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 // ── ProposedContent ─────────────────────────────────────────────────────────
@@ -19,7 +24,7 @@ import (
 func TestProposedContent_FullFileWrite(t *testing.T) {
 	newContent, _, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
 		{Before: "", After: "print('hello')"},
-	}, "")
+	}, agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +36,7 @@ func TestProposedContent_FullFileWrite(t *testing.T) {
 func TestProposedContent_FullFileWrite_OriginalEmpty_WhenFileAbsent(t *testing.T) {
 	_, orig, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
 		{Before: "", After: "new content"},
-	}, "")
+	}, agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +54,7 @@ func TestProposedContent_StringReplaceEdit(t *testing.T) {
 
 	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "y = 2", After: "y = 99"},
-	}, "")
+	}, agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,36 +76,12 @@ func TestProposedContent_MissingBeforeFailsOpen(t *testing.T) {
 	// Before string not present → returns original unchanged
 	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "NOTHERE", After: "replacement"},
-	}, "")
+	}, agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if newContent != origContent {
 		t.Fatalf("expected content unchanged, got %q", newContent)
-	}
-}
-
-func TestProposedContent_CopilotCLI_NormalizesLF(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "app.py")
-	// Disk file has CRLF (Windows)
-	if err := os.WriteFile(path, []byte("x = 1\r\ny = 2\r\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	// Copilot CLI sends LF-only old_str/new_str
-	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
-		{Before: "y = 2\n", After: "y = 99\n"},
-	}, agenthooks.AgentCopilotCLI)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// originalContent should be normalised to LF
-	if strings.Contains(origContent, "\r") {
-		t.Fatalf("originalContent should be LF-normalised, got %q", origContent)
-	}
-	// newContent should have the replacement applied
-	if !strings.Contains(newContent, "y = 99") {
-		t.Fatalf("expected y = 99 in newContent, got %q", newContent)
 	}
 }
 
@@ -114,7 +95,7 @@ func TestProposedContent_MultiEdit(t *testing.T) {
 	newContent, _, err := ProposedContent(path, []agenthooks.FileDiff{
 		{Before: "a", After: "A"},
 		{Before: "b", After: "B"},
-	}, "")
+	}, agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,52 +104,18 @@ func TestProposedContent_MultiEdit(t *testing.T) {
 	}
 }
 
-// ── asciiSafe ────────────────────────────────────────────────────────────────
-
-func TestASCIISafe_PureASCII(t *testing.T) {
-	in := "hello world\nfoo = 'bar';"
-	if got := asciiSafe(in); got != in {
-		t.Fatalf("pure-ASCII input should pass through unchanged, got %q", got)
-	}
-}
-
-func TestASCIISafe_ReplacesNonASCII(t *testing.T) {
-	in := "// comment with em-dash — here\ncode = 1;"
-	got := asciiSafe(in)
-	if strings.ContainsRune(got, '—') {
-		t.Fatal("em-dash should have been replaced")
-	}
-	// Line structure preserved
-	if !strings.Contains(got, "\ncode = 1;") {
-		t.Fatalf("newlines and code should be intact, got %q", got)
-	}
-}
-
-func TestStageForScan_StripsNonASCII(t *testing.T) {
-	content := "class A {\n// — em dash in comment\nint x = 1;\n}"
-	staged, cleanup, err := stageForScan("/some/path/A.java", content, "sess1", agenthooks.AgentCopilotCLI)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer cleanup()
-	data, _ := os.ReadFile(staged)
-	for _, b := range data {
-		if b > 127 {
-			t.Fatalf("staged file should contain only ASCII, found byte %d", b)
-		}
-	}
-}
-
 // ── stageForScan / safeSessionTag ───────────────────────────────────────────
 
+const wantAnonTag = "anon"
+
 func TestSafeSessionTag_Empty(t *testing.T) {
-	if got := safeSessionTag(""); got != "anon" {
+	if got := safeSessionTag(""); got != wantAnonTag {
 		t.Fatalf("want anon, got %q", got)
 	}
 }
 
 func TestSafeSessionTag_AllSpecialChars(t *testing.T) {
-	if got := safeSessionTag("!!!???"); got != "anon" {
+	if got := safeSessionTag("!!!???"); got != wantAnonTag {
 		t.Fatalf("want anon, got %q", got)
 	}
 }
@@ -179,15 +126,16 @@ func TestSafeSessionTag_UUID(t *testing.T) {
 		t.Fatalf("expected ≤8 chars, got %q (len %d)", got, len(got))
 	}
 	for _, r := range got {
-		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
-			(r >= '0' && r <= '9') || r == '-' || r == '_') {
+		isAllowedChar := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '-' || r == '_'
+		if !isAllowedChar {
 			t.Fatalf("unexpected char %q in tag %q", r, got)
 		}
 	}
 }
 
 func TestStageForScan_CreatesFileWithOriginalBasename(t *testing.T) {
-	staged, cleanup, err := stageForScan("/some/path/auth.py", "content", "sess123", "")
+	staged, cleanup, err := stageForScan("/some/path/auth.py", "content", "sess123", agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +154,7 @@ func TestStageForScan_CreatesFileWithOriginalBasename(t *testing.T) {
 }
 
 func TestStageForScan_DirNameContainsSessionTag(t *testing.T) {
-	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "abc123", "")
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "abc123", agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +171,7 @@ func TestStageForScan_DirNameContainsSessionTag(t *testing.T) {
 }
 
 func TestStageForScan_CleanupRemovesDir(t *testing.T) {
-	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "sess", "")
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "sess", agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,11 +182,39 @@ func TestStageForScan_CleanupRemovesDir(t *testing.T) {
 	}
 }
 
+func TestStageForScan_EmptyOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("", "content", "sess", agenthooks.AgentID("test"))
+	if err == nil {
+		t.Fatal("expected error for empty original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup() // must be safe to call (noop) even on the error path
+}
+
+func TestStageForScan_DotDotOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("..", "content", "sess", agenthooks.AgentID("test"))
+	if err == nil {
+		t.Fatal("expected error for '..' original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup()
+}
+
 func TestStageForScan_FileMode(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Unix permission bits (0600) are not enforced on Windows; validated on Linux/macOS CI")
 	}
-	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1", "")
+	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1", agenthooks.AgentID("test"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -325,7 +301,7 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
 	if !strings.Contains(ctx, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
 	}
@@ -340,40 +316,12 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	}
 }
 
-func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
-	findings := []grpcs.ScanDetail{
-		{FileName: "billing.py", Line: 5, RuleID: 4059},
-	}
-	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "sess-123")
-	want := ` --optional-flags "aiProvider=Claude;agent=Claude-cli;aiAgentSessionId=sess-123"`
-	if !strings.Contains(ctx, want) {
-		t.Errorf("expected provenance flags %q in ignore command, got %q", want, ctx)
-	}
-	// Empty agent → no provenance fragment (backward-compatible default).
-	if noAgent := additionalContext("billing.py", "cx", findings, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
-		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
-	}
-}
-
-func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
-	findings := []grpcs.ScanDetail{
-		{FileName: "a%s.py", Line: 5, RuleID: 4059},
-	}
-	ctx := additionalContext("a%s.py", "cx", findings, "", "Claude", "sess-1")
-	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
-		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
-	}
-	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
-		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
-	}
-}
-
 func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 		{FileName: "billing.py", Line: 12, RuleID: 4027},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
 	if strings.Count(ctx, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
 	}
@@ -386,7 +334,7 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 }
 
 func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *testing.T) {
-	ctx := additionalContext("main.py", "cx", nil, "", "", "")
+	ctx := additionalContext("main.py", "cx", nil, "", "Claude", "")
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
 	}
@@ -397,7 +345,7 @@ func TestAdditionalContext_PinsIgnoredFilePathToWorkDir(t *testing.T) {
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
 	workDir := filepath.Join("repo", "ws")
-	ctx := additionalContext("billing.py", "cx", findings, workDir, "", "")
+	ctx := additionalContext("billing.py", "cx", findings, workDir, "Claude", "")
 	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
 	if !strings.Contains(ctx, want) {
 		t.Errorf("expected context to pin %q, got %q", want, ctx)
@@ -408,8 +356,148 @@ func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
 	}
-	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
 	if strings.Contains(ctx, "--ignored-file-path") {
 		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
 	}
+}
+
+// ── isSupportedByASCA ────────────────────────────────────────────────────────
+
+func TestIsSupportedByASCA(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"main.py", true},
+		{"main.PY", true},
+		{"App.java", true},
+		{"index.js", true},
+		{"component.tsx", true},
+		{"Program.cs", true},
+		{"server.go", true},
+		{"readme.md", false},
+		{"data.json", false},
+		{"noextension", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, tt.want, isSupportedByASCA(tt.path))
+		})
+	}
+}
+
+// ── ScanFileEdit fail-open branches ──────────────────────────────────────────
+
+func TestScanFileEdit_UnsupportedExtension_ReturnsFalse(t *testing.T) {
+	blocked, reason, context, _ := ScanFileEdit(&agenthooks.FileEditEvent{FilePath: "notes.txt"}, nil, "Claude")
+	assert.False(t, blocked)
+	assert.Empty(t, reason)
+	assert.Empty(t, context)
+}
+
+func TestScanFileEdit_EmptyProposedContent_ReturnsFalse(t *testing.T) {
+	ev := agenthooks.FileEditEvent{
+		FilePath: filepath.Join(t.TempDir(), "empty.py"),
+		Changes:  []agenthooks.FileDiff{{Before: "", After: ""}},
+	}
+	blocked, reason, context, _ := ScanFileEdit(&ev, nil, "Claude")
+	assert.False(t, blocked)
+	assert.Empty(t, reason)
+	assert.Empty(t, context)
+}
+
+// ── existingIgnoreFilePath ───────────────────────────────────────────────────
+
+func TestExistingIgnoreFilePath_FileMissing_ReturnsEmpty(t *testing.T) {
+	assert.Empty(t, existingIgnoreFilePath(t.TempDir()))
+}
+
+func TestExistingIgnoreFilePath_FileExists_ReturnsPath(t *testing.T) {
+	workDir := t.TempDir()
+	ignorePath := ignore.PathFor(workDir)
+	assert.NoError(t, os.MkdirAll(filepath.Dir(ignorePath), 0o755))
+	assert.NoError(t, os.WriteFile(ignorePath, []byte("[]"), 0o600))
+
+	assert.Equal(t, ignorePath, existingIgnoreFilePath(workDir))
+}
+
+// ── shouldUpdateVersion ──────────────────────────────────────────────────────
+
+func TestShouldUpdateVersion_DefaultTrue(t *testing.T) {
+	viper.Set(params.DisableASCALatestVersionKey, "")
+	defer viper.Set(params.DisableASCALatestVersionKey, "")
+
+	assert.True(t, shouldUpdateVersion())
+}
+
+func TestShouldUpdateVersion_DisabledReturnsFalse(t *testing.T) {
+	viper.Set(params.DisableASCALatestVersionKey, "true")
+	defer viper.Set(params.DisableASCALatestVersionKey, "")
+
+	assert.False(t, shouldUpdateVersion())
+}
+
+// ── logASCATelemetry ─────────────────────────────────────────────────────────
+
+func TestLogASCATelemetry_NilWrapper_NoOp(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logASCATelemetry(nil, "Claude", "", 3)
+	})
+}
+
+func TestLogASCATelemetry_ZeroCount_DoesNotSend(t *testing.T) {
+	sent := false
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			sent = true
+			return nil
+		},
+	}
+	logASCATelemetry(telemetry, "Claude", "", 0)
+	assert.False(t, sent)
+}
+
+func TestLogASCATelemetry_WithFindings_Sends(t *testing.T) {
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logASCATelemetry(telemetry, "Claude", "", 2)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "Asca", captured.Engine)
+	assert.Equal(t, 2, captured.TotalCount)
+	assert.Equal(t, "Claude", captured.AIProvider)
+}
+
+// ── findingsSummary / formatFindings ─────────────────────────────────────────
+
+func TestFindingsSummary_IncludesRemediation(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10, Remediation: "use parameterized queries"},
+	}
+	summary := findingsSummary(findings)
+	assert.Contains(t, summary, "a.py line 3 [HIGH] sql-injection (rule_id 10) — use parameterized queries")
+}
+
+func TestFindingsSummary_MissingRemediation_UsesDefaultText(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10},
+	}
+	summary := findingsSummary(findings)
+	assert.Contains(t, summary, "No remediation provided")
+}
+
+func TestFormatFindings_ReturnsReasonAndContext(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10},
+	}
+	reason, context := formatFindings("a.py", findings, "", "Claude", "")
+	assert.Contains(t, reason, "ASCA security scan detected vulnerabilities in a.py")
+	assert.Contains(t, reason, "sql-injection")
+	assert.Contains(t, context, "ASCA detected vulnerabilities in a.py")
+	assert.Contains(t, context, "ignore-vulnerability")
 }

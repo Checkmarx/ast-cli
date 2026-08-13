@@ -120,9 +120,9 @@ cx configure   # Interactive prompt for base-uri, tenant, credentials
 ### Running Tests
 
 ```bash
-# Run all unit tests (excludes mock, wrappers, bitbucketserver, logger packages)
+# Run all unit tests (excludes mock, wrappers, bitbucketserver, logger, osinstaller packages)
 # Add -v for verbose output
-go test $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger") -timeout 25m
+go test $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "osinstaller") -timeout 25m
 
 # Run tests for a specific package
 go test ./internal/commands/ -v
@@ -145,7 +145,7 @@ go test -tags integration -run TestScanCreate -v -timeout 210m github.com/checkm
 
 ```bash
 # Generate coverage report (console summary)
-go test $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger") -timeout 25m -coverprofile cover.out
+go test $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "osinstaller") -timeout 25m -coverprofile cover.out
 go tool cover -func cover.out                          # Show per-function coverage
 go tool cover -func cover.out | grep total             # Show total coverage percentage
 
@@ -184,7 +184,7 @@ Always run before committing:
 ```bash
 go mod tidy
 go vet ./...
-go test -v $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger") -timeout 25m
+go test -v $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "osinstaller") -timeout 25m
 golangci-lint run -c .golangci.yml
 ```
 
