@@ -143,7 +143,7 @@ func TestCxBeforeToolCall_Blacklisted_Denies(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []guardrails.BlacklistedTool{
 		{Name: "rm -rf", OS: []string{currentOS()}, Category: "destructive", Risk: "wipes files"},
 	}
-	defer writePolicy(t, policy)()
+	defer writePolicy(t, &policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -170,7 +170,7 @@ func TestCxBeforeToolCall_ToolRule_AsksUser(t *testing.T) {
 		OS:          []string{currentOS()},
 		ArgsInclude: []string{"compile", "test"},
 	}}
-	defer writePolicy(t, policy)()
+	defer writePolicy(t, &policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -229,7 +229,7 @@ func TestCxBeforeToolCall_CleanShell_Allows(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []guardrails.BlacklistedTool{
 		{Name: "rm -rf", OS: []string{currentOS()}, Category: "destructive", Risk: "bad"},
 	}
-	defer writePolicy(t, policy)()
+	defer writePolicy(t, &policy)()
 
 	v := cxBeforeToolCall(agenthooks.ToolCallEvent{
 		Kind:    agenthooks.ToolKindShell,
@@ -283,7 +283,7 @@ func TestCxBeforeFileEdit_BlastRadius_Rejects(t *testing.T) {
 	resetHookGlobals(t)
 	policy := guardrails.HooksPolicy{}
 	policy.DefaultPolicy.BlastRadiusLimit = guardrails.BlastRadiusLimit{Enabled: true, Threshold: 1}
-	defer writePolicy(t, policy)()
+	defer writePolicy(t, &policy)()
 
 	// Consume the single allowed write so the next edit is blocked.
 	if blocked, _ := guardrails.CheckAndIncrementBlastRadius(); blocked {
@@ -311,7 +311,7 @@ func TestCxBeforeFileEdit_TotalFileSize_Rejects(t *testing.T) {
 		Enabled:            true,
 		MaxTotalFileSizeKB: 1,
 	}
-	defer writePolicy(t, policy)()
+	defer writePolicy(t, &policy)()
 
 	big := strings.Repeat("a", 1100)
 	v := cxBeforeFileEdit(agenthooks.FileEditEvent{

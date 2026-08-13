@@ -261,8 +261,10 @@ func TestIsDirOrSymLinkToDir_SymLinkToDirectory(t *testing.T) {
 	assert.NilError(t, err)
 	defer func() { _ = os.RemoveAll(tempDir) }()
 
+	parentDir := filepath.Dir(tempDir)
+	linkPath := filepath.Join(parentDir, "test-symlink-dir")
+
 	// Create symlink to directory
-	linkPath := tempDir + "_link"
 	err = os.Symlink(tempDir, linkPath)
 	if err != nil {
 		// Symlinks might not be available on all systems
@@ -273,7 +275,7 @@ func TestIsDirOrSymLinkToDir_SymLinkToDirectory(t *testing.T) {
 	fileInfo, err := os.Lstat(linkPath)
 	assert.NilError(t, err)
 
-	isDir := IsDirOrSymLinkToDir(tempDir+"_link", fileInfo)
+	isDir := IsDirOrSymLinkToDir(parentDir, fileInfo)
 	assert.Assert(t, isDir, "Symlink to directory should return true")
 }
 
@@ -284,8 +286,10 @@ func TestIsDirOrSymLinkToDir_SymLinkToFile(t *testing.T) {
 	defer func() { _ = os.Remove(tempFile.Name()) }()
 	_ = tempFile.Close()
 
+	parentDir := filepath.Dir(tempFile.Name())
+	linkPath := filepath.Join(parentDir, "test-symlink-file")
+
 	// Create symlink to file
-	linkPath := tempFile.Name() + "_link"
 	err = os.Symlink(tempFile.Name(), linkPath)
 	if err != nil {
 		// Symlinks might not be available on all systems
@@ -296,7 +300,7 @@ func TestIsDirOrSymLinkToDir_SymLinkToFile(t *testing.T) {
 	fileInfo, err := os.Lstat(linkPath)
 	assert.NilError(t, err)
 
-	isDir := IsDirOrSymLinkToDir(tempFile.Name()+"_link", fileInfo)
+	isDir := IsDirOrSymLinkToDir(parentDir, fileInfo)
 	assert.Assert(t, !isDir, "Symlink to file should return false")
 }
 
