@@ -38,7 +38,7 @@ func setOSPaths(pp *PathPolicy, paths []string) {
 // --------------------------------------------------------------------------
 
 func TestCheckShellCommand_EmptyCommand_Allows(t *testing.T) {
-	defer writePolicyHelper(t, HooksPolicy{})()
+	defer writePolicyHelper(t, &HooksPolicy{})()
 	blocked, needsConfirm, reason := CheckShellCommand("", "")
 	if blocked || needsConfirm || reason != "" {
 		t.Fatalf("empty command should allow, got blocked=%v confirm=%v reason=%q", blocked, needsConfirm, reason)
@@ -80,7 +80,7 @@ func TestCheckShellCommand_Blacklist_HardBlock(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []BlacklistedTool{
 		{Name: "rm -rf", OS: []string{shellTestOS()}, Category: "destructive", Risk: "wipes files"},
 	}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("sudo rm -rf /tmp/x", "")
 	if !blocked || needsConfirm {
@@ -100,7 +100,7 @@ func TestCheckShellCommand_Blacklist_CaseInsensitive(t *testing.T) {
 	policy.DefaultPolicy.BlacklistTools.Tools = []BlacklistedTool{
 		{Name: "FORMAT", OS: []string{shellTestOS()}, Category: "destructive", Risk: "wipe disk"},
 	}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, _, _ := CheckShellCommand("format C:", "")
 	if !blocked {
@@ -115,7 +115,7 @@ func TestCheckShellCommand_ArgsExclude_HardBlock(t *testing.T) {
 		ID: "mvn", Tool: []string{"mvn"}, OS: []string{shellTestOS()},
 		ArgsExclude: []string{"deploy"},
 	}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("mvn clean deploy", "/proj")
 	if !blocked || needsConfirm {
@@ -133,7 +133,7 @@ func TestCheckShellCommand_ArgsInclude_UnknownAsks(t *testing.T) {
 		ID: "mvn", Tool: []string{"mvn"}, OS: []string{shellTestOS()},
 		ArgsInclude: []string{"compile", "test"},
 	}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("mvn package", "")
 	if !blocked || !needsConfirm {
@@ -151,7 +151,7 @@ func TestCheckShellCommand_ArgsInclude_CommandNameOnly_Allows(t *testing.T) {
 		ID: "mvn", Tool: []string{"mvn"}, OS: []string{shellTestOS()},
 		ArgsInclude: []string{"compile"},
 	}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	// tokens[1:] empty — include whitelist is skipped.
 	blocked, needsConfirm, _ := CheckShellCommand("mvn", "")
@@ -167,7 +167,7 @@ func TestCheckShellCommand_ArgsInclude_Allowed_Passes(t *testing.T) {
 		ID: "mvn", Tool: []string{"mvn"}, OS: []string{shellTestOS()},
 		ArgsInclude: []string{"compile", "-D*"},
 	}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, _, _ := CheckShellCommand("mvn compile -DskipTests", "")
 	if blocked {
@@ -183,7 +183,7 @@ func TestCheckShellCommand_ExcludeBeatsInclude(t *testing.T) {
 		ArgsInclude: []string{"deploy"},
 		ArgsExclude: []string{"deploy"},
 	}}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, _ := CheckShellCommand("mvn deploy", "")
 	if !blocked || needsConfirm {
@@ -195,7 +195,7 @@ func TestCheckShellCommand_GlobalRestrictedDir_NoToolRule(t *testing.T) {
 	restricted := filepath.Join(t.TempDir(), "secrets")
 	policy := HooksPolicy{}
 	setOSPaths(&policy.DefaultPolicy.RestrictedDirectories, []string{restricted})
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("ls", restricted)
 	if !blocked || needsConfirm {
@@ -209,7 +209,7 @@ func TestCheckShellCommand_GlobalRestrictedDir_NoToolRule(t *testing.T) {
 func TestCheckShellCommand_GlobalRestrictedFile_PathShaped(t *testing.T) {
 	policy := HooksPolicy{}
 	setOSPaths(&policy.DefaultPolicy.RestrictedFiles, []string{"**/*.pem"})
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("cat /tmp/secrets/foo.pem", "")
 	if !blocked || needsConfirm {
@@ -223,7 +223,7 @@ func TestCheckShellCommand_GlobalRestrictedFile_PathShaped(t *testing.T) {
 func TestCheckShellCommand_GlobalRestrictedFile_BareWordLiteral(t *testing.T) {
 	policy := HooksPolicy{}
 	setOSPaths(&policy.DefaultPolicy.RestrictedFiles, []string{"kubeconfig"})
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("cat kubeconfig", "")
 	if !blocked || needsConfirm {
@@ -244,7 +244,7 @@ func TestCheckShellCommand_ToolRestrictedDir_HardBlock(t *testing.T) {
 	}
 	setOSPaths(&rule.RestrictedDirectories, []string{restricted})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("mvn compile", restricted)
 	if !blocked || needsConfirm {
@@ -264,7 +264,7 @@ func TestCheckShellCommand_ToolRestrictedFile_HardBlock(t *testing.T) {
 	}
 	setOSPaths(&rule.RestrictedFiles, []string{"*.key"})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, _ := CheckShellCommand("cat ./secret.key", "")
 	if !blocked || needsConfirm {
@@ -282,7 +282,7 @@ func TestCheckShellCommand_AllowedDir_OutsideAsks(t *testing.T) {
 	}
 	setOSPaths(&rule.AllowedDirectories, []string{allowed})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("mvn compile", filepath.Join(t.TempDir(), "other"))
 	if !blocked || !needsConfirm {
@@ -303,7 +303,7 @@ func TestCheckShellCommand_AllowedDir_InsidePasses(t *testing.T) {
 	}
 	setOSPaths(&rule.AllowedDirectories, []string{allowed})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, _, _ := CheckShellCommand("mvn compile", allowed)
 	if blocked {
@@ -320,7 +320,7 @@ func TestCheckShellCommand_AllowedFiles_UnknownAsks(t *testing.T) {
 	}
 	setOSPaths(&rule.AllowedFiles, []string{"*.java", "**/pom.xml"})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, needsConfirm, reason := CheckShellCommand("mvn compile script.sh", "")
 	if !blocked || !needsConfirm {
@@ -340,7 +340,7 @@ func TestCheckShellCommand_AllowedFiles_NonFileTokenSkipped(t *testing.T) {
 	}
 	setOSPaths(&rule.AllowedFiles, []string{"*.java"})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	// "compile" has no ./\\ so allowed-files check skips it.
 	blocked, _, _ := CheckShellCommand("mvn compile", "")
@@ -359,7 +359,7 @@ func TestCheckShellCommand_EmptyWorkDir_SkipsDirChecks(t *testing.T) {
 	}
 	setOSPaths(&rule.AllowedDirectories, []string{allowed})
 	policy.Tools.Rules = []ToolRule{rule}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	blocked, _, _ := CheckShellCommand("mvn compile", "")
 	if blocked {

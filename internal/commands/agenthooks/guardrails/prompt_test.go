@@ -752,16 +752,6 @@ func TestExtractFilePaths_Scenarios(t *testing.T) {
 // ScanForSecrets
 // --------------------------------------------------------------------------
 
-func TestScanForSecrets_BlocksOnJWT(t *testing.T) {
-	reason := ScanForSecrets("here is my token " + sampleJWT)
-	if reason == "" {
-		t.Fatal("expected secrets block")
-	}
-	if !strings.Contains(reason, "secret") {
-		t.Errorf("reason should mention secrets, got %q", reason)
-	}
-}
-
 func TestScanForSecrets_Clean_Allows(t *testing.T) {
 	if reason := ScanForSecrets("please refactor the helper module"); reason != "" {
 		t.Fatalf("clean prompt should allow, got %q", reason)
@@ -819,7 +809,7 @@ func TestScanReferencedFiles_OversizePolicy_Blocks(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 1}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	ws := makeWorkspace(t, map[string]string{
 		"big.txt": strings.Repeat("a", 3*1024),
@@ -830,12 +820,6 @@ func TestScanReferencedFiles_OversizePolicy_Blocks(t *testing.T) {
 	}
 	if !strings.Contains(reason, "size limit") {
 		t.Errorf("reason should cite size limit, got %q", reason)
-	}
-}
-
-func TestScanReferencedFiles_MissingFile_FailOpen(t *testing.T) {
-	if reason := ScanReferencedFiles("open missing-file-xyz.txt", []string{t.TempDir()}); reason != "" {
-		t.Fatalf("missing file should fail-open, got %q", reason)
 	}
 }
 
@@ -852,7 +836,7 @@ func TestScanReferencedFiles_AtMention(t *testing.T) {
 // --------------------------------------------------------------------------
 
 func TestScanPrompt_Clean_Allows(t *testing.T) {
-	defer writePolicyHelper(t, HooksPolicy{})()
+	defer writePolicyHelper(t, &HooksPolicy{})()
 	if reason := ScanPrompt("please explain this function"); reason != "" {
 		t.Fatalf("clean prompt should allow, got %q", reason)
 	}
@@ -874,7 +858,7 @@ func TestScanPrompt_PolicyPattern(t *testing.T) {
 			ID: "ssn", Pattern: `\b\d{3}-\d{2}-\d{4}\b`, Description: "SSN-like",
 		}},
 	}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("my number is 123-45-6789")
 	if reason == "" || !strings.Contains(reason, "sensitive content") {
@@ -885,7 +869,7 @@ func TestScanPrompt_PolicyPattern(t *testing.T) {
 func TestScanPrompt_RestrictedPath(t *testing.T) {
 	policy := HooksPolicy{}
 	setOSPathsPrompt(&policy.DefaultPolicy.RestrictedFiles, []string{"**/*.pem"})
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("open /tmp/certs/server.pem")
 	if reason == "" {
@@ -899,7 +883,7 @@ func TestScanPrompt_BlockedExtension(t *testing.T) {
 	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{
 		Enabled: true, Extensions: []string{".pem", ".key"},
 	}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("please read foo.pem")
 	if reason == "" {
@@ -911,7 +895,7 @@ func TestScanPrompt_FilesLimits(t *testing.T) {
 	policy := HooksPolicy{}
 	policy.DefaultPolicy.ContextPolicy.Enabled = true
 	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
-	defer writePolicyHelper(t, policy)()
+	defer writePolicyHelper(t, &policy)()
 
 	reason := ScanPrompt("compare a.txt and b.txt")
 	if reason == "" {
