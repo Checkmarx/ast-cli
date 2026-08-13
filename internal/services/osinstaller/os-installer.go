@@ -88,7 +88,7 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 	checksumPath, needsArchiveChecksumDownload, err := installationConfiguration.resolveArchiveChecksumVerification()
 	if err != nil {
 		_ = os.Remove(installationConfiguration.BinaryFilePath())
-		return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
+		return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
 	}
 	if needsArchiveChecksumDownload {
 		err = downloadFile(installationConfiguration.ArchiveChecksumDownloadURL, checksumPath)
@@ -100,11 +100,11 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 		err = verifyArchiveAgainstSHA256SumFile(installationConfiguration.BinaryFilePath(), checksumPath, installationConfiguration.DownloadURL)
 		if err != nil {
 			_ = os.Remove(installationConfiguration.BinaryFilePath())
-			return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
+			return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
 		}
 	} else {
 		_ = os.Remove(installationConfiguration.BinaryFilePath())
-		return false, errors.Errorf("Checksum verification failed for %s - installation was not complete.", installationConfiguration.FileName)
+		return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
