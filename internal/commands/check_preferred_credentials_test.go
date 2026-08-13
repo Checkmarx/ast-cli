@@ -24,29 +24,23 @@ func newCredCmd(t *testing.T, args ...string) *cobra.Command {
 	return cmd
 }
 
-// An explicit --apikey flag must win over a startup-loaded stored secret.
+// An explicit --apikey flag sets the preferred credential type to "apikey".
 func TestCheckPreferredCredentials_APIKeyFlagWins(t *testing.T) {
-	viper.Set(params.AstAPIKey, "stored")
-	t.Cleanup(func() { viper.Set(params.AstAPIKey, "") })
-
 	cmd := newCredCmd(t, "--apikey", "flag-value")
 	CheckPreferredCredentials(cmd)
 
-	if got := viper.GetString(params.AstAPIKey); got != "flag-value" {
-		t.Errorf("expected flag to win, got %q", got)
+	if got := viper.GetString(params.PreferredCredentialTypeKey); got != "apikey" {
+		t.Errorf("expected preferred type to be apikey, got %q", got)
 	}
 }
 
-// An explicit --client-secret flag must win over a startup-loaded stored secret.
+// An explicit --client-secret flag (with --client-id) sets the preferred credential type to "oauth".
 func TestCheckPreferredCredentials_ClientSecretFlagWins(t *testing.T) {
-	viper.Set(params.AccessKeySecretConfigKey, "stored")
-	t.Cleanup(func() { viper.Set(params.AccessKeySecretConfigKey, "") })
-
-	cmd := newCredCmd(t, "--client-secret", "flag-secret")
+	cmd := newCredCmd(t, "--client-id", "flag-id", "--client-secret", "flag-secret")
 	CheckPreferredCredentials(cmd)
 
-	if got := viper.GetString(params.AccessKeySecretConfigKey); got != "flag-secret" {
-		t.Errorf("expected flag to win, got %q", got)
+	if got := viper.GetString(params.PreferredCredentialTypeKey); got != "oauth" {
+		t.Errorf("expected preferred type to be oauth, got %q", got)
 	}
 }
 

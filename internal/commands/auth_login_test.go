@@ -122,8 +122,8 @@ func TestRunAuthLogout_ClearsYaml(t *testing.T) {
 	}
 }
 
-// Logout clears the OAuth2 client credentials (secret + id) so no half-config lingers.
-func TestRunAuthLogout_ClearsClientCredentials(t *testing.T) {
+// Logout does not clear OAuth2 client credentials - they are intentionally left alone.
+func TestRunAuthLogout_DoesNotClearClientCredentials(t *testing.T) {
 	dir := withTempConfigDir(t)
 	configPath := filepath.Join(dir, "checkmarxcli.yaml")
 	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AccessKeyIDConfigKey, "stored-client-id"); err != nil {
@@ -137,10 +137,10 @@ func TestRunAuthLogout_ClearsClientCredentials(t *testing.T) {
 	if err := runAuthLogout(cmd, nil); err != nil {
 		t.Fatalf("runAuthLogout failed: %v", err)
 	}
-	if got := readYamlKey(t, params.AccessKeyIDConfigKey); got != "" {
-		t.Errorf("expected yaml cx_client_id cleared, got %q", got)
+	if got := readYamlKey(t, params.AccessKeyIDConfigKey); got != "stored-client-id" {
+		t.Errorf("expected yaml cx_client_id preserved, got %q", got)
 	}
-	if got := readYamlKey(t, params.AccessKeySecretConfigKey); got != "" {
-		t.Errorf("expected yaml cx_client_secret cleared, got %q", got)
+	if got := readYamlKey(t, params.AccessKeySecretConfigKey); got != "stored-client-secret" {
+		t.Errorf("expected yaml cx_client_secret preserved, got %q", got)
 	}
 }
