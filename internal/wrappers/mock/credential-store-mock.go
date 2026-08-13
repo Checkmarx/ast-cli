@@ -1,61 +1,34 @@
 package mock
 
-import (
-	"context"
-	"sync"
-
-	"github.com/checkmarx/ast-cli/internal/credentialstore"
-)
-
+// CredentialStoreMock is an in-memory CredentialStore for unit tests.
 type CredentialStoreMock struct {
-	mu        sync.Mutex
-	Store     map[string]string
-	GetErr    error
-	SetErr    error
-	DeleteErr error
+	Store map[string]string
 }
 
+// NewCredentialStoreMock returns an empty in-memory credential store.
 func NewCredentialStoreMock() *CredentialStoreMock {
-	return &CredentialStoreMock{Store: make(map[string]string)}
+	return &CredentialStoreMock{Store: map[string]string{}}
 }
 
-// Get returns the stored value for credentialName, or GetErr/ErrNotFound.
-func (m *CredentialStoreMock) Get(_ context.Context, credentialName string) (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.GetErr != nil {
-		return "", m.GetErr
+// GetSecret retrieves a secret value from the in-memory store.
+func (m *CredentialStoreMock) GetSecret(key string) (string, error) {
+	if m.Store == nil {
+		return "", nil
 	}
-	value, ok := m.Store[credentialName]
-	if !ok {
-		return "", credentialstore.ErrNotFound
-	}
-	return value, nil
+	return m.Store[key], nil
 }
 
-// Set stores value under credentialName, or returns SetErr.
-func (m *CredentialStoreMock) Set(_ context.Context, credentialName, value string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.SetErr != nil {
-		return m.SetErr
+// SetSecret stores a secret value in the in-memory store.
+func (m *CredentialStoreMock) SetSecret(key, value string) error {
+	if m.Store == nil {
+		m.Store = map[string]string{}
 	}
-	m.Store[credentialName] = value
+	m.Store[key] = value
 	return nil
 }
 
-// Delete removes credentialName, or returns DeleteErr/ErrNotFound.
-func (m *CredentialStoreMock) Delete(_ context.Context, credentialName string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.DeleteErr != nil {
-		return m.DeleteErr
-	}
-	if _, ok := m.Store[credentialName]; !ok {
-		return credentialstore.ErrNotFound
-	}
-	delete(m.Store, credentialName)
+// DeleteSecret removes a secret value from the in-memory store.
+func (m *CredentialStoreMock) DeleteSecret(key string) error {
+	delete(m.Store, key)
 	return nil
 }
-
-var _ credentialstore.CredentialStore = (*CredentialStoreMock)(nil)
