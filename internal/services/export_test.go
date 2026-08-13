@@ -292,12 +292,12 @@ func TestPreparePayload(t *testing.T) {
 // TestGetExportPackage tests the GetExportPackage function
 func TestGetExportPackage(t *testing.T) {
 	tests := []struct {
-		name                  string
-		exportWrapper         wrappers.ExportWrapper
-		scanID                string
-		scaHideDevAndTestDep  bool
-		featureflagWrappers   wrappers.FeatureFlagsWrapper
-		wantErr               bool
+		name                 string
+		exportWrapper        wrappers.ExportWrapper
+		scanID               string
+		scaHideDevAndTestDep bool
+		featureflagWrappers  wrappers.FeatureFlagsWrapper
+		wantErr              bool
 	}{
 		{
 			name:                 "Successful export",

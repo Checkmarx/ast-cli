@@ -28,7 +28,10 @@ func TestIsFeatureFlagEnabled_Success(t *testing.T) {
 
 func TestIsFeatureFlagEnabled_WrapperError_ReturnsWrappedError(t *testing.T) {
 	mock.FFErr = errors.New("feature flag lookup failed") //nolint:gocritic // resetting shared mock package state between tests
-	defer func() { mock.FFErr = nil }() //nolint:gocritic // resetting shared mock package state between tests
+	defer func() {
+		// nolint:gocritic // resetting shared mock package state between tests
+		mock.FFErr = nil
+	}()
 
 	enabled, err := IsFeatureFlagEnabled(&mock.FeatureFlagsMockWrapper{}, "SOME_FLAG")
 	assert.Error(t, err)

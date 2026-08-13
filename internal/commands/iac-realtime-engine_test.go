@@ -336,7 +336,7 @@ func TestRunScanIacRealtimeCommand_AbsolutePath(t *testing.T) {
 	cmd.SetOut(bytes.NewBuffer([]byte{}))
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
 
 	err = handler(cmd, []string{})
 
@@ -368,7 +368,7 @@ func TestRunScanIacRealtimeCommand_FlagRetrieval_FileSourceExtracted(t *testing.
 	cmd.SetOut(bytes.NewBuffer([]byte{}))
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
 
 	err = handler(cmd, []string{})
 
@@ -401,9 +401,9 @@ func TestRunScanIacRealtimeCommand_MultipleEngineTypes(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 			cmd.Flags().String(commonParams.EngineFlag, engine, "engine")
 
-			cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+			_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
 			if engine != "" {
-				cmd.Flags().Set(commonParams.EngineFlag, engine)
+				_ = cmd.Flags().Set(commonParams.EngineFlag, engine)
 			}
 
 			err = handler(cmd, []string{})

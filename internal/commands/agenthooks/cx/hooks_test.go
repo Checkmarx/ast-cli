@@ -469,8 +469,6 @@ func TestFullAfterContent(t *testing.T) {
 	})
 }
 
-
-
 func TestCxBeforePrompt_Secret_Rejects(t *testing.T) {
 	resetHookGlobals(t)
 	v := cxBeforePrompt(agenthooks.PromptEvent{Text: "here is my token " + sampleJWT})
