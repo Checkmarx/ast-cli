@@ -517,10 +517,10 @@ func TestValidateSbomOptions_CaseSensitivity(t *testing.T) {
 // TestExportSbomResults_ErrorCases tests ExportSbomResults error handling
 func TestExportSbomResults_ErrorCases(t *testing.T) {
 	tests := []struct {
-		name               string
-		scanID             string
-		formatSbomOptions  string
-		shouldError        bool
+		name              string
+		scanID            string
+		formatSbomOptions string
+		shouldError       bool
 	}{
 		{
 			name:              "Valid with default format",
