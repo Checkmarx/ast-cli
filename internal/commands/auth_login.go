@@ -10,6 +10,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/credentialstore"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -27,9 +28,9 @@ func newAuthLoginCommand() *cobra.Command {
 		Use:   "login",
 		Short: "Authenticate to Checkmarx One via browser-based OAuth",
 		Long: "Opens the default browser, walks the user through the Checkmarx One IAM login " +
-			"(including MFA), and saves the resulting refresh token to the config file's cx_apikey " +
-			"field — the same credential slot cx configure writes to, so every other command picks " +
-			"it up automatically.\n\n" +
+			"(including MFA), and saves the resulting refresh token to the OS keyring (falling back " +
+			"to the config file's cx_apikey field) — the same credential slot cx configure writes " +
+			"to, so every other command picks it up automatically.\n\n" +
 			"Requires --tenant and --base-uri (or --base-auth-uri). Pass them as flags, or run " +
 			"cx auth login with none and it prompts for the missing ones like cx configure.",
 		Example: heredoc.Doc(`
@@ -83,7 +84,7 @@ func runAuthLogin(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	return persistYamlLogin(cmd, tokens.RefreshToken)
+	return persistLogin(cmd, tokens.RefreshToken)
 }
 
 // connectionFlagsProvided reports whether any connection detail was passed as a flag.
@@ -93,18 +94,16 @@ func connectionFlagsProvided(cmd *cobra.Command) bool {
 		cmd.Flags().Changed(params.TenantFlag)
 }
 
-// persistYamlLogin saves the refresh token to cx_apikey; never echoes it to stdout.
-func persistYamlLogin(cmd *cobra.Command, refreshToken string) error {
-	configPath, err := configuration.GetConfigFilePath()
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve config file path")
+// persistLogin stores the refresh token (keyring, yaml fallback); never echoes it.
+func persistLogin(cmd *cobra.Command, refreshToken string) error {
+	if err := credentialstore.Default.SetSecret(params.AstAPIKey, refreshToken); err != nil {
+		return errors.Wrap(err, "failed to save refresh token")
 	}
-	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AstAPIKey, refreshToken); err != nil {
-		return errors.Wrap(err, "failed to save refresh token to config file")
-	}
-	// Restrict to owner-only; best-effort no-op on Windows.
-	if chErr := os.Chmod(configPath, configFilePerm); chErr != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("failed to restrict config file permissions: %v", chErr))
+	// Restrict the file in case the token fell back to yaml; best-effort no-op on Windows.
+	if configPath, err := configuration.GetConfigFilePath(); err == nil {
+		if chErr := os.Chmod(configPath, configFilePerm); chErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("failed to restrict config file permissions: %v", chErr))
+		}
 	}
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Successfully authenticated to Checkmarx One server!")
 	return nil

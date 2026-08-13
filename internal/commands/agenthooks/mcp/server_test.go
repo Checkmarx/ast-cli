@@ -6,12 +6,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/stretchr/testify/assert"
 )
 
 // executeCommandWithContext executes a command with a context that cancels after a timeout.
@@ -575,7 +575,11 @@ func TestNewMCPCommand_CommandDescriptions(t *testing.T) {
 // TestNewMCPCommand_DescriptionsContainTools verifies tool references
 func TestNewMCPCommand_DescriptionsContainTools(t *testing.T) {
 	cmd := NewMCPCommand("1.0.0", func() bool { return true })
+	assert.Equal(t, "mcp", cmd.Use)
 
+	bridgeCmd, _, err := cmd.Find([]string{"bridge"})
+	assert.NoError(t, err)
+	assert.Equal(t, "bridge", bridgeCmd.Use)
 	toolsToFind := []struct {
 		toolName string
 		inField  string

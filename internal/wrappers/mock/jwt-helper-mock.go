@@ -15,6 +15,7 @@ type JWTMockWrapper struct {
 	CheckmarxOneAssistEnabled int
 	DastEnabled               bool
 	CustomGetAllowedEngines   func(wrappers.FeatureFlagsWrapper) (map[string]bool, error)
+	CustomIsAllowedEngine     func(engine string) (bool, error)
 }
 
 const AIProtectionDisabled = 1
@@ -46,6 +47,9 @@ func (*JWTMockWrapper) ExtractTenantFromToken() (tenant string, err error) {
 
 // IsAllowedEngine mock for tests
 func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
+	if j.CustomIsAllowedEngine != nil {
+		return j.CustomIsAllowedEngine(engine)
+	}
 	if engine == params.AiProviderFlag {
 		if j.AIEnabled == AIProtectionDisabled {
 			return false, nil

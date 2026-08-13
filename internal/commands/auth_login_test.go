@@ -10,12 +10,24 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/credentialstore"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 // The full runAuthLogin (browser + network) is out of scope; these cover the
-// deterministic pieces: persistYamlLogin and runAuthLogout.
+// deterministic pieces: persistLogin and runAuthLogout.
+
+// swapDefaultStore swaps credentialstore.Default for a mock and restores it.
+func swapDefaultStore(t *testing.T) *mock.CredentialStoreMock {
+	t.Helper()
+	m := mock.NewCredentialStoreMock()
+	prev := credentialstore.Default
+	credentialstore.Default = m
+	t.Cleanup(func() { credentialstore.Default = prev })
+	return m
+}
 
 // withTempConfigDir sandboxes viper at a temp config file and clears CX_APIKEY.
 func withTempConfigDir(t *testing.T) string {
@@ -37,8 +49,8 @@ func newBufferedCmd() (*cobra.Command, *bytes.Buffer, *bytes.Buffer) {
 	return cmd, &out, &errOut
 }
 
-// readYamlAPIKey reads cx_apikey directly from the sandbox yaml file.
-func readYamlAPIKey(t *testing.T) string {
+// readYamlKey reads any key directly from the sandbox yaml file.
+func readYamlKey(t *testing.T, key string) string {
 	t.Helper()
 	configPath, err := configuration.GetConfigFilePath()
 	if err != nil {
@@ -48,20 +60,26 @@ func readYamlAPIKey(t *testing.T) string {
 	if err != nil {
 		return ""
 	}
-	if v, ok := yamlConfig[params.AstAPIKey].(string); ok {
+	if v, ok := yamlConfig[key].(string); ok {
 		return v
 	}
 	return ""
 }
 
-// Token must be saved to yaml but never echoed to stdout.
-func TestPersistYamlLogin_DoesNotPrintToken(t *testing.T) {
+// readYamlAPIKey reads cx_apikey directly from the sandbox yaml file.
+func readYamlAPIKey(t *testing.T) string {
+	t.Helper()
+	return readYamlKey(t, params.AstAPIKey)
+}
+
+// Token must be saved to the yaml fallback but never echoed to stdout.
+func TestPersistLogin_DoesNotPrintToken(t *testing.T) {
 	withTempConfigDir(t)
 	const token = "super-secret-refresh-token"
 
 	cmd, out, _ := newBufferedCmd()
-	if err := persistYamlLogin(cmd, token); err != nil {
-		t.Fatalf("persistYamlLogin failed: %v", err)
+	if err := persistLogin(cmd, token); err != nil {
+		t.Fatalf("persistLogin failed: %v", err)
 	}
 
 	stdout := out.String()
@@ -71,8 +89,27 @@ func TestPersistYamlLogin_DoesNotPrintToken(t *testing.T) {
 	if !strings.Contains(stdout, "Successfully authenticated to Checkmarx One server!") {
 		t.Errorf("expected confirmation line, got: %q", stdout)
 	}
+	// Default store is file-backed in tests, so the token lands in yaml.
 	if got := readYamlAPIKey(t); got != token {
 		t.Errorf("expected token persisted to yaml, got %q", got)
+	}
+}
+
+// persistLogin stores the token through the credential store (keyring in prod).
+func TestPersistLogin_UsesStore(t *testing.T) {
+	withTempConfigDir(t)
+	store := swapDefaultStore(t)
+	const token = "keyring-refresh-token"
+
+	cmd, out, _ := newBufferedCmd()
+	if err := persistLogin(cmd, token); err != nil {
+		t.Fatalf("persistLogin failed: %v", err)
+	}
+	if got := store.Store[params.AstAPIKey]; got != token {
+		t.Errorf("expected token stored via store, got %q", got)
+	}
+	if strings.Contains(out.String(), token) {
+		t.Errorf("refresh token leaked to stdout")
 	}
 }
 
@@ -128,5 +165,47 @@ func TestRunAuthLogout_ClearsYaml(t *testing.T) {
 	// Idempotent: running again on empty storage must not error.
 	if err := runAuthLogout(cmd, nil); err != nil {
 		t.Fatalf("second runAuthLogout failed: %v", err)
+	}
+}
+
+// Logout deletes both cx_apikey and cx_client_secret from the credential store.
+func TestRunAuthLogout_DeletesFromStore(t *testing.T) {
+	withTempConfigDir(t)
+	store := swapDefaultStore(t)
+	_ = store.SetSecret(params.AstAPIKey, "stored-token")
+	_ = store.SetSecret(params.AccessKeySecretConfigKey, "stored-client-secret")
+
+	cmd, _, _ := newBufferedCmd()
+	if err := runAuthLogout(cmd, nil); err != nil {
+		t.Fatalf("runAuthLogout failed: %v", err)
+	}
+	if got, _ := store.GetSecret(params.AstAPIKey); got != "" {
+		t.Errorf("expected store cx_apikey deleted, got %q", got)
+	}
+	if got, _ := store.GetSecret(params.AccessKeySecretConfigKey); got != "" {
+		t.Errorf("expected store cx_client_secret deleted, got %q", got)
+	}
+}
+
+// Logout clears the OAuth2 client credentials (secret + id) so no half-config lingers.
+func TestRunAuthLogout_ClearsClientCredentials(t *testing.T) {
+	dir := withTempConfigDir(t)
+	configPath := filepath.Join(dir, "checkmarxcli.yaml")
+	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AccessKeyIDConfigKey, "stored-client-id"); err != nil {
+		t.Fatalf("setup client id write failed: %v", err)
+	}
+	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AccessKeySecretConfigKey, "stored-client-secret"); err != nil {
+		t.Fatalf("setup client secret write failed: %v", err)
+	}
+
+	cmd, _, _ := newBufferedCmd()
+	if err := runAuthLogout(cmd, nil); err != nil {
+		t.Fatalf("runAuthLogout failed: %v", err)
+	}
+	if got := readYamlKey(t, params.AccessKeyIDConfigKey); got != "" {
+		t.Errorf("expected yaml cx_client_id cleared, got %q", got)
+	}
+	if got := readYamlKey(t, params.AccessKeySecretConfigKey); got != "" {
+		t.Errorf("expected yaml cx_client_secret cleared, got %q", got)
 	}
 }
