@@ -196,8 +196,8 @@ func TestNewMCPCommand_LicenseCallbackVariations(t *testing.T) {
 				t.Fatal("expected non-nil command")
 			}
 			// Verify command structure is correct
-			if cmd.Use != "mcp" {
-				t.Errorf("expected Use=mcp, got %s", cmd.Use)
+			if cmd.Use != mcpCommandName {
+				t.Errorf("expected Use=%s, got %s", mcpCommandName, cmd.Use)
 			}
 		})
 	}

@@ -30,9 +30,12 @@ import (
 )
 
 // sampleJWT is a well-known test JWT (no real value) used to trigger the 2ms secret scanner.
-const sampleJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
-	"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
-	"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+const (
+	sampleJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+		"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
+		"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+	osWindows = "windows"
+)
 
 type recordingTelemetry struct {
 	calls []*wrappers.DataForAITelemetry
@@ -106,8 +109,8 @@ func currentOS() string {
 	switch runtime.GOOS {
 	case "darwin":
 		return "mac"
-	case "windows":
-		return "windows"
+	case osWindows:
+		return osWindows
 	default:
 		return "linux"
 	}

@@ -138,7 +138,10 @@ func TestShellGuardTool_Handle_InvokesGuardFunction(t *testing.T) {
 	})
 	ctx := context.Background()
 
-	_, _, _ = tool.Handle(ctx, nil, ShellGuardInput{Command: "git status"})
+	_, _, err := tool.Handle(ctx, nil, ShellGuardInput{Command: "git status"})
+	if err != nil {
+		t.Errorf("Handle should not error: %v", err)
+	}
 
 	if !invoked {
 		t.Error("guard function should be invoked")
@@ -157,7 +160,7 @@ func TestShellGuardTool_Handle_MultipleInvocations(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 5; i++ {
-		tool.Handle(ctx, nil, ShellGuardInput{Command: "ls"})
+		_, _, _ = tool.Handle(ctx, nil, ShellGuardInput{Command: "ls"})
 	}
 
 	if callCount != 5 {

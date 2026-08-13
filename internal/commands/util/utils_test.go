@@ -416,9 +416,9 @@ func TestReadFileAsString_WithContent(t *testing.T) {
 func TestCloseOutputFile_WithValidFile(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "valid-output-*.txt")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name())
+	defer func() { _ = os.Remove(tempFile.Name()) }()
 
-	tempFile.WriteString("test data")
+	_, _ = tempFile.WriteString("test data")
 
 	// This should not panic
 	CloseOutputFile(tempFile)
@@ -428,7 +428,7 @@ func TestCloseOutputFile_WithValidFile(t *testing.T) {
 func TestCloseZipWriter_WithValidWriter(t *testing.T) {
 	tempFile, err := os.CreateTemp("", "test-zipwriter-*.zip")
 	assert.NilError(t, err)
-	defer os.Remove(tempFile.Name())
+	defer func() { _ = os.Remove(tempFile.Name()) }()
 
 	zipWriter := zip.NewWriter(tempFile)
 

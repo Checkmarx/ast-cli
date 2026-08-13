@@ -159,8 +159,8 @@ func TestRunScanIacRealtimeCommand_WithDocker_Engine(t *testing.T) {
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 	cmd.Flags().String(commonParams.EngineFlag, "docker", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "docker")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "docker")
 
 	err = handler(cmd, []string{})
 
@@ -188,8 +188,8 @@ func TestRunScanIacRealtimeCommand_WithPodman_Engine(t *testing.T) {
 	cmd.Flags().String(commonParams.SourcesFlag, testFile, "file source")
 	cmd.Flags().String(commonParams.EngineFlag, "podman", "engine")
 
-	cmd.Flags().Set(commonParams.SourcesFlag, testFile)
-	cmd.Flags().Set(commonParams.EngineFlag, "podman")
+	_ = cmd.Flags().Set(commonParams.SourcesFlag, testFile)
+	_ = cmd.Flags().Set(commonParams.EngineFlag, "podman")
 
 	err = handler(cmd, []string{})
 

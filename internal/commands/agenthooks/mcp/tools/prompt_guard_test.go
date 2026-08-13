@@ -136,7 +136,10 @@ func TestPromptGuardTool_Handle_InvokesGuardFunction(t *testing.T) {
 	})
 	ctx := context.Background()
 
-	_, _, _ = tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
+	_, _, err := tool.Handle(ctx, nil, PromptGuardInput{Text: "test input"})
+	if err != nil {
+		t.Errorf("Handle should not error: %v", err)
+	}
 
 	if !invoked {
 		t.Error("guard function should be invoked")
@@ -155,7 +158,7 @@ func TestPromptGuardTool_Handle_MultipleInvocations(t *testing.T) {
 	ctx := context.Background()
 
 	for i := 0; i < 3; i++ {
-		tool.Handle(ctx, nil, PromptGuardInput{Text: "test"})
+		_, _, _ = tool.Handle(ctx, nil, PromptGuardInput{Text: "test"})
 	}
 
 	if callCount != 3 {

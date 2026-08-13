@@ -144,8 +144,9 @@ func TestConstants_ExitCodes(t *testing.T) {
 		t.Errorf("failureExitCode should be 1, got %d", failureExitCode)
 	}
 
-	if killCommand != "kill" {
-		t.Errorf("killCommand should be 'kill', got %q", killCommand)
+	expectedKillCmd := "kill"
+	if killCommand != expectedKillCmd {
+		t.Errorf("killCommand should be %q, got %q", expectedKillCmd, killCommand)
 	}
 }
 
@@ -246,8 +247,9 @@ func TestSignalConstants(t *testing.T) {
 }
 
 func TestKillCommand_Constant(t *testing.T) {
-	if killCommand != "kill" {
-		t.Errorf("killCommand should be 'kill', got %q", killCommand)
+	expectedKillCmd := "kill"
+	if killCommand != expectedKillCmd {
+		t.Errorf("killCommand should be %q, got %q", expectedKillCmd, killCommand)
 	}
 
 	// Verify it's a valid docker subcommand name
@@ -321,10 +323,10 @@ func TestMultipleEnvironmentVariableBinding(t *testing.T) {
 	secondaryEnv := "SECONDARY_VAR"
 	primaryValue := "primary_value"
 
-	os.Setenv(primaryEnv, primaryValue)
+	_ = os.Setenv(primaryEnv, primaryValue)
 	defer func() {
-		os.Unsetenv(primaryEnv)
-		os.Unsetenv(secondaryEnv)
+		_ = os.Unsetenv(primaryEnv)
+		_ = os.Unsetenv(secondaryEnv)
 	}()
 
 	// Bind primary first
@@ -356,8 +358,8 @@ func TestProxyEnvironmentVariable_HTTPProxy(t *testing.T) {
 
 func TestProxyEnvironmentVariable_CXSpecific(t *testing.T) {
 	testProxy := "http://custom-proxy.corp.com:3128"
-	os.Setenv("CX_HTTP_PROXY", testProxy)
-	defer os.Unsetenv("CX_HTTP_PROXY")
+	_ = os.Setenv("CX_HTTP_PROXY", testProxy)
+	defer func() { _ = os.Unsetenv("CX_HTTP_PROXY") }()
 
 	retrieved := os.Getenv("CX_HTTP_PROXY")
 	if retrieved != testProxy {
