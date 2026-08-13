@@ -239,7 +239,7 @@ func TestDenyVulnerable_EmitsProvenanceOptionalFlags(t *testing.T) {
 
 func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
 	got := cursorEscapeJSON(`{"PackageName":"axios"}`)
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
 		// backslash is not a quote-escape there, so `\"` would corrupt the command.
 		want := `{""PackageName"":""axios""}`
@@ -254,22 +254,20 @@ func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
 	}
 }
 
-func TestDenyVulnerable_CursorSuppressCommandNeverUsesBackslashEscapingOnWindows(t *testing.T) {
+func TestDenyVulnerable_CursorUsesPluginMCPToolAndStopParsingOnWindows(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
 	}
 	_, remediation := DenyVulnerable(pkgs, "", "Cursor", "sess-9")
-	if !strings.Contains(remediation, `ignore-vulnerability --scan-type sca --data "`) {
-		t.Errorf("cursor remediation should use double-quoted suppress command, got %q", remediation)
+	if !strings.Contains(remediation, "mcp__plugin-cx-devassist-Checkmarx__packageRemediation") {
+		t.Errorf("cursor remediation should use plugin MCP tool name, got %q", remediation)
 	}
-	if runtime.GOOS == "windows" {
-		if strings.Contains(remediation, `\"`) {
-			t.Errorf("cursor suppress command on windows must not use backslash-escaped quotes "+
-				"(PowerShell terminates the string early on them), got %q", remediation)
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(remediation, `--% ignore-vulnerability`) {
+			t.Errorf("cursor suppress command on windows should use stop-parsing, got %q", remediation)
 		}
-		if !strings.Contains(remediation, `""PackageName""`) {
-			t.Errorf("expected doubled-quote escaping for PowerShell, got %q", remediation)
-		}
+	} else if !strings.Contains(remediation, `ignore-vulnerability --scan-type sca --data "`) {
+		t.Errorf("cursor remediation on unix should use double-quoted suppress command, got %q", remediation)
 	}
 }
 

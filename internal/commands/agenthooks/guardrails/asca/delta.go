@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
@@ -19,6 +20,10 @@ import (
 // otherwise the reformatted command corrupts the JSON payload or drops
 // --ignored-file-path, silently sending the suppression to the wrong file.
 const agentCursor = "Cursor"
+
+// goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
+// checks below (and their tests) compare against it repeatedly.
+const goosWindows = "windows"
 
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the cx-devassist plugin's matching logic.
@@ -81,7 +86,13 @@ func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir, agent
 	if err == nil {
 		cxBinary = cxExe
 	}
-	return permissionDecisionReason(filePath, summary), additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
+	reason = permissionDecisionReason(filePath, summary)
+	if agent == agentCursor {
+		context = cursorAdditionalContext(filePath, cxBinary, findings, workDir, sessionID)
+	} else {
+		context = additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
+	}
+	return reason, context
 }
 
 // ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
@@ -108,7 +119,7 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 		return ""
 	}
 	p := filepath.ToSlash(ignore.PathFor(workDir))
-	return fmt.Sprintf(` --ignored-file-path "%s"`, p)
+	return fmt.Sprintf(" --ignored-file-path %q", p)
 }
 
 // cursorEscapeJSON escapes the embedded `"` in a JSON payload so it survives being placed
@@ -120,7 +131,7 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 // the string early (backslash is literal, then the quote closes it), corrupting everything
 // after the first embedded quote. PowerShell requires the quote to be doubled (`""`) instead.
 func cursorEscapeJSON(data string) string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		return strings.ReplaceAll(data, `"`, `""`)
 	}
 	return strings.ReplaceAll(data, `"`, `\"`)
@@ -152,6 +163,7 @@ func permissionDecisionReason(filePath, summary string) string {
 
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user.
+// Used for Claude, Copilot, and other non-Cursor agents.
 func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
 	provenance := optionalFlagsFragment(agent, sessionID)
 	var suppressCmds strings.Builder
@@ -161,14 +173,8 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			Line:     f.Line,
 			RuleID:   f.RuleID,
 		})
-		if agent == agentCursor {
-			ignoreFlag := cursorIgnoredFilePathFlag(workDir)
-			escapedData := cursorEscapeJSON(string(data))
-			fmt.Fprintf(&suppressCmds, `  %s ignore-vulnerability --scan-type asca --data "%s"%s%s`+"\n", cxBinary, escapedData, ignoreFlag, provenance)
-		} else {
-			ignoreFlag := ignoredFilePathFlag(workDir)
-			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
-		}
+		ignoreFlag := ignoredFilePathFlag(workDir)
+		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
 	}
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
@@ -191,5 +197,47 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
 			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
 		filePath, suppressCmds.String(),
+	)
+}
+
+// cursorAdditionalContext is remediation guidance for Cursor only. Uses the plugin-prefixed MCP
+// tool name and PowerShell --% stop-parsing for suppress commands on Windows.
+func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, sessionID string) string {
+	provenance := optionalFlagsFragment(agentCursor, sessionID)
+	var suppressCmds strings.Builder
+	for _, f := range findings {
+		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
+			FileName: f.FileName,
+			Line:     f.Line,
+			RuleID:   f.RuleID,
+		})
+		ignoreFlag := cursorIgnoredFilePathFlag(workDir)
+		suppressCmds.WriteString(cursorplugin.IgnoreVulnerabilityCommand(cxBinary, "asca", data, ignoreFlag, provenance))
+		suppressCmds.WriteString("\n")
+	}
+	tool := cursorplugin.MCPTool("codeRemediation")
+	return fmt.Sprintf(
+		"ASCA detected vulnerabilities in %s. "+
+			"Do not bypass the scan by writing the same content through another tool or shell command. "+
+			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
+			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
+			"Apply the cx-devassist-asca.mdc rule: for each real finding, invoke the "+
+			"cx-devassist:cx-devassist-asca skill exactly as written — do not skip, abbreviate, or "+
+			"reimplement its steps inline. The findings are already in context so it will skip the "+
+			"scan and go directly to MCP-driven remediation; the skill also handles MCP unavailability "+
+			"and self-recovery. Always show its Step 5 Remediation Summary to the user verbatim when done. "+
+			"If that skill is not available in this session, call %s directly:\n"+
+			"  {\n"+
+			"    \"language\": \"[auto-detected programming language]\",\n"+
+			"    \"metadata\": {\n"+
+			"      \"ruleId\": \"[rule_name from scan]\",\n"+
+			"      \"description\": \"[description from scan]\",\n"+
+			"      \"remediationAdvice\": \"[remediationAdvise from scan]\"\n"+
+			"    },\n"+
+			"    \"type\": \"sast\"\n"+
+			"  }\n"+
+			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
+			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
+		filePath, tool, suppressCmds.String(),
 	)
 }

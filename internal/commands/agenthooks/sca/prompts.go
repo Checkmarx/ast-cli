@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/agentprofile"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
@@ -20,6 +21,10 @@ import (
 // otherwise the reformatted command corrupts the JSON payload or drops
 // --ignored-file-path, silently sending the suppression to the wrong file.
 const agentCursor = "Cursor"
+
+// goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
+// checks below (and their tests) compare against it repeatedly.
+const goosWindows = "windows"
 
 // DenyMalicious returns the finding and remediation strings for one or more
 // packages classified as Malicious.
@@ -50,18 +55,29 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID str
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
 // reconnect phrasing is per-agent, from agentprofile.McpReconnect.
 func remediationNote(subject, goal, agent string) string {
+	pkgTool := "mcp__Checkmarx__packageRemediation"
+	skillStep := "  1. For each %s, invoke the cx-devassist:cx-devassist-sca skill — " +
+		"the findings are already in context so it will skip the scan and go directly to " +
+		"MCP-driven remediation to find the %s; the skill also handles MCP unavailability and self-recovery.\n"
+	if agent == agentCursor {
+		pkgTool = cursorplugin.MCPTool("packageRemediation")
+		skillStep = "  1. Apply the cx-devassist-sca.mdc rule: for each %s, invoke the " +
+			"cx-devassist:cx-devassist-sca skill exactly as written — do not skip, abbreviate, or " +
+			"reimplement its steps inline. The findings are already in context so it will skip the " +
+			"scan and go directly to MCP-driven remediation to find the %s; the skill also handles " +
+			"MCP unavailability and self-recovery. Always show its Step 5 SCA Remediation Summary to " +
+			"the user verbatim when done.\n"
+	}
 	return fmt.Sprintf(
 		"Action required:\n"+
-			"  1. For each %s, invoke the cx-devassist:cx-devassist-sca skill — "+
-			"the findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation to find the %s; the skill also handles MCP unavailability and self-recovery.\n"+
-			"  2. If that skill is not available in this session, use mcp__Checkmarx__packageRemediation for each %s.\n"+
+			skillStep+
+			"  2. If that skill is not available in this session, use %s for each %s.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  3. If mcp__Checkmarx__packageRemediation is unavailable, tell the user to reconnect the\n"+
+			"  3. If %s is unavailable, tell the user to reconnect the\n"+
 			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
 			"  4. If no safe version exists, the user can acknowledge the finding via\n"+
 			"     the Checkmarx Dev Assist interface.",
-		subject, goal, subject, agentprofile.McpReconnect(agent))
+		subject, goal, pkgTool, subject, pkgTool, agentprofile.McpReconnect(agent))
 }
 
 // vulnerableRemediationNote returns the action steps for vulnerable packages.
@@ -79,25 +95,36 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 		}})
 		if agent == agentCursor {
 			ignoreFlag := cursorIgnoredFilePathFlag(workDir)
-			escapedData := cursorEscapeJSON(string(data))
-			fmt.Fprintf(&suppressCmds, `  %s ignore-vulnerability --scan-type sca --data "%s"%s%s`+"\n", cxBinary, escapedData, ignoreFlag, provenance)
+			suppressCmds.WriteString(cursorplugin.IgnoreVulnerabilityCommand(cxBinary, "sca", data, ignoreFlag, provenance))
+			suppressCmds.WriteString("\n")
 		} else {
 			ignoreFlag := ignoredFilePathFlag(workDir)
 			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
 		}
 	}
+	pkgTool := "mcp__Checkmarx__packageRemediation"
+	skillStep := "  1. For each affected package, invoke the cx-devassist:cx-devassist-sca skill — " +
+		"the findings are already in context so it will skip the scan and go directly to " +
+		"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP unavailability and self-recovery.\n"
+	if agent == agentCursor {
+		pkgTool = cursorplugin.MCPTool("packageRemediation")
+		skillStep = "  1. Apply the cx-devassist-sca.mdc rule: for each affected package, invoke the " +
+			"cx-devassist:cx-devassist-sca skill exactly as written — do not skip, abbreviate, or " +
+			"reimplement its steps inline. The findings are already in context so it will skip the " +
+			"scan and go directly to MCP-driven remediation to find non-vulnerable versions; the " +
+			"skill also handles MCP unavailability and self-recovery. Always show its Step 5 SCA " +
+			"Remediation Summary to the user verbatim when done.\n"
+	}
 	return fmt.Sprintf(
 		"Action required:\n"+
-			"  1. For each affected package, invoke the cx-devassist:cx-devassist-sca skill — "+
-			"the findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP unavailability and self-recovery.\n"+
-			"  2. If that skill is not available in this session, use mcp__Checkmarx__packageRemediation for each affected package.\n"+
+			skillStep+
+			"  2. If that skill is not available in this session, use %s for each affected package.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  3. If mcp__Checkmarx__packageRemediation is unavailable, tell the user to reconnect the\n"+
+			"  3. If %s is unavailable, tell the user to reconnect the\n"+
 			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
 			"  4. If no safe version exists for a package, suppress it by running the corresponding command\n"+
 			"     and inform the user that no safer version is available:\n%s",
-		agentprofile.McpReconnect(agent),
+		pkgTool, pkgTool, agentprofile.McpReconnect(agent),
 		suppressCmds.String())
 }
 
@@ -125,7 +152,7 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 		return ""
 	}
 	p := filepath.ToSlash(ignore.PathFor(workDir))
-	return fmt.Sprintf(` --ignored-file-path "%s"`, p)
+	return fmt.Sprintf(" --ignored-file-path %q", p)
 }
 
 // cursorEscapeJSON escapes the embedded `"` in a JSON payload so it survives being placed
@@ -137,7 +164,7 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 // the string early (backslash is literal, then the quote closes it), corrupting everything
 // after the first embedded quote. PowerShell requires the quote to be doubled (`""`) instead.
 func cursorEscapeJSON(data string) string {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		return strings.ReplaceAll(data, `"`, `""`)
 	}
 	return strings.ReplaceAll(data, `"`, `\"`)
