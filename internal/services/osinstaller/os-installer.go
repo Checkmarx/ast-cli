@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -73,14 +74,37 @@ func InstallOrUpgrade(installationConfiguration *InstallationConfiguration, asca
 		return false, err
 	}
 
-	// Download hash file
+	// Hash file serves different purposes: version check for Vorpal, both version check and verification for SCA
 	err = downloadHashFile(installationConfiguration.HashDownloadURL, installationConfiguration.HashFilePath())
 	if err != nil {
 		return false, err
 	}
 
+	// Must shut down service before replacement to release file locks
 	if ascaWrapper != nil {
 		shutDownAndWait(ascaWrapper)
+	}
+
+	checksumPath, needsArchiveChecksumDownload, err := installationConfiguration.resolveArchiveChecksumVerification()
+	if err != nil {
+		_ = os.Remove(installationConfiguration.BinaryFilePath())
+		return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
+	}
+	if needsArchiveChecksumDownload {
+		err = downloadFile(installationConfiguration.ArchiveChecksumDownloadURL, checksumPath)
+		if err != nil {
+			return false, err
+		}
+	}
+	if checksumPath != "" {
+		err = verifyArchiveAgainstSHA256SumFile(installationConfiguration.BinaryFilePath(), checksumPath, installationConfiguration.DownloadURL)
+		if err != nil {
+			_ = os.Remove(installationConfiguration.BinaryFilePath())
+			return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
+		}
+	} else {
+		_ = os.Remove(installationConfiguration.BinaryFilePath())
+		return false, errors.Errorf("Installation failed due to an invalid checksum for %s", installationConfiguration.FileName)
 	}
 
 	// Unzip or extract downloaded zip depending on which OS is running
@@ -196,4 +220,91 @@ func shutDownAndWait(ascaWrapper grpcs.AscaWrapper) {
 		time.Sleep(pollInterval)
 	}
 	logger.PrintIfVerbose("Timed out waiting for Vorpal service to stop; proceeding anyway.")
+}
+
+const (
+	sha256SumFileMinFields     = 2
+	sha256HexLength            = 64
+	checksumVerificationFailed = "Checksum verification failed."
+)
+
+// verifyArchiveAgainstSHA256SumFile checks archivePath against its digest in a GNU sha256sum-style file,
+// matching by downloadURL's filename, or falling back to a single-line checksum format.
+func verifyArchiveAgainstSHA256SumFile(archivePath, sha256SumFilePath, downloadURL string) error {
+	content, err := os.ReadFile(sha256SumFilePath)
+	if err != nil {
+		return errors.Errorf(checksumVerificationFailed)
+	}
+
+	fileContent := strings.TrimSpace(string(content))
+	if fileContent == "" {
+		return errors.New(checksumVerificationFailed)
+	}
+
+	// Extract the actual platform-specific filename from downloadURL
+	_, downloadFileName := filepath.Split(downloadURL)
+	expectedHash := ""
+
+	// Try to find matching filename in checksums file
+	for _, line := range strings.Split(fileContent, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) < sha256SumFileMinFields {
+			continue
+		}
+
+		hash := strings.ToLower(fields[0])
+		filename := fields[len(fields)-1]
+
+		// Check if this line matches the download filename
+		if filename == downloadFileName {
+			expectedHash = hash
+			break
+		}
+	}
+
+	// If no exact match found, fall back to first line (single-line format)
+	if expectedHash == "" {
+		fields := strings.Fields(fileContent)
+		if len(fields) < 1 {
+			return errors.New(checksumVerificationFailed)
+		}
+		expectedHash = strings.ToLower(fields[0])
+	}
+
+	if len(expectedHash) != sha256HexLength {
+		return errors.Errorf(checksumVerificationFailed)
+	}
+
+	actualHash, err := calculateSHA256(archivePath)
+	if err != nil {
+		return errors.Errorf(checksumVerificationFailed)
+	}
+
+	if !strings.EqualFold(expectedHash, actualHash) {
+		return errors.New(checksumVerificationFailed)
+	}
+	return nil
+}
+
+// calculateSHA256 calculates the SHA256 hash of a file
+func calculateSHA256(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }

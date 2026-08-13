@@ -7,10 +7,12 @@ import (
 )
 
 var Params = osinstaller.InstallationConfiguration{
-	ExecutableFile:  "vorpal_linux_x64",
-	DownloadURL:     "https://download.checkmarx.com/vorpal-binary/vorpal_linux_x64.tar.gz",
-	HashDownloadURL: "https://download.checkmarx.com/vorpal-binary/hash.txt",
-	FileName:        "vorpal.tar.gz",
-	HashFileName:    "hash.txt",
-	WorkingDirName:  "CxVorpal",
+	ExecutableFile:             "vorpal_linux_x64",
+	DownloadURL:                "https://download.checkmarx.com/vorpal-binary/vorpal_linux_x64.tar.gz",
+	HashDownloadURL:            "https://download.checkmarx.com/vorpal-binary/hash.txt",
+	FileName:                   "vorpal.tar.gz",
+	HashFileName:               "hash.txt",
+	WorkingDirName:             "CxVorpal",
+	ArchiveChecksumDownloadURL: "https://download.checkmarx.com/vorpal-binary/checksums.sha256",
+	ArchiveChecksumFileName:    "checksums.sha256",
 }
