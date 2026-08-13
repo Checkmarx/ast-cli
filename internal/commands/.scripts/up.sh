@@ -3,7 +3,7 @@
 wget https://sca-downloads.s3.amazonaws.com/cli/latest/ScaResolver-linux64.tar.gz
 tar -xzvf ScaResolver-linux64.tar.gz -C /tmp
 rm -rf ScaResolver-linux64.tar.gz
-# ignore mock, wrappers, cmd, and logger packages, as they checked by integration tests
+# ignore mock, wrappers, cmd, logger, and osinstaller packages, as they checked by integration tests
 gotestsum --junitfile junit.xml --format testname -- \
-  $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "cmd") \
+  $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "cmd" | grep -v "osinstaller") \
   -timeout 25m -coverprofile cover.out

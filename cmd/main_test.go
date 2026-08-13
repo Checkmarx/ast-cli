@@ -16,43 +16,67 @@ import (
 )
 
 // ============================================================================
-// exitIfError Tests
+// exitIfError Tests - Subprocess Testing for os.Exit
 // ============================================================================
 
-func TestExitIfError_NilError_NoExit(t *testing.T) {
-	// This should not panic or exit in the test context
-	// We can only test that it doesn't crash
-	defer func() {
-		if r := recover(); r != nil {
-			t.Logf("function handled nil error correctly")
-		}
-	}()
+func TestExitIfError_NilError_DoesNotExit(t *testing.T) {
+	// Nil error should not exit - test with subprocess
+	if os.Getenv("TEST_EXIT_NIL") == "1" {
+		exitIfError(nil)
+		// If we reach here, the function didn't call os.Exit
+		os.Exit(successfulExitCode)
+	}
 
-	exitIfError(nil)
+	cmd := exec.Command(os.Args[0], "-test.run=TestExitIfError_NilError_DoesNotExit")
+	cmd.Env = append(os.Environ(), "TEST_EXIT_NIL=1")
+	err := cmd.Run()
+
+	if err != nil {
+		t.Errorf("exitIfError(nil) should not exit, but got error: %v", err)
+	}
 }
 
-func TestExitIfError_GenericError_PrintsAndExits(t *testing.T) {
-	// Capture stdout
-	oldStdout := os.Stdout
-	_, w, _ := os.Pipe()
-	os.Stdout = w
+func TestExitIfError_WithError_ExitsWithFailure(t *testing.T) {
+	// Non-nil error should call os.Exit(failureExitCode)
+	if os.Getenv("TEST_EXIT_ERROR") == "1" {
+		exitIfError(errors.New("test error"))
+		// Should not reach here
+		os.Exit(successfulExitCode)
+	}
 
-	testErr := "test error message"
-	err := errors.New(testErr)
+	cmd := exec.Command(os.Args[0], "-test.run=TestExitIfError_WithError_ExitsWithFailure")
+	cmd.Env = append(os.Environ(), "TEST_EXIT_ERROR=1")
+	err := cmd.Run()
 
-	// We can't fully test os.Exit without exiting the test,
-	// but we can verify the function doesn't panic
-	defer func() {
-		w.Close()
-		os.Stdout = oldStdout
-		if r := recover(); r != nil {
-			t.Logf("function called os.Exit as expected")
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if exitErr.ExitCode() != failureExitCode {
+			t.Errorf("expected exit code %d, got %d", failureExitCode, exitErr.ExitCode())
 		}
-	}()
+	} else if err == nil {
+		t.Error("should have exited with error")
+	}
+}
 
-	// This will call os.Exit internally
-	// For testing purposes, we'll just verify the logic
-	_ = err
+func TestExitIfError_AstError_ExitsWithEngineCode(t *testing.T) {
+	// AstError with specific code should use that code
+	if os.Getenv("TEST_EXIT_AST") == "1" {
+		astErr := &wrappers.AstError{
+			Err:  errors.New("SAST failed"),
+			Code: 2,
+		}
+		exitIfError(astErr)
+		os.Exit(successfulExitCode)
+	}
+
+	cmd := exec.Command(os.Args[0], "-test.run=TestExitIfError_AstError_ExitsWithEngineCode")
+	cmd.Env = append(os.Environ(), "TEST_EXIT_AST=1")
+	err := cmd.Run()
+
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		if exitErr.ExitCode() != 2 {
+			t.Errorf("expected exit code 2 for SAST error, got %d", exitErr.ExitCode())
+		}
+	}
 }
 
 // ============================================================================

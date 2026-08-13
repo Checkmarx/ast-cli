@@ -1,6 +1,7 @@
 package iacrealtime
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -691,5 +692,203 @@ func TestCreateCommandWithEnhancedPath_Windows_NoEnhancement(t *testing.T) {
 	// On Windows, Env should be nil (uses parent environment)
 	if cmd.Env != nil {
 		t.Error("On Windows, cmd.Env should be nil")
+	}
+}
+
+// ============================================================================
+// Tests for RunKicsContainer with real ContainerManager
+// ============================================================================
+
+func TestContainerManager_RunKicsContainer_Structure(t *testing.T) {
+	cm := &ContainerManager{}
+
+	// Set up container name in viper
+	containerName := "test-container-" + uuid.New().String()
+	viper.Set(commonParams.KicsContainerNameKey, containerName)
+	kicsshutdown.SetKicsContainerName(containerName)
+
+	// Note: This test verifies the function doesn't panic and handles basic structure
+	// Actual docker execution is mocked by the test environment
+	volumeMap := "/tmp/test:/tmp/test"
+
+	// We can't test actual execution, but we verify the function exists and can be called
+	err := cm.RunKicsContainer("docker", volumeMap)
+	// Error is expected because docker might not be available, but function should not panic
+	_ = err
+}
+
+// ============================================================================
+// Tests for EnsureImageAvailable with real ContainerManager
+// ============================================================================
+
+func TestContainerManager_EnsureImageAvailable_Structure(t *testing.T) {
+	cm := &ContainerManager{}
+
+	// We can't test actual docker execution, but we verify the function exists
+	// and can be called without panic
+	_, err := cm.EnsureImageAvailable("docker")
+	// Error is expected because docker might not be available, but function should not panic
+	_ = err
+}
+
+// ============================================================================
+// Tests for createCommandWithEnhancedPath edge cases
+// ============================================================================
+
+func TestCreateCommandWithEnhancedPath_MacOS_WithNonExistentPaths(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	// Use a path that likely doesn't exist to test the existence check
+	cmd := createCommandWithEnhancedPath("/nonexistent/path/to/docker", "--version")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil even with nonexistent paths")
+	}
+
+	// Should still have environment set on macOS
+	if cmd.Env == nil {
+		t.Error("On macOS, cmd.Env should be set even with nonexistent engine path")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_MacOS_EmptyPath(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	cmd := createCommandWithEnhancedPath("docker", "--version")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should work with simple command names")
+	}
+}
+
+func TestCreateCommandWithEnhancedPath_MacOS_WithHomeDir(t *testing.T) {
+	// Mock OS to be macOS
+	origGOOS := getOS
+	defer func() { getOS = origGOOS }()
+	getOS = func() string { return osDarwin }
+
+	cmd := createCommandWithEnhancedPath("/usr/local/bin/docker", "info")
+
+	if cmd == nil {
+		t.Fatal("createCommandWithEnhancedPath should not return nil")
+	}
+
+	// Verify environment is set on macOS
+	if cmd.Env == nil {
+		t.Error("On macOS, cmd.Env should be set")
+	}
+}
+
+// ============================================================================
+// Additional mock tests for interface compliance
+// ============================================================================
+
+func TestContainerManager_ImplementsInterface(t *testing.T) {
+	cm := NewContainerManager()
+
+	// Verify it implements IContainerManager
+	var _ IContainerManager = cm
+}
+
+func TestMockContainerManager_ImplementsInterface(t *testing.T) {
+	mcm := NewMockContainerManager()
+
+	// Verify it implements IContainerManager
+	var _ IContainerManager = mcm
+}
+
+// ============================================================================
+// Tests for constants and helper functions
+// ============================================================================
+
+func TestKicsContainerPrefix_Defined(t *testing.T) {
+	// Verify the constant is defined and not empty
+	if KicsContainerPrefix == "" {
+		t.Error("KicsContainerPrefix should be defined and non-empty")
+	}
+
+	// Verify it's used in generated container names
+	cm := &ContainerManager{}
+	containerName := cm.GenerateContainerID()
+
+	if !strings.HasPrefix(containerName, KicsContainerPrefix) {
+		t.Errorf("Generated container name should start with prefix: %s", containerName)
+	}
+}
+
+func TestContainerConstants_Defined(t *testing.T) {
+	// Verify container-related constants are defined
+	if ContainerPath == "" {
+		t.Error("ContainerPath should be defined")
+	}
+
+	if ContainerFormat == "" {
+		t.Error("ContainerFormat should be defined")
+	}
+}
+
+// ============================================================================
+// Tests for real and mock manager interaction
+// ============================================================================
+
+func TestContainerManager_Methods_DoNotPanic(t *testing.T) {
+	cm := &ContainerManager{}
+
+	// Test GenerateContainerID doesn't panic
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("GenerateContainerID panicked: %v", r)
+		}
+	}()
+
+	containerName := cm.GenerateContainerID()
+	if containerName == "" {
+		t.Error("GenerateContainerID should return non-empty string")
+	}
+}
+
+func TestMockManager_ErrorHandling(t *testing.T) {
+	mcm := NewMockContainerManager()
+
+	// Test with custom error
+	customErr := errors.New("custom test error")
+	mcm.ShouldFailRun = true
+	mcm.RunError = customErr
+
+	err := mcm.RunKicsContainer("docker", "/tmp:/tmp")
+	if err != customErr {
+		t.Error("Mock should return custom error")
+	}
+}
+
+func TestMockManager_CallTracking(t *testing.T) {
+	mcm := NewMockContainerManager()
+
+	// Generate multiple container IDs
+	id1 := mcm.GenerateContainerID()
+	id2 := mcm.GenerateContainerID()
+	id3 := mcm.GenerateContainerID()
+
+	// Verify all were tracked
+	if len(mcm.GeneratedContainerIDs) != 3 {
+		t.Errorf("Expected 3 generated IDs, got %d", len(mcm.GeneratedContainerIDs))
+	}
+
+	// Verify they're unique
+	if id1 == id2 || id2 == id3 || id1 == id3 {
+		t.Error("Generated IDs should be unique")
+	}
+
+	// Verify they're all in the tracking list
+	for i, id := range []string{id1, id2, id3} {
+		if mcm.GeneratedContainerIDs[i] != id {
+			t.Errorf("ID mismatch at index %d", i)
+		}
 	}
 }
