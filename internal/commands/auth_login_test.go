@@ -144,3 +144,80 @@ func TestRunAuthLogout_DoesNotClearClientCredentials(t *testing.T) {
 		t.Errorf("expected yaml cx_client_secret preserved, got %q", got)
 	}
 }
+
+// persistYamlLogin saves the refresh token to the config file.
+func TestPersistYamlLogin_SavesTokenAndPrintsSuccess(t *testing.T) {
+	_ = withTempConfigDir(t)
+	cmd, out, _ := newBufferedCmd()
+	refreshToken := "refresh-token-abc123"
+
+	if err := persistYamlLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistYamlLogin failed: %v", err)
+	}
+
+	// Check token was saved to YAML
+	if got := readYamlAPIKey(t); got != refreshToken {
+		t.Errorf("expected token saved to yaml, got %q want %q", got, refreshToken)
+	}
+
+	// Check success message was printed
+	if !strings.Contains(out.String(), "Successfully authenticated to Checkmarx One server!") {
+		t.Errorf("expected success message, got: %q", out.String())
+	}
+}
+
+// persistYamlLogin does not echo the token to stdout
+func TestPersistYamlLogin_DoesNotEchoToken(t *testing.T) {
+	_ = withTempConfigDir(t)
+	cmd, out, _ := newBufferedCmd()
+	refreshToken := "secret-refresh-token-12345"
+
+	if err := persistYamlLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistYamlLogin failed: %v", err)
+	}
+
+	output := out.String()
+	if strings.Contains(output, refreshToken) {
+		t.Errorf("token should not be echoed to stdout, but got: %q", output)
+	}
+}
+
+// persistYamlLogin handles different token formats
+func TestPersistYamlLogin_DifferentTokenFormats(t *testing.T) {
+	testTokens := []string{
+		"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+		"simple-token",
+		"token-with-special-chars-!@#$%^&*()",
+	}
+
+	for _, token := range testTokens {
+		t.Run("token format", func(t *testing.T) {
+			_ = withTempConfigDir(t)
+			cmd, _, _ := newBufferedCmd()
+
+			if err := persistYamlLogin(cmd, token); err != nil {
+				t.Fatalf("persistYamlLogin failed for token %q: %v", token, err)
+			}
+
+			if got := readYamlAPIKey(t); got != token {
+				t.Errorf("token mismatch for %q: got %q", token, got)
+			}
+		})
+	}
+}
+
+// persistYamlLogin prints success message to stdout
+func TestPersistYamlLogin_PrintsSuccessMessage(t *testing.T) {
+	_ = withTempConfigDir(t)
+	cmd, out, _ := newBufferedCmd()
+	refreshToken := "test-token-456"
+
+	if err := persistYamlLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistYamlLogin failed: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, "Successfully authenticated to Checkmarx One server!") {
+		t.Errorf("expected success message in output, got: %q", output)
+	}
+}
