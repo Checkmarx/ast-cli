@@ -27,9 +27,13 @@ type SonarIssues struct {
 }
 
 type SonarLocation struct {
-	Message   string         `json:"message,omitempty"`
-	FilePath  string         `json:"filePath,omitempty"`
-	TextRange SonarTextRange `json:"textRange"`
+	Message  string `json:"message,omitempty"`
+	FilePath string `json:"filePath,omitempty"`
+	// TextRange is omitted when the location cannot be expressed validly, for
+	// example when the engine reports a line that does not exist in the file on
+	// disk. SonarQube treats a location without a textRange as file level,
+	// whereas an out of range line aborts the whole analysis.
+	TextRange *SonarTextRange `json:"textRange,omitempty"`
 }
 
 type SonarTextRange struct {
