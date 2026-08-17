@@ -2332,6 +2332,8 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 	var sonarIssues []wrappers.SonarIssues
 	var sonarRules []wrappers.SonarRules
 	seenRuleIDs := make(map[string]bool) // Track already added rule IDs
+	// Shared across the whole export so each source file is read at most once.
+	lineIndex := newSonarLineIndex()
 
 	if results != nil {
 		for _, result := range results.Results {
@@ -2346,8 +2348,15 @@ func parseSonar(results *wrappers.ScanResultsCollection) ([]wrappers.SonarIssues
 			engineType := strings.TrimSpace(result.Type)
 
 			if engineType == commonParams.SastType {
-				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result)
-				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result)
+				auxIssue.PrimaryLocation = parseSonarPrimaryLocation(result, lineIndex)
+				auxIssue.SecondaryLocations = parseSonarSecondaryLocations(result, lineIndex)
+				if auxIssue.PrimaryLocation.FilePath == "" {
+					// filePath is mandatory on the primary location, so an issue
+					// without one cannot be imported at all. Skipping it keeps
+					// the rest of the report loadable instead of having
+					// SonarQube reject every issue in the file.
+					continue
+				}
 				sonarIssues = append(sonarIssues, auxIssue)
 			} else if engineType == commonParams.KicsType {
 				auxIssue.PrimaryLocation = parseLocationKics(result)
@@ -2376,7 +2385,7 @@ func parseContainersSonar(result *wrappers.ScanResult) wrappers.SonarLocation {
 	textRange.EndColumn = 2
 	textRange.StartLine = 1
 	textRange.EndLine = 2
-	auxLocation.TextRange = textRange
+	auxLocation.TextRange = &textRange
 	return auxLocation
 }
 
@@ -2388,7 +2397,7 @@ func parseSscsSonar(result *wrappers.ScanResult, sonarIssue *wrappers.SonarIssue
 	textRange.StartColumn = 1
 	textRange.EndColumn = 2
 	textRange.StartLine = result.ScanResultData.Line
-	sonarIssue.PrimaryLocation.TextRange = textRange
+	sonarIssue.PrimaryLocation.TextRange = &textRange
 	return *sonarIssue
 }
 
@@ -2472,7 +2481,7 @@ func parseScaSonarLocations(result *wrappers.ScanResult) []wrappers.SonarIssues 
 		textRange.StartLine = 1
 		textRange.EndLine = 2
 
-		primaryLocation.TextRange = textRange
+		primaryLocation.TextRange = &textRange
 
 		issueByLocation.PrimaryLocation = primaryLocation
 
@@ -2490,47 +2499,84 @@ func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	auxTextRange.StartLine = results.ScanResultData.Line
 	auxTextRange.StartColumn = 0
 	auxTextRange.EndColumn = 1
-	auxLocation.TextRange = auxTextRange
+	auxLocation.TextRange = &auxTextRange
 	return auxLocation
 }
 
-func parseSonarPrimaryLocation(results *wrappers.ScanResult) wrappers.SonarLocation {
+func parseSonarPrimaryLocation(results *wrappers.ScanResult, lineIndex *sonarLineIndex) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	// fill the details in the primary Location
 	if len(results.ScanResultData.Nodes) > 0 {
 		auxLocation.FilePath = strings.TrimLeft(results.ScanResultData.Nodes[0].FileName, "/")
 		auxLocation.Message = html.UnescapeString(strings.ReplaceAll(results.ScanResultData.QueryName, "_", " "))
-		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0])
+		auxLocation.TextRange = parseSonarTextRange(results.ScanResultData.Nodes[0], lineIndex)
 	}
 	return auxLocation
 }
 
-func parseSonarSecondaryLocations(results *wrappers.ScanResult) []wrappers.SonarLocation {
+func parseSonarSecondaryLocations(results *wrappers.ScanResult, lineIndex *sonarLineIndex) []wrappers.SonarLocation {
 	var auxSecondaryLocations []wrappers.SonarLocation
 	// Traverse all the rest of the scan result nodes into secondary location of sonar
 	if len(results.ScanResultData.Nodes) >= 1 {
 		for _, node := range results.ScanResultData.Nodes[1:] {
+			filePath := strings.TrimLeft(node.FileName, "/")
+			if filePath == "" {
+				// filePath is also mandatory on a secondary location. The engine
+				// occasionally returns a node with no file name, which used to be
+				// serialised as an absent field and made SonarQube reject the
+				// entire report.
+				continue
+			}
+			textRange := parseSonarTextRange(node, lineIndex)
+			if textRange == nil {
+				// Unlike the primary location, SonarQube treats textRange as a
+				// mandatory field on secondary locations and fails to parse the
+				// whole report without it. A node whose position cannot be
+				// expressed validly is therefore dropped: losing one step of a
+				// data flow is far better than losing the entire analysis.
+				continue
+			}
 			var auxSecondaryLocation wrappers.SonarLocation
-			auxSecondaryLocation.FilePath = strings.TrimLeft(node.FileName, "/")
+			auxSecondaryLocation.FilePath = filePath
 			auxSecondaryLocation.Message = html.UnescapeString(strings.ReplaceAll(results.ScanResultData.QueryName, "_", " "))
-			auxSecondaryLocation.TextRange = parseSonarTextRange(node)
+			auxSecondaryLocation.TextRange = textRange
 			auxSecondaryLocations = append(auxSecondaryLocations, auxSecondaryLocation)
 		}
 	}
 	return auxSecondaryLocations
 }
 
-func parseSonarTextRange(results *wrappers.ScanResultNode) wrappers.SonarTextRange {
-	var auxTextRange wrappers.SonarTextRange
-	auxTextRange.StartLine = results.Line
-	startColumn := getSastStartColumn(results.Column)
+// parseSonarTextRange maps a scan result node onto a Sonar text range.
+//
+// SonarQube validates the line and both column offsets against the file on disk
+// and aborts the entire analysis on the first invalid location, so the
+// coordinates reported by the engine are verified before being emitted. There
+// are three outcomes:
+//
+//   - the line exists: columns are clamped to its length
+//   - the line does not exist: nil is returned so that textRange is omitted and
+//     the issue is reported at file level
+//   - the file cannot be read: the line is kept and the columns are dropped,
+//     since nothing can be verified and SonarQube skips issues whose file it
+//     cannot resolve either
+func parseSonarTextRange(results *wrappers.ScanResultNode, lineIndex *sonarLineIndex) *wrappers.SonarTextRange {
+	lineLength, status := lineIndex.resolveLine(results.FileName, results.Line)
+	if status == lineStatusLineMissing {
+		return nil
+	}
+
+	auxTextRange := &wrappers.SonarTextRange{StartLine: results.Line}
+	if status != lineStatusOK {
+		return auxTextRange
+	}
+
+	startColumn, endColumn, emit := clampSonarColumns(getSastStartColumn(results.Column), results.Length, lineLength)
+	if !emit {
+		return auxTextRange
+	}
 
 	auxTextRange.StartColumn = startColumn
-	auxTextRange.EndColumn = startColumn + results.Length
-
-	if auxTextRange.StartColumn == auxTextRange.EndColumn {
-		auxTextRange.EndColumn++
-	}
+	auxTextRange.EndColumn = endColumn
 
 	return auxTextRange
 }
