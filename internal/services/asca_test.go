@@ -268,6 +268,112 @@ func TestCreateASCAScanRequest_ValidCustomVorpalLocation_NoVorpalExe_Installed_F
 	_ = result
 }
 
+func TestValidateIgnoredFilePath_EmptyPath_ReturnsNil(t *testing.T) {
+	result := validateIgnoredFilePath("")
+	assert.Nil(t, result)
+}
+
+func TestValidateIgnoredFilePath_FileNotFound_ReturnsErrorResult(t *testing.T) {
+	result := validateIgnoredFilePath("data/nonexistent-ignore-file.json")
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Error)
+	assert.Contains(t, result.Error.Description, "not found")
+}
+
+func TestValidateIgnoredFilePath_FileExists_ReturnsNil(t *testing.T) {
+	result := validateIgnoredFilePath("data/ignoredAsca.json")
+	assert.Nil(t, result)
+}
+
+func TestReadSourceCode_FileNotFound_ReturnsError(t *testing.T) {
+	content, err := readSourceCode("data/nonexistent-file.py")
+	assert.Error(t, err)
+	assert.Empty(t, content)
+}
+
+func TestReadSourceCode_ValidFile_ReturnsContent(t *testing.T) {
+	content, err := readSourceCode("data/python-vul-file.py")
+	assert.NoError(t, err)
+	assert.Contains(t, content, "#!/usr/bin/env python")
+}
+
+func TestLoadIgnoredAscaFindings_FileNotFound_ReturnsError(t *testing.T) {
+	findings, err := loadIgnoredAscaFindings("data/nonexistent.json")
+	assert.Error(t, err)
+	assert.Nil(t, findings)
+}
+
+func TestLoadIgnoredAscaFindings_InvalidJSON_ReturnsError(t *testing.T) {
+	tempDir := t.TempDir()
+	badFile := filepath.Join(tempDir, "bad.json")
+	writeErr := os.WriteFile(badFile, []byte("not valid json"), 0600)
+	assert.NoError(t, writeErr)
+
+	findings, err := loadIgnoredAscaFindings(badFile)
+	assert.Error(t, err)
+	assert.Nil(t, findings)
+}
+
+func TestLoadIgnoredAscaFindings_ValidJSON_ReturnsFindings(t *testing.T) {
+	findings, err := loadIgnoredAscaFindings("data/ignoredAsca.json")
+	assert.NoError(t, err)
+	assert.Len(t, findings, 1)
+	assert.Equal(t, "python-vul-file.py", findings[0].FileName)
+	assert.Equal(t, uint32(34), findings[0].Line)
+	assert.Equal(t, uint32(4006), findings[0].RuleID)
+}
+
+func TestBuildAscaIgnoreMap_BuildsExpectedKeys(t *testing.T) {
+	ignored := []grpcs.AscaIgnoreFinding{
+		{FileName: "a.py", Line: 10, RuleID: 1},
+		{FileName: "b.py", Line: 20, RuleID: 2},
+	}
+	ignoreMap := buildAscaIgnoreMap(ignored)
+	assert.Len(t, ignoreMap, 2)
+	assert.True(t, ignoreMap["a.py_10_1"])
+	assert.True(t, ignoreMap["b.py_20_2"])
+	assert.False(t, ignoreMap["c.py_30_3"])
+}
+
+func TestFilterIgnoredAscaFindings_RemovesMatchingEntries(t *testing.T) {
+	details := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 10, RuleID: 1},
+		{FileName: "b.py", Line: 20, RuleID: 2},
+	}
+	ignoreMap := map[string]bool{"a.py_10_1": true}
+
+	filtered := filterIgnoredAscaFindings(details, ignoreMap)
+	assert.Len(t, filtered, 1)
+	assert.Equal(t, "b.py", filtered[0].FileName)
+}
+
+func TestExecuteScan_ScanWrapperError_ReturnsError(t *testing.T) {
+	ascaWrapper := &mock.ASCAMockWrapper{
+		CustomScan: func(fileName, sourceCode string) (*grpcs.ScanResult, error) {
+			return nil, errors.New("scan wrapper failure")
+		},
+	}
+	result, err := executeScan(ascaWrapper, "data/python-vul-file.py", "")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "scan wrapper failure")
+}
+
+func TestExecuteScan_ReadSourceCodeError_ReturnsError(t *testing.T) {
+	ascaWrapper := mock.NewASCAMockWrapper(1234)
+	result, err := executeScan(ascaWrapper, "data/nonexistent-file.py", "")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+}
+
+func TestExecuteScan_InvalidIgnoredFile_ContinuesWithoutFiltering(t *testing.T) {
+	ascaWrapper := mock.NewASCAMockWrapper(1234)
+	result, err := executeScan(ascaWrapper, "data/python-vul-file.py", "data/nonexistent-ignore-file.json")
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+	assert.NotEmpty(t, result.ScanDetails)
+}
+
 func TestCreateASCAScanRequest_ValidCustomVorpalLocation_VorPal_exe_Success(t *testing.T) {
 	tempDir := t.TempDir()
 
