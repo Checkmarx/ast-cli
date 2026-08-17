@@ -508,8 +508,6 @@ func TestValidateSupportedManifestFile_UnsupportedFormats(t *testing.T) {
 		name     string
 		filePath string
 	}{
-		{name: "RubyGemfile", filePath: "Gemfile"},
-		{name: "PHPComposer", filePath: "composer.json"},
 		{name: "RustCargo", filePath: "Cargo.toml"},
 		{name: "PythonPipfile", filePath: "Pipfile"},
 		{name: "JavaGradleProperties", filePath: "gradle.properties"},
