@@ -34,7 +34,7 @@ func getScaResolverExecutable(t *testing.T) string {
 		scaResolverConfig = scaconfig.Params
 		scaResolverConfig.WorkingDirName = scaResolverWorkingDirName
 
-		_, scaResolverErr = osinstaller.InstallOrUpgrade(&scaResolverConfig)
+		_, scaResolverErr = osinstaller.InstallOrUpgrade(&scaResolverConfig, nil)
 		if scaResolverErr == nil {
 			scaResolverPath = scaResolverConfig.ExecutableFilePath()
 		}
@@ -47,10 +47,10 @@ func getScaResolverExecutable(t *testing.T) string {
 	return scaResolverPath
 }
 
-// TestCreateScanScaResolverExecutable_Success runs a real
+// TestIntegrationScaResolverExecutable_Success runs a real
 // `cx scan create --sca-resolver <path> ...` using the actual downloaded ScaResolver
 // executable, rather than a path pre-staged outside the test.
-func TestCreateScanScaResolverExecutable_Success(t *testing.T) {
+func TestIntegrationScaResolverExecutable_Success(t *testing.T) {
 	resolverPath := getScaResolverExecutable(t)
 
 	args := []string{
@@ -81,7 +81,7 @@ func TestCreateScanScaResolverExecutable_Success(t *testing.T) {
 
 // Test --no-scan without --sbom-first (in --sca-resolver-params) is rejected with the
 // bad-use error and no scan is submitted.
-func TestCreateScanNoScanWithoutSbomFirst(t *testing.T) {
+func TestIntegrationScaResolverNoScanWithoutSbomFirst(t *testing.T) {
 	args := []string{
 		"scan", "create",
 		flag(params.ProjectName), getProjectNameForScanTests(),
@@ -100,7 +100,7 @@ func TestCreateScanNoScanWithoutSbomFirst(t *testing.T) {
 }
 
 // --no-scan + --sbom-first (default location): SBOM saved to <source-dir>/cx-sbom.json, no scan submitted.
-func TestCreateScanNoScanWithSbomFirst_DefaultLocation(t *testing.T) {
+func TestIntegrationScaResolverNoScanWithSbomFirst_DefaultLocation(t *testing.T) {
 	resolverPath := getScaResolverExecutable(t)
 
 	absDir, absErr := filepath.Abs(Dir)
@@ -156,7 +156,7 @@ func TestCreateScanNoScanWithSbomFirst_DefaultLocation(t *testing.T) {
 }
 
 // --no-scan + --sbom-first with custom --sbom-output-path/--sbom-output-name: SBOM saved to the custom location, no scan submitted.
-func TestCreateScanNoScanWithSbomFirst_CustomOutputPathAndName(t *testing.T) {
+func TestIntegrationScaResolverNoScanWithSbomFirst_CustomOutputPathAndName(t *testing.T) {
 	resolverPath := getScaResolverExecutable(t)
 
 	// Subdir under the source dir, not t.TempDir(), to avoid OS temp-folder quirks.
@@ -218,7 +218,7 @@ func TestCreateScanNoScanWithSbomFirst_CustomOutputPathAndName(t *testing.T) {
 }
 
 // --sbom-first without --no-scan: SBOM is generated and the CxOne scan still runs normally.
-func TestCreateScanSbomFirstWithoutNoScan(t *testing.T) {
+func TestIntegrationScaResolverSbomFirstWithoutNoScan(t *testing.T) {
 	resolverPath := getScaResolverExecutable(t)
 
 	absDir, absErr := filepath.Abs(Dir)

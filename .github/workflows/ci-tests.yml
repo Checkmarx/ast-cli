@@ -34,7 +34,7 @@ jobs:
       - name: Find tests not covered by any named group
         id: find-uncovered
         run: |
-          # Combined regex of every pattern used across the 12 named matrix groups.
+          # Combined regex of every pattern used across the 13 named matrix groups.
           # Any test whose name does NOT match this will land in the catch-all group.
           # Built via concatenation so every line stays at ≥10-space YAML indentation.
           CP="TestCreateScan|TestScanCreate|TestScansE2E|TestFastScan"
@@ -56,6 +56,7 @@ jobs:
           CP="${CP}|TestGitLab|TestBitbucket|TestBitBucket|TestAzure|TestHooksPreCommit"
           CP="${CP}|TestGetLearnMore|TestImport|TestGetTenant|TestMaskSecrets|TestFailedMask"
           CP="${CP}|TestScaRemediation|TestKicsRemediation|TestTelemetry|Test_Handle|TestChat"
+          CP="${CP}|TestIntegrationScaResolver"
           COVERED_PATTERNS="${CP}"
 
           ALL_TESTS=$(grep -rh "^func Test" test/integration/*_test.go \
@@ -84,8 +85,8 @@ jobs:
           fi
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Job B: Run each test group in parallel across 13 matrix entries.
-  #        The 13th entry (uncovered) is a dynamic catch-all driven by Job A.
+  # Job B: Run each test group in parallel across 14 matrix entries.
+  #        The 14th entry (uncovered) is a dynamic catch-all driven by Job A.
   # ─────────────────────────────────────────────────────────────────────────────
   integration-tests:
     name: Integration Tests (${{ matrix.label }})
@@ -191,7 +192,15 @@ jobs:
             needs_precommit: "true"
             run_cleandata: "false"
 
-          # 13 ── Catch-All (dynamic; pattern injected at runtime from Job A output)
+          # 13 ── SCA Resolver (sca_resolver_test.go only; isolated so the real ~114MB ScaResolver download + real scans run exactly once)
+          - name: sca-resolver
+            label: "SCA Resolver"
+            run_pattern: "TestIntegrationScaResolver"
+            timeout: "45m"
+            needs_precommit: "false"
+            run_cleandata: "true"
+
+          # 14 ── Catch-All (dynamic; pattern injected at runtime from Job A output)
           - name: uncovered
             label: "Catch-All (Uncovered)"
             run_pattern: "__UNCOVERED__"
