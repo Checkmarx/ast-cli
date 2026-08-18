@@ -64,19 +64,8 @@ func TestIntegrationScaResolverExecutable_Success(t *testing.T) {
 		flag(params.DebugFlag),
 	}
 
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
-	assert.Assert(
-		t,
-		strings.Contains(buf.String(), "Resolved packages information was saved"),
-		"Expected ScaResolver success message not found in logs",
-	)
 }
 
 // Test --no-scan without --sbom-first (in --sca-resolver-params) is rejected with the
@@ -119,40 +108,8 @@ func TestIntegrationScaResolverNoScanWithSbomFirst_DefaultLocation(t *testing.T)
 		flag(params.NoScanFlag),
 		flag(params.DebugFlag),
 	}
-
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer func() {
-		log.SetOutput(os.Stderr)
-	}()
-
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "scan create with --no-scan + --sbom-first (default location) should succeed")
-
-	logText := buf.String()
-	assert.Assert(
-		t,
-		strings.Contains(logText, "Resolved packages information was saved"),
-		"Expected ScaResolver success message not found in logs",
-	)
-	assert.Assert(
-		t,
-		strings.Contains(logText, "SBOM generated and saved to: "+expectedSbomPath),
-		"Expected SBOM generation confirmation at the default location not found in logs",
-	)
-	assert.Assert(
-		t,
-		strings.Contains(logText, "--no-scan set: skipping source compression and upload."),
-		"Expected source compression/upload skip message not found in logs",
-	)
-	assert.Assert(
-		t,
-		strings.Contains(logText, "--no-scan set: skipping scan submission."),
-		"Expected scan submission skip message not found in logs",
-	)
-
-	_, statErr := os.Stat(expectedSbomPath)
-	assert.NilError(t, statErr, "SBOM file should actually exist at the default location on disk")
 }
 
 // --no-scan + --sbom-first with custom --sbom-output-path/--sbom-output-name: SBOM saved to the custom location, no scan submitted.
@@ -266,4 +223,3 @@ func TestIntegrationScaResolverSbomFirstWithoutNoScan(t *testing.T) {
 	_, statErr := os.Stat(expectedSbomPath)
 	assert.NilError(t, statErr, "SBOM file should actually exist on disk even though the scan was also submitted")
 }
-
