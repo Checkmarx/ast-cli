@@ -21,10 +21,11 @@ func RunScanOssRealtimeCommand(
 		}
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
+		sbomFileFlag, _ := cmd.Flags().GetString(commonParams.ReferenceSbomFileFlag)
 
 		ossRealtimeService := ossrealtime.NewOssRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
-		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
+		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag, ignoredFilePathFlag, sbomFileFlag)
 		if err != nil {
 			return err
 		}

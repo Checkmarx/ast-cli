@@ -539,6 +539,12 @@ func scanOssRealtimeSubCommand(
 		"Path to a JSON file listing ignored packages",
 	)
 
+	scanOssRealtimeCmd.Flags().String(
+		commonParams.ReferenceSbomFileFlag,
+		"",
+		"Path to a CycloneDX JSON SBOM file to enrich results with transitive dependency paths",
+	)
+
 	return scanOssRealtimeCmd
 }
 
