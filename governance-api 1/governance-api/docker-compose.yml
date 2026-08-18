@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: governance-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       governance
+      POSTGRES_USER:     governance
+      POSTGRES_PASSWORD: governance
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U governance -d governance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: governance-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://governance:governance@postgres:5432/governance?sslmode=disable
+      PORT:         "8080"
+      JWT_SECRET:   "${JWT_SECRET:-dev-secret-change-in-production}"
+      API_KEY:      "${API_KEY:-cx-dev-api-key}"
+      MIGRATIONS_DIR: /app/migrations
+
+volumes:
+  pgdata:
