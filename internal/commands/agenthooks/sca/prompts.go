@@ -68,7 +68,7 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 			"PackageName":    p.PackageName,
 			"PackageVersion": p.PackageVersion,
 		}})
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
 	}
 	return fmt.Sprintf(
 		"Action required:\n"+

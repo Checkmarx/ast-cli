@@ -329,15 +329,25 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	if !strings.Contains(ctx, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, `"FileName":"billing.py"`) {
+	if !strings.Contains(ctx, quoteField(`"FileName":"billing.py"`)) {
 		t.Errorf("expected FileName in command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, `"Line":5`) {
+	if !strings.Contains(ctx, quoteField(`"Line":5`)) {
 		t.Errorf("expected Line in command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, `"RuleID":4059`) {
+	if !strings.Contains(ctx, quoteField(`"RuleID":4059`)) {
 		t.Errorf("expected RuleID in command, got %q", ctx)
 	}
+}
+
+// quoteField adapts a raw JSON substring assertion for QuoteDataFlag's Windows
+// escaping (embedded double quotes become \" so the ignore-vulnerability --data
+// argument survives PowerShell's native-exe argument parsing).
+func quoteField(raw string) string {
+	if runtime.GOOS == "windows" {
+		return strings.ReplaceAll(raw, `"`, `\"`)
+	}
+	return raw
 }
 
 func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
@@ -363,7 +373,7 @@ func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
 	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
 		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
 	}
-	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
+	if !strings.Contains(ctx, quoteField(`"FileName":"a%s.py"`)) {
 		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
 	}
 }
@@ -377,10 +387,10 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 	if strings.Count(ctx, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
 	}
-	if !strings.Contains(ctx, `"RuleID":4059`) {
+	if !strings.Contains(ctx, quoteField(`"RuleID":4059`)) {
 		t.Errorf("expected RuleID 4059, got %q", ctx)
 	}
-	if !strings.Contains(ctx, `"RuleID":4027`) {
+	if !strings.Contains(ctx, quoteField(`"RuleID":4027`)) {
 		t.Errorf("expected RuleID 4027, got %q", ctx)
 	}
 }
@@ -411,5 +421,18 @@ func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
 	ctx := additionalContext("billing.py", "cx", findings, "", "", "")
 	if strings.Contains(ctx, "--ignored-file-path") {
 		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_GeminiUsesGeminiSkillAndMCPTool(t *testing.T) {
+	ctx := additionalContext("main.py", "cx", nil, "", "Gemini", "")
+	if !strings.Contains(ctx, "/cx-security-asca") {
+		t.Errorf("expected Gemini skill path, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "mcp_Checkmarx_codeRemediation") {
+		t.Errorf("expected Gemini MCP tool name, got %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("Claude MCP tool name should not appear for Gemini, got %q", ctx)
 	}
 }
