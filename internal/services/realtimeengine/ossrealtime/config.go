@@ -15,6 +15,13 @@ type OssPackage struct {
 	Locations       []realtimeengine.Location `json:"Locations"`
 	Status          string                    `json:"Status"`
 	Vulnerabilities []Vulnerability           `json:"Vulnerabilities"`
+	// Transitive dependency enrichment fields (POC: additive, optional)
+	Transitive      bool     `json:"Transitive,omitempty"`
+	DependencyPath  []string `json:"DependencyPath,omitempty"`
+	IntroducedBy    string   `json:"IntroducedBy,omitempty"`
+	Depth           int      `json:"Depth,omitempty"`
+	BoostedSeverity string   `json:"BoostedSeverity,omitempty"`
+	RiskScore       int      `json:"RiskScore,omitempty"`
 }
 
 // OssPackageResults holds the results of an OSS scan.

@@ -1,0 +1,132 @@
+[
+  {
+    "FileName": "sbom_enrichment.go",
+    "Line": 80,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "sbom_enrichment.go",
+    "Line": 160,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "sbom_enrichment.go",
+    "Line": 81,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "sbom_enrichment.go",
+    "Line": 161,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 43,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 66,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 131,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 137,
+    "RuleID": 3005
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "lodash",
+    "PackageVersion": "4.17.21"
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "express",
+    "PackageVersion": "4.17.1"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "github.com/gin-gonic/gin",
+    "PackageVersion": "v1.9.0"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "golang.org/x/net",
+    "PackageVersion": "v0.10.0"
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 44,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 72,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 143,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 209,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 215,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 70,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 207,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 213,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 201,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 185,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 191,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 74,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 189,
+    "RuleID": 3005
+  },
+  {
+    "FileName": "npm_resolver.go",
+    "Line": 195,
+    "RuleID": 3005
+  }
+]

@@ -115,6 +115,7 @@ const (
 	ReportFormatPdfToEmailFlag     = "report-pdf-email"
 	ReportFormatPdfOptionsFlag     = "report-pdf-options"
 	ReportSbomFormatFlag           = "report-sbom-format"
+	ReferenceSbomFileFlag          = "sbom-file"
 	ProjectName                    = "project-name"
 	ScanTypes                      = "scan-types"
 	ScanTypeFlag                   = "scan-type"

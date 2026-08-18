@@ -12,6 +12,7 @@ import (
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/dependency_resolver"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -60,7 +61,7 @@ func NewOssRealtimeService(
 }
 
 // RunOssRealtimeScan performs an OSS real-time scan on the given manifest file.
-func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
+func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath, sbomFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
 	}
@@ -98,6 +99,22 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 		}
 		packageMap := createPackageMap(pkgs)
 		enrichResponseWithRealtimeScannerResults(response, result, packageMap)
+	}
+
+	// Enrich with transitive paths
+	projectPath := filepath.Dir(filePath)
+	if sbomFilePath != "" {
+		// Option A: Use provided SBOM file
+		if err := enrichWithSbomTransitivePaths(o, response, sbomFilePath); err != nil {
+			logger.PrintfIfVerbose("SBOM enrichment skipped: %v", err)
+			// POC: never fail the scan on enrichment error
+		}
+	} else {
+		// Option B: Generate transitive deps on-the-fly using native resolvers
+		if err := enrichWithGeneratedDeps(o, response, projectPath); err != nil {
+			logger.PrintfIfVerbose("Generated deps enrichment skipped: %v", err)
+			// Never fail the scan on enrichment error
+		}
 	}
 
 	if ignoredFilePath != "" {
@@ -386,4 +403,221 @@ func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
 		PackageName:    pkg.PackageName,
 		Version:        pkg.Version,
 	}
+}
+
+// enrichWithGeneratedDeps builds transitive dependencies using native resolvers and enriches response
+func enrichWithGeneratedDeps(
+	service *OssRealtimeService,
+	response *OssPackageResults,
+	projectPath string,
+) error {
+	// Create resolver service
+	resolverService := dependency_resolver.NewDependencyResolverService()
+
+	// Resolve dependencies (npm, maven, go)
+	deps, result := resolverService.ResolveDependencies(projectPath)
+
+	// Log warnings to user if applicable
+	if result.Warning != "" {
+		logger.PrintfIfVerbose("⚠️  %s", result.Warning)
+	}
+	if result.Error != "" {
+		logger.PrintfIfVerbose("❌ %s", result.Error)
+	}
+
+	// If no transitive deps found, return early (not an error)
+	if len(deps) == 0 {
+		return nil
+	}
+
+	// Extract transitive packages (not direct)
+	var transitivePkgs []wrappers.RealtimeScannerPackage
+	for _, dep := range deps {
+		if !dep.IsDirect {
+			transitivePkgs = append(transitivePkgs, wrappers.RealtimeScannerPackage{
+				PackageManager: dep.PackageType,
+				PackageName:    dep.Name,
+				Version:        dep.Version,
+			})
+		}
+	}
+
+	// If no transitive packages, nothing to scan
+	if len(transitivePkgs) == 0 {
+		logger.PrintfIfVerbose("📦 No transitive dependencies found")
+		return nil
+	}
+
+	// Scan transitive packages via realtime API
+	logger.PrintfIfVerbose("🔍 Scanning %d transitive packages via realtime scanner", len(transitivePkgs))
+	req := &wrappers.RealtimeScannerPackageRequest{Packages: transitivePkgs}
+	scanResult, err := service.RealtimeScannerWrapper.ScanPackages(req)
+	if err != nil {
+		return fmt.Errorf("failed to scan transitive packages: %w", err)
+	}
+
+	// Enrich response with transitive results (using same logic as SBOM enrichment)
+	enrichResponseWithTransitiveDependencies(response, scanResult.Packages, deps)
+
+	return nil
+}
+
+// enrichResponseWithTransitiveDependencies enriches response with transitive vulnerability data
+func enrichResponseWithTransitiveDependencies(
+	response *OssPackageResults,
+	vulnPackages []wrappers.RealtimeScannerResults,
+	allDeps []dependency_resolver.Dependency,
+) {
+	// Build dependency graph for path finding
+	depGraph := buildDependencyGraph(allDeps)
+
+	for _, vulnPkg := range vulnPackages {
+		if vulnPkg.Status == "OK" || len(vulnPkg.Vulnerabilities) == 0 {
+			continue // Skip packages without vulnerabilities
+		}
+
+		// Find this package in the dependency list
+		var depInfo *dependency_resolver.Dependency
+		for i := range allDeps {
+			if allDeps[i].Name == vulnPkg.PackageName && allDeps[i].Version == vulnPkg.Version {
+				depInfo = &allDeps[i]
+				break
+			}
+		}
+
+		if depInfo == nil {
+			continue // Package not found in dependency graph
+		}
+
+		// Find shortest path from root to this package
+		path := findShortestPath(depGraph, depInfo.Name+"@"+depInfo.Version)
+		if len(path) < 2 {
+			continue // No valid path found
+		}
+
+		// Calculate depth (skip root and the package itself)
+		depth := len(path) - 2
+		if depth < 1 {
+			continue // Not really transitive
+		}
+
+		// Find introducing direct dependency (first hop after root)
+		introducedBy := ""
+		if len(path) > 1 {
+			introducedBy = path[1] // Second element is the direct dep
+		}
+
+		// Calculate boosted severity based on depth
+		maxSeverityScore := 0
+		for _, vuln := range vulnPkg.Vulnerabilities {
+			score := severityToScore(vuln.Severity)
+			if score > maxSeverityScore {
+				maxSeverityScore = score
+			}
+		}
+		boost := min(20, depth*5)
+		boostedScore := maxSeverityScore + boost
+		boostedSeverity := scoreToSeverity(boostedScore)
+
+		// Create enriched package entry
+		ossPackage := OssPackage{
+			PackageManager:  vulnPkg.PackageManager,
+			PackageName:     vulnPkg.PackageName,
+			PackageVersion:  vulnPkg.Version,
+			FilePath:        "", // Transitive packages have no file location
+			Locations:       []realtimeengine.Location{},
+			Status:          vulnPkg.Status,
+			Vulnerabilities: convertVulnerabilities(vulnPkg.Vulnerabilities),
+			Transitive:      true,
+			DependencyPath:  path,
+			IntroducedBy:    introducedBy,
+			Depth:           depth,
+			BoostedSeverity: boostedSeverity,
+			RiskScore:       boostedScore,
+		}
+
+		response.Packages = append(response.Packages, ossPackage)
+	}
+}
+
+// buildDependencyGraph creates an adjacency map for path finding
+func buildDependencyGraph(deps []dependency_resolver.Dependency) map[string][]string {
+	graph := make(map[string][]string)
+	for _, dep := range deps {
+		key := dep.Name + "@" + dep.Version
+		for _, child := range dep.Children {
+			graph[key] = append(graph[key], child)
+		}
+	}
+	return graph
+}
+
+// findShortestPath finds path from root to target package using BFS
+func findShortestPath(graph map[string][]string, target string) []string {
+	// BFS to find shortest path
+	type queueItem struct {
+		node string
+		path []string
+	}
+
+	queue := []queueItem{{node: "root", path: []string{"root"}}}
+	visited := make(map[string]bool)
+	visited["root"] = true
+
+	for len(queue) > 0 {
+		item := queue[0]
+		queue = queue[1:]
+
+		if item.node == target {
+			return item.path
+		}
+
+		// Get children from graph
+		children := graph[item.node]
+		for _, child := range children {
+			if !visited[child] {
+				visited[child] = true
+				newPath := append(item.path, child)
+				queue = append(queue, queueItem{node: child, path: newPath})
+			}
+		}
+	}
+
+	return nil // No path found
+}
+
+// Severity scoring helpers
+func severityToScore(severity string) int {
+	switch severity {
+	case "CRITICAL":
+		return 100
+	case "HIGH":
+		return 80
+	case "MEDIUM":
+		return 50
+	case "LOW":
+		return 20
+	default:
+		return 10
+	}
+}
+
+func scoreToSeverity(score int) string {
+	switch {
+	case score >= 100:
+		return "CRITICAL"
+	case score >= 80:
+		return "HIGH"
+	case score >= 50:
+		return "MEDIUM"
+	default:
+		return "LOW"
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

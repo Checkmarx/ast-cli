@@ -46,7 +46,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
 
 	const filePath = "../../../commands/data/manifests/package.json"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "")
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "", "")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
@@ -63,7 +63,7 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 
 	const filePath = "../../../commands/data/manifests/package.json"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "")
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "", "")
 
 	assert.NotNil(t, err)
 	assert.Nil(t, response)
@@ -79,7 +79,7 @@ func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T
 
 	const filePath = "not-supported-manifest.ruby"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "")
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, "", "")
 
 	assert.NotNil(t, err)
 	assert.Nil(t, response)
@@ -96,7 +96,7 @@ func TestRunOssRealtimeScan_WithIgnoredPackage_IgnoresPackage(t *testing.T) {
 	const filePath = "../../../commands/data/manifests/package.json"
 	const ignoredPath = "../../../commands/data/checkmarxIgnoredTempList.json"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath, "")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
@@ -117,7 +117,7 @@ func TestRunOssRealtimeScan_WithEmptyIgnoreFile_AllPackagesIncluded(t *testing.T
 	const filePath = "../../../commands/data/manifests/package.json"
 	const ignoredPath = "../../../commands/data/emptyIgnoreList.json"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath, "")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
@@ -143,7 +143,7 @@ func TestRunOssRealtimeScan_IgnoredPackageWithDifferentVersion_IsNotIgnored(t *t
 	const filePath = "../../../commands/data/manifests/test.csproj"
 	const ignoredPath = "../../../commands/data/checkmarxIgnoredTempListCsproj.json"
 
-	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath)
+	response, err := ossRealtimeService.RunOssRealtimeScan(filePath, ignoredPath, "")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, response)
@@ -347,7 +347,7 @@ func TestOssRealtimeScan_CsprojFile_ReturnsLocations(t *testing.T) {
 		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
-	response, err := ossRealtimeService.RunOssRealtimeScan("../../../commands/data/manifests/test.csproj", "")
+	response, err := ossRealtimeService.RunOssRealtimeScan("../../../commands/data/manifests/test.csproj", "", "")
 
 	// Assert
 	assert.Nil(t, err)

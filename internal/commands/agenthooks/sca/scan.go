@@ -49,7 +49,7 @@ func NewScannerWithFunc(f func(path string) (*ossrealtime.OssPackageResults, err
 
 func (s *Scanner) runRealScan(path string) (*ossrealtime.OssPackageResults, error) {
 	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.FF, s.RT)
-	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath(s.workDir))
+	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath(s.workDir), "")
 }
 
 // existingIgnoreFilePath returns the realtime ignore-file path (anchored at the
