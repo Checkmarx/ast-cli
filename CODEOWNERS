@@ -3,4 +3,4 @@
 # Each line is a file pattern followed by one or more owners
 
 # Specify the default owners for the entire repository
-*       @cx-anurag-dalke @cx-anjali-deore @cx-umesh-waghode @cx-rakesh-kadu @cx-rahul-pidde @cx-anand-nandeshwar @cx-amol-mane
+*       @Checkmarx/cx-maintainers
