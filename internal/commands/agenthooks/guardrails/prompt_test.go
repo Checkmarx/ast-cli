@@ -569,8 +569,8 @@ func TestExtractPromptTokens(t *testing.T) {
 
 func TestFilenameNameParts(t *testing.T) {
 	cases := map[string][]string{
-		"Sample":             {"sample"},
-		"sample.json":        {"sample"},
+		"Sample":            {"sample"},
+		"sample.json":       {"sample"},
 		".env":              {"env"},
 		".env.local":        {"env"},
 		"config.local.json": {"config", "local"},

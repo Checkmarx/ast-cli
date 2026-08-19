@@ -26,6 +26,10 @@ const agentCursor = "Cursor"
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
 
+// defaultPackageRemediationTool is the non-Cursor MCP tool name for package remediation,
+// used by both DenyMalicious's remediationNote and DenyVulnerable's vulnerableRemediationNote.
+const defaultPackageRemediationTool = "mcp__Checkmarx__packageRemediation"
+
 // DenyMalicious returns the finding and remediation strings for one or more
 // packages classified as Malicious.
 func DenyMalicious(pkgs []ossrealtime.OssPackage, agent string) (finding, remediation string) {
@@ -55,7 +59,7 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID str
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
 // reconnect phrasing is per-agent, from agentprofile.McpReconnect.
 func remediationNote(subject, goal, agent string) string {
-	pkgTool := "mcp__Checkmarx__packageRemediation"
+	pkgTool := defaultPackageRemediationTool
 	skillStep := "  1. For each %s, invoke the cx-devassist:cx-devassist-sca skill — " +
 		"the findings are already in context so it will skip the scan and go directly to " +
 		"MCP-driven remediation to find the %s; the skill also handles MCP unavailability and self-recovery.\n"
@@ -132,7 +136,7 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 			pkgTool, pkgTool, agentprofile.McpReconnect(agent),
 			suppressCmds.String())
 	}
-	pkgTool := "mcp__Checkmarx__packageRemediation"
+	pkgTool := defaultPackageRemediationTool
 	skillStep := "  1. For each affected package, invoke the cx-devassist:cx-devassist-sca skill — " +
 		"the findings are already in context so it will skip the scan and go directly to " +
 		"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP unavailability and self-recovery.\n"

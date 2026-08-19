@@ -380,7 +380,6 @@ func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
 	}
 }
 
-
 func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
 	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
 	_, ctx := formatFindings("a.py", findings, "", "Cursor", "sess-1")

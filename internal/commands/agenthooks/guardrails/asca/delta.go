@@ -205,7 +205,8 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, sessionID string) string {
 	provenance := optionalFlagsFragment(agentCursor, sessionID)
 	var suppressCmds strings.Builder
-	for _, f := range findings {
+	for i := range findings {
+		f := &findings[i]
 		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
 			FileName: f.FileName,
 			Line:     f.Line,

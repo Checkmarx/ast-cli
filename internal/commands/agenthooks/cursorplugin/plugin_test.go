@@ -39,3 +39,19 @@ func TestIgnoreVulnerabilityCommand_UnixEscapesJSON(t *testing.T) {
 		t.Errorf("expected backslash-escaped JSON on unix, got %q", cmd)
 	}
 }
+
+func TestEscapeJSONForPOSIX_EscapesEmbeddedQuotes(t *testing.T) {
+	got := escapeJSONForPOSIX(`{"FileName":"Demo.java"}`)
+	want := `{\"FileName\":\"Demo.java\"}`
+	if got != want {
+		t.Errorf("escapeJSONForPOSIX() = %q, want %q", got, want)
+	}
+}
+
+func TestEscapeJSONForPOSIX_NoQuotesUnchanged(t *testing.T) {
+	got := escapeJSONForPOSIX("no quotes here")
+	want := "no quotes here"
+	if got != want {
+		t.Errorf("escapeJSONForPOSIX() = %q, want %q", got, want)
+	}
+}

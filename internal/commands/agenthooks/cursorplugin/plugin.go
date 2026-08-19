@@ -25,11 +25,15 @@ const goosWindows = "windows"
 func IgnoreVulnerabilityCommand(cxBinary, scanType string, data []byte, ignoreFlag, provenance string) string {
 	if runtime.GOOS == goosWindows {
 		escaped := escapeJSONForStopParsing(string(data))
-		return fmt.Sprintf(`  & %q --%% ignore-vulnerability --scan-type %s --data "%s"%s%s`,
+		// escaped is already quote-escaped for PowerShell's double-quoted string rules;
+		// %q would re-escape it using Go's own rules (e.g. doubling backslashes) and corrupt it.
+		return fmt.Sprintf(`  & %q --%% ignore-vulnerability --scan-type %s --data "%s"%s%s`, //nolint:gocritic
 			cxBinary, scanType, escaped, ignoreFlag, provenance)
 	}
 	escaped := escapeJSONForPOSIX(string(data))
-	return fmt.Sprintf(`  %s ignore-vulnerability --scan-type %s --data "%s"%s%s`,
+	// escaped is already quote-escaped for the POSIX shell's double-quoted string rules;
+	// %q would re-escape it using Go's own rules (e.g. doubling backslashes) and corrupt it.
+	return fmt.Sprintf(`  %s ignore-vulnerability --scan-type %s --data "%s"%s%s`, //nolint:gocritic
 		cxBinary, scanType, escaped, ignoreFlag, provenance)
 }
 

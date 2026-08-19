@@ -108,7 +108,9 @@ func TestPathFor_EmptyWorkDirFallsBackToDefault(t *testing.T) {
 // rejects with "The filename, directory name, or volume label syntax is incorrect."
 func TestPathFor_NormalizesCursorPosixStyleWindowsRoot(t *testing.T) {
 	got := PathFor("/c:/MyProject/Test/JavaVulnerabilityLabE")
-	want := filepath.Join("c:/MyProject/Test/JavaVulnerabilityLabE", ".checkmarx", "checkmarxIgnoredTempList.json")
+	// The first argument intentionally already contains separators — it's the normalized
+	// workDir under test, not a literal misuse of filepath.Join.
+	want := filepath.Join("c:/MyProject/Test/JavaVulnerabilityLabE", ".checkmarx", "checkmarxIgnoredTempList.json") //nolint:gocritic
 	assert.Equal(t, want, got)
 }
 
