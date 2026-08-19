@@ -4,10 +4,11 @@ package cx
 
 import (
 	"encoding/json"
-	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
 	"strings"
 
@@ -589,8 +590,6 @@ func TestLogRemediationTelemetry(t *testing.T) {
 		}
 	})
 }
-
-
 
 // setEmptyHomeDir redirects the OS-specific home-dir env var to a fresh empty
 // temp directory so guardrail policy loading (~/.checkmarx/policyhooks.json)

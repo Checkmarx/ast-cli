@@ -561,3 +561,83 @@ func TestFormatFindings_ReturnsReasonAndContext(t *testing.T) {
 	assert.Contains(t, context, "ASCA detected vulnerabilities in a.py")
 	assert.Contains(t, context, "ignore-vulnerability")
 }
+
+// ── highestSeverity comprehensive coverage ──────────────────────────────────
+
+func TestHighestSeverity_Critical(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Medium"},
+		{Severity: "Critical"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Critical", got)
+}
+
+func TestHighestSeverity_High(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "High"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "High", got)
+}
+
+func TestHighestSeverity_Medium(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Medium"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Medium", got)
+}
+
+func TestHighestSeverity_Low(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Low", got)
+}
+
+func TestHighestSeverity_Empty(t *testing.T) {
+	got := highestSeverity(nil)
+	assert.Empty(t, got)
+}
+
+func TestHighestSeverity_UnknownSeverity_Ignored(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Unknown"},
+		{Severity: "Medium"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Medium", got)
+}
+
+func TestHighestSeverity_AllUnknown_ReturnsEmpty(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Unknown"},
+		{Severity: "Mysterious"},
+	}
+	got := highestSeverity(findings)
+	assert.Empty(t, got)
+}
+
+func TestHighestSeverity_CriticalAndHigh_CriticalWins(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "High"},
+		{Severity: "Critical"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Critical", got)
+}
+
+func TestHighestSeverity_MixedValidAndInvalid(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Invalid"},
+		{Severity: "High"},
+		{Severity: "Unknown"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "High", got)
+}
