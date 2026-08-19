@@ -332,7 +332,7 @@ func TestCxBeforeFileEdit_TotalFileSize_Rejects(t *testing.T) {
 
 func TestCxBeforeFileEdit_KICSFinding_RejectsWithContext(t *testing.T) {
 	resetHookGlobals(t)
-	kicsScanner = kics.NewScannerWithFunc(func(string) ([]iacrealtime.IacRealtimeResult, error) {
+	kicsScanner = kics.NewScannerWithFunc(func(string, string) ([]iacrealtime.IacRealtimeResult, error) {
 		return []iacrealtime.IacRealtimeResult{{
 			Title:        "Privileged Container",
 			SimilarityID: "sim123",
