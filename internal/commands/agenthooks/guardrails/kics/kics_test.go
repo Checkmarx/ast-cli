@@ -96,7 +96,7 @@ func makeResult(title, similarityID, severity, description string, line int) iac
 
 func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 	finding := makeResult("Privileged Container", "sim123", "HIGH", "Container runs as privileged", 5)
-	svc := NewScannerWithFunc(func(_ string) ([]iacrealtime.IacRealtimeResult, error) {
+	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
 		return []iacrealtime.IacRealtimeResult{finding}, nil
 	})
 
@@ -123,7 +123,7 @@ func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 
 func TestScanFileEdit_EditWithNoNewFindings_NotBlocked(t *testing.T) {
 	existingFinding := makeResult("Privileged Container", "sim123", "HIGH", "Container runs as privileged", 5)
-	svc := NewScannerWithFunc(func(_ string) ([]iacrealtime.IacRealtimeResult, error) {
+	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
 		// Both original and new have the same finding — delta is empty
 		return []iacrealtime.IacRealtimeResult{existingFinding}, nil
 	})
@@ -147,7 +147,7 @@ func TestScanFileEdit_EditWithNoNewFindings_NotBlocked(t *testing.T) {
 }
 
 func TestScanFileEdit_ScanError_FailOpen(t *testing.T) {
-	svc := NewScannerWithFunc(func(_ string) ([]iacrealtime.IacRealtimeResult, error) {
+	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
 		return nil, fmt.Errorf("docker daemon not running")
 	})
 
@@ -164,7 +164,7 @@ func TestScanFileEdit_ScanError_FailOpen(t *testing.T) {
 }
 
 func TestScanFileEdit_UnsupportedFile_NotBlocked(t *testing.T) {
-	svc := NewScannerWithFunc(func(_ string) ([]iacrealtime.IacRealtimeResult, error) {
+	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
 		t.Error("scan should not be called for unsupported file types")
 		return nil, nil
 	})
@@ -182,7 +182,7 @@ func TestScanFileEdit_UnsupportedFile_NotBlocked(t *testing.T) {
 }
 
 func TestScanFileEdit_EmptyNewContent_NotBlocked(t *testing.T) {
-	svc := NewScannerWithFunc(func(_ string) ([]iacrealtime.IacRealtimeResult, error) {
+	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
 		return nil, nil
 	})
 

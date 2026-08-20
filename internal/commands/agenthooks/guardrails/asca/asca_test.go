@@ -211,7 +211,7 @@ func TestStageForScan_DotDotOriginalPath_ReturnsError(t *testing.T) {
 }
 
 func TestStageForScan_FileMode(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		t.Skip("Unix permission bits (0600) are not enforced on Windows; validated on Linux/macOS CI")
 	}
 	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1", agenthooks.AgentID("test"))
@@ -337,6 +337,65 @@ func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *
 	ctx := additionalContext("main.py", "cx", nil, "", "Claude", "")
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_UsesPluginMCPTool(t *testing.T) {
+	ctx := cursorAdditionalContext("main.py", "cx", nil, "", "")
+	if !strings.Contains(ctx, "mcp__plugin-cx-devassist-Checkmarx__codeRemediation") {
+		t.Errorf("expected plugin-prefixed MCP tool, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_CursorSuppressCommandUsesStopParsingOnWindows(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "Demo.java", Line: 5, RuleID: 1027}}
+	ctx := cursorAdditionalContext("Demo.java", "cx", findings, "", "sess-1")
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
+			t.Errorf("expected PowerShell stop-parsing on windows, got %q", ctx)
+		}
+		if strings.Contains(ctx, `""FileName""`) {
+			t.Errorf("must not use doubled-quote escaping, got %q", ctx)
+		}
+		if !strings.Contains(ctx, `\"FileName\"`) {
+			t.Errorf("expected backslash-escaped JSON in stop-parsing form, got %q", ctx)
+		}
+	}
+}
+
+func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
+	got := cursorEscapeJSON(`{"FileName":"Demo.java"}`)
+	if runtime.GOOS == goosWindows {
+		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
+		// backslash is not a quote-escape there, so `\"` would corrupt the command.
+		want := `{""FileName"":""Demo.java""}`
+		if got != want {
+			t.Errorf("expected doubled-quote escaping on windows (PowerShell), got %q", got)
+		}
+	} else {
+		want := `{\"FileName\":\"Demo.java\"}`
+		if got != want {
+			t.Errorf("expected backslash-escaped quotes on unix (bash), got %q", got)
+		}
+	}
+}
+
+func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
+	_, ctx := formatFindings("a.py", findings, "", "Cursor", "sess-1")
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
+			t.Fatalf("cursor agent on windows should get stop-parsing suppress command, got %q", ctx)
+		}
+	} else if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data "`) {
+		t.Fatalf("cursor agent on unix should get double-quoted suppress command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "mcp__plugin-cx-devassist-Checkmarx__codeRemediation") {
+		t.Fatalf("cursor agent should get plugin MCP tool name, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", "Claude", "sess-1")
+	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data '`) {
+		t.Fatalf("claude agent should get single-quoted suppress command, got %q", ctx)
 	}
 }
 
