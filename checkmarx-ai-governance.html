@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkmarx AI Governance</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cx-dark:#0B0F1A;--cx-navy:#111827;--cx-card:#1A2235;--cx-border:#2A3550;
+  --cx-purple:#7C5CFC;--cx-purple-light:#A78BFA;--cx-teal:#22D3EE;--cx-teal-dim:#0E7490;
+  --cx-green:#10B981;--cx-amber:#F59E0B;--cx-red:#EF4444;
+  --cx-text:#F1F5F9;--cx-muted:#94A3B8;--cx-subtle:#475569;
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:#0B0F1A;color:var(--cx-text);display:flex;flex-direction:column;font-size:16px}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--cx-border);background:rgba(11,15,26,.95);position:sticky;top:0;z-index:100}
+.logo{font-size:19px;font-weight:700;display:flex;align-items:center;gap:6px}
+.logo span{color:var(--cx-purple)}
+.logo em{font-style:normal;font-size:13px;color:var(--cx-muted);font-weight:400;margin-left:4px}
+.slide-pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap;max-width:38%}
+.pill{width:7px;height:7px;border-radius:50%;background:var(--cx-border);cursor:pointer;transition:all .2s}
+.pill.active{background:var(--cx-purple);width:20px;border-radius:4px}
+.nav-btns{display:flex;gap:8px;align-items:center}
+.nav-btn{background:transparent;border:1px solid var(--cx-border);color:var(--cx-muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:14px;transition:all .15s}
+.nav-btn:hover{border-color:var(--cx-purple);color:var(--cx-text)}
+.nav-btn:disabled{opacity:.3;cursor:default}
+.slide-counter{font-size:13px;color:var(--cx-subtle);min-width:50px;text-align:center}
+
+.deck{flex:1;overflow:hidden;position:relative;min-height:0}
+.slide{display:none;position:absolute;inset:0;overflow:hidden;padding:clamp(18px,2.6vh,38px) clamp(24px,4vw,56px);animation:fadeIn .3s ease;flex-direction:column}
+.slide.active{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.slide-tag{font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--cx-purple);margin-bottom:8px}
+.slide-title{font-size:clamp(24px,3.1vw,36px);font-weight:700;line-height:1.15;letter-spacing:-.5px;margin-bottom:6px}
+.slide-subtitle{font-size:clamp(14.5px,1.5vw,16.5px);color:var(--cx-muted);line-height:1.55;margin-bottom:14px}
+.slide-body{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.4vh,18px);min-height:0}
+.card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:18px 22px}
+.highlight-box{background:rgba(124,92,252,.08);border:1px solid rgba(124,92,252,.25);border-radius:10px;padding:14px 18px;font-size:16px;line-height:1.6;color:var(--cx-text)}
+.highlight-box strong{color:var(--cx-purple-light)}
+.src-line{font-size:12px;color:var(--cx-subtle);text-align:center}
+.src-line a{color:var(--cx-subtle);text-decoration:underline}
+
+/* ── SLIDE 1 TITLE ── */
+#s1{justify-content:center;background:radial-gradient(ellipse 80% 60% at 70% 50%,#1e1250 0%,var(--cx-dark) 70%);overflow:hidden}
+.title-main{font-size:53px;font-weight:800;line-height:1.1;letter-spacing:-.8px;margin-bottom:20px}
+.title-main span{color:var(--cx-purple)}
+.title-desc{font-size:17px;color:var(--cx-muted);max-width:560px;line-height:1.7;margin-bottom:32px}
+.rapid-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(124,92,252,.13);border:1px solid rgba(124,92,252,.35);border-radius:8px;padding:10px 18px}
+.rapid-dot{width:8px;height:8px;border-radius:50%;background:var(--cx-purple);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.float-word{position:absolute;font-size:14px;font-weight:600;letter-spacing:.5px;pointer-events:none;white-space:nowrap;opacity:0}
+@keyframes wordFloat{0%{opacity:0;transform:translateY(0px)}15%{opacity:.55}80%{opacity:.55}100%{opacity:0;transform:translateY(-60px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.title-animate{animation:fadeUp .7s ease both}
+.title-animate:nth-child(1){animation-delay:.1s}
+.title-animate:nth-child(2){animation-delay:.3s}
+.title-animate:nth-child(3){animation-delay:.5s}
+
+/* ── SLIDE 2 TOC ── */
+#s2{background:var(--cx-dark)}
+.toc-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--cx-border);border-radius:12px;overflow:hidden;flex:1;max-height:560px}
+.toc-row{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--cx-border);cursor:pointer;transition:background .15s}
+.toc-row:last-child{border-bottom:none}
+.toc-row:hover{background:rgba(124,92,252,.06)}
+.toc-row:hover .toc-label{color:var(--cx-purple-light)}
+.toc-num{width:54px;text-align:center;font-size:12px;font-weight:700;color:var(--cx-subtle);padding:12px 0;border-right:1px solid var(--cx-border);flex-shrink:0}
+.toc-label{flex:1;font-size:15.5px;font-weight:500;padding:12px 20px;color:var(--cx-text);transition:color .15s}
+.toc-pg{font-size:13px;color:var(--cx-subtle);padding:12px 20px;flex-shrink:0}
+
+/* ── STAT TILES (S3) ── */
+@keyframes archFadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat-tile{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:20px 16px;text-align:center;opacity:0;animation:archFadeIn .5s ease forwards;animation-delay:var(--d,0s)}
+.stat-num{font-size:40px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.stat-label{font-size:14px;color:var(--cx-muted);line-height:1.4}
+.reg-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+.reg-chip{font-size:13px;font-weight:600;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,.05);border:1px solid var(--cx-border);color:var(--cx-muted)}
+
+/* ── MARKET LANDSCAPE (S4) ── */
+.land-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;flex:1}
+.land-card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.land-name{font-size:16.5px;font-weight:700}
+.land-meta{font-size:12px;color:var(--cx-subtle)}
+.land-desc{font-size:13.5px;color:var(--cx-muted);line-height:1.55}
+.tag-row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:5px;background:rgba(124,92,252,.12);color:var(--cx-purple-light)}
+.tag.teal{background:rgba(34,211,238,.1);color:var(--cx-teal)}
+.chip-cloud{display:flex;gap:6px;flex-wrap:wrap}
+.chip-cloud span{font-size:11.5px;padding:4px 9px;border-radius:5px;background:rgba(255,255,255,.05);color:var(--cx-muted);border:1px solid var(--cx-border)}
+
+/* ── WHY CHECKMARX SHOULD HAVE THIS (S5) ── */
+.why-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1}
+.why-card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:5px}
+.why-icon{font-size:21px}
+.why-title{font-size:14.5px;font-weight:700;color:var(--cx-purple-light)}
+.why-desc{font-size:13px;color:var(--cx-muted);line-height:1.5}
+
+/* ── BLIND SPOT (S6) ── */
+.blind-list{display:flex;flex-direction:column;gap:10px;flex:1}
+.blind-item{background:var(--cx-card);border:1px solid rgba(245,158,11,.22);border-left:3px solid var(--cx-amber);border-radius:0 10px 10px 0;padding:12px 18px;display:flex;gap:14px;align-items:flex-start}
+.blind-title{font-size:15px;font-weight:600;margin-bottom:3px}
+.blind-desc{font-size:13.5px;color:var(--cx-muted);line-height:1.5}
+
+/* ── CAPABILITY GRID (S7) ── */
+.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;flex:1}
+.cap-card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:16px 14px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center}
+.cap-card.first{border-color:rgba(124,92,252,.45);background:rgba(124,92,252,.1)}
+.cap-icon{font-size:23px}
+.cap-title{font-size:14px;font-weight:700}
+.cap-desc{font-size:12.5px;color:var(--cx-muted);line-height:1.5}
+
+/* ── PERSONA LIST (S8) ── */
+.persona-list{display:flex;flex-direction:column;gap:12px;flex:1;justify-content:center}
+.persona-row{display:flex;align-items:center;gap:18px;background:var(--cx-card);border:1px solid var(--cx-border);border-left:4px solid var(--cx-purple);border-radius:0 12px 12px 0;padding:16px 22px}
+.persona-row.muted{border-left-color:var(--cx-subtle);opacity:.62}
+.persona-icon-circle{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;background:rgba(124,92,252,.15)}
+.persona-text{flex:1}
+.persona-role{font-size:17px;font-weight:700;margin-bottom:3px}
+.persona-desc{font-size:14px;color:var(--cx-muted);line-height:1.5}
+.persona-priority{font-size:11.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:5px 13px;border-radius:20px;background:rgba(124,92,252,.14);color:var(--cx-purple-light);flex-shrink:0;white-space:nowrap}
+.persona-priority.low{background:rgba(255,255,255,.06);color:var(--cx-muted)}
+
+/* ── HOW IT WORKS FLOW (S9) ── */
+#s9{background:var(--cx-dark)}
+@keyframes nodeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.flow-node-anim{opacity:0;animation:nodeIn .5s ease forwards}
+@keyframes glowPurple{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(167,139,250,.9);color:#A78BFA}}
+@keyframes glowTeal{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(34,211,238,.9);color:#22D3EE}}
+@keyframes glowGreen{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(16,185,129,.9);color:#10B981}}
+@keyframes glowAmber{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(245,158,11,.9);color:#F59E0B}}
+
+/* ── COMPLIANCE (S10) ── */
+.fw-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1}
+.fw-card{background:linear-gradient(160deg,var(--cx-card) 0%,rgba(124,92,252,.06) 100%);border:1px solid var(--cx-border);border-radius:14px;padding:22px 26px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden}
+.fw-card::before{content:'';position:absolute;top:0;left:0;width:5px;height:100%;background:var(--cx-purple)}
+.fw-card.teal{background:linear-gradient(160deg,var(--cx-card) 0%,rgba(34,211,238,.06) 100%)}
+.fw-card.teal::before{background:var(--cx-teal)}
+.fw-head{display:flex;align-items:center;gap:16px}
+.fw-icon{font-size:30px;flex-shrink:0}
+.fw-name{font-size:20px;font-weight:700;color:var(--cx-purple-light);margin-bottom:2px}
+.fw-count{font-size:34px;font-weight:800;line-height:1;color:var(--cx-purple-light)}
+.fw-card.teal .fw-count{color:var(--cx-teal)}
+.fw-count-label{font-size:11.5px;color:var(--cx-subtle);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.fw-why{font-size:13px;color:var(--cx-muted);line-height:1.55}
+.fw-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:2px}
+.fw-list-item{display:flex;align-items:baseline;gap:7px;font-size:13px}
+.fw-list-item .chk{color:var(--cx-green);font-weight:700;flex-shrink:0}
+.fw-list-item .code{font-weight:700;color:var(--cx-purple-light);white-space:nowrap}
+.fw-card.teal .fw-list-item .code{color:var(--cx-teal)}
+.fw-list-item .label{color:var(--cx-muted)}
+.principle-strip{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:10px;padding:12px 22px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.principle-mini{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--cx-muted);flex:1}
+.principle-mini .picon{font-size:17px;flex-shrink:0}
+.principle-mini strong{color:var(--cx-text);font-weight:700}
+.principle-div{width:1px;height:28px;background:var(--cx-border);flex-shrink:0}
+
+/* ── ROADMAP (S11) ── */
+.road-line-row{position:relative;height:22px;margin:4px 50px 4px}
+.road-line-row::before{content:'';position:absolute;top:9px;left:0;right:0;height:2px;background:linear-gradient(90deg,#7C5CFC,#22D3EE,#10B981);opacity:.6}
+.road-dots{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between}
+.road-dot{width:20px;height:20px;border-radius:50%;border:3px solid var(--cx-dark);display:flex;align-items:center;justify-content:center;font-size:11px;background:var(--cx-purple)}
+.road-dot:nth-child(2){background:var(--cx-teal)}
+.road-dot:nth-child(3){background:var(--cx-green)}
+.road-row{display:flex;gap:14px;flex:1;align-items:stretch;margin:0 30px}
+.road-card{flex:1;background:var(--cx-card);border:1px solid var(--cx-border);border-top:3px solid var(--cx-purple);border-radius:4px 4px 12px 12px;padding:16px;display:flex;flex-direction:column;gap:7px}
+.road-card:nth-child(2){border-top-color:var(--cx-teal)}
+.road-card:nth-child(3){border-top-color:var(--cx-green)}
+.road-num{font-size:11.5px;font-weight:700;color:var(--cx-subtle);letter-spacing:1px}
+.road-icon{font-size:21px}
+.road-title{font-size:16px;font-weight:700;color:var(--cx-purple-light)}
+.road-desc{font-size:13.5px;color:var(--cx-muted);line-height:1.5}
+.road-why{font-size:12px;font-weight:600;color:var(--cx-teal);margin-top:auto;padding-top:6px;border-top:1px solid var(--cx-border)}
+
+/* ── Q&A (S12) ── */
+#s12{justify-content:center;align-items:center;text-align:center;background:radial-gradient(ellipse 60% 50% at 50% 50%,#1a1060 0%,var(--cx-dark) 70%)}
+.qa-title{font-size:65px;font-weight:800;letter-spacing:-1px;margin-bottom:16px}
+.qa-title span{color:var(--cx-purple)}
+.qa-sub{font-size:18px;color:var(--cx-muted)}
+
+footer{padding:10px clamp(24px,4vw,56px);border-top:1px solid var(--cx-border);display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--cx-subtle);flex-shrink:0}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Checkmar<span>×</span><em>AI Governance</em></div>
+  <div class="slide-pills" id="pills"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="slide-counter" id="counter">1 / 12</span>
+    <div class="nav-btns">
+      <button class="nav-btn" id="prev" onclick="go(-1)">← Prev</button>
+      <button class="nav-btn" id="next" onclick="go(1)">Next →</button>
+    </div>
+  </div>
+</nav>
+
+<div class="deck">
+
+<!-- ── SLIDE 1: TITLE ── -->
+<div class="slide active" id="s1">
+  <div id="float-container" style="position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
+  <svg style="position:absolute;right:0;top:0;bottom:0;width:45%;height:100%;opacity:.12;pointer-events:none" viewBox="0 0 400 500" fill="none">
+    <rect x="60" y="40" width="280" height="420" rx="16" stroke="#7C5CFC" stroke-width="1"/>
+    <line x1="60" y1="100" x2="340" y2="100" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="160" x2="340" y2="160" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="220" x2="340" y2="220" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="280" x2="340" y2="280" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="340" x2="340" y2="340" stroke="#7C5CFC" stroke-width=".5"/>
+    <rect x="80" y="115" width="80" height="28" rx="5" fill="#7C5CFC" opacity=".4"/>
+    <rect x="175" y="115" width="120" height="28" rx="5" fill="#22D3EE" opacity=".3"/>
+    <rect x="80" y="175" width="120" height="28" rx="5" fill="#22D3EE" opacity=".25"/>
+    <rect x="215" y="175" width="60" height="28" rx="5" fill="#7C5CFC" opacity=".3"/>
+    <rect x="80" y="235" width="60" height="28" rx="5" fill="#10B981" opacity=".3"/>
+    <rect x="155" y="235" width="100" height="28" rx="5" fill="#7C5CFC" opacity=".25"/>
+    <circle cx="200" cy="70" r="14" stroke="#7C5CFC" stroke-width="1.2"/>
+    <path d="M194 70l4 4 8-8" stroke="#22D3EE" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div style="max-width:640px;z-index:1;margin:auto 0">
+    <div class="title-main title-animate">Checkmarx<br>AI <span>Governance</span></div>
+    <div class="title-desc title-animate">Governing what AI coding agents do — in real time, with proof for every decision.</div>
+    <div class="title-animate" style="margin-top:28px">
+      <div class="rapid-badge">
+        <div class="rapid-dot"></div>
+        <span style="font-size:14px;font-weight:700;color:var(--cx-purple-light);letter-spacing:.5px">Real-Time Enforcement · Full Audit Trail · Compliance-Ready</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 2: TOC ── -->
+<div class="slide" id="s2">
+  <div class="slide-title" style="margin-bottom:20px">Table of Contents</div>
+  <div class="toc-list" style="flex:none">
+    <div class="toc-row" onclick="jumpTo(3)"><div class="toc-num">01</div><div style="width:8px;height:8px;border-radius:50%;background:#7C5CFC;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Why This Matters Now</div><div class="toc-pg">3 →</div></div>
+    <div class="toc-row" onclick="jumpTo(4)"><div class="toc-num">02</div><div style="width:8px;height:8px;border-radius:50%;background:#7C5CFC;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Market Landscape</div><div class="toc-pg">4 →</div></div>
+    <div class="toc-row" onclick="jumpTo(5)"><div class="toc-num">03</div><div style="width:8px;height:8px;border-radius:50%;background:#7C5CFC;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Why Checkmarx Should Have This</div><div class="toc-pg">5 →</div></div>
+    <div class="toc-row" onclick="jumpTo(6)"><div class="toc-num">04</div><div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;margin:0 16px;flex-shrink:0"></div><div class="toc-label">The Governance Blind Spot</div><div class="toc-pg">6 →</div></div>
+    <div class="toc-row" onclick="jumpTo(7)"><div class="toc-num">05</div><div style="width:8px;height:8px;border-radius:50%;background:#22D3EE;margin:0 16px;flex-shrink:0"></div><div class="toc-label">What We Deliver</div><div class="toc-pg">7 →</div></div>
+    <div class="toc-row" onclick="jumpTo(8)"><div class="toc-num">06</div><div style="width:8px;height:8px;border-radius:50%;background:#22D3EE;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Who We Serve</div><div class="toc-pg">8 →</div></div>
+    <div class="toc-row" onclick="jumpTo(9)"><div class="toc-num">07</div><div style="width:8px;height:8px;border-radius:50%;background:#10B981;margin:0 16px;flex-shrink:0"></div><div class="toc-label">How It Works</div><div class="toc-pg">9 →</div></div>
+    <div class="toc-row" onclick="jumpTo(10)"><div class="toc-num">08</div><div style="width:8px;height:8px;border-radius:50%;background:#10B981;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Compliance</div><div class="toc-pg">10 →</div></div>
+    <div class="toc-row" onclick="jumpTo(11)"><div class="toc-num">09</div><div style="width:8px;height:8px;border-radius:50%;background:#475569;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Roadmap</div><div class="toc-pg">11 →</div></div>
+    <div class="toc-row" onclick="jumpTo(12)"><div class="toc-num">10</div><div style="width:8px;height:8px;border-radius:50%;background:#475569;margin:0 16px;flex-shrink:0"></div><div class="toc-label">Q&amp;A</div><div class="toc-pg">12 →</div></div>
+  </div>
+</div>
+
+<!-- ── SLIDE 3: WHY NOW ── -->
+<div class="slide" id="s3">
+  <div class="slide-title" style="margin-bottom:6px">Why This Matters Now</div>
+  <div class="slide-subtitle">AI coding agents are already in production. Governance hasn't caught up.</div>
+  <div class="slide-body" style="justify-content:center;gap:12px">
+    <div class="stat-grid">
+      <div class="stat-tile" style="--d:.05s"><div class="stat-num" style="color:var(--cx-teal)">96%</div><div class="stat-label">of organizations already run AI agents in production</div></div>
+      <div class="stat-tile" style="--d:.2s"><div class="stat-num" style="color:var(--cx-red)">21%</div><div class="stat-label">have a mature governance model for them</div></div>
+      <div class="stat-tile" style="--d:.35s"><div class="stat-num" style="color:var(--cx-amber)">53%</div><div class="stat-label">have seen agents exceed their intended permissions</div></div>
+      <div class="stat-tile" style="--d:.5s"><div class="stat-num" style="color:var(--cx-red)">47%</div><div class="stat-label">faced a security incident from an AI agent in 12 months</div></div>
+    </div>
+    <div class="highlight-box" style="text-align:center">The gap isn't awareness — it's <strong>enforcement</strong>. Everyone agrees governance matters; almost nobody has turned that into a runtime control.</div>
+    <div class="reg-row">
+      <span class="reg-chip">EU AI Act</span>
+      <span class="reg-chip">SOC2</span>
+      <span class="reg-chip">ISO 42001</span>
+      <span class="reg-chip">NIST AI RMF</span>
+    </div>
+    <div class="src-line">Sources: <a href="https://omnithium.ai/blog/ai-agent-compliance-soc2-iso-eu-ai-act.html" target="_blank">Omnithium — AI Agent Compliance</a> · <a href="https://www.miniorange.com/blog/ai-agent-compliance-challenges/" target="_blank">MiniOrange — AI Agent Compliance Challenges</a></div>
+  </div>
+</div>
+
+<!-- ── SLIDE 4: MARKET LANDSCAPE ── -->
+<div class="slide" id="s4">
+  <div class="slide-title" style="margin-bottom:4px">Market Landscape</div>
+  <div class="slide-subtitle">A fast-moving, converging category — not a blue ocean.</div>
+  <div class="land-grid">
+    <div class="land-card">
+      <div class="land-name" style="color:var(--cx-purple-light)">Snyk</div>
+      <div class="land-meta">Agent Security · Evo ADS · Evo AI-SPM (GA, RSAC 2026)</div>
+      <div class="land-desc">Real-time policy enforcement on AI agents in the workflow.</div>
+      <div class="tag-row">
+        <span class="tag">Blocks destructive actions</span>
+        <span class="tag">Governs tool &amp; system access</span>
+        <span class="tag">AI-SPM posture mgmt</span>
+        <span class="tag">Workflow-embedded enforcement</span>
+      </div>
+    </div>
+    <div class="land-card">
+      <div class="land-name" style="color:var(--cx-teal)">Endor Labs</div>
+      <div class="land-meta">Agent Governance · AURI platform</div>
+      <div class="land-desc">Visibility and enforcement over what agents integrate, run, and produce.</div>
+      <div class="tag-row">
+        <span class="tag teal">Block / Allow / Audit</span>
+        <span class="tag teal">Prompt &amp; command control</span>
+        <span class="tag teal">Sensitive file/dir access control</span>
+        <span class="tag teal">Workstation + cloud coverage</span>
+        <span class="tag teal">System of record</span>
+      </div>
+    </div>
+    <div class="land-card">
+      <div class="land-name">Wider Market</div>
+      <div class="land-meta">8–11+ named platforms · dozens more adjacent</div>
+      <div class="land-desc">Most launched in 2026 — this category formed almost overnight.</div>
+      <div class="chip-cloud">
+        <span>Microsoft</span><span>Palo Alto Networks</span><span>CrowdStrike</span><span>Zenity</span><span>Noma</span><span>WitnessAI</span><span>Cisco AI Defense</span><span>Credo AI</span><span>Protect AI</span><span>HiddenLayer</span><span>Lakera</span>
+      </div>
+    </div>
+  </div>
+  <div class="src-line">Sources: <a href="https://snyk.io/news/snyk-launches-agent-security-solution/" target="_blank">Snyk — Agent Security launch</a> · <a href="https://www.endorlabs.com/ai-coding-agent-governance" target="_blank">Endor Labs — AI Coding Agent Governance</a></div>
+</div>
+
+<!-- ── SLIDE 5: WHY CHECKMARX SHOULD HAVE THIS ── -->
+<div class="slide" id="s5">
+  <div class="slide-title" style="margin-bottom:4px">Why Checkmarx Should Have This</div>
+  <div class="slide-subtitle">The business case, not a feature checklist.</div>
+  <div class="why-grid">
+    <div class="why-card"><div class="why-icon">🛂</div><div class="why-title">Skips a New Vendor Risk Review</div><div class="why-desc">Extending an already-approved vendor avoids the months of procurement and security vetting a brand-new point tool requires.</div></div>
+    <div class="why-card"><div class="why-icon">🧬</div><div class="why-title">One Correlated Risk Picture</div><div class="why-desc">Only Checkmarx can connect the code vulnerability (SAST/SCA) to the agent behavior that introduced it — not two disconnected dashboards.</div></div>
+    <div class="why-card"><div class="why-icon">💰</div><div class="why-title">Protects Existing Contract Value</div><div class="why-desc">If a competitor closes this gap first, the AppSec budget line risks shifting to their broader platform instead of expanding with Checkmarx.</div></div>
+    <div class="why-card"><div class="why-icon">🚀</div><div class="why-title">Weeks to Value, Not a New Project</div><div class="why-desc">Rides on IDE and CI/CD integrations already deployed — no new infrastructure project required to go live.</div></div>
+    <div class="why-card"><div class="why-icon">⏱️</div><div class="why-title">Rides the Regulatory Deadline</div><div class="why-desc">EU AI Act enforcement is landing now — being early with existing customers turns a compliance deadline into a renewal conversation.</div></div>
+    <div class="why-card"><div class="why-icon">📈</div><div class="why-title">Land-and-Expand, Friction-Free</div><div class="why-desc">Every existing seat becomes a wedge into a net-new governance budget line, with no new vendor evaluation cycle.</div></div>
+  </div>
+</div>
+
+<!-- ── SLIDE 6: BLIND SPOT ── -->
+<div class="slide" id="s6">
+  <div class="slide-tag">The Reality Today</div>
+  <div class="slide-title">The Governance Blind Spot</div>
+  <div class="slide-subtitle">These aren't exotic attacks — they're ordinary agent behavior, unwatched.</div>
+  <div class="blind-list">
+    <div class="blind-item"><div style="font-size:17px;margin-top:1px">🔓</div><div><div class="blind-title">Credentials leak unnoticed</div><div class="blind-desc">An agent reads a <code style="color:var(--cx-teal)">.env</code> file and prints secrets into a chat log — no block, no alert, no record it ever happened.</div></div></div>
+    <div class="blind-item"><div style="font-size:17px;margin-top:1px">❓</div><div><div class="blind-title">"What did the agent actually do?" — no answer</div><div class="blind-desc">Only violations get tracked, not the full sequence of prompts, tool calls, and decisions across a session.</div></div></div>
+    <div class="blind-item"><div style="font-size:17px;margin-top:1px">🧾</div><div><div class="blind-title">Audits ask for oversight proof — none exists</div><div class="blind-desc">No record of whether a human ever reviewed a risky decision, or who.</div></div></div>
+    <div class="blind-item"><div style="font-size:17px;margin-top:1px">🔌</div><div><div class="blind-title">Unapproved tools invoked silently</div><div class="blind-desc">No inventory of what capabilities and MCP tools an agent even had access to.</div></div></div>
+  </div>
+  <div class="highlight-box">Governance without full activity tracking and auditing is just a rule that fires <strong>in the dark</strong>.</div>
+</div>
+
+<!-- ── SLIDE 7: WHAT WE DELIVER ── -->
+<div class="slide" id="s7">
+  <div class="slide-title" style="margin-bottom:14px">What We Deliver</div>
+  <div class="cap-grid">
+    <div class="cap-card first"><div class="cap-icon">🎬</div><div class="cap-title">Session Tracking</div><div class="cap-desc">Every session, prompt &amp; tool call recorded — the source of truth used for real-time monitoring</div></div>
+    <div class="cap-card"><div class="cap-icon">⛔</div><div class="cap-title">Real-Time Enforcement</div><div class="cap-desc">Allow / Alert / Block, as it happens</div></div>
+    <div class="cap-card"><div class="cap-icon">📝</div><div class="cap-title">Violation Tracking</div><div class="cap-desc">Full context on every decision</div></div>
+    <div class="cap-card"><div class="cap-icon">👥</div><div class="cap-title">Human Oversight</div><div class="cap-desc">Segregated reviewer, enforced server-side</div></div>
+    <div class="cap-card"><div class="cap-icon">🧭</div><div class="cap-title">Skills &amp; MCP Discovery</div><div class="cap-desc">Inventory of what agents can reach</div></div>
+    <div class="cap-card"><div class="cap-icon">🛰️</div><div class="cap-title">Third-Party Detection</div><div class="cap-desc">Sees other enforcement already in place</div></div>
+    <div class="cap-card"><div class="cap-icon">🗄️</div><div class="cap-title">Immutable Audit Trail</div><div class="cap-desc">Every action, attributable, permanent</div></div>
+    <div class="cap-card"><div class="cap-icon">🔗</div><div class="cap-title">Auto Compliance Mapping</div><div class="cap-desc">Policies mapped to controls on creation</div></div>
+    <div class="cap-card"><div class="cap-icon">🔄</div><div class="cap-title">Full Policy Lifecycle</div><div class="cap-desc">Versioned, attributed, always auditable</div></div>
+  </div>
+</div>
+
+<!-- ── SLIDE 8: WHO WE SERVE ── -->
+<div class="slide" id="s8">
+  <div class="slide-title" style="margin-bottom:16px">Who We Serve</div>
+  <div class="persona-list">
+    <div class="persona-row" style="border-left-color:var(--cx-teal)">
+      <div class="persona-icon-circle" style="background:rgba(34,211,238,.14)">🛡️</div>
+      <div class="persona-text"><div class="persona-role">AppSec / Security Engineers</div><div class="persona-desc">Real-time detection and blocking, not after-the-fact scanning</div></div>
+      <div class="persona-priority">Primary</div>
+    </div>
+    <div class="persona-row" style="border-left-color:var(--cx-green)">
+      <div class="persona-icon-circle" style="background:rgba(16,185,129,.14)">📋</div>
+      <div class="persona-text"><div class="persona-role">Compliance / Governance Teams</div><div class="persona-desc">Evidence that oversight and logging obligations are actually met</div></div>
+      <div class="persona-priority">Primary</div>
+    </div>
+    <div class="persona-row">
+      <div class="persona-icon-circle">🎯</div>
+      <div class="persona-text"><div class="persona-role">CISOs / Risk Leaders</div><div class="persona-desc">Scale AI agent adoption without risk outpacing controls</div></div>
+      <div class="persona-priority">Primary</div>
+    </div>
+    <div class="persona-row muted">
+      <div class="persona-icon-circle" style="background:rgba(255,255,255,.06)">💻</div>
+      <div class="persona-text"><div class="persona-role">Developers</div><div class="persona-desc">Not the primary concern — governance runs quietly in the background</div></div>
+      <div class="persona-priority low">Secondary</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 9: HOW IT WORKS ── -->
+<div class="slide" id="s9">
+  <div class="slide-title" style="margin-bottom:4px">How It Works</div>
+  <div class="slide-subtitle" style="margin-bottom:10px">Every action is watched, checked, and recorded — instantly, without slowing anyone down.</div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center">
+    <svg viewBox="0 0 1180 190" width="100%" style="max-height:100%;overflow:visible">
+      <defs>
+        <marker id="arrH" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <g class="flow-node-anim" style="animation-delay:.05s">
+        <rect x="0" y="35" width="205" height="90" rx="10" fill="rgba(124,92,252,.14)" stroke="rgba(124,92,252,.4)" stroke-width="1"/>
+        <text x="102" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite">🤖 AI Coding Agent</text>
+        <text x="102" y="94" text-anchor="middle" font-size="12" fill="#94A3B8">Every action the agent takes</text>
+      </g>
+      <line x1="207" y1="80" x2="248" y2="80" stroke="#475569" stroke-width="1.3" marker-end="url(#arrH)"/>
+      <text x="227" y="72" text-anchor="middle" font-size="11.5" fill="#475569">watches</text>
+
+      <g class="flow-node-anim" style="animation-delay:.25s">
+        <rect x="250" y="20" width="205" height="90" rx="10" fill="rgba(34,211,238,.08)" stroke="rgba(34,211,238,.35)" stroke-width="1"/>
+        <text x="352" y="57" text-anchor="middle" font-size="16" font-weight="700" fill="#22D3EE" style="animation:glowTeal 2.4s ease-in-out infinite .3s">👁️ Continuous Oversight</text>
+        <text x="352" y="79" text-anchor="middle" font-size="12" fill="#94A3B8">Watches every action, real time</text>
+      </g>
+      <line x1="457" y1="65" x2="498" y2="65" stroke="#475569" stroke-width="1.3" marker-end="url(#arrH)"/>
+      <text x="477" y="57" text-anchor="middle" font-size="11.5" fill="#475569">checks</text>
+
+      <g class="flow-node-anim" style="animation-delay:.45s">
+        <rect x="500" y="35" width="205" height="90" rx="10" fill="rgba(245,158,11,.08)" stroke="rgba(245,158,11,.35)" stroke-width="1"/>
+        <text x="602" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#F59E0B" style="animation:glowAmber 2.4s ease-in-out infinite .6s">⚖️ Policy Decision</text>
+        <text x="602" y="94" text-anchor="middle" font-size="12" fill="#94A3B8">Allow / Flag / Block — instantly</text>
+      </g>
+      <line x1="707" y1="80" x2="748" y2="80" stroke="#475569" stroke-width="1.3" marker-end="url(#arrH)"/>
+      <text x="727" y="72" text-anchor="middle" font-size="11.5" fill="#475569">records</text>
+
+      <g class="flow-node-anim" style="animation-delay:.65s">
+        <rect x="750" y="20" width="215" height="90" rx="10" fill="rgba(16,185,129,.08)" stroke="rgba(16,185,129,.35)" stroke-width="1"/>
+        <text x="857" y="57" text-anchor="middle" font-size="16" font-weight="700" fill="#10B981" style="animation:glowGreen 2.4s ease-in-out infinite .9s">🗄️ Central Record</text>
+        <text x="857" y="79" text-anchor="middle" font-size="12" fill="#94A3B8">Tamper-proof evidence log</text>
+      </g>
+      <line x1="967" y1="65" x2="1008" y2="65" stroke="#475569" stroke-width="1.3" marker-end="url(#arrH)"/>
+      <text x="987" y="57" text-anchor="middle" font-size="11.5" fill="#475569">shows</text>
+
+      <g class="flow-node-anim" style="animation-delay:.85s">
+        <rect x="1010" y="35" width="170" height="90" rx="10" fill="rgba(124,92,252,.12)" stroke="rgba(124,92,252,.35)" stroke-width="1"/>
+        <text x="1095" y="66" text-anchor="middle" font-size="15" font-weight="700" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite 1.1s">📊 Dashboard</text>
+        <text x="1095" y="86" text-anchor="middle" font-size="11.5" fill="#94A3B8">Security &amp; leadership,</text>
+        <text x="1095" y="100" text-anchor="middle" font-size="11.5" fill="#94A3B8">visibility live</text>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<!-- ── SLIDE 10: COMPLIANCE ── -->
+<div class="slide" id="s10">
+  <div class="slide-title" style="margin-bottom:4px">Compliance</div>
+  <div class="slide-subtitle" style="margin-bottom:10px">Evidence, not blended scores — only an auditor can claim compliance.</div>
+  <div class="fw-grid">
+    <div class="fw-card">
+      <div class="fw-head">
+        <span class="fw-icon">🛡️</span>
+        <div><div class="fw-name">SOC2</div></div>
+        <div style="margin-left:auto;text-align:right"><div class="fw-count">7</div><div class="fw-count-label">Controls Live</div></div>
+      </div>
+      <div class="fw-why">Trust Services Criteria — proves access, monitoring, and change control are actually enforced, not just documented.</div>
+      <div class="fw-list">
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC6.1</span><span class="label">Access</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC6.6</span><span class="label">Boundary</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC6.7</span><span class="label">Data Transmission</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC7.1</span><span class="label">Anomaly Detection</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC7.2</span><span class="label">Event Review</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC8.1</span><span class="label">Change Mgmt</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">CC9.2</span><span class="label">Third-Party Risk</span></div>
+      </div>
+    </div>
+    <div class="fw-card teal">
+      <div class="fw-head">
+        <span class="fw-icon">⚖️</span>
+        <div><div class="fw-name" style="color:var(--cx-teal)">EU AI Act</div></div>
+        <div style="margin-left:auto;text-align:right"><div class="fw-count">3</div><div class="fw-count-label">Obligations Live</div></div>
+      </div>
+      <div class="fw-why">Deployer obligations — proves a human oversaw high-risk decisions and every action was logged.</div>
+      <div class="fw-list" style="grid-template-columns:1fr">
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">Art.12</span><span class="label">Record-Keeping</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">Art.14</span><span class="label">Human Oversight</span></div>
+        <div class="fw-list-item"><span class="chk">✓</span><span class="code">Art.26</span><span class="label">Deployer Obligations</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="principle-strip">
+    <div class="principle-mini"><span class="picon">⏱️</span><span><strong>Always Current</strong> — recalculates automatically, never an audit scramble</span></div>
+    <div class="principle-div"></div>
+    <div class="principle-mini"><span class="picon">🔗</span><span><strong>Fully Traceable</strong> — every count links to the decision behind it</span></div>
+    <div class="principle-div"></div>
+    <div class="principle-mini"><span class="picon">🚫</span><span><strong>No Blended Score</strong> — raw counts only, the auditor's call to make</span></div>
+  </div>
+</div>
+
+<!-- ── SLIDE 11: ROADMAP ── -->
+<div class="slide" id="s11">
+  <div class="slide-title" style="margin-bottom:2px">Roadmap</div>
+  <div class="slide-subtitle" style="margin-bottom:0">What's next, and why it moves the needle.</div>
+  <div class="road-line-row">
+    <div class="road-dots"><div class="road-dot"></div><div class="road-dot"></div><div class="road-dot"></div></div>
+  </div>
+  <div class="road-row">
+    <div class="road-card">
+      <div class="road-icon">💬</div>
+      <div class="road-title">Natural Language Policies</div>
+      <div class="road-desc">Describe intent in plain English — "block access to files with credit card numbers" — and get back an enforceable policy automatically, no schema to learn.</div>
+      <div class="road-why">Why it matters: policy authoring drops from hours to minutes</div>
+    </div>
+    <div class="road-card">
+      <div class="road-icon">🔌</div>
+      <div class="road-title">Hooks for Other Agents</div>
+      <div class="road-desc">The same real-time enforcement model, extended to other AI coding agents and IDEs beyond today's integration.</div>
+      <div class="road-why">Why it matters: one governance layer, every agent adopted</div>
+    </div>
+    <div class="road-card">
+      <div class="road-icon">🧠</div>
+      <div class="road-title">Capturing User Intent</div>
+      <div class="road-desc">Tell routine work apart from a prompt-injection or jailbreak attempt that looks identical on the surface.</div>
+      <div class="road-why">Why it matters: policy responds to the "why," not just the "what"</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 12: Q&A ── -->
+<div class="slide" id="s12">
+  <div class="qa-title">Any <span>Questions?</span></div>
+  <div class="qa-sub">Checkmarx AI Governance — Governing AI Agents. Providing Proof.</div>
+</div>
+
+</div><!-- /deck -->
+
+<footer>
+  <span>Checkmar<strong style="color:var(--cx-purple)">×</strong> · AI Governance</span>
+  <span id="footer-slide">Slide 1 of 12</span>
+  <span>Real-Time. Auditable. Compliant.</span>
+</footer>
+
+<script>
+(function(){
+  const words=[
+    {text:'Governance', color:'#A78BFA'},
+    {text:'Policy',      color:'#22D3EE'},
+    {text:'Compliance',  color:'#7C5CFC'},
+    {text:'Audit',       color:'#10B981'},
+    {text:'Real-Time',   color:'#7C5CFC'},
+    {text:'Oversight',   color:'#A78BFA'},
+    {text:'Trust',       color:'#22D3EE'},
+  ];
+  const container=document.getElementById('float-container');
+  let idx=0;
+  function spawn(){
+    const w=words[idx%words.length];idx++;
+    const el=document.createElement('div');
+    el.className='float-word';
+    el.textContent=w.text;
+    el.style.color=w.color;
+    const xPct=58+Math.random()*30;
+    const yPct=10+Math.random()*75;
+    el.style.left=xPct+'%';
+    el.style.top=yPct+'%';
+    const dur=3200+Math.random()*2000;
+    el.style.animation=`wordFloat ${dur}ms ease forwards`;
+    container.appendChild(el);
+    setTimeout(()=>el.remove(), dur+100);
+  }
+  for(let i=0;i<5;i++) setTimeout(spawn, i*400);
+  setInterval(()=>{ if(document.getElementById('s1').classList.contains('active')) spawn(); },900);
+})();
+
+const total=12;let cur=1;
+const pills=document.getElementById('pills');
+for(let i=1;i<=total;i++){const p=document.createElement('div');p.className='pill'+(i===1?' active':'');p.onclick=()=>jumpTo(i);pills.appendChild(p);}
+function jumpTo(n){
+  document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.pill').forEach((p,i)=>p.classList.toggle('active',i===n-1));
+  document.getElementById('s'+n).classList.add('active');
+  document.getElementById('counter').textContent=n+' / '+total;
+  document.getElementById('footer-slide').textContent='Slide '+n+' of '+total;
+  document.getElementById('prev').disabled=n===1;
+  document.getElementById('next').disabled=n===total;
+  cur=n;
+  if(n===9){
+    document.querySelectorAll('#s9 .flow-node-anim').forEach(el=>{
+      el.style.animation='none';el.style.opacity='0';
+      void el.offsetWidth;el.style.animation='';
+    });
+  }
+  if(n===3){
+    document.querySelectorAll('#s3 .stat-tile').forEach(el=>{
+      el.style.animation='none';el.style.opacity='0';
+      void el.offsetWidth;el.style.animation='';
+    });
+  }
+}
+function go(d){jumpTo(Math.max(1,Math.min(total,cur+d)));}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')go(1);if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(-1);});
+jumpTo(1);
+</script>
+</body>
+</html>

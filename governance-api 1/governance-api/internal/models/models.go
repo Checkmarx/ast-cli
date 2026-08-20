@@ -19,6 +19,8 @@ type Policy struct {
 	Description      string     `json:"description"      db:"description"`
 	CurrentVersionID *uuid.UUID `json:"currentVersionId" db:"current_version_id"`
 	Status           string     `json:"status"           db:"status"`
+	PolicyType       string     `json:"policyType"       db:"policy_type"` // "governance" | "pii" | "third_party_monitor"
+	DeletedAt        *time.Time `json:"deletedAt"        db:"deleted_at"`
 	CreatedAt        time.Time  `json:"createdAt"        db:"created_at"`
 	UpdatedAt        time.Time  `json:"updatedAt"        db:"updated_at"`
 }
@@ -37,20 +39,36 @@ type PolicyVersion struct {
 // GovernancePack is the policy-pack.json format delivered to cx and stored in
 // policy_versions.definition (architecture §5.9).
 type GovernancePack struct {
-	PackVersion int          `json:"packVersion"`
-	Policies    []PackPolicy `json:"policies"`
-	UpdatedAt   time.Time    `json:"updatedAt"`
+	PackVersion int           `json:"packVersion"`
+	Policies    []PackPolicy  `json:"policies"`
+	PIIPolicy   *PIIPolicyDef `json:"pii_policy,omitempty"`
+	UpdatedAt   time.Time     `json:"updatedAt"`
+}
+
+// PIIPolicyDef is the PII detection config served inside GovernancePack.
+// Mirrors the PIIPolicy struct in the cx governance package.
+type PIIPolicyDef struct {
+	Enabled        bool               `json:"enabled"`
+	Action         string             `json:"action"` // "alert" | "block"
+	BuiltIn        []string           `json:"built_in"`
+	CustomPatterns []PIICustomPattern `json:"custom_patterns,omitempty"`
+}
+
+type PIICustomPattern struct {
+	Name    string `json:"name"`
+	Pattern string `json:"pattern"`
+	Action  string `json:"action"`
 }
 
 type PackPolicy struct {
-	PolicyID      string `json:"policyId"`
-	PolicyName    string `json:"policyName"`
-	PolicyVersion int    `json:"policyVersion"`
-	Type          string `json:"type"`
-	Action        string `json:"action"`
-	MatchTarget   string `json:"matchTarget"`
-	Pattern       string `json:"pattern"`
-	AgentMessage  string `json:"agentMessage,omitempty"`
+	PolicyID     string `json:"policyId"`
+	PolicyName   string `json:"policyName"`
+	PolicyVersion int   `json:"policyVersion"`
+	Type         string `json:"type"`
+	Action       string `json:"action"`
+	MatchTarget  string `json:"matchTarget"`
+	Pattern      string `json:"pattern"`
+	AgentMessage string `json:"agentMessage,omitempty"`
 }
 
 // ============================================================
@@ -131,23 +149,23 @@ type MCPServer struct {
 // ============================================================
 
 type PolicyAction struct {
-	PolicyActionID   uuid.UUID      `json:"policyActionId"  db:"policy_action_id"`
-	PolicyID         *uuid.UUID     `json:"policyId"        db:"policy_id"`
-	PolicyVersionID  *uuid.UUID     `json:"policyVersionId" db:"policy_version_id"`
-	SessionID        uuid.UUID      `json:"sessionId"       db:"session_id"`
-	DeveloperID      uuid.UUID      `json:"developerId"     db:"developer_id"`
-	AgentID          uuid.UUID      `json:"agentId"         db:"agent_id"`
-	MCPServerID      *uuid.UUID     `json:"mcpServerId"     db:"mcp_server_id"`
-	ActionType       string         `json:"actionType"      db:"action_type"`
-	ViolationType    string         `json:"violationType"   db:"violation_type"`
-	Severity         string         `json:"severity"        db:"severity"`
-	ResourceType     string         `json:"resourceType"    db:"resource_type"`
-	ResourceID       string         `json:"resourceId"      db:"resource_id"`
-	Reason           string         `json:"reason"          db:"reason"`
-	MatchedRule      string         `json:"matchedRule"     db:"matched_rule"`
-	OccurredAt       time.Time      `json:"occurredAt"      db:"occurred_at"`
-	ResolutionStatus string         `json:"resolutionStatus" db:"resolution_status"`
-	ResolvedAt       *time.Time     `json:"resolvedAt"      db:"resolved_at"`
+	PolicyActionID   uuid.UUID  `json:"policyActionId"  db:"policy_action_id"`
+	PolicyID         *uuid.UUID `json:"policyId"        db:"policy_id"`
+	PolicyVersionID  *uuid.UUID `json:"policyVersionId" db:"policy_version_id"`
+	SessionID        uuid.UUID  `json:"sessionId"       db:"session_id"`
+	DeveloperID      uuid.UUID  `json:"developerId"     db:"developer_id"`
+	AgentID          uuid.UUID  `json:"agentId"         db:"agent_id"`
+	MCPServerID      *uuid.UUID `json:"mcpServerId"     db:"mcp_server_id"`
+	ActionType       string     `json:"actionType"      db:"action_type"`
+	ViolationType    string     `json:"violationType"   db:"violation_type"`
+	Severity         string     `json:"severity"        db:"severity"`
+	ResourceType     string     `json:"resourceType"    db:"resource_type"`
+	ResourceID       string     `json:"resourceId"      db:"resource_id"`
+	Reason           string     `json:"reason"          db:"reason"`
+	MatchedRule      string     `json:"matchedRule"     db:"matched_rule"`
+	OccurredAt       time.Time  `json:"occurredAt"      db:"occurred_at"`
+	ResolutionStatus string     `json:"resolutionStatus" db:"resolution_status"`
+	ResolvedAt       *time.Time `json:"resolvedAt"      db:"resolved_at"`
 	Metadata         map[string]any `json:"metadata"   db:"metadata"`
 }
 
@@ -174,6 +192,9 @@ const (
 	AuditPolicyVersionCreated = "POLICY_VERSION_CREATED"
 	AuditPolicyActivated      = "POLICY_ACTIVATED"
 	AuditPolicyDeactivated    = "POLICY_DEACTIVATED"
+	AuditPolicyDisabled       = "POLICY_DISABLED"
+	AuditPolicyEnabled        = "POLICY_ENABLED"
+	AuditPolicyDeleted        = "POLICY_DELETED"
 	AuditPolicyRolledBack     = "POLICY_ROLLED_BACK"
 	AuditPolicyUpdated        = "POLICY_UPDATED"
 	AuditDeveloperAdded       = "DEVELOPER_ADDED"
@@ -182,24 +203,57 @@ const (
 	AuditAgentDisabled        = "AGENT_DISABLED"
 )
 
+// UpdatePolicyRequest is the body for PUT /api/v1/policies/:id (edit creates a new version).
+type UpdatePolicyRequest struct {
+	PolicyName    string          `json:"policyName"`
+	Description   string          `json:"description"`
+	Definition    json.RawMessage `json:"definition"`
+	EnforcementMode string        `json:"enforcementMode"`
+	ChangeSummary string          `json:"changeSummary"`
+}
+
 // ============================================================
 // ActivityEvent wire format (sent by cx spool flusher)
 // ============================================================
 
+// ActivityIDEInfo carries the IDE/runtime context captured at session start.
+type ActivityIDEInfo struct {
+	Name          string `json:"name"`                    // "vscode" | "jetbrains" | "cursor" | "desktop" | "terminal"
+	Version       string `json:"version,omitempty"`
+	WorkspacePath string `json:"workspacePath,omitempty"`
+}
+
 // ActivityEvent is the inbound payload from the cx governance hooks spool.
 // Maps to database columns per §5.6.
 type ActivityEvent struct {
-	EventID   string           `json:"eventId"`
-	Timestamp time.Time        `json:"timestamp"`
-	Kind      string           `json:"kind"` // session.start | tool.pre | tool.post | prompt.submit | session.end
-	SessionID string           `json:"sessionId"`
-	MachineID string           `json:"machineId"`
-	AgentID   string           `json:"agentId"` // governance_agent_id (SHA256 hex)
-	UserID    string           `json:"userId"`  // OS username
-	Agent     ActivityAgent    `json:"agent"`
-	Tool      ActivityTool     `json:"tool"`
-	Prompt    *ActivityPrompt  `json:"prompt,omitempty"`
+	EventID   string          `json:"eventId"`
+	Timestamp time.Time       `json:"timestamp"`
+	Kind      string          `json:"kind"` // session.start | tool.pre | tool.post | prompt.submit | session.end | tool.third_party_enforcement
+	SessionID string          `json:"sessionId"`
+	MachineID string          `json:"machineId"`
+	AgentID   string          `json:"agentId"`   // governance_agent_id (SHA256 hex)
+	UserID    string          `json:"userId"`    // OS username
+	Agent     ActivityAgent   `json:"agent"`
+	Tool      ActivityTool    `json:"tool"`
+	Prompt    *ActivityPrompt `json:"prompt,omitempty"`
 	Decision  ActivityDecision `json:"decision"`
+	IDE       ActivityIDEInfo `json:"ide,omitempty"`
+	ModelInfo *ModelDetectionInfo `json:"modelInfo,omitempty"`
+	// Third-party enforcement — populated for tool.third_party_enforcement events.
+	ThirdPartyTool           string `json:"thirdPartyTool,omitempty"`
+	ThirdPartyAction         string `json:"thirdPartyAction,omitempty"`
+	AttributionConfidence    string `json:"attributionConfidence,omitempty"`
+}
+
+// SessionHook describes a non-governance hook entry discovered at session start.
+type SessionHook struct {
+	ID        uuid.UUID `json:"id"        db:"id"`
+	SessionID uuid.UUID `json:"sessionId" db:"session_id"`
+	Event     string    `json:"event"     db:"event"`
+	Matcher   string    `json:"matcher"   db:"matcher"`
+	Command   string    `json:"command"   db:"command"`
+	Vendor    string    `json:"vendor"    db:"vendor"`
+	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 }
 
 type ActivityAgent struct {
@@ -208,13 +262,13 @@ type ActivityAgent struct {
 }
 
 type ActivityTool struct {
-	Category string   `json:"category"`
-	Name     string   `json:"name"`
-	Command  string   `json:"command,omitempty"`
-	Paths    []string `json:"paths,omitempty"`
-	Query    string   `json:"query,omitempty"`
-	RawName  string   `json:"rawName,omitempty"`
-	MCP      *MCPRef  `json:"mcp,omitempty"`
+	Category string    `json:"category"`
+	Name     string    `json:"name"`
+	Command  string    `json:"command,omitempty"`
+	Paths    []string  `json:"paths,omitempty"`
+	Query    string    `json:"query,omitempty"`
+	RawName  string    `json:"rawName,omitempty"`
+	MCP      *MCPRef   `json:"mcp,omitempty"`
 }
 
 type MCPRef struct {
@@ -223,7 +277,16 @@ type MCPRef struct {
 }
 
 type ActivityPrompt struct {
-	Length int `json:"length"`
+	Length      int              `json:"length"`
+	PIIDetected bool             `json:"piiDetected,omitempty"`
+	PromptText  string           `json:"promptText,omitempty"` // redacted prompt, only when PII found
+	PIIMatches  []PIIMatchMeta   `json:"piiMatches,omitempty"`
+}
+
+// PIIMatchMeta describes a single PII detection result. Matches the cx CLI struct.
+type PIIMatchMeta struct {
+	Name   string `json:"name"`
+	Action string `json:"action"`
 }
 
 type ActivityDecision struct {
@@ -236,6 +299,17 @@ type ActivityDecision struct {
 	MatchedValue  string `json:"matchedValue,omitempty"`
 	AgentMessage  string `json:"agentMessage,omitempty"`
 	LatencyMs     int64  `json:"latencyMs,omitempty"`
+}
+
+// ModelDetectionInfo holds result of model detection at session start
+type ModelDetectionInfo struct {
+	Model      string    `json:"model"`
+	Vendor     string    `json:"vendor"`
+	Confidence float64   `json:"confidence"`
+	Source     string    `json:"source"`
+	SourcePath string    `json:"sourcePath,omitempty"`
+	DetectedAt time.Time `json:"detectedAt"`
+	Errors     []string  `json:"errors,omitempty"`
 }
 
 // SeverityFromAction derives the severity level from the action type (§5.5).
@@ -255,11 +329,11 @@ func SeverityFromAction(action string) string {
 // ============================================================
 
 type CreatePolicyRequest struct {
-	PolicyName      string          `json:"policyName"`
-	Description     string          `json:"description"`
-	Definition      json.RawMessage `json:"definition"`
-	EnforcementMode string          `json:"enforcementMode"`
-	ChangeSummary   string          `json:"changeSummary"`
+	PolicyName    string          `json:"policyName"`
+	Description   string          `json:"description"`
+	Definition    json.RawMessage `json:"definition"`
+	EnforcementMode string        `json:"enforcementMode"`
+	ChangeSummary string          `json:"changeSummary"`
 }
 
 type ActivatePolicyRequest struct {

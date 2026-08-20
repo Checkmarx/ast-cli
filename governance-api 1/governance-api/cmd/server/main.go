@@ -17,7 +17,53 @@ import (
 
 	"github.com/checkmarx/governance-api/internal/api"
 	"github.com/checkmarx/governance-api/internal/db"
+	"github.com/checkmarx/governance-api/internal/services"
 )
+
+// complianceCalculationInterval is the compliance scheduler cadence (COMPLIANCE_ARCHITECTURE.md
+// §8 default is hourly; kept at 30 minutes for now per explicit instruction). Runs
+// auto-mapping, evidence extraction, and framework snapshot calculation — never inline
+// on the ingest path (§4, cardinal rule).
+const complianceCalculationInterval = 30 * time.Minute
+
+// runComplianceCycle executes one full compliance calculation pass (§5.7, §5.4, §8).
+// Errors are logged, never fatal — a failed cycle just means the next snapshot is
+// calculated from the prior watermark on the next tick.
+func runComplianceCycle(ctx context.Context, compliance *services.ComplianceService, evidence *services.EvidenceService) {
+	if err := compliance.AutoMapAllPolicies(ctx); err != nil {
+		log.Printf("compliance: auto-mapping cycle failed: %v", err)
+	}
+	if err := evidence.ExtractSince(ctx); err != nil {
+		log.Printf("compliance: evidence extraction failed: %v", err)
+	}
+	if err := compliance.CalculateAllFrameworkSnapshots(ctx); err != nil {
+		log.Printf("compliance: snapshot calculation failed: %v", err)
+	}
+	log.Println("compliance: calculation cycle complete")
+}
+
+// startComplianceScheduler runs the compliance cycle immediately, then on a fixed
+// interval, until the returned stop function is called.
+func startComplianceScheduler(ctx context.Context, interval time.Duration) func() {
+	compliance := services.NewComplianceService()
+	evidence := services.NewEvidenceService(compliance)
+
+	stopCh := make(chan struct{})
+	go func() {
+		runComplianceCycle(ctx, compliance, evidence) // immediate first run
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				runComplianceCycle(ctx, compliance, evidence)
+			case <-stopCh:
+				return
+			}
+		}
+	}()
+	return func() { close(stopCh) }
+}
 
 func main() {
 	port := flag.String("port", envOr("PORT", "8080"), "HTTP listen port")
@@ -37,6 +83,12 @@ func main() {
 		log.Fatalf("governance-api: migrations: %v", err)
 	}
 	log.Println("governance-api: migrations applied")
+
+	// Start compliance scheduler (COMPLIANCE_ARCHITECTURE.md §8, G7) — runs
+	// auto-mapping + evidence extraction + snapshot calculation on a fixed interval,
+	// never inline on the ingest/enforcement path.
+	stopCompliance := startComplianceScheduler(ctx, complianceCalculationInterval)
+	log.Printf("governance-api: compliance scheduler started (interval=%s)", complianceCalculationInterval)
 
 	// Build router
 	router := api.NewRouter()
@@ -62,6 +114,7 @@ func main() {
 
 	<-stop
 	log.Println("governance-api: shutting down...")
+	stopCompliance()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

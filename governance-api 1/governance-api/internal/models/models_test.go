@@ -12,7 +12,7 @@ func TestSeverityFromAction(t *testing.T) {
 		{"BLOCK", "high"},
 		{"ALERT", "medium"},
 		{"ALLOW", "low"},
-		{"", "low"},
+		{"",      "low"},
 	}
 	for _, tc := range cases {
 		got := SeverityFromAction(tc.action)
@@ -27,14 +27,14 @@ func TestGovernancePack_JSON(t *testing.T) {
 		PackVersion: 5,
 		Policies: []PackPolicy{
 			{
-				PolicyID:      "pol_001",
-				PolicyName:    "Block .env",
+				PolicyID:    "pol_001",
+				PolicyName:  "Block .env",
 				PolicyVersion: 2,
-				Type:          "filesystem",
-				Action:        "BLOCK",
-				MatchTarget:   "path",
-				Pattern:       `\.env$`,
-				AgentMessage:  "Use secrets manager",
+				Type:        "filesystem",
+				Action:      "BLOCK",
+				MatchTarget: "path",
+				Pattern:     `\.env$`,
+				AgentMessage: "Use secrets manager",
 			},
 		},
 	}

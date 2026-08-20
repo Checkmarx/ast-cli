@@ -35,17 +35,33 @@ func NewRouter() *chi.Mux {
 		// ── Policies ───────────────────────────────────────────────────
 		r.Get("/policies", ListPolicies)
 		r.Post("/policies", CreatePolicy)
+		r.Put("/policies/{id}", UpdatePolicy)
 		r.Put("/policies/{id}/activate", ActivatePolicy)
+		r.Put("/policies/{id}/disable", DisablePolicy)
+		r.Put("/policies/{id}/enable", EnablePolicy)
+		r.Delete("/policies/{id}", DeletePolicy)
 		r.Get("/policies/{id}/history", GetPolicyHistory)
 
 		// ── Sessions ───────────────────────────────────────────────────
 		r.Get("/sessions", ListSessions)
 		r.Get("/sessions/{id}/timeline", GetSessionTimeline)
+		r.Get("/sessions/{id}/hooks", GetSessionHooks)
 		r.Get("/sessions/{id}/timeline/export", ExportSessionTimeline)
 
 		// ── Violations ─────────────────────────────────────────────────
 		r.Get("/violations", ListViolations)
 		r.Get("/violations/export", ExportViolations)
+		r.Post("/violations/{id}/review", ReviewViolation)
+
+		// ── Compliance ─────────────────────────────────────────────────
+		r.Get("/compliance/frameworks", ListComplianceFrameworks)
+		r.Get("/compliance/controls", ListControls)
+		r.Get("/compliance/frameworks/{id}/controls", GetFrameworkControls)
+		r.Get("/compliance/frameworks/{id}/status", GetFrameworkStatus)
+		r.Get("/compliance/controls/{id}/evidence", GetControlEvidence)
+		r.Get("/policies/{id}/control-mappings", ListPolicyControlMappings)
+		r.Post("/policies/{id}/control-mappings", CreatePolicyControlMapping)
+		r.Delete("/policies/{id}/control-mappings/{mappingId}", DeletePolicyControlMapping)
 
 		// ── Developers ─────────────────────────────────────────────────
 		r.Get("/developers/list", ListDevelopers) // /developers?username= is already used by cx
@@ -56,6 +72,17 @@ func NewRouter() *chi.Mux {
 		// ── MCP Servers ────────────────────────────────────────────────
 		r.Get("/mcp-servers", ListMCPServers)
 		r.Get("/mcp-servers/{id}", GetMCPServer)
+
+		// ── Skills ─────────────────────────────────────────────────────
+		r.Get("/skills", ListSkills)
+		r.Get("/skills/{id}", GetSkillDetail)
+		r.Get("/sessions/{id}/skills", GetSessionSkills)
+
+		// ── Models ─────────────────────────────────────────────────────
+		r.Get("/models", ListModels)
+		r.Get("/models/{modelId}", GetModel)
+		r.Get("/analytics/model-usage", GetModelUsageStats)
+		r.Get("/analytics/model-detection-issues", GetModelDetectionIssues)
 
 		// ── Audit Log ──────────────────────────────────────────────────
 		r.Get("/audit", ListAuditEvents)

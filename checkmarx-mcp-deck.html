@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkmarx MCP Server</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --cx-dark:#0B0F1A;--cx-navy:#111827;--cx-card:#1A2235;--cx-border:#2A3550;
+  --cx-purple:#7C5CFC;--cx-purple-light:#A78BFA;--cx-teal:#22D3EE;--cx-teal-dim:#0E7490;
+  --cx-green:#10B981;--cx-amber:#F59E0B;--cx-red:#EF4444;
+  --cx-text:#F1F5F9;--cx-muted:#94A3B8;--cx-subtle:#475569;
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+html,body{height:100%;overflow:hidden;background:#0B0F1A;color:var(--cx-text);display:flex;flex-direction:column}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid var(--cx-border);background:rgba(11,15,26,.95);position:sticky;top:0;z-index:100}
+.logo{font-size:17px;font-weight:700;display:flex;align-items:center;gap:6px}
+.logo span{color:var(--cx-purple)}
+.logo em{font-style:normal;font-size:12px;color:var(--cx-muted);font-weight:400;margin-left:4px}
+.slide-pills{display:flex;gap:6px;align-items:center}
+.pill{width:7px;height:7px;border-radius:50%;background:var(--cx-border);cursor:pointer;transition:all .2s}
+.pill.active{background:var(--cx-purple);width:20px;border-radius:4px}
+.nav-btns{display:flex;gap:8px;align-items:center}
+.nav-btn{background:transparent;border:1px solid var(--cx-border);color:var(--cx-muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s}
+.nav-btn:hover{border-color:var(--cx-purple);color:var(--cx-text)}
+.nav-btn:disabled{opacity:.3;cursor:default}
+.slide-counter{font-size:12px;color:var(--cx-subtle);min-width:48px;text-align:center}
+
+.deck{flex:1;overflow:hidden;position:relative;min-height:0}
+.slide{display:none;position:absolute;inset:0;overflow:hidden;padding:clamp(20px,3vh,44px) clamp(24px,4vw,56px);animation:fadeIn .3s ease;flex-direction:column}
+.slide.active{display:flex;flex-direction:column}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.slide-tag{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--cx-purple);margin-bottom:10px}
+.slide-title{font-size:clamp(22px,3vw,34px);font-weight:700;line-height:1.15;letter-spacing:-.5px;margin-bottom:6px}
+.slide-subtitle{font-size:clamp(13px,1.4vw,15px);color:var(--cx-muted);line-height:1.6;margin-bottom:16px}
+.slide-body{flex:1;display:flex;flex-direction:column;gap:clamp(10px,1.5vh,20px);min-height:0}
+.card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:20px 24px}
+.highlight-box{background:rgba(124,92,252,.08);border:1px solid rgba(124,92,252,.25);border-radius:10px;padding:16px 20px;font-size:15px;line-height:1.7;color:var(--cx-text)}
+.highlight-box strong{color:var(--cx-purple-light)}
+
+/* ── SLIDE 1 ── */
+#s1{justify-content:center;background:radial-gradient(ellipse 80% 60% at 70% 50%,#1e1250 0%,var(--cx-dark) 70%);overflow:hidden}
+.title-main{font-size:52px;font-weight:800;line-height:1.1;letter-spacing:-.8px;margin-bottom:20px}
+.title-main span{color:var(--cx-purple)}
+.title-desc{font-size:16px;color:var(--cx-muted);max-width:560px;line-height:1.7;margin-bottom:32px}
+.rapid-badge{display:inline-flex;align-items:center;gap:10px;background:rgba(124,92,252,.13);border:1px solid rgba(124,92,252,.35);border-radius:8px;padding:10px 18px}
+.rapid-dot{width:8px;height:8px;border-radius:50%;background:var(--cx-purple);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+/* floating words */
+.float-word{position:absolute;font-size:13px;font-weight:600;letter-spacing:.5px;pointer-events:none;white-space:nowrap;opacity:0}
+@keyframes wordFloat{
+  0%{opacity:0;transform:translateY(0px)}
+  15%{opacity:.55}
+  80%{opacity:.55}
+  100%{opacity:0;transform:translateY(-60px)}
+}
+/* title fade-in */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.title-animate{animation:fadeUp .7s ease both}
+.title-animate:nth-child(1){animation-delay:.1s}
+.title-animate:nth-child(2){animation-delay:.3s}
+.title-animate:nth-child(3){animation-delay:.5s}
+.title-animate:nth-child(4){animation-delay:.7s}
+
+/* ── SLIDE 2 TOC ── */
+#s2{background:var(--cx-dark)}
+.toc-list{display:flex;flex-direction:column;gap:0;border:1px solid var(--cx-border);border-radius:12px;overflow:hidden;flex:1;max-height:520px}
+.toc-row{display:flex;align-items:center;gap:0;border-bottom:1px solid var(--cx-border);cursor:pointer;transition:background .15s}
+.toc-row:last-child{border-bottom:none}
+.toc-row:hover{background:rgba(124,92,252,.06)}
+.toc-row:hover .toc-label{color:var(--cx-purple-light)}
+.toc-num{width:52px;text-align:center;font-size:11px;font-weight:700;color:var(--cx-subtle);padding:14px 0;border-right:1px solid var(--cx-border);flex-shrink:0}
+.toc-label{flex:1;font-size:14px;font-weight:500;padding:14px 20px;color:var(--cx-text);transition:color .15s}
+.toc-pg{font-size:12px;color:var(--cx-subtle);padding:14px 20px;flex-shrink:0}
+.toc-dot{width:6px;height:6px;border-radius:50%;margin-right:16px;flex-shrink:0}
+
+/* ── SLIDES 3 & 4 FLOW ── */
+.flow-wrap{display:flex;align-items:stretch;gap:0;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;overflow:hidden;padding:0}
+.flow-node{flex:1;padding:16px 14px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.flow-node.purple{background:rgba(124,92,252,.12);border-right:1px solid rgba(124,92,252,.2)}
+.flow-node.teal{background:rgba(34,211,238,.07);border-left:1px solid rgba(34,211,238,.2);border-right:1px solid rgba(34,211,238,.2)}
+.flow-node.green{background:rgba(16,185,129,.07)}
+.flow-arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 10px;gap:6px;flex-shrink:0}
+.fn-title{font-size:13px;font-weight:600}
+.fn-sub{font-size:11px;color:var(--cx-muted)}
+.fn-mono{font-size:10px;color:var(--cx-teal);font-family:monospace}
+.arr-lbl{font-size:10px;color:var(--cx-subtle);white-space:nowrap}
+/* node entrance */
+@keyframes nodeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.flow-node-anim{opacity:0;animation:nodeIn .5s ease forwards}
+/* continuous glow on fn-title inside each node type */
+@keyframes glowPurple{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(167,139,250,.9);color:#A78BFA}}
+@keyframes glowTeal{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(34,211,238,.9);color:#22D3EE}}
+@keyframes glowGreen{0%,100%{text-shadow:none;color:#F1F5F9}50%{text-shadow:0 0 8px rgba(16,185,129,.9);color:#10B981}}
+.flow-node.purple .fn-title{animation:glowPurple 2.4s ease-in-out infinite}
+.flow-node.teal   .fn-title{animation:glowTeal   2.4s ease-in-out infinite .6s}
+.flow-node.green  .fn-title{animation:glowGreen  2.4s ease-in-out infinite 1.2s}
+.flow-node.cx-tool .fn-title{animation:glowPurple 2.4s ease-in-out infinite .9s}
+
+/* ── SLIDE 5 animations ── */
+@keyframes archFadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.arch-fade{opacity:0;animation:archFadeIn .45s ease forwards;animation-delay:var(--d,0s)}
+#s5{background:var(--cx-dark)}
+.arch-section-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--cx-subtle);margin-bottom:8px;text-align:center}
+.arch-tier{display:flex;gap:10px;justify-content:center}
+.arch-node{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:9px;padding:10px 16px;text-align:center;font-size:13px;font-weight:500;min-width:130px}
+.arch-node .sub{font-size:10px;color:var(--cx-muted);margin-top:3px;font-weight:400}
+.arch-node.client{border-color:rgba(124,92,252,.35);background:rgba(124,92,252,.07)}
+.arch-core{background:rgba(124,92,252,.14);border:1.5px solid rgba(124,92,252,.5);border-radius:11px;padding:14px 28px;text-align:center;font-size:15px;font-weight:600;width:fit-content;margin:0 auto}
+.arch-core .sub{font-size:11px;color:var(--cx-purple-light);margin-top:4px;font-family:monospace;font-weight:400}
+.arch-node.int-cx{border-color:rgba(34,211,238,.35);background:rgba(34,211,238,.06)}
+.arch-node.int-gh{border-color:rgba(255,255,255,.12)}
+.arch-node.int-ji{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+.arch-node.int-nv{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.05)}
+.arch-connector{display:flex;justify-content:center;padding:6px 0}
+.arch-connector svg{opacity:.55}
+
+/* ── SLIDE 6 TOOLS ── */
+#s6{padding:32px 40px}
+.tools-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.tools-table th{background:rgba(124,92,252,.15);color:var(--cx-purple-light);font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--cx-border)}
+.tools-table td{padding:7px 10px;border-bottom:1px solid rgba(42,53,80,.5);vertical-align:middle}
+.tools-table tr:hover td{background:rgba(255,255,255,.02)}
+.tool-name{color:var(--cx-teal);font-family:monospace;font-size:11.5px}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:500}
+.badge-scan{background:rgba(124,92,252,.15);color:var(--cx-purple-light)}
+.badge-proj{background:rgba(16,185,129,.12);color:#6EE7B7}
+.badge-vuln{background:rgba(239,68,68,.12);color:#FCA5A5}
+.badge-ins{background:rgba(245,158,11,.12);color:#FCD34D}
+.badge-app{background:rgba(34,211,238,.1);color:var(--cx-teal)}
+.badge-read{background:rgba(255,255,255,.06);color:var(--cx-muted);font-size:10px}
+.badge-write{background:rgba(239,68,68,.1);color:#FCA5A5;font-size:10px}
+.invoke{color:var(--cx-muted);font-style:italic;font-size:11px}
+
+/* ── SLIDE 7 SUPPORT ── */
+#s7{background:var(--cx-dark)}
+.sup-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1}
+.sup-card{background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:0}
+.sup-card-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--cx-muted);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sup-card-title svg{opacity:.7}
+.sup-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--cx-border)}
+.sup-item:last-child{border-bottom:none}
+.sup-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sup-label{font-size:13px;font-weight:500}
+.sup-detail{font-size:12px;color:var(--cx-muted)}
+
+/* ── SLIDE 8 DEMO ── */
+#s8{background:var(--cx-dark)}
+.demo-table{width:100%;border-collapse:collapse;flex:1}
+.demo-table th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--cx-subtle);padding:10px 16px;border-bottom:1px solid var(--cx-border);text-align:left}
+.demo-table td{padding:14px 16px;border-bottom:1px solid rgba(42,53,80,.5);vertical-align:middle}
+.demo-table tr:last-child td{border-bottom:none}
+.demo-table tr:hover td{background:rgba(255,255,255,.02)}
+.d-person{display:flex;align-items:center;gap:12px}
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.av-purple{background:rgba(124,92,252,.2);color:var(--cx-purple-light);border:1px solid rgba(124,92,252,.3)}
+.av-teal{background:rgba(34,211,238,.1);color:var(--cx-teal);border:1px solid rgba(34,211,238,.2)}
+.av-green{background:rgba(16,185,129,.1);color:#6EE7B7;border:1px solid rgba(16,185,129,.2)}
+.av-amber{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid rgba(245,158,11,.2)}
+.d-name{font-size:14px;font-weight:600}
+.env-tags{display:flex;gap:6px;flex-wrap:wrap}
+.env-tag{font-size:12px;padding:3px 10px;border-radius:5px;font-weight:500}
+.et-purple{background:rgba(124,92,252,.12);color:var(--cx-purple-light);border:1px solid rgba(124,92,252,.25)}
+.et-teal{background:rgba(34,211,238,.08);color:var(--cx-teal);border:1px solid rgba(34,211,238,.2)}
+.et-amber{background:rgba(245,158,11,.1);color:#FCD34D;border:1px solid rgba(245,158,11,.2)}
+
+/* ── SLIDE 9 LIMITATIONS ── */
+#s9{background:var(--cx-dark)}
+.limit-list{display:flex;flex-direction:column;gap:14px;flex:1}
+.limit-item{background:var(--cx-card);border:1px solid rgba(239,68,68,.2);border-left:3px solid var(--cx-red);border-radius:0 10px 10px 0;padding:16px 20px;display:flex;gap:16px;align-items:flex-start}
+.limit-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.limit-desc{font-size:13px;color:var(--cx-muted);line-height:1.6}
+.limit-desc code{background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;font-family:monospace;font-size:12px;color:var(--cx-teal)}
+
+/* ── SLIDE 10 Q&A ── */
+#s10{justify-content:center;align-items:center;text-align:center;background:radial-gradient(ellipse 60% 50% at 50% 50%,#1a1060 0%,var(--cx-dark) 70%)}
+.qa-title{font-size:64px;font-weight:800;letter-spacing:-1px;margin-bottom:16px}
+.qa-title span{color:var(--cx-purple)}
+.qa-sub{font-size:17px;color:var(--cx-muted)}
+
+footer{padding:10px clamp(24px,4vw,56px);border-top:1px solid var(--cx-border);display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--cx-subtle);flex-shrink:0}
+.footer-nav{display:flex;align-items:center;gap:10px}
+.foot-btn{background:transparent;border:1px solid var(--cx-border);color:var(--cx-muted);padding:6px 18px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s}
+.foot-btn:hover{border-color:var(--cx-purple);color:var(--cx-text)}
+.foot-btn:disabled{opacity:.3;cursor:default}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Checkmar<span>×</span><em>Always Ready To Run</em></div>
+  <div class="slide-pills" id="pills"></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <span class="slide-counter" id="counter">1 / 10</span>
+    <div class="nav-btns">
+      <button class="nav-btn" id="prev" onclick="go(-1)">← Prev</button>
+      <button class="nav-btn" id="next" onclick="go(1)">Next →</button>
+    </div>
+  </div>
+</nav>
+
+<div class="deck">
+
+<!-- ── SLIDE 1: TITLE ── -->
+<div class="slide active" id="s1">
+  <!-- floating animated words -->
+  <div id="float-container" style="position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden"></div>
+  <!-- bg graphic -->
+  <svg style="position:absolute;right:0;top:0;bottom:0;width:45%;height:100%;opacity:.12;pointer-events:none" viewBox="0 0 400 500" fill="none">
+    <rect x="60" y="40" width="280" height="420" rx="16" stroke="#7C5CFC" stroke-width="1"/>
+    <line x1="60" y1="100" x2="340" y2="100" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="160" x2="340" y2="160" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="220" x2="340" y2="220" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="280" x2="340" y2="280" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="340" x2="340" y2="340" stroke="#7C5CFC" stroke-width=".5"/>
+    <line x1="60" y1="400" x2="340" y2="400" stroke="#7C5CFC" stroke-width=".5"/>
+    <rect x="80" y="115" width="80" height="28" rx="5" fill="#7C5CFC" opacity=".4"/>
+    <rect x="175" y="115" width="120" height="28" rx="5" fill="#22D3EE" opacity=".3"/>
+    <rect x="80" y="175" width="120" height="28" rx="5" fill="#22D3EE" opacity=".25"/>
+    <rect x="215" y="175" width="60" height="28" rx="5" fill="#7C5CFC" opacity=".3"/>
+    <rect x="80" y="235" width="60" height="28" rx="5" fill="#10B981" opacity=".3"/>
+    <rect x="155" y="235" width="100" height="28" rx="5" fill="#7C5CFC" opacity=".25"/>
+    <circle cx="200" cy="70" r="14" stroke="#7C5CFC" stroke-width="1.2"/>
+    <path d="M194 70l4 4 8-8" stroke="#22D3EE" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <!-- content -->
+  <div style="max-width:620px;z-index:1;margin:auto 0">
+    <div class="title-main title-animate">Checkmarx<br>Public <span>MCP</span> Server</div>
+    <div class="title-desc title-animate">Model Context Protocol server bridging AI assistants with the Checkmarx One security platform.</div>
+    <div class="title-animate" style="margin-top:28px">
+      <div class="rapid-badge">
+        <div class="rapid-dot"></div>
+        <span style="font-size:13px;font-weight:700;color:var(--cx-purple-light);letter-spacing:.5px;list-style:none">RAPID Team</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 2: TOC ── -->
+<div class="slide" id="s2">
+  <div class="slide-title" style="margin-bottom:20px">Table of Contents</div>
+  <div class="toc-list" style="flex:none">
+    <div class="toc-row" onclick="jumpTo(3)">
+      <div class="toc-num">01</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#7C5CFC;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">What is MCP Server?</div>
+      <div class="toc-pg">3 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(4)">
+      <div class="toc-num">02</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#7C5CFC;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">What is Checkmarx MCP Server?</div>
+      <div class="toc-pg">4 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(5)">
+      <div class="toc-num">03</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#22D3EE;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">System Architecture</div>
+      <div class="toc-pg">5 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(6)">
+      <div class="toc-num">04</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#22D3EE;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">Checkmarx MCP Server Tools</div>
+      <div class="toc-pg">6 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(7)">
+      <div class="toc-num">05</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#10B981;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">IDE &amp; Scanner Support</div>
+      <div class="toc-pg">7 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(8)">
+      <div class="toc-num">06</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#10B981;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">Demo</div>
+      <div class="toc-pg">8 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(9)">
+      <div class="toc-num">07</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#F59E0B;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">Limitations</div>
+      <div class="toc-pg">9 →</div>
+    </div>
+    <div class="toc-row" onclick="jumpTo(10)">
+      <div class="toc-num">08</div>
+      <div style="width:8px;height:8px;border-radius:50%;background:#475569;margin:0 16px;flex-shrink:0"></div>
+      <div class="toc-label">Q&amp;A</div>
+      <div class="toc-pg">10 →</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 3: WHAT IS MCP ── -->
+<div class="slide" id="s3">
+  <div class="slide-title" style="margin-bottom:20px">What is MCP Server?</div>
+  <div class="slide-body">
+    <div class="highlight-box"><strong>MCP (Model Context Protocol)</strong> is an open standard enabling AI assistants and agents to connect to external data sources and tools in real time. An MCP server exposes a set of "tools" — structured functions an AI agent can call to retrieve data or perform actions.<br><br>An MCP server is a <strong>bridge that lets AI talk to external tools and real-world data.</strong></div>
+    <div>
+      <div style="font-size:11px;color:var(--cx-subtle);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;font-weight:600">How it works</div>
+      <svg id="s3-flow" viewBox="0 0 720 260" width="100%" style="overflow:visible">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <marker id="arr3p" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#7C5CFC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <marker id="arr3t" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#22D3EE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- You box -->
+        <g class="flow-node-anim" style="animation-delay:.1s">
+          <rect x="0" y="80" width="140" height="70" rx="10" fill="rgba(124,92,252,.18)" stroke="rgba(124,92,252,.4)" stroke-width="1"/>
+          <text x="70" y="111" text-anchor="middle" font-size="14" font-weight="600" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite">You</text>
+          <text x="70" y="130" text-anchor="middle" font-size="11" fill="#94A3B8">Asking AI a question</text>
+        </g>
+
+        <!-- asks arrow -->
+        <line x1="142" y1="115" x2="198" y2="115" stroke="#475569" stroke-width="1.2" marker-end="url(#arr3)"/>
+        <text x="170" y="108" text-anchor="middle" font-size="11" fill="#475569">asks</text>
+
+        <!-- AI Assistant box -->
+        <g class="flow-node-anim" style="animation-delay:.4s">
+          <rect x="200" y="80" width="150" height="70" rx="10" fill="rgba(124,92,252,.12)" stroke="rgba(124,92,252,.3)" stroke-width="1"/>
+          <text x="275" y="111" text-anchor="middle" font-size="14" font-weight="600" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite .3s">AI Assistant</text>
+          <text x="275" y="130" text-anchor="middle" font-size="11" fill="#94A3B8">e.g. Claude, Copilot</text>
+        </g>
+
+        <!-- request arrow (diagonal up-right from AI to MCP) -->
+        <path d="M352 100 Q430 60 468 52" fill="none" stroke="#7C5CFC" stroke-width="1.2" marker-end="url(#arr3p)"/>
+        <text x="415" y="62" text-anchor="middle" font-size="11" fill="#7C5CFC" transform="rotate(-12,415,62)">request</text>
+
+        <!-- answer arrow (diagonal from MCP Server down-left to AI Assistant) -->
+        <path d="M470 90 Q430 140 352 125" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arr3)"/>
+        <text x="430" y="138" text-anchor="middle" font-size="11" fill="#475569">answer</text>
+
+        <!-- MCP Server box -->
+        <g class="flow-node-anim" style="animation-delay:.7s">
+          <rect x="470" y="20" width="150" height="70" rx="10" fill="rgba(34,211,238,.1)" stroke="rgba(34,211,238,.35)" stroke-width="1"/>
+          <text x="545" y="51" text-anchor="middle" font-size="14" font-weight="600" fill="#22D3EE" style="animation:glowTeal 2.4s ease-in-out infinite .6s">MCP Server</text>
+          <text x="545" y="70" text-anchor="middle" font-size="11" fill="#94A3B8">the bridge / door</text>
+        </g>
+
+        <!-- fetch arrow (bidirectional vertical) -->
+        <line x1="545" y1="92" x2="545" y2="148" stroke="#22D3EE" stroke-width="1.2" marker-start="url(#arr3t)" marker-end="url(#arr3t)"/>
+        <text x="558" y="125" font-size="11" fill="#22D3EE">fetch</text>
+
+        <!-- Real-world Tool box -->
+        <g class="flow-node-anim" style="animation-delay:1s">
+          <rect x="470" y="150" width="150" height="70" rx="10" fill="rgba(16,185,129,.08)" stroke="rgba(16,185,129,.35)" stroke-width="1"/>
+          <text x="545" y="181" text-anchor="middle" font-size="14" font-weight="600" fill="#10B981" style="animation:glowGreen 2.4s ease-in-out infinite 1.2s">Real-world Tool</text>
+          <text x="545" y="198" text-anchor="middle" font-size="11" fill="#94A3B8">Calendar, files, APIs</text>
+        </g>
+
+        <!-- Jira GitHub label -->
+        <text x="545" y="238" text-anchor="middle" font-size="11" fill="#475569">Jira · GitHub · your files</text>
+        <line x1="545" y1="222" x2="545" y2="230" stroke="#475569" stroke-width="1" marker-end="url(#arr3)"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 4: CHECKMARX MCP ── -->
+<div class="slide" id="s4">
+  <div class="slide-title" style="margin-bottom:20px">What is Checkmarx Public MCP Server?</div>
+  <div class="slide-body">
+    <div class="highlight-box" style="border-color:rgba(34,211,238,.25);background:rgba(34,211,238,.05)">
+      Enables developer and security teams to query their <strong style="color:var(--cx-teal)">Checkmarx One platform using natural language</strong> through AI chat interfaces. Instead of navigating the web UI or writing API calls, ask questions like <em>"show me all critical SAST findings"</em> or <em>"which projects haven't been scanned in two weeks"</em> and get immediate, accurate answers.
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--cx-subtle);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;font-weight:600">How it works</div>
+      <svg id="s4-flow" viewBox="0 0 860 220" width="100%" style="overflow:visible">
+        <defs>
+          <marker id="arr4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#475569" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <marker id="arr4p" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#7C5CFC" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <marker id="arr4t" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#22D3EE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+
+        <!-- You box -->
+        <g>
+          <rect x="0" y="70" width="140" height="62" rx="10" fill="rgba(124,92,252,.18)" stroke="rgba(124,92,252,.4)" stroke-width="1"/>
+          <text x="70" y="97" text-anchor="middle" font-size="14" font-weight="600" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite">You</text>
+          <text x="70" y="116" text-anchor="middle" font-size="11" fill="#94A3B8">Natural language query</text>
+        </g>
+
+        <!-- asks arrow -->
+        <line x1="142" y1="101" x2="198" y2="101" stroke="#475569" stroke-width="1.2" marker-end="url(#arr4)"/>
+        <text x="170" y="94" text-anchor="middle" font-size="11" fill="#475569">asks</text>
+
+        <!-- AI Assistant box -->
+        <g>
+          <rect x="200" y="70" width="150" height="62" rx="10" fill="rgba(124,92,252,.12)" stroke="rgba(124,92,252,.3)" stroke-width="1"/>
+          <text x="275" y="97" text-anchor="middle" font-size="14" font-weight="600" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite .3s">AI Assistant</text>
+          <text x="275" y="116" text-anchor="middle" font-size="11" fill="#94A3B8">Claude, Copilot…</text>
+        </g>
+
+        <!-- request arrow (diagonal up-right to Checkmarx MCP) -->
+        <path d="M352 88 Q420 44 478 36" fill="none" stroke="#7C5CFC" stroke-width="1.2" marker-end="url(#arr4p)"/>
+        <text x="418" y="48" text-anchor="middle" font-size="11" fill="#7C5CFC" transform="rotate(-14,418,48)">request</text>
+
+        <!-- answer arrow (from Checkmarx MCP back to AI Assistant) -->
+        <path d="M480 78 Q435 124 352 114" fill="none" stroke="#475569" stroke-width="1.2" marker-end="url(#arr4)"/>
+        <text x="432" y="124" text-anchor="middle" font-size="11" fill="#475569">answer</text>
+
+        <!-- Checkmarx MCP box -->
+        <g>
+          <rect x="480" y="8" width="150" height="62" rx="10" fill="rgba(34,211,238,.1)" stroke="rgba(34,211,238,.35)" stroke-width="1"/>
+          <text x="555" y="35" text-anchor="middle" font-size="14" font-weight="600" fill="#22D3EE" style="animation:glowTeal 2.4s ease-in-out infinite .6s">Checkmarx MCP</text>
+          <text x="555" y="54" text-anchor="middle" font-size="11" fill="#94A3B8">The bridge / door</text>
+        </g>
+
+        <!-- fetch bidirectional arrow -->
+        <line x1="555" y1="72" x2="555" y2="128" stroke="#22D3EE" stroke-width="1.2" marker-start="url(#arr4t)" marker-end="url(#arr4t)"/>
+        <text x="570" y="106" font-size="11" fill="#22D3EE">fetch</text>
+
+        <!-- Checkmarx Tool box -->
+        <g>
+          <rect x="480" y="130" width="150" height="72" rx="10" fill="rgba(124,92,252,.1)" stroke="rgba(124,92,252,.35)" stroke-width="1"/>
+          <text x="555" y="154" text-anchor="middle" font-size="14" font-weight="600" fill="#A78BFA" style="animation:glowPurple 2.4s ease-in-out infinite .9s">Checkmarx Tool</text>
+          <text x="555" y="171" text-anchor="middle" font-size="10" fill="#22D3EE" font-family="monospace">cx_plan_scan</text>
+          <text x="555" y="185" text-anchor="middle" font-size="10" fill="#22D3EE" font-family="monospace">cx_scan_sast · cx_scan_sca…</text>
+        </g>
+
+        <!-- bidirectional arrow between Checkmarx Tool and Checkmarx One -->
+        <line x1="632" y1="166" x2="688" y2="166" stroke="#475569" stroke-width="1.2" marker-start="url(#arr4)" marker-end="url(#arr4)"/>
+
+        <!-- Checkmarx One box -->
+        <g>
+          <rect x="690" y="135" width="155" height="62" rx="10" fill="rgba(34,211,238,.06)" stroke="rgba(34,211,238,.25)" stroke-width="1"/>
+          <text x="767" y="162" text-anchor="middle" font-size="14" font-weight="600" fill="#22D3EE" style="animation:glowTeal 2.4s ease-in-out infinite 1s">Checkmarx One</text>
+        </g>
+      </svg>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+      <div style="display:flex;gap:10px;align-items:center;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:8px;padding:10px 14px">
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--cx-purple);flex-shrink:0"></div>
+        <span style="font-size:13px">Reads code and manifest files directly</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:8px;padding:10px 14px">
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--cx-teal);flex-shrink:0"></div>
+        <span style="font-size:13px">Triggers SAST, SCA &amp; KICS scans</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:8px;padding:10px 14px">
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--cx-green);flex-shrink:0"></div>
+        <span style="font-size:13px">Returns results in plain English inside IDE / CLI</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:8px;padding:10px 14px">
+        <div style="width:5px;height:5px;border-radius:50%;background:var(--cx-amber);flex-shrink:0"></div>
+        <span style="font-size:13px">Works in VS Code, JetBrains, Cursor &amp; CLI</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 5: ARCH ── -->
+<div class="slide" id="s5">
+  <div class="slide-title" style="margin-bottom:4px">System Architecture</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;margin-top:0">
+    <!-- Client tier -->
+    <div class="arch-section-label">AI Clients / IDEs</div>
+    <div class="arch-tier">
+      <div class="arch-node client">Cursor IDE</div>
+      <div class="arch-node client">VS Code<div class="sub">GitHub Copilot · Claude Chat</div></div>
+      <div class="arch-node client">Claude CLI<div class="sub">Terminal / Shell</div></div>
+      <div class="arch-node client">JetBrains<div class="sub">IntelliJ</div></div>
+    </div>
+    <!-- Arrow down -->
+    <div class="arch-connector">
+      <svg width="2" height="32" viewBox="0 0 2 32"><line x1="1" y1="0" x2="1" y2="24" stroke="#7C5CFC" stroke-width="1.5"/><polygon points="1,32 -4,20 6,20" fill="#7C5CFC"/></svg>
+    </div>
+    <!-- MCP Core -->
+    <div style="display:flex;justify-content:center">
+      <div class="arch-core">
+        Checkmarx MCP Server
+        <div class="sub">cx_plan_scan · cx_scan_sast · cx_scan_sca · cx_scan_kics · cx_get_scan_results · … 20 tools</div>
+      </div>
+    </div>
+    <!-- Arrow down -->
+    <div class="arch-connector">
+      <svg width="2" height="32" viewBox="0 0 2 32"><line x1="1" y1="0" x2="1" y2="24" stroke="#7C5CFC" stroke-width="1.5"/><polygon points="1,32 -4,20 6,20" fill="#7C5CFC"/></svg>
+    </div>
+    <!-- Integration tier -->
+    <div class="arch-section-label">Integrations &amp; Data Sources</div>
+    <div class="arch-tier">
+      <div class="arch-node int-cx">Checkmarx One<div class="sub">SAST · SCA · KICS (IaC)</div></div>
+      <div class="arch-node int-gh">GitHub<div class="sub">Code repos</div></div>
+      <div class="arch-node int-ji">JIRA<div class="sub">Ticket tracking</div></div>
+      <div class="arch-node int-nv">NVD / CVE DB<div class="sub">Threat intel</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 6: TOOLS TABLE ── -->
+<div class="slide" id="s6">
+  <div style="margin-bottom:14px">
+    <div class="slide-tag">Reference</div>
+    <div class="slide-title" style="font-size:26px">Checkmarx MCP Server Tools</div>
+  </div>
+  <div style="flex:1;overflow-y:auto">
+  <table class="tools-table">
+    <thead><tr><th>#</th><th>Tool</th><th>Module</th><th>R/W</th><th>Purpose</th><th>Invoke by saying…</th></tr></thead>
+    <tbody>
+      <tr><td style="color:var(--cx-subtle)">1</td><td><span class="tool-name">cx_plan_scan</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>Detect scan engine from file. Always first step.</td><td class="invoke">"Scan this file"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">2</td><td><span class="tool-name">cx_scan_sast</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-write">Write</span></td><td>Scans source code — SQL injection, XSS, SSRF, path traversal</td><td class="invoke">"Scan this Java/Python/Go file for vulnerabilities"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">3</td><td><span class="tool-name">cx_scan_sca</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-write">Write</span></td><td>Scans dependency manifests for vulnerable packages</td><td class="invoke">"Scan my package.json / pom.xml"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">4</td><td><span class="tool-name">cx_scan_kics</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-write">Write</span></td><td>Scans IaC — Terraform, k8s, Dockerfile, Helm</td><td class="invoke">"Scan my Terraform / Dockerfile"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">5</td><td><span class="tool-name">cx_scan_directory_local</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-write">Write</span></td><td>Zips and uploads entire local directory</td><td class="invoke">"Scan my entire project folder"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">6</td><td><span class="tool-name">cx_scan_repository</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-write">Write</span></td><td>Scans a remote git repo by URL</td><td class="invoke">"Scan https://github.com/org/repo"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">7</td><td><span class="tool-name">cx_get_scan_status</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>Polls scan progress</td><td class="invoke">"Is the scan done? / Wait for scan to finish"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">8</td><td><span class="tool-name">cx_get_scan_results</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>Paginated findings from a completed scan</td><td class="invoke">"Show me results of scan XYD / Give me last scan result"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">9</td><td><span class="tool-name">cx_list_scans</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>Scan history for a project</td><td class="invoke">"Give me list of past scans for this project"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">10</td><td><span class="tool-name">cx_list_projects</span></td><td><span class="badge badge-proj">Project</span></td><td><span class="badge badge-read">Read</span></td><td>Lists all projects in your CxOne tenant</td><td class="invoke">"Show my projects"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">11</td><td><span class="tool-name">cx_get_vulnerability_details</span></td><td><span class="badge badge-vuln">Vulnerability</span></td><td><span class="badge badge-read">Read</span></td><td>Full details + remediation advice for a single finding</td><td class="invoke">"Tell me more about this finding"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">12</td><td><span class="tool-name">cx_get_risk_summary</span></td><td><span class="badge badge-ins">Insight</span></td><td><span class="badge badge-read">Read</span></td><td>Overall risk level + severity breakdown for a project</td><td class="invoke">"What is the security risk of project XYZ?"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">13</td><td><span class="tool-name">cx_get_vulnerability_trend</span></td><td><span class="badge badge-ins">Insight</span></td><td><span class="badge badge-read">Read</span></td><td>Security posture change over recent scans</td><td class="invoke">"Is this project getting more secure? / Show vulnerability trend"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">14</td><td><span class="tool-name">cx_get_scan_coverage</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>Projects with / without recent scans</td><td class="invoke">"Which projects haven't been scanned recently?"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">15</td><td><span class="tool-name">cx_get_latest_scans</span></td><td><span class="badge badge-scan">Scan</span></td><td><span class="badge badge-read">Read</span></td><td>History of all scans in the org</td><td class="invoke">"Show me the latest scans across the org"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">16</td><td><span class="tool-name">cx_get_project</span></td><td><span class="badge badge-proj">Project</span></td><td><span class="badge badge-read">Read</span></td><td>Details for a single project</td><td class="invoke">"Show details for project ABC"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">17</td><td><span class="tool-name">cx_get_project_findings</span></td><td><span class="badge badge-vuln">Vulnerability</span></td><td><span class="badge badge-read">Read</span></td><td>All findings for a project (no scan ID needed)</td><td class="invoke">"Show all critical findings for project ABC"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">18</td><td><span class="tool-name">cx_list_applications</span></td><td><span class="badge badge-app">Applications</span></td><td><span class="badge badge-read">Read</span></td><td>All applications (groups of projects)</td><td class="invoke">"List all my applications"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">19</td><td><span class="tool-name">cx_get_org_summary</span></td><td><span class="badge badge-proj">Project</span></td><td><span class="badge badge-read">Read</span></td><td>CISO-level aggregate across 20 most recent projects</td><td class="invoke">"Give me an org-level security summary"</td></tr>
+      <tr><td style="color:var(--cx-subtle)">20</td><td><span class="tool-name">cx_get_application</span></td><td><span class="badge badge-app">Application</span></td><td><span class="badge badge-read">Read</span></td><td>Details for a single application</td><td class="invoke">"Show details for application XYZ"</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ── SLIDE 7: IDE & SCANNER SUPPORT ── -->
+<div class="slide" id="s7">
+  <div class="slide-title" style="margin-bottom:20px">IDE &amp; Scanner Support</div>
+  <div class="sup-grid">
+    <!-- IDE Support -->
+    <div class="sup-card">
+      <div class="sup-card-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="#94A3B8" stroke-width="1.2"/><path d="M4 5l2.5 2L4 9" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="11" y2="9" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round"/></svg>
+        IDE Support
+      </div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-purple)"></div><span class="sup-label">Cursor</span></div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-purple)"></div><span class="sup-label">VS Code</span></div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-purple)"></div><span class="sup-label">Kiro</span></div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-purple)"></div><span class="sup-label">IntelliJ</span></div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-purple)"></div><span class="sup-label">Antigravity</span></div>
+    </div>
+    <!-- CLI Support -->
+    <div class="sup-card">
+      <div class="sup-card-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="2" stroke="#94A3B8" stroke-width="1.2"/><path d="M3 5l3 2-3 2" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="9" x2="11" y2="9" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round"/></svg>
+        CLI Support
+      </div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-teal)"></div><span class="sup-label" style="color:var(--cx-teal)">Claude CLI</span></div>
+      <div class="sup-item" data-s7><div class="sup-dot" style="background:var(--cx-teal)"></div><span class="sup-label" style="color:var(--cx-teal)">Cursor CLI</span></div>
+    </div>
+    <!-- Scan Types — spans full width -->
+    <div class="sup-card" style="grid-column:1/-1">
+      <div class="sup-card-title">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#94A3B8" stroke-width="1.2"/><path d="M4.5 7l2 2 3-3" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Scan Types — V1
+      </div>
+      <div class="sup-item" data-s7>
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(124,92,252,.18);color:var(--cx-purple-light);white-space:nowrap;flex-shrink:0">SAST</span>
+        <span class="sup-detail">Java, Python, JavaScript, C#, Go and more</span>
+      </div>
+      <div class="sup-item" data-s7>
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(34,211,238,.12);color:var(--cx-teal);white-space:nowrap;flex-shrink:0">SCA</span>
+        <span class="sup-detail">pom.xml, package.json, requirements.txt and more</span>
+      </div>
+      <div class="sup-item" data-s7>
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(245,158,11,.14);color:#FCD34D;white-space:nowrap;flex-shrink:0">KICS</span>
+        <span class="sup-detail">Terraform, Dockerfile, Helm, k8s manifests</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 8: DEMO ── -->
+<div class="slide" id="s8">
+  <div class="slide-title" style="margin-bottom:20px">Demo Presenters</div>
+  <div style="flex:1;overflow-y:auto">
+  <table class="demo-table">
+    <thead>
+      <tr>
+        <th>Presenter</th>
+        <th>Environment</th>
+        <th>Focus Area</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="d-person">
+            <div class="avatar av-purple">AM</div>
+            <div><div class="d-name">Amol Mane</div></div>
+          </div>
+        </td>
+        <td>
+          <div class="env-tags">
+            <span class="env-tag et-purple">Cursor IDE</span>
+            <span class="env-tag et-teal">Claude CLI</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--cx-muted)">IDE agent mode + terminal-based scanning via Claude CLI</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="d-person">
+            <div class="avatar av-teal">PB</div>
+            <div><div class="d-name">Prathmesh Borle</div></div>
+          </div>
+        </td>
+        <td>
+          <div class="env-tags">
+            <span class="env-tag et-teal">Kiro</span>
+            <span class="env-tag et-amber">Antigravity</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--cx-muted)">Next-gen AI IDEs — Kiro + Antigravity integration</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="d-person">
+            <div class="avatar av-green">AD</div>
+            <div><div class="d-name">Anjali Deore</div></div>
+          </div>
+        </td>
+        <td>
+          <div class="env-tags">
+            <span class="env-tag et-purple">VS Code</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--cx-muted)">VS Code with GitHub Copilot, Claude chat integration</td>
+      </tr>
+      <tr>
+        <td>
+          <div class="d-person">
+            <div class="avatar av-amber">HM</div>
+            <div><div class="d-name">Hitesh Madgulkar</div></div>
+          </div>
+        </td>
+        <td>
+          <div class="env-tags">
+            <span class="env-tag et-amber">IntelliJ</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--cx-muted)">JetBrains IntelliJ with MCP plugin integration</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<!-- ── SLIDE 9: LIMITATIONS ── -->
+<div class="slide" id="s9">
+  <div class="slide-tag">Known Constraints — V1</div>
+  <div class="slide-title">Limitations</div>
+  <div class="slide-subtitle">Transparently documenting what's not yet supported in the current release</div>
+  <div class="limit-list">
+    <div class="limit-item">
+      <div style="font-size:16px;margin-top:1px;flex-shrink:0">🔒</div>
+      <div>
+        <div class="limit-title">Secret Detection not implemented</div>
+        <div class="limit-desc">Secret / credentials scanning is not available in V1. Planned for a future release.</div>
+      </div>
+    </div>
+    <div class="limit-item">
+      <div style="font-size:16px;margin-top:1px;flex-shrink:0">🤖</div>
+      <div>
+        <div class="limit-title">Model-dependent output format</div>
+        <div class="limit-desc">Different AI models (GPT, Claude Sonnet, etc.) may produce varying output structure or formatting. Results are not guaranteed to be identical across all models.</div>
+      </div>
+    </div>
+    <div class="limit-item">
+      <div style="font-size:16px;margin-top:1px;flex-shrink:0">📁</div>
+      <div>
+        <div class="limit-title">Local directory scan runs server-side</div>
+        <div class="limit-desc">The <code>cx_scan_directory_local</code> tool scans a directory from the server where it is deployed — not from the client machine. Ensure the directory is accessible from the server.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SLIDE 10: Q&A ── -->
+<div class="slide" id="s10">
+  <div class="qa-title">Any <span>Questions?</span></div>
+  <div style="margin-top:32px;background:var(--cx-card);border:1px solid var(--cx-border);border-radius:12px;overflow:hidden;width:480px">
+    <div style="background:rgba(124,92,252,.15);padding:10px 20px;font-size:11px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--cx-purple-light);border-bottom:1px solid var(--cx-border)">RAPID Team</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr">
+      <div style="padding:12px 20px;border-bottom:1px solid var(--cx-border);border-right:1px solid var(--cx-border);font-size:13px;font-weight:500">Amol Mane</div>
+      <div style="padding:12px 20px;border-bottom:1px solid var(--cx-border);font-size:13px;font-weight:500">Hitesh Madgulkar</div>
+      <div style="padding:12px 20px;border-bottom:1px solid var(--cx-border);border-right:1px solid var(--cx-border);font-size:13px;font-weight:500">Prathmesh Borle</div>
+      <div style="padding:12px 20px;border-bottom:1px solid var(--cx-border);font-size:13px;font-weight:500">Anjali Deore</div>
+      <div style="padding:12px 20px;border-right:1px solid var(--cx-border);font-size:13px;font-weight:500">Tushar Adhao</div>
+      <div style="padding:12px 20px;font-size:13px;font-weight:500">Rakesh Kadu</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<footer>
+  <span>Checkmar<strong style="color:var(--cx-purple)">×</strong> · Always Ready To Run</span>
+  <span id="footer-slide">Slide 1 of 10</span>
+  <span>RAPID Team</span>
+</footer>
+
+<script>
+// ── Floating words animation on slide 1 ──
+(function(){
+  const words=[
+    {text:'Checkmarx', color:'#A78BFA'},
+    {text:'AI',         color:'#22D3EE'},
+    {text:'MCP',        color:'#7C5CFC'},
+    {text:'Checkmarx One', color:'#10B981'},
+    {text:'Checkmarx', color:'#7C5CFC'},
+    {text:'AI',         color:'#A78BFA'},
+    {text:'MCP',        color:'#22D3EE'},
+    {text:'Checkmarx One', color:'#A78BFA'},
+  ];
+  const container=document.getElementById('float-container');
+  let idx=0;
+  function spawn(){
+    const w=words[idx%words.length];idx++;
+    const el=document.createElement('div');
+    el.className='float-word';
+    el.textContent=w.text;
+    el.style.color=w.color;
+    // random horizontal position across full width, avoid far right (bg graphic)
+    const xPct=58+Math.random()*30;
+    const yPct=10+Math.random()*75;
+    el.style.left=xPct+'%';
+    el.style.top=yPct+'%';
+    const dur=3200+Math.random()*2000;
+    el.style.animation=`wordFloat ${dur}ms ease forwards`;
+    container.appendChild(el);
+    setTimeout(()=>el.remove(), dur+100);
+  }
+  // initial burst
+  for(let i=0;i<5;i++) setTimeout(spawn, i*400);
+  // continuous
+  const iv=setInterval(()=>{
+    if(document.getElementById('s1').classList.contains('active')) spawn();
+  },900);
+  // pause when not on slide 1
+  const origJump=window.jumpTo;
+  window.jumpToHook=function(n){
+    if(n!==1) clearInterval(iv);
+  };
+})();
+
+const total=10;let cur=1;
+const pills=document.getElementById('pills');
+for(let i=1;i<=total;i++){const p=document.createElement('div');p.className='pill'+(i===1?' active':'');p.onclick=()=>jumpTo(i);pills.appendChild(p);}
+function jumpTo(n){
+  document.querySelectorAll('.slide').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.pill').forEach((p,i)=>p.classList.toggle('active',i===n-1));
+  document.getElementById('s'+n).classList.add('active');
+  document.getElementById('counter').textContent=n+' / '+total;
+  document.getElementById('footer-slide').textContent='Slide '+n+' of '+total;
+  document.getElementById('prev').disabled=n===1;
+  document.getElementById('next').disabled=n===total;
+  cur=n;
+  // re-trigger arch animations on slide 5
+  if(n===5){
+    document.querySelectorAll('#s5 .arch-fade').forEach(el=>{
+      el.style.animation='none';el.style.opacity='0';
+      void el.offsetWidth;el.style.animation='';
+    });
+  }
+  if(n===3){
+    document.querySelectorAll('#s3-flow .flow-node-anim').forEach(el=>{
+      el.style.animation='none';
+      el.style.opacity='0';
+      void el.offsetWidth;
+      el.style.animation='';
+    });
+  }
+}
+function go(d){jumpTo(Math.max(1,Math.min(total,cur+d)));}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowDown')go(1);if(e.key==='ArrowLeft'||e.key==='ArrowUp')go(-1);});
+jumpTo(1);
+</script>
+</body>
+</html>

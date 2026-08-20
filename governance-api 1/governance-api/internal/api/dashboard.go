@@ -17,17 +17,14 @@ import (
 )
 
 // expireInactiveSessions marks sessions as expired if they haven't received an
-// event in a long while. Handles terminals killed without firing SessionEnd.
-// The window is intentionally generous (2h, not 15m): normal pauses between
-// prompts/tool calls in an open Claude Code session (reading a response,
-// stepping away) must not be mistaken for a killed session.
+// event in >15 minutes. Handles terminals killed without firing SessionEnd.
 func expireInactiveSessions(ctx context.Context) {
 	_, _ = db.Pool.Exec(ctx, `
 		UPDATE ai_sessions
 		SET status = 'expired', ended_at = NOW(),
 		    duration = EXTRACT(EPOCH FROM (NOW() - started_at))::INTEGER
 		WHERE status = 'active'
-		  AND COALESCE(last_event_at, started_at) < NOW() - INTERVAL '2 hours'`)
+		  AND COALESCE(last_event_at, started_at) < NOW() - INTERVAL '15 minutes'`)
 }
 
 // ============================================================
@@ -43,11 +40,18 @@ func ListSessions(w http.ResponseWriter, r *http.Request) {
 			s.duration, s.request_count, s.tool_call_count, s.status::text,
 			d.email, COALESCE(d.username,''), COALESCE(d.display_name,''),
 			a.agent_name,
-			COALESCE(da.machine_id,'')
+			COALESCE(da.machine_id,''),
+			COALESCE(s.ide_name,''), COALESCE(s.ide_version,''), COALESCE(s.workspace_path,''),
+			COALESCE(ae.model_detected,'')
 		FROM ai_sessions s
 		JOIN developers d       ON s.developer_id = d.developer_id
 		JOIN ai_coding_agents a ON s.agent_id     = a.agent_id
 		LEFT JOIN developer_agents da ON s.developer_agent_id = da.developer_agent_id
+		LEFT JOIN LATERAL (
+			SELECT model_detected FROM activity_events
+			WHERE session_id = s.session_id AND kind = 'session.start'
+			LIMIT 1
+		) ae ON TRUE
 		ORDER BY s.started_at DESC
 		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
@@ -60,17 +64,19 @@ func ListSessions(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var (
 			sessionID, claudeID, email, username, displayName, agentName, machineID, status string
-			startedAt                                                                       time.Time
-			endedAt                                                                         *time.Time
-			duration, requestCount, toolCallCount                                           *int
+			ideName, ideVersion, workspacePath, model                                        string
+			startedAt                                                                        time.Time
+			endedAt                                                                          *time.Time
+			duration, requestCount, toolCallCount                                            *int
 		)
 		if err := rows.Scan(&sessionID, &claudeID, &startedAt, &endedAt,
 			&duration, &requestCount, &toolCallCount, &status,
-			&email, &username, &displayName, &agentName, &machineID); err != nil {
+			&email, &username, &displayName, &agentName, &machineID,
+			&ideName, &ideVersion, &workspacePath, &model); err != nil {
 			log.Printf("api: ListSessions scan: %v", err)
 			continue
 		}
-		result = append(result, map[string]any{
+		session := map[string]any{
 			"sessionId":     sessionID,
 			"claudeId":      claudeID,
 			"startedAt":     startedAt,
@@ -82,7 +88,12 @@ func ListSessions(w http.ResponseWriter, r *http.Request) {
 			"developer":     map[string]any{"email": email, "username": username, "displayName": displayName},
 			"agentName":     agentName,
 			"machineId":     machineID,
-		})
+			"ide":           map[string]any{"name": ideName, "version": ideVersion, "workspacePath": workspacePath},
+		}
+		if model != "" {
+			session["model"] = model
+		}
+		result = append(result, session)
 	}
 	jsonOK(w, result)
 }
@@ -102,8 +113,15 @@ func GetSessionTimeline(w http.ResponseWriter, r *http.Request) {
 			ae.kind,                     COALESCE(ae.agent_type,''),
 			COALESCE(ae.tool_category,''), COALESCE(ae.tool_name,''),
 			COALESCE(ae.tool_command,''),  COALESCE(ae.tool_query,''),
+			COALESCE(ae.tool_paths::text,''),
 			COALESCE(ae.mcp_server,''),    COALESCE(ae.mcp_tool,''),
 			ae.prompt_length,
+			COALESCE(ae.pii_detected, false),
+			COALESCE(ae.prompt_text,''),
+			COALESCE(ae.pii_matches::text,'null'),
+			COALESCE(ae.third_party_tool,''),
+			COALESCE(ae.third_party_action,''),
+			COALESCE(ae.attribution_confidence,''),
 			ae.action_type,
 			COALESCE(ae.policy_name,''),   COALESCE(ae.policy_id,''),
 			COALESCE(ae.matched_on,''),    COALESCE(ae.matched_value,''),
@@ -121,20 +139,25 @@ func GetSessionTimeline(w http.ResponseWriter, r *http.Request) {
 	events := []map[string]any{}
 	for rows.Next() {
 		var (
-			id, eventID, kind, agentType          string
-			toolCat, toolName, toolCmd, toolQuery string
-			mcpServer, mcpTool                    string
-			actionType, policyName, policyID      string
-			matchedOn, matchedValue, agentMessage string
-			promptLength                          *int
-			latencyMs                             *int
-			occurredAt                            time.Time
+			id, eventID, kind, agentType                        string
+			toolCat, toolName, toolCmd, toolQuery, toolPathsStr string
+			mcpServer, mcpTool                                  string
+			piiDetected                                         bool
+			promptText, piiMatchesStr                           string
+			thirdPartyTool, thirdPartyAction, attrConf          string
+			actionType, policyName, policyID                    string
+			matchedOn, matchedValue, agentMessage               string
+			promptLength                                        *int
+			latencyMs                                           *int
+			occurredAt                                          time.Time
 		)
 		if err := rows.Scan(
 			&id, &eventID, &kind, &agentType,
-			&toolCat, &toolName, &toolCmd, &toolQuery,
+			&toolCat, &toolName, &toolCmd, &toolQuery, &toolPathsStr,
 			&mcpServer, &mcpTool,
 			&promptLength,
+			&piiDetected, &promptText, &piiMatchesStr,
+			&thirdPartyTool, &thirdPartyAction, &attrConf,
 			&actionType, &policyName, &policyID,
 			&matchedOn, &matchedValue, &agentMessage, &latencyMs,
 			&occurredAt,
@@ -142,7 +165,14 @@ func GetSessionTimeline(w http.ResponseWriter, r *http.Request) {
 			log.Printf("api: GetSessionTimeline scan: %v", err)
 			continue
 		}
-		events = append(events, map[string]any{
+		var toolPaths []string
+		if toolPathsStr != "" && toolPathsStr != "null" {
+			_ = json.Unmarshal([]byte(toolPathsStr), &toolPaths)
+		}
+		var piiMatches any
+		_ = json.Unmarshal([]byte(piiMatchesStr), &piiMatches)
+
+		ev := map[string]any{
 			"activityEventId": id,
 			"eventId":         eventID,
 			"kind":            kind,
@@ -152,9 +182,15 @@ func GetSessionTimeline(w http.ResponseWriter, r *http.Request) {
 				"name":     toolName,
 				"command":  toolCmd,
 				"query":    toolQuery,
+				"paths":    toolPaths,
 				"mcp":      map[string]any{"server": mcpServer, "name": mcpTool},
 			},
-			"promptLength": promptLength,
+			"promptLength":          promptLength,
+			"piiDetected":           piiDetected,
+			"piiMatches":            piiMatches,
+			"thirdPartyTool":        thirdPartyTool,
+			"thirdPartyAction":      thirdPartyAction,
+			"attributionConfidence": attrConf,
 			"decision": map[string]any{
 				"action":       actionType,
 				"policyName":   policyName,
@@ -165,7 +201,11 @@ func GetSessionTimeline(w http.ResponseWriter, r *http.Request) {
 				"latencyMs":    latencyMs,
 			},
 			"occurredAt": occurredAt,
-		})
+		}
+		if piiDetected && promptText != "" {
+			ev["promptText"] = promptText
+		}
+		events = append(events, ev)
 	}
 	jsonOK(w, events)
 }
@@ -213,14 +253,15 @@ func ListViolations(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Pool.Query(r.Context(), `
 		SELECT
 			pa.policy_action_id::text,  pa.action_type::text,
-			COALESCE(pa.violation_type,''),  pa.severity::text,
+			COALESCE(pa.violation_type::text,''),  pa.severity::text,
 			COALESCE(pa.resource_type,''),   COALESCE(pa.resource_id,''),
 			COALESCE(pa.reason,''),          COALESCE(pa.matched_rule,''),
 			pa.occurred_at,                  pa.resolution_status::text,
 			d.email,                         COALESCE(d.username,''),
 			a.agent_name,
 			COALESCE(da.machine_id,''),
-			COALESCE(p.policy_name,'')
+			COALESCE(p.policy_name,''),
+			COALESCE(pa.metadata::text,'{}')
 		FROM policy_actions pa
 		JOIN developers d       ON pa.developer_id = d.developer_id
 		JOIN ai_coding_agents a ON pa.agent_id     = a.agent_id
@@ -239,18 +280,21 @@ func ListViolations(w http.ResponseWriter, r *http.Request) {
 	result := []map[string]any{}
 	for rows.Next() {
 		var (
-			paID, actionType, violationType, severity                           string
-			resourceType, resourceID, reason, matchedRule                       string
-			resolutionStatus, email, username, agentName, machineID, policyName string
-			occurredAt                                                          time.Time
+			paID, actionType, violationType, severity                             string
+			resourceType, resourceID, reason, matchedRule                         string
+			resolutionStatus, email, username, agentName, machineID, policyName   string
+			metaStr                                                                string
+			occurredAt                                                             time.Time
 		)
 		if err := rows.Scan(&paID, &actionType, &violationType, &severity,
 			&resourceType, &resourceID, &reason, &matchedRule,
 			&occurredAt, &resolutionStatus,
-			&email, &username, &agentName, &machineID, &policyName); err != nil {
+			&email, &username, &agentName, &machineID, &policyName, &metaStr); err != nil {
 			log.Printf("api: ListViolations scan: %v", err)
 			continue
 		}
+		var meta map[string]any
+		_ = json.Unmarshal([]byte(metaStr), &meta)
 		result = append(result, map[string]any{
 			"policyActionId":   paID,
 			"actionType":       actionType,
@@ -259,12 +303,14 @@ func ListViolations(w http.ResponseWriter, r *http.Request) {
 			"resourceType":     resourceType,
 			"resourceId":       resourceID,
 			"reason":           reason,
+			"matchedRule":      matchedRule,
 			"policyName":       policyName,
 			"occurredAt":       occurredAt,
 			"resolutionStatus": resolutionStatus,
 			"developer":        map[string]any{"email": email, "username": username},
 			"agentName":        agentName,
 			"machineId":        machineID,
+			"metadata":         meta,
 		})
 	}
 	jsonOK(w, result)
@@ -275,7 +321,7 @@ func ExportViolations(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Pool.Query(r.Context(), `
 		SELECT pa.occurred_at, d.email, COALESCE(da.machine_id,''), a.agent_name,
 		       pa.action_type::text, COALESCE(p.policy_name,''),
-		       COALESCE(pa.resource_type,''), COALESCE(pa.violation_type,''),
+		       COALESCE(pa.resource_type,''), COALESCE(pa.violation_type::text,''),
 		       COALESCE(pa.resource_id,'')
 		FROM policy_actions pa
 		JOIN developers d       ON pa.developer_id = d.developer_id
@@ -449,6 +495,153 @@ func GetMCPServer(w http.ResponseWriter, r *http.Request) {
 		"vendor": vendor, "status": status,
 		"firstSeenAt": firstSeen, "lastSeenAt": lastSeen,
 	})
+}
+
+// ============================================================
+// GET /api/v1/skills
+// GET /api/v1/skills/{id}
+// GET /api/v1/sessions/{id}/skills
+// ============================================================
+
+func ListSkills(w http.ResponseWriter, r *http.Request) {
+	limit, offset := parsePagination(r.URL.Query())
+	rows, err := db.Pool.Query(r.Context(), `
+		SELECT
+			s.skill_id::text, s.skill_name, s.status,
+			s.first_seen_at, s.last_seen_at,
+			s.total_invocations,
+			COUNT(DISTINCT ss.session_id)::int AS session_count
+		FROM skills s
+		LEFT JOIN session_skills ss ON s.skill_id = ss.skill_id
+		GROUP BY s.skill_id, s.skill_name, s.status, s.first_seen_at, s.last_seen_at, s.total_invocations
+		ORDER BY s.last_seen_at DESC
+		LIMIT $1 OFFSET $2`, limit, offset)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	result := []map[string]any{}
+	for rows.Next() {
+		var skillID, skillName, status string
+		var firstSeenAt, lastSeenAt time.Time
+		var totalInvocations, sessionCount int
+		if err := rows.Scan(&skillID, &skillName, &status, &firstSeenAt, &lastSeenAt, &totalInvocations, &sessionCount); err != nil {
+			log.Printf("api: ListSkills scan: %v", err)
+			continue
+		}
+		result = append(result, map[string]any{
+			"skillId":          skillID,
+			"skillName":        skillName,
+			"status":           status,
+			"firstSeenAt":      firstSeenAt,
+			"lastSeenAt":       lastSeenAt,
+			"totalInvocations": totalInvocations,
+			"sessionCount":     sessionCount,
+		})
+	}
+	jsonOK(w, result)
+}
+
+func GetSkillDetail(w http.ResponseWriter, r *http.Request) {
+	skillID := chi.URLParam(r, "id")
+
+	var skillName, status string
+	var firstSeenAt, lastSeenAt time.Time
+	var totalInvocations int
+	if err := db.Pool.QueryRow(r.Context(), `
+		SELECT skill_name, status, first_seen_at, last_seen_at, total_invocations
+		FROM skills WHERE skill_id = $1`, skillID,
+	).Scan(&skillName, &status, &firstSeenAt, &lastSeenAt, &totalInvocations); err != nil {
+		jsonError(w, http.StatusNotFound, "skill not found")
+		return
+	}
+
+	rows, err := db.Pool.Query(r.Context(), `
+		SELECT
+			s.session_id::text, s.claude_session_id,
+			ss.invocation_count,
+			ss.first_invoked_at, ss.last_invoked_at,
+			d.email, a.agent_name
+		FROM session_skills ss
+		JOIN ai_sessions s       ON ss.session_id = s.session_id
+		JOIN developers d        ON s.developer_id = d.developer_id
+		JOIN ai_coding_agents a  ON s.agent_id = a.agent_id
+		WHERE ss.skill_id = $1
+		ORDER BY ss.last_invoked_at DESC`, skillID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	sessions := []map[string]any{}
+	for rows.Next() {
+		var sessionID, claudeID, email, agentName string
+		var invocationCount int
+		var firstInvokedAt, lastInvokedAt time.Time
+		if err := rows.Scan(&sessionID, &claudeID, &invocationCount, &firstInvokedAt, &lastInvokedAt, &email, &agentName); err != nil {
+			continue
+		}
+		sessions = append(sessions, map[string]any{
+			"sessionId":       sessionID,
+			"claudeId":        claudeID,
+			"invocationCount": invocationCount,
+			"firstInvokedAt":  firstInvokedAt,
+			"lastInvokedAt":   lastInvokedAt,
+			"developer":       email,
+			"agent":           agentName,
+		})
+	}
+
+	jsonOK(w, map[string]any{
+		"skillId":          skillID,
+		"skillName":        skillName,
+		"status":           status,
+		"firstSeenAt":      firstSeenAt,
+		"lastSeenAt":       lastSeenAt,
+		"totalInvocations": totalInvocations,
+		"sessions":         sessions,
+	})
+}
+
+func GetSessionSkills(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+
+	rows, err := db.Pool.Query(r.Context(), `
+		SELECT
+			s.skill_id::text, s.skill_name, s.status,
+			ss.invocation_count,
+			ss.first_invoked_at, ss.last_invoked_at
+		FROM session_skills ss
+		JOIN skills s ON ss.skill_id = s.skill_id
+		WHERE ss.session_id = $1
+		ORDER BY ss.last_invoked_at DESC`, sessionID)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer rows.Close()
+
+	result := []map[string]any{}
+	for rows.Next() {
+		var skillID, skillName, status string
+		var invocationCount int
+		var firstInvokedAt, lastInvokedAt time.Time
+		if err := rows.Scan(&skillID, &skillName, &status, &invocationCount, &firstInvokedAt, &lastInvokedAt); err != nil {
+			continue
+		}
+		result = append(result, map[string]any{
+			"skillId":         skillID,
+			"skillName":       skillName,
+			"status":          status,
+			"invocationCount": invocationCount,
+			"firstInvokedAt":  firstInvokedAt,
+			"lastInvokedAt":   lastInvokedAt,
+		})
+	}
+	jsonOK(w, result)
 }
 
 // ============================================================

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ast-cli/ast-cli" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ast-hook-cli/ast-hook-cli" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/governance-ui 1/governance-ui" vcs="Git" />
+  </component>
+</project>
