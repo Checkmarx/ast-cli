@@ -907,3 +907,20 @@
 2026/08/20 22:32:44 "GET http://localhost:8080/api/v1/mcp-servers HTTP/1.1" from [::1]:64484 - 200 512B in 3.8869ms
 2026/08/20 22:32:44 "GET http://localhost:8080/api/v1/sessions HTTP/1.1" from [::1]:61025 - 200 32296B in 11.7059ms
 2026/08/20 22:32:44 "GET http://localhost:8080/api/v1/skills HTTP/1.1" from [::1]:49887 - 200 464B in 2.4376ms
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/overview HTTP/1.1" from [::1]:62907 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/sessions HTTP/1.1" from [::1]:51233 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/developers/list HTTP/1.1" from [::1]:51233 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/violations HTTP/1.1" from [::1]:60281 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/agents HTTP/1.1" from [::1]:62907 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/policies HTTP/1.1" from [::1]:60855 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/mcp-servers HTTP/1.1" from [::1]:55249 - 204 0B in 0s
+2026/08/20 22:40:50 "OPTIONS http://localhost:8080/api/v1/skills HTTP/1.1" from [::1]:51233 - 204 0B in 0s
+2026/08/20 22:40:50 "GET http://localhost:8080/api/v1/overview HTTP/1.1" from [::1]:62907 - 200 90B in 8.4832ms
+2026/08/20 22:40:50 "GET http://localhost:8080/api/v1/sessions HTTP/1.1" from [::1]:60281 - 200 32296B in 21.3125ms
+2026/08/20 22:40:50 "GET http://localhost:8080/api/v1/skills HTTP/1.1" from [::1]:60281 - 200 464B in 2.752ms
+2026/08/20 22:40:50 "GET http://localhost:8080/api/v1/mcp-servers HTTP/1.1" from [::1]:62907 - 200 512B in 9.2745ms
+2026/08/20 22:40:51 "GET http://localhost:8080/api/v1/violations HTTP/1.1" from [::1]:55249 - 200 11645B in 223.331ms
+2026/08/20 22:40:51 "GET http://localhost:8080/api/v1/policies HTTP/1.1" from [::1]:61830 - 200 4273B in 239.1091ms
+2026/08/20 22:40:51 "GET http://localhost:8080/api/v1/developers/list HTTP/1.1" from [::1]:51233 - 200 894B in 239.5273ms
+2026/08/20 22:40:51 "GET http://localhost:8080/api/v1/agents HTTP/1.1" from [::1]:60855 - 200 1578B in 274.5884ms
+2026/08/20 22:51:19 compliance: calculation cycle complete
