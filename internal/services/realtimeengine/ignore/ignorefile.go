@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -27,6 +28,28 @@ func DefaultPath() string {
 	return filepath.Join(defaultDir, defaultFileName)
 }
 
+// NormalizePath canonicalizes a filesystem path that may carry Cursor's Windows
+// workspace-root spelling ("/c:/foo/bar" — a leading slash before the drive
+// letter) instead of a native one ("c:/foo/bar" / "c:\foo\bar"). ast-cx-hooks'
+// Cursor adapter normalizes workDir at ingestion (see its normalizeWorkDir), but
+// this is a defensive second layer: it also protects a hand-typed or
+// agent-typed path (e.g. an --ignored-file-path or --data @<file> argument
+// copied from an older suggested command, or typed directly by an agent) from
+// the same "invalid volume label syntax" failure when it reaches os.ReadFile /
+// os.WriteFile / filepath.Join. A path with no leading-slash-drive-letter
+// pattern passes through unchanged.
+func NormalizePath(path string) string {
+	r := strings.ReplaceAll(path, "\\", "/")
+	if len(r) >= 3 && r[0] == '/' && isASCIIDriveLetter(r[1]) && r[2] == ':' {
+		r = r[1:]
+	}
+	return r
+}
+
+func isASCIIDriveLetter(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+}
+
 // PathFor returns the ignore-file path anchored at workDir — the workspace root the hook
 // event reports via its "cwd" field — i.e. <workDir>/.checkmarx/checkmarxIgnoredTempList.json.
 // When workDir is empty it falls back to the CWD-relative DefaultPath.
@@ -40,13 +63,13 @@ func PathFor(workDir string) string {
 	if workDir == "" {
 		return DefaultPath()
 	}
-	return filepath.Join(workDir, defaultDir, defaultFileName)
+	return filepath.Join(NormalizePath(workDir), defaultDir, defaultFileName)
 }
 
 // Load reads the ignore file as a list of raw JSON entries. A missing or empty file yields an
 // empty list (not an error) so the first ignore creates the file cleanly.
 func Load(path string) ([]json.RawMessage, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(NormalizePath(path))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []json.RawMessage{}, nil
@@ -107,6 +130,7 @@ func Remove(list []json.RawMessage, entry any) ([]json.RawMessage, bool, error) 
 
 // Save writes the list as pretty-printed JSON, creating the parent directory if needed.
 func Save(path string, list []json.RawMessage) error {
+	path = NormalizePath(path)
 	if dir := filepath.Dir(path); dir != "" && dir != "." {
 		if err := os.MkdirAll(dir, dirPerm); err != nil {
 			return err

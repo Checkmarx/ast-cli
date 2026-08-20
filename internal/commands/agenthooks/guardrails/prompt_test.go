@@ -335,25 +335,25 @@ func makeWorkspace(t *testing.T, files map[string]string) string {
 
 func TestScanWorkspaceFilesByPromptName_BasenameMatch_BlocksOnJWT(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "token = " + sampleJWT,
+		"Sample": "token = " + sampleJWT,
 	})
-	reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
 	if reason == "" {
-		t.Fatal("expected block: workspace file Kedar contains a JWT and the prompt names it")
+		t.Fatal("expected block: workspace file Sample contains a JWT and the prompt names it")
 	}
-	if !strings.Contains(strings.ToLower(reason), "kedar") {
+	if !strings.Contains(strings.ToLower(reason), "sample") {
 		t.Fatalf("reason should cite the offending file path, got %q", reason)
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_CaseInsensitive(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "secret = " + sampleJWT,
+		"Sample": "secret = " + sampleJWT,
 	})
 	for _, prompt := range []string{
-		"check kedar file",
-		"Check Kedar File",
-		"please review the KEDAR doc",
+		"check sample file",
+		"Check Sample File",
+		"please review the SAMPLE doc",
 	} {
 		if reason := ScanWorkspaceFilesByPromptName(prompt, []string{ws}); reason == "" {
 			t.Fatalf("expected block for prompt %q (case-insensitive match)", prompt)
@@ -363,34 +363,34 @@ func TestScanWorkspaceFilesByPromptName_CaseInsensitive(t *testing.T) {
 
 func TestScanWorkspaceFilesByPromptName_NoAtSymbolRequired(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"kedar.json": `{"jwt":"` + sampleJWT + `"}`,
+		"sample.json": `{"jwt":"` + sampleJWT + `"}`,
 	})
-	if reason := ScanWorkspaceFilesByPromptName("explain kedar to me", []string{ws}); reason == "" {
-		t.Fatal("expected block on a plain word `kedar` matching kedar.json by stem")
+	if reason := ScanWorkspaceFilesByPromptName("explain sample to me", []string{ws}); reason == "" {
+		t.Fatal("expected block on a plain word `sample` matching sample.json by stem")
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_StemMatchWithExtension(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"kedar.yaml": "token: " + sampleJWT,
+		"sample.yaml": "token: " + sampleJWT,
 	})
-	if reason := ScanWorkspaceFilesByPromptName("check kedar configs", []string{ws}); reason == "" {
-		t.Fatal("expected block: prompt `kedar` should match `kedar.yaml` via stem")
+	if reason := ScanWorkspaceFilesByPromptName("check sample configs", []string{ws}); reason == "" {
+		t.Fatal("expected block: prompt `sample` should match `sample.yaml` via stem")
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_CleanFile_DoesNotBlock(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "just notes, nothing sensitive here",
+		"Sample": "just notes, nothing sensitive here",
 	})
-	if reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws}); reason != "" {
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason != "" {
 		t.Fatalf("expected no block when matched file has no secrets, got %q", reason)
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_NoMatch_DoesNotBlock(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "token = " + sampleJWT,
+		"Sample": "token = " + sampleJWT,
 	})
 	if reason := ScanWorkspaceFilesByPromptName("show me the latest tests", []string{ws}); reason != "" {
 		t.Fatalf("expected no block when prompt does not name any workspace file, got %q", reason)
@@ -433,18 +433,18 @@ func TestScanWorkspaceFilesByPromptName_ShortFilenameInsideWord_NotMatched(t *te
 }
 
 func TestScanWorkspaceFilesByPromptName_BothBasenameAndStem_BothBlock(t *testing.T) {
-	// Workspace has BOTH `kedar` (no extension) and `Kedar.json`. The prompt
-	// names `kedar`; both files match (one by basename, one by stem) and both
+	// Workspace has BOTH `sample` (no extension) and `Sample.json`. The prompt
+	// names `sample`; both files match (one by basename, one by stem) and both
 	// contain secrets — the rejection must cite both.
 	ws := makeWorkspace(t, map[string]string{
-		"kedar":      "token1 = " + sampleJWT,
-		"Kedar.json": `{"jwt":"` + sampleJWT + `"}`,
+		"sample":      "token1 = " + sampleJWT,
+		"Sample.json": `{"jwt":"` + sampleJWT + `"}`,
 	})
-	reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
 	if reason == "" {
-		t.Fatal("expected block: both `kedar` and `Kedar.json` should be detected")
+		t.Fatal("expected block: both `sample` and `Sample.json` should be detected")
 	}
-	if !strings.Contains(reason, "kedar") || !strings.Contains(reason, "Kedar.json") {
+	if !strings.Contains(reason, "sample") || !strings.Contains(reason, "Sample.json") {
 		t.Fatalf("rejection should cite BOTH files, got %q", reason)
 	}
 }
@@ -458,9 +458,9 @@ func TestScanWorkspaceFilesByPromptName_SizePolicyViolation_BlocksWithoutSecrets
 	defer writePolicyHelper(t, &policy)()
 
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar.txt": strings.Repeat("a", 5*1024), // 5 KB, no secrets
+		"Sample.txt": strings.Repeat("a", 5*1024), // 5 KB, no secrets
 	})
-	reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
 	if reason == "" {
 		t.Fatal("expected block: 5 KB file exceeds 3 KB policy cap")
 	}
@@ -476,25 +476,25 @@ func TestScanWorkspaceFilesByPromptName_SizePolicyAtCap_NotBlocked(t *testing.T)
 	defer writePolicyHelper(t, &policy)()
 
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar.txt": strings.Repeat("a", 3*1024), // exactly at cap
+		"Sample.txt": strings.Repeat("a", 3*1024), // exactly at cap
 	})
-	if reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws}); reason != "" {
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason != "" {
 		t.Fatalf("expected no block at exactly the policy cap, got %q", reason)
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_SkipsIgnoredDirs(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"node_modules/kedar.json": `{"jwt":"` + sampleJWT + `"}`,
-		".git/kedar":              "token = " + sampleJWT,
+		"node_modules/sample.json": `{"jwt":"` + sampleJWT + `"}`,
+		".git/sample":              "token = " + sampleJWT,
 	})
-	if reason := ScanWorkspaceFilesByPromptName("look at kedar", []string{ws}); reason != "" {
+	if reason := ScanWorkspaceFilesByPromptName("look at sample", []string{ws}); reason != "" {
 		t.Fatalf("expected no block: files only inside node_modules/.git should be pruned, got %q", reason)
 	}
 }
 
 func TestScanWorkspaceFilesByPromptName_NoWorkspaceRoots_NoOp(t *testing.T) {
-	if reason := ScanWorkspaceFilesByPromptName("check kedar file", nil); reason != "" {
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", nil); reason != "" {
 		t.Fatalf("expected no-op with empty workspace roots, got %q", reason)
 	}
 }
@@ -504,12 +504,12 @@ func TestScanWorkspaceFilesByPromptName_CursorStyleWindowsRoot(t *testing.T) {
 		t.Skip("Cursor /c:/foo root form is Windows-specific")
 	}
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "token = " + sampleJWT,
+		"Sample": "token = " + sampleJWT,
 	})
 	// Convert "C:\path\workspace" -> "/c:/path/workspace" (Cursor's form).
 	slashy := filepath.ToSlash(ws)
 	cursorRoot := "/" + strings.ToLower(slashy[:2]) + slashy[2:]
-	if reason := ScanWorkspaceFilesByPromptName("check kedar", []string{cursorRoot}); reason == "" {
+	if reason := ScanWorkspaceFilesByPromptName("check sample", []string{cursorRoot}); reason == "" {
 		t.Fatalf("expected block: Cursor-style root %q should normalize", cursorRoot)
 	}
 }
@@ -518,9 +518,9 @@ func TestScanWorkspaceFilesByPromptName_RecursiveSubdirMatch(t *testing.T) {
 	// File is nested several levels deep under the workspace root and not in
 	// any skipped directory. The recursive walk should still find it.
 	ws := makeWorkspace(t, map[string]string{
-		"src/auth/internal/Kedar.txt": "token = " + sampleJWT,
+		"src/auth/internal/Sample.txt": "token = " + sampleJWT,
 	})
-	if reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws}); reason == "" {
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason == "" {
 		t.Fatal("expected block: nested file should be found by recursive walk")
 	}
 }
@@ -550,7 +550,7 @@ func TestScanWorkspaceFilesByPromptName_ExtensionAloneNotMatched(t *testing.T) {
 	// Generic extensions like "json" must not flag every json file in the repo
 	// — the trailing extension piece is dropped from filenameNameParts.
 	ws := makeWorkspace(t, map[string]string{
-		"kedar.json": `{"jwt":"` + sampleJWT + `"}`,
+		"sample.json": `{"jwt":"` + sampleJWT + `"}`,
 	})
 	if reason := ScanWorkspaceFilesByPromptName("what is a json document", []string{ws}); reason != "" {
 		t.Fatalf("expected no block: extension `json` should not match by itself, got %q", reason)
@@ -558,8 +558,8 @@ func TestScanWorkspaceFilesByPromptName_ExtensionAloneNotMatched(t *testing.T) {
 }
 
 func TestExtractPromptTokens(t *testing.T) {
-	got := extractPromptTokens("check Kedar.json and id_rsa, also @secret-config!")
-	want := []string{"check", "kedar", "json", "and", "id_rsa", "also", "secret-config"}
+	got := extractPromptTokens("check Sample.json and id_rsa, also @secret-config!")
+	want := []string{"check", "sample", "json", "and", "id_rsa", "also", "secret-config"}
 	for _, w := range want {
 		if _, ok := got[w]; !ok {
 			t.Errorf("missing token %q in %v", w, got)
@@ -569,8 +569,8 @@ func TestExtractPromptTokens(t *testing.T) {
 
 func TestFilenameNameParts(t *testing.T) {
 	cases := map[string][]string{
-		"Kedar":             {"kedar"},
-		"kedar.json":        {"kedar"},
+		"Sample":            {"sample"},
+		"sample.json":       {"sample"},
 		".env":              {"env"},
 		".env.local":        {"env"},
 		"config.local.json": {"config", "local"},
@@ -599,14 +599,14 @@ func TestFilenameNameParts(t *testing.T) {
 
 func TestScanFileForSecrets_BlocksOnJWT(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "Kedar.txt")
+	path := filepath.Join(dir, "Sample.txt")
 	mustWrite(t, path, "token = "+sampleJWT)
 
 	reason := ScanFileForSecrets(path)
 	if reason == "" {
 		t.Fatal("expected block: file contains a JWT")
 	}
-	if !strings.Contains(reason, "Kedar.txt") {
+	if !strings.Contains(reason, "Sample.txt") {
 		t.Fatalf("reason should cite the file path, got %q", reason)
 	}
 	if !strings.Contains(reason, "Do NOT attempt alternative commands") {
@@ -672,9 +672,9 @@ func TestScanFileForSecrets_AtPolicyCap_Allowed(t *testing.T) {
 
 func TestScanWorkspaceFilesByPromptName_DenyMessageAppended(t *testing.T) {
 	ws := makeWorkspace(t, map[string]string{
-		"Kedar": "token = " + sampleJWT,
+		"Sample": "token = " + sampleJWT,
 	})
-	reason := ScanWorkspaceFilesByPromptName("check kedar file", []string{ws})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
 	if !strings.Contains(reason, "Do NOT attempt alternative commands") {
 		t.Fatalf("expected DenyMessage no-workaround text in reason, got %q", reason)
 	}
