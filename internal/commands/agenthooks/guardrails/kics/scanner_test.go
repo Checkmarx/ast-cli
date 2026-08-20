@@ -42,7 +42,7 @@ func TestNewScanner_HoldsWrappers(t *testing.T) {
 
 func TestNewScannerWithFunc_UsesMockFunction(t *testing.T) {
 	called := false
-	mockFunc := func(path string) ([]iacrealtime.IacRealtimeResult, error) {
+	mockFunc := func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
 		called = true
 		return []iacrealtime.IacRealtimeResult{}, nil
 	}
@@ -56,7 +56,7 @@ func TestNewScannerWithFunc_UsesMockFunction(t *testing.T) {
 	}
 
 	// Verify the mock function is called
-	_, _ = s.scan("")
+	_, _ = s.scan("", "")
 	if !called {
 		t.Fatal("expected mock function to be called")
 	}
@@ -71,12 +71,12 @@ func TestNewScannerWithFunc_MockReturnsResults(t *testing.T) {
 		},
 	}
 
-	mockFunc := func(path string) ([]iacrealtime.IacRealtimeResult, error) {
+	mockFunc := func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
 		return mockResults, nil
 	}
 
 	s := NewScannerWithFunc(mockFunc)
-	results, err := s.scan("/some/path")
+	results, err := s.scan("/some/path", "")
 
 	assert.NoError(t, err)
 	assert.Equal(t, mockResults, results)
