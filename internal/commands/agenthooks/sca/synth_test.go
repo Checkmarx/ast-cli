@@ -107,6 +107,19 @@ func TestSynthesize_Sbt(t *testing.T) {
 	})
 }
 
+func TestSynthesize_MavenPom(t *testing.T) {
+	roundTrip(t, FormatMavenPom, []Package{
+		{Name: "com.example:foo", Version: "1.0.0"},
+		{Name: "com.example:bar", Version: "2.0.0"},
+	})
+}
+
+func TestSynthesize_DotnetDirectoryPackagesProps(t *testing.T) {
+	roundTrip(t, FormatDotnetDirectoryPackagesProps, []Package{
+		{Name: "Newtonsoft.Json", Version: "13.0.1"},
+	})
+}
+
 func TestSynthesize_UnsupportedFormat(t *testing.T) {
 	dir, _ := os.MkdirTemp("", "synth-test-")
 	defer os.RemoveAll(dir)
