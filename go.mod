@@ -2,6 +2,10 @@ module github.com/checkmarx/ast-cli
 
 go 1.26.5
 
+// TODO: remove once ast-cx-hooks publishes a release with Codex CLI support
+// (currently only on the "codex" branch, commit 8bafa41).
+replace github.com/Checkmarx/ast-cx-hooks => ../ast-cx-hooks
+
 require (
 	github.com/Checkmarx/ast-cx-hooks v1.0.5
 	github.com/Checkmarx/containers-resolver v1.0.34

@@ -621,6 +621,7 @@ func TestAgentToString(t *testing.T) {
 		{"gemini", agenthooks.AgentGemini, "Gemini"},
 		{"droid", agenthooks.AgentDroid, "Droid"},
 		{"windsurf", agenthooks.AgentWindsurf, "Windsurf"},
+		{"codex", agenthooks.AgentCodex, "Codex"},
 		{"unknown", agenthooks.AgentID("something-else"), "Unknown"},
 	}
 	for _, tt := range tests {

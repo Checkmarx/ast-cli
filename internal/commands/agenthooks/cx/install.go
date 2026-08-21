@@ -103,6 +103,18 @@ var Agents = []Agent{
 			{"copilot-cli-user-prompt-submit", "Gate GitHub Copilot CLI prompt"},
 		},
 	},
+	{
+		ID:          "codex",
+		DisplayName: "OpenAI Codex CLI",
+		ConfigPath:  "~/.codex/hooks.json",
+		Install:     install.InstallCodex,
+		Routes: []Route{
+			{"codex-stop", "Codex CLI agent finished"},
+			{"codex-pre-tool-use", "Gate Codex CLI tool use"},
+			{"codex-pre-file-write", "Gate Codex CLI file write"},
+			{"codex-user-prompt-submit", "Gate Codex CLI prompt"},
+		},
+	},
 }
 
 // FindAgent returns the Agent with the given ID, or nil if not found.
