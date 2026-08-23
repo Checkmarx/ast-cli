@@ -1,11 +1,13 @@
 package commands
 
 import (
+	"context"
+	stderrors "errors"
 	"fmt"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -24,15 +26,18 @@ func newAuthLogoutCommand() *cobra.Command {
 	}
 }
 
-// runAuthLogout clears the cx_apikey field in the yaml config file. The
-// client-credentials and env-provided credentials are intentionally left alone.
+// runAuthLogout clears the stored api-key credential (keyring and any leftover
+// plaintext config-file entry). The client-credentials and env-provided credentials are
+// intentionally left alone.
 func runAuthLogout(cmd *cobra.Command, _ []string) error {
-	configPath, err := configuration.GetConfigFilePath()
-	if err != nil {
-		return errors.Wrap(err, "failed to resolve config file path")
-	}
-	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AstAPIKey, ""); err != nil {
+	err := credentialstore.Default().Clear(context.Background(), credentialstore.CredentialAPIKey)
+	if err != nil && !stderrors.Is(err, credentialstore.ErrNotFound) {
 		return errors.Wrap(err, "failed to clear stored credential")
+	}
+	if !credentialstore.Default().StoresInConfigFile() {
+		if removeErr := credentialstore.Default().RemoveConfigFileEntry(credentialstore.CredentialAPIKey); removeErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("failed to remove old credential from config file: %v", removeErr))
+		}
 	}
 	_, _ = fmt.Fprintln(cmd.OutOrStdout(), "Successfully logged out of Checkmarx One server!")
 	return nil

@@ -1,34 +1,58 @@
 package mock
 
-// CredentialStoreMock is an in-memory CredentialStore for unit tests.
+import (
+	"context"
+	"sync"
+
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
+)
+
 type CredentialStoreMock struct {
-	Store map[string]string
+	mu        sync.Mutex
+	Store     map[string]string
+	GetErr    error
+	SetErr    error
+	DeleteErr error
 }
 
-// NewCredentialStoreMock returns an empty in-memory credential store.
 func NewCredentialStoreMock() *CredentialStoreMock {
-	return &CredentialStoreMock{Store: map[string]string{}}
+	return &CredentialStoreMock{Store: make(map[string]string)}
 }
 
-// GetSecret retrieves a secret value from the in-memory store.
-func (m *CredentialStoreMock) GetSecret(key string) (string, error) {
-	if m.Store == nil {
-		return "", nil
+func (m *CredentialStoreMock) Get(_ context.Context, credentialName string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetErr != nil {
+		return "", m.GetErr
 	}
-	return m.Store[key], nil
+	value, ok := m.Store[credentialName]
+	if !ok {
+		return "", credentialstore.ErrNotFound
+	}
+	return value, nil
 }
 
-// SetSecret stores a secret value in the in-memory store.
-func (m *CredentialStoreMock) SetSecret(key, value string) error {
-	if m.Store == nil {
-		m.Store = map[string]string{}
+func (m *CredentialStoreMock) Set(_ context.Context, credentialName string, value string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.SetErr != nil {
+		return m.SetErr
 	}
-	m.Store[key] = value
+	m.Store[credentialName] = value
 	return nil
 }
 
-// DeleteSecret removes a secret value from the in-memory store.
-func (m *CredentialStoreMock) DeleteSecret(key string) error {
-	delete(m.Store, key)
+func (m *CredentialStoreMock) Delete(_ context.Context, credentialName string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.DeleteErr != nil {
+		return m.DeleteErr
+	}
+	if _, ok := m.Store[credentialName]; !ok {
+		return credentialstore.ErrNotFound
+	}
+	delete(m.Store, credentialName)
 	return nil
 }
+
+var _ credentialstore.CredentialStore = (*CredentialStoreMock)(nil)

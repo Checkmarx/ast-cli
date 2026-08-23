@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/kerberos"
 	"github.com/checkmarx/ast-cli/internal/wrappers/ntlm"
@@ -606,8 +607,14 @@ func enrichWithPasswordCredentials(
 
 func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret := viper.GetString(commonParams.AccessKeySecretConfigKey)
-	astAPIKey := viper.GetString(commonParams.AstAPIKey)
+	accessKeySecret, err := credentialstore.Resolve(credentialstore.CredentialClientSecret)
+	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
+		return "", err
+	}
+	astAPIKey, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
+	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
+		return "", err
+	}
 	var accessToken string
 	credType := viper.GetString(commonParams.PreferredCredentialTypeKey)
 
@@ -672,7 +679,7 @@ func writeCredentialsToCache(accessToken string) {
 	defer credentialsMutex.Unlock()
 
 	logger.PrintIfVerbose("Storing API access token to cache.")
-	viper.Set(commonParams.AstToken, accessToken)
+	logger.RegisterSensitiveValue(accessToken)
 	cachedAccessToken = accessToken
 	cachedAccessTime = time.Now()
 }
@@ -915,7 +922,10 @@ func GetRealmURL() (string, error) {
 	var err error
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
-	apiKey := viper.GetString(commonParams.AstAPIKey)
+	apiKey, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
+	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
+		return "", err
+	}
 	// On override, skip decoding the stored key so the flags win and a stale key
 	// can't block login with a decode error.
 	if len(apiKey) > 0 && !override {

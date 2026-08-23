@@ -6,11 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 	"gotest.tools/assert"
 )
 
@@ -80,8 +79,8 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 			Value: "azureai",
 		},
 	}
-	origAPIKey := viper.GetString(params.AstAPIKey)
-	viper.Set(params.AstAPIKey, "SomeKey")
+	store := swapCredentialResolver(t)
+	store.Store[credentialstore.CredentialAPIKey] = "SomeKey"
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
@@ -96,7 +95,6 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 	s := strings.ToLower(string(output))
 
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	viper.Set(params.AstAPIKey, origAPIKey)
 
 	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }
@@ -116,8 +114,8 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 			Value: "checkmarxai",
 		},
 	}
-	origAPIKey := viper.GetString(params.AstAPIKey)
-	viper.Set(params.AstAPIKey, "SomeKey")
+	store2 := swapCredentialResolver(t)
+	store2.Store[credentialstore.CredentialAPIKey] = "SomeKey"
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
@@ -133,7 +131,6 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 	s := strings.ToLower(string(output))
 
 	mock.TenantConfiguration = []*wrappers.TenantConfigurationResponse{}
-	viper.Set(params.AstAPIKey, origAPIKey)
 
 	assert.Assert(t, strings.Contains(s, "mock message from securecall"), s)
 }
