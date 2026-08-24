@@ -106,6 +106,23 @@ func TestSavePreservesPermissionsAndCleansTempFile(t *testing.T) {
 	}
 }
 
+// Renaming the temp file over an existing directory must fail and clean up
+// the temp file rather than leaving it behind.
+func TestSaveRenameOntoDirectoryFailsAndCleansTemp(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.yaml")
+	assert.NoError(t, os.Mkdir(path, 0o700))
+
+	err := Save(path, map[string]interface{}{"k": "v"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "replacing config file")
+
+	entries, err := os.ReadDir(dir)
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.True(t, entries[0].IsDir())
+}
+
 func TestLoadDirectoryPathReturnsError(t *testing.T) {
 	_, err := Load(t.TempDir())
 	assert.Error(t, err)

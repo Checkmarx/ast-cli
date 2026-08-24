@@ -22,6 +22,10 @@ func TestCanonicalConfigPathDriveLetterEquivalence(t *testing.T) {
 	assert.True(t, strings.HasPrefix(upper, "c:"))
 }
 
+func TestCanonicalConfigPathEmptyReturnsEmpty(t *testing.T) {
+	assert.Equal(t, "", CanonicalConfigPath(""))
+}
+
 func TestCanonicalConfigPathRelativeEqualsAbsolute(t *testing.T) {
 	tmp := t.TempDir()
 	absolute := CanonicalConfigPath(tmp)
@@ -72,4 +76,27 @@ func TestIsSecret(t *testing.T) {
 	assert.True(t, IsSecret(params.AccessKeySecretConfigKey))
 	assert.False(t, IsSecret(params.ConfigFilePathKey))
 	assert.False(t, IsSecret(""))
+}
+
+func TestEnvVarForUnknownCredentialReturnsFalse(t *testing.T) {
+	envVar, ok := envVarFor("unknown")
+	assert.False(t, ok)
+	assert.Equal(t, "", envVar)
+}
+
+func TestEnvValueUnknownCredentialReturnsEmpty(t *testing.T) {
+	assert.Equal(t, "", envValue("unknown"))
+}
+
+func TestCredentialForViperKey(t *testing.T) {
+	name, ok := CredentialForViperKey(params.AstAPIKey)
+	assert.True(t, ok)
+	assert.Equal(t, CredentialAPIKey, name)
+
+	name, ok = CredentialForViperKey(params.AccessKeySecretConfigKey)
+	assert.True(t, ok)
+	assert.Equal(t, CredentialClientSecret, name)
+
+	_, ok = CredentialForViperKey(params.ConfigFilePathKey)
+	assert.False(t, ok)
 }

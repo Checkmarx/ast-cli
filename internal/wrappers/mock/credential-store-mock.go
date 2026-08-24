@@ -19,6 +19,7 @@ func NewCredentialStoreMock() *CredentialStoreMock {
 	return &CredentialStoreMock{Store: make(map[string]string)}
 }
 
+// Get returns the stored value for credentialName, or GetErr/ErrNotFound.
 func (m *CredentialStoreMock) Get(_ context.Context, credentialName string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -32,7 +33,8 @@ func (m *CredentialStoreMock) Get(_ context.Context, credentialName string) (str
 	return value, nil
 }
 
-func (m *CredentialStoreMock) Set(_ context.Context, credentialName string, value string) error {
+// Set stores value under credentialName, or returns SetErr.
+func (m *CredentialStoreMock) Set(_ context.Context, credentialName, value string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.SetErr != nil {
@@ -42,6 +44,7 @@ func (m *CredentialStoreMock) Set(_ context.Context, credentialName string, valu
 	return nil
 }
 
+// Delete removes credentialName, or returns DeleteErr/ErrNotFound.
 func (m *CredentialStoreMock) Delete(_ context.Context, credentialName string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

@@ -11,6 +11,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/configfile"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/gofrs/flock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,6 +100,55 @@ func TestRunMigrationSetFailureKeepsYAML(t *testing.T) {
 	assert.Equal(t, migratedAPIKey, value)
 }
 
+// verifyFailStore reports ErrNotFound on the first Get (so migrateOne routes
+// into migrateAndRemove) then fails every subsequent Get, so the
+// post-Set verification read in migrateAndRemove observes an error.
+type verifyFailStore struct {
+	gets int
+}
+
+func (s *verifyFailStore) Get(context.Context, string) (string, error) {
+	s.gets++
+	if s.gets == 1 {
+		return "", ErrNotFound
+	}
+	return "", errors.New("keyring read refused")
+}
+
+func (s *verifyFailStore) Set(context.Context, string, string) error { return nil }
+func (s *verifyFailStore) Delete(context.Context, string) error      { return nil }
+
+func TestRunMigrationVerificationFailureKeepsYAML(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	resolver := NewResolver(configPath, PolicyAuto, &verifyFailStore{})
+
+	resolver.RunMigration(context.Background())
+
+	value := readStoredValueForTest(t, configPath, params.AstAPIKey)
+	assert.Equal(t, migratedAPIKey, value)
+}
+
+// A config file lock held by another process must not fail migration outright:
+// the keyring write already succeeded, so the leftover YAML entry is a
+// cosmetic cleanup failure logged verbosely, not a hard error.
+func TestRunMigrationConfigFileRemovalLockedIsQuiet(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	lock := flock.New(configPath + ".lock")
+	locked, lockErr := lock.TryLock()
+	assert.NoError(t, lockErr)
+	assert.True(t, locked)
+	t.Cleanup(func() { _ = lock.Unlock() })
+
+	resolver := NewResolver(configPath, PolicyAuto, newFakeStore())
+	assert.NotPanics(t, func() { resolver.RunMigration(context.Background()) })
+
+	stored, err := resolver.store.Get(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, stored)
+}
+
 func TestRunMigrationDisabledIsNoOp(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
 	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
@@ -183,8 +233,44 @@ func TestResolveNumericPlaintextScalar(t *testing.T) {
 	assert.Equal(t, "12345", value)
 }
 
+func TestViperKeyForUnknownCredentialReturnsEmpty(t *testing.T) {
+	assert.Equal(t, "", viperKeyFor("unknown"))
+}
+
+// migrateOne is only ever called by RunMigration after it has already
+// verified the YAML value is non-empty; this pins that guard as belt-and-
+// suspenders for any future direct caller.
+func TestMigrateOneEmptyYAMLValueIsNoOp(t *testing.T) {
+	store := newFakeStore()
+	resolver := NewResolver(filepath.Join(t.TempDir(), "checkmarxcli.yaml"), PolicyAuto, store)
+
+	resolver.migrateOne(context.Background(), CredentialAPIKey, map[string]interface{}{})
+
+	assert.Equal(t, 0, store.calls())
+}
+
 // An unreadable config file (a directory path) must no-op migration quietly.
 func TestRunMigrationUnreadableConfigIsNoop(t *testing.T) {
 	resolver := NewResolver(t.TempDir(), PolicyAuto, newFakeStore())
 	assert.NotPanics(t, func() { resolver.RunMigration(context.Background()) })
+}
+
+// Migrate is the package-level wrapper over Default().RunMigration; this
+// pins it to the injected default resolver so it never touches the real
+// keyring or the user's actual config file.
+func TestMigratePackageLevelWrapper(t *testing.T) {
+	ResetForTest()
+	defer ResetForTest()
+
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := newFakeStore()
+	SetDefaultResolverForTest(NewResolver(configPath, PolicyAuto, store))
+
+	Migrate()
+
+	stored, err := store.Get(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, stored)
+	assert.Empty(t, readStoredValueForTest(t, configPath, params.AstAPIKey))
 }

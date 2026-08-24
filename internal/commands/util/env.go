@@ -47,8 +47,12 @@ type envBinding struct {
 // environment variable name, in declaration order. Secret properties are
 // appended explicitly: they are no longer bound to environment variables but
 // remain listed (obfuscated) configuration entries.
+// extraEnvBindings accounts for the apikey/client-secret/proxy bindings
+// appended below, which live outside params.EnvVarsBinds.
+const extraEnvBindings = 3
+
 func configurableEnvBindings() []envBinding {
-	bindings := make([]envBinding, 0, len(Properties)+3)
+	bindings := make([]envBinding, 0, len(Properties)+extraEnvBindings)
 	for _, bind := range params.EnvVarsBinds {
 		if Properties[bind.Key] {
 			bindings = append(bindings, envBinding{key: bind.Key, env: bind.Env})

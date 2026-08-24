@@ -126,6 +126,70 @@ func TestResolvePrecedence(t *testing.T) {
 	}
 }
 
+// TestExplicitEmptyOverridesEnvAndStore pins the fix for --apikey "" (a
+// flag the user actually typed) losing to CX_APIKEY/keyring: an explicitly
+// set credential, even empty, must win over every lower layer for this
+// invocation, matching pre-keyring viper flag-over-env precedence.
+func TestExplicitEmptyOverridesEnvAndStore(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, yamlWithAPIKey)
+	t.Setenv(params.AstAPIKeyEnv, "env-secret")
+	store := newFakeStore()
+	store.values[CredentialAPIKey] = "store-secret"
+
+	resolver := NewResolver(configPath, PolicyAuto, store)
+	resolver.SetExplicit(CredentialAPIKey, "")
+
+	got, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "", got)
+}
+
+// SetExplicitCredential is the package-level wrapper over
+// Default().SetExplicit, exercised through the same injected-resolver seam
+// TestMigratePackageLevelWrapper uses.
+func TestSetExplicitCredentialPackageLevelWrapper(t *testing.T) {
+	ResetForTest()
+	defer ResetForTest()
+
+	store := newFakeStore()
+	SetDefaultResolverForTest(NewResolver(filepath.Join(t.TempDir(), "checkmarxcli.yaml"), PolicyAuto, store))
+
+	SetExplicitCredential(CredentialAPIKey, "explicit-secret")
+
+	got, err := Resolve(CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "explicit-secret", got)
+}
+
+// An unreachable keyring degrades to the config-file layer instead of failing
+// the command outright.
+func TestResolveAutoKeyringUnavailableFallsBackToYAML(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, yamlWithAPIKey)
+	store := newFakeStore()
+	store.getErr = ErrKeyringUnavailable
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	value, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "yaml-secret", value)
+}
+
+// When the keyring is unreachable and the config file has nothing either, the
+// error must name the escape hatches rather than a bare "not found".
+func TestResolveAutoKeyringUnavailableAndConfigMissingNamesEscapeHatch(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	store := newFakeStore()
+	store.getErr = ErrKeyringUnavailable
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	_, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.ErrorIs(t, err, ErrKeyringUnavailable)
+	assert.ErrorContains(t, err, "CX_APIKEY")
+	assert.ErrorContains(t, err, "CX_KEYRING_MODE")
+}
+
 func TestResolveDisabledNeverConsultsStore(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
 	writePlaintextConfig(t, configPath, yamlWithAPIKey)

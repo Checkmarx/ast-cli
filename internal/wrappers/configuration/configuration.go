@@ -150,6 +150,8 @@ func setConfigPropertyQuiet(propName, propValue string) {
 	}
 }
 
+// SetConfigProperty stores propValue for propName via the credential resolver
+// or config file, masking the echoed value when propName is a secret.
 func SetConfigProperty(propName, propValue string) error {
 	displayValue := propValue
 	if credentialstore.IsSecret(strings.ToLower(propName)) {

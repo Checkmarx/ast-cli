@@ -105,11 +105,15 @@ func (r *Resolver) StoresInConfigFile() bool {
 	return r.policy == PolicyDisabled
 }
 
-// Explicit and environment layers treat "" as absent, so --apikey "" cannot
-// clear a stored credential for a single invocation. Name validity is checked
-// by the exported entry points.
+// The explicit layer distinguishes "flag passed" from "flag absent" by map
+// presence, so --apikey "" wins over env/keyring/config for this invocation
+// (matching pre-keyring viper flag-over-env precedence) without ever writing
+// through to the persisted credential — Store/Clear are separate calls.
+// The environment layer has no such distinction: an empty env var is
+// indistinguishable from an unset one, so it is treated as absent. Name
+// validity is checked by the exported entry points.
 func (r *Resolver) resolve(ctx context.Context, credentialName string) (string, error) {
-	if value := r.explicitValue(credentialName); value != "" {
+	if value, ok := r.explicitValue(credentialName); ok {
 		return value, nil
 	}
 	if value := envValue(credentialName); value != "" {
@@ -125,10 +129,11 @@ func (r *Resolver) resolve(ctx context.Context, credentialName string) (string, 
 	}
 }
 
-func (r *Resolver) explicitValue(credentialName string) string {
+func (r *Resolver) explicitValue(credentialName string) (string, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.explicit[credentialName]
+	value, ok := r.explicit[credentialName]
+	return value, ok
 }
 
 func (r *Resolver) resolveFromConfigFile(credentialName string) (string, error) {
@@ -137,9 +142,6 @@ func (r *Resolver) resolveFromConfigFile(credentialName string) (string, error) 
 		return "", err
 	}
 	value := stringValue(config[viperKeyFor(credentialName)])
-	if err != nil {
-		return "", err
-	}
 	if value == "" {
 		return "", ErrNotFound
 	}

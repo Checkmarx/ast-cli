@@ -13,6 +13,8 @@ import (
 	"gotest.tools/assert"
 )
 
+const testAPIKeyValue = "SomeKey"
+
 func TestChatKicsHelp(t *testing.T) {
 	execCmdNilAssertion(t, "help", "chat", "kics")
 }
@@ -80,7 +82,7 @@ func TestChatKicsAzureAICorrectResponse(t *testing.T) {
 		},
 	}
 	store := swapCredentialResolver(t)
-	store.Store[credentialstore.CredentialAPIKey] = "SomeKey"
+	store.Store[credentialstore.CredentialAPIKey] = testAPIKeyValue
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),
@@ -115,7 +117,7 @@ func TestChatKicsCheckmarxAICorrectResponse(t *testing.T) {
 		},
 	}
 	store2 := swapCredentialResolver(t)
-	store2.Store[credentialstore.CredentialAPIKey] = "SomeKey"
+	store2.Store[credentialstore.CredentialAPIKey] = testAPIKeyValue
 
 	buffer, err := executeRedirectedTestCommand("chat", "kics",
 		"--conversation-id", uuid.New().String(),

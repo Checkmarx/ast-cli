@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/credentialstore"
+	"github.com/checkmarx/ast-cli/internal/params"
 )
 
 // TestMain isolates bridge tests from the real OS keyring and config file.

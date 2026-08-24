@@ -133,6 +133,15 @@ func TestClearDisabledMissingParentDirFails(t *testing.T) {
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
+// An unreadable (as opposed to merely missing) config file must propagate the
+// read error rather than reporting a plain ErrNotFound.
+func TestClearDisabledUnreadableConfigPropagatesError(t *testing.T) {
+	resolver := NewResolver(t.TempDir(), PolicyDisabled, nil)
+	err := resolver.Clear(context.Background(), CredentialAPIKey)
+	assert.Error(t, err)
+	assert.NotErrorIs(t, err, ErrNotFound)
+}
+
 // Auto mode surfaces a config-file read failure instead of masking it as
 // not-found once the keyring layer also misses.
 func TestResolveAutoConfigFileReadErrorSurfaces(t *testing.T) {
