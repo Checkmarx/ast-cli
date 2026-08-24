@@ -28,7 +28,7 @@ func (r *MavenResolver) ResolveDependencies(projectPath string) (*DependencyTree
 	rootName := extractMavenProjectName(projectPath)
 
 	return &DependencyTreeResult{
-		PackageManager: "maven",
+		PackageManager: "mvn",
 		ProjectPath:    projectPath,
 		RootPackage:    rootName,
 		Dependencies:   deps,
@@ -45,6 +45,7 @@ func parseMavenTreeOutput(output string) []Dependency {
 	lines := strings.Split(output, "\n")
 	var deps []Dependency
 	var stack []string // Track parent chain by depth
+	visitedDeps := make(map[string]bool) // Deduplicate same package@version
 
 	for _, line := range lines {
 		// Skip non-tree lines
@@ -52,8 +53,9 @@ func parseMavenTreeOutput(output string) []Dependency {
 			continue
 		}
 
-		// Skip metadata lines
-		if !strings.Contains(line, ":") {
+		// Skip metadata lines - must contain actual dependency tree patterns like "+-", "\-"
+		// This filters out lines that only have + in timestamps
+		if !strings.Contains(line, "+-") && !strings.Contains(line, "\\-") && !strings.Contains(line, "|") {
 			continue
 		}
 
@@ -63,11 +65,23 @@ func parseMavenTreeOutput(output string) []Dependency {
 			continue
 		}
 
+		// Skip packages with empty names or versions
+		if pkg.Name == "" || pkg.Version == "" {
+			continue
+		}
+
 		// Adjust stack to current depth
 		adjustStackByDepth(&stack, depth)
 
-		// Determine if direct (depth 1 is direct, others are transitive)
-		isDirect := depth == 1
+		// Determine if direct (depth 2 is direct - first level with tree chars, others are transitive)
+		isDirect := depth == 2
+
+		// Deduplicate by name@version to avoid sending same package multiple times
+		depKey := pkg.Name + "@" + pkg.Version
+		if visitedDeps[depKey] {
+			continue
+		}
+		visitedDeps[depKey] = true
 
 		// Determine parent
 		parentName := ""
@@ -80,12 +94,32 @@ func parseMavenTreeOutput(output string) []Dependency {
 			Name:        pkg.Name,
 			Version:     pkg.Version,
 			IsDirect:    isDirect,
-			PackageType: "maven",
+			PackageType: "mvn",
 			Parents:     []string{parentName},
 		}
 
 		deps = append(deps, dep)
 		stack = append(stack, pkg.Name+":"+pkg.Version)
+	}
+
+	// Post-processing: build parent-child relationships
+	// For each dep, add it to the children of its parents
+	for i := range deps {
+		for _, parentKey := range deps[i].Parents {
+			if parentKey == "" {
+				continue
+			}
+			// Find the parent by matching name:version format
+			for j := range deps {
+				parentFullKey := deps[j].Name + ":" + deps[j].Version
+				if parentFullKey == parentKey {
+					// deps[i] is a child of deps[j]
+					childKey := deps[i].Name + "@" + deps[i].Version
+					deps[j].Children = append(deps[j].Children, childKey)
+					break
+				}
+			}
+		}
 	}
 
 	return deps
@@ -111,8 +145,8 @@ func extractMavenPackageInfo(line string) (*mavenPkg, int) {
 	}
 
 	pkgStr := strings.TrimSpace(parts[1])
-	// Remove tree characters
-	pkgStr = strings.TrimLeft(pkgStr, "+-|\\")
+	// Remove tree characters and whitespace (space must be included in the set)
+	pkgStr = strings.TrimLeft(pkgStr, " +-|\\")
 	pkgStr = strings.TrimSpace(pkgStr)
 
 	// Split by colon: "org.springframework:spring-core:jar:5.2.0:compile"
@@ -121,9 +155,14 @@ func extractMavenPackageInfo(line string) (*mavenPkg, int) {
 		return nil, 0
 	}
 
+	// Skip test scope dependencies (scope is last token: tokens[4])
+	if len(tokens) > 4 && tokens[4] == "test" {
+		return nil, 0
+	}
+
 	return &mavenPkg{
 		Name:    tokens[0] + ":" + tokens[1], // "org.springframework:spring-core"
-		Version: tokens[3],                    // "5.2.0"
+		Version: tokens[3],                   // "5.2.0"
 	}, depth
 }
 

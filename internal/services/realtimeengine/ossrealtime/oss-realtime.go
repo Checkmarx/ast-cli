@@ -112,8 +112,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath, sbomF
 	} else {
 		// Option B: Generate transitive deps on-the-fly using native resolvers
 		if err := enrichWithGeneratedDeps(o, response, projectPath); err != nil {
+			logger.Printf("oss-realtime: transitive dependency enrichment failed (results may be incomplete): %v", err)
 			logger.PrintfIfVerbose("Generated deps enrichment skipped: %v", err)
 			// Never fail the scan on enrichment error
+		} else {
+			logger.PrintfIfVerbose("✅ Enriched response with transitive vulnerabilities")
 		}
 	}
 
@@ -449,7 +452,7 @@ func enrichWithGeneratedDeps(
 	}
 
 	// Scan transitive packages via realtime API
-	logger.PrintfIfVerbose("🔍 Scanning %d transitive packages via realtime scanner", len(transitivePkgs))
+	logger.Printf("🔍 Scanning %d transitive packages via realtime scanner", len(transitivePkgs))
 	req := &wrappers.RealtimeScannerPackageRequest{Packages: transitivePkgs}
 	scanResult, err := service.RealtimeScannerWrapper.ScanPackages(req)
 	if err != nil {
@@ -471,10 +474,23 @@ func enrichResponseWithTransitiveDependencies(
 	// Build dependency graph for path finding
 	depGraph := buildDependencyGraph(allDeps)
 
+	logger.PrintfIfVerbose("enrichResponseWithTransitiveDependencies: processing %d scanned packages from realtime scanner", len(vulnPackages))
+	initialCount := len(response.Packages)
+	vulnCount := 0
+
+	// Log resolver package names for debugging
+	logger.PrintfIfVerbose("📦 Resolver has %d dependencies:", len(allDeps))
+	for i, dep := range allDeps {
+		if i < 5 {
+			logger.PrintfIfVerbose("  [%d] %s@%s (isDirect: %v)", i, dep.Name, dep.Version, dep.IsDirect)
+		}
+	}
+
 	for _, vulnPkg := range vulnPackages {
 		if vulnPkg.Status == "OK" || len(vulnPkg.Vulnerabilities) == 0 {
 			continue // Skip packages without vulnerabilities
 		}
+		vulnCount++
 
 		// Find this package in the dependency list
 		var depInfo *dependency_resolver.Dependency
@@ -486,18 +502,27 @@ func enrichResponseWithTransitiveDependencies(
 		}
 
 		if depInfo == nil {
+			logger.PrintfIfVerbose("  ❌ no match for %s@%s (API) in dependency graph", vulnPkg.PackageName, vulnPkg.Version)
+			// Show what resolver has for this package name part
+			for _, dep := range allDeps {
+				if strings.Contains(dep.Name, vulnPkg.PackageName) || strings.Contains(vulnPkg.PackageName, dep.Name) {
+					logger.PrintfIfVerbose("     (but found similar: %s@%s)", dep.Name, dep.Version)
+				}
+			}
 			continue // Package not found in dependency graph
 		}
 
 		// Find shortest path from root to this package
 		path := findShortestPath(depGraph, depInfo.Name+"@"+depInfo.Version)
 		if len(path) < 2 {
+			logger.PrintfIfVerbose("  no valid path for %s@%s (path len: %d)", vulnPkg.PackageName, vulnPkg.Version, len(path))
 			continue // No valid path found
 		}
 
 		// Calculate depth (skip root and the package itself)
 		depth := len(path) - 2
 		if depth < 1 {
+			logger.PrintfIfVerbose("  %s@%s is not transitive (depth: %d, path: %v)", vulnPkg.PackageName, vulnPkg.Version, depth, path)
 			continue // Not really transitive
 		}
 
@@ -538,17 +563,30 @@ func enrichResponseWithTransitiveDependencies(
 
 		response.Packages = append(response.Packages, ossPackage)
 	}
+	addedCount := len(response.Packages) - initialCount
+	logger.PrintfIfVerbose("enrichResponseWithTransitiveDependencies: added %d transitive packages with vulnerabilities (found %d with vulns out of %d scanned)", addedCount, vulnCount, len(vulnPackages))
 }
 
 // buildDependencyGraph creates an adjacency map for path finding
 func buildDependencyGraph(deps []dependency_resolver.Dependency) map[string][]string {
 	graph := make(map[string][]string)
+
+	// Add edges from each dependency to its children
 	for _, dep := range deps {
 		key := dep.Name + "@" + dep.Version
 		for _, child := range dep.Children {
 			graph[key] = append(graph[key], child)
 		}
 	}
+
+	// Add edges from root to all direct dependencies
+	for _, dep := range deps {
+		if dep.IsDirect {
+			key := dep.Name + "@" + dep.Version
+			graph["root"] = append(graph["root"], key)
+		}
+	}
+
 	return graph
 }
 
