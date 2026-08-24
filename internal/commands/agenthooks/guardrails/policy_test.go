@@ -867,7 +867,7 @@ func TestCheckWorkspaceRoots_Blocked(t *testing.T) {
 	policy.DefaultPolicy.RestrictedDirectories.Enabled = true
 	policy.DefaultPolicy.RestrictedDirectories.Linux = []string{"/restricted/"}
 	policy.DefaultPolicy.RestrictedDirectories.Mac = []string{"/restricted/"}
-	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\Cx-Flow\\"}
+	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\MyProject\\"}
 	cleanup := writePolicy(t, policy)
 	defer cleanup()
 
@@ -875,7 +875,7 @@ func TestCheckWorkspaceRoots_Blocked(t *testing.T) {
 	switch runtime.GOOS {
 	case "windows":
 		// Cursor reports Windows roots with a leading slash before the drive letter.
-		roots = []string{"/c:/Cx-Flow/Test/JavaVulnerabilityLabE"}
+		roots = []string{"/c:/MyProject/Test/JavaVulnerabilityLabE"}
 	default:
 		roots = []string{"/restricted/project"}
 	}
@@ -894,7 +894,7 @@ func TestCheckWorkspaceRoots_Allowed(t *testing.T) {
 	policy.DefaultPolicy.RestrictedDirectories.Enabled = true
 	policy.DefaultPolicy.RestrictedDirectories.Linux = []string{"/restricted/"}
 	policy.DefaultPolicy.RestrictedDirectories.Mac = []string{"/restricted/"}
-	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\Cx-Flow\\"}
+	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\MyProject\\"}
 	cleanup := writePolicy(t, policy)
 	defer cleanup()
 
@@ -917,7 +917,7 @@ func TestCheckWorkspaceRoots_EmptyList(t *testing.T) {
 	policy.DefaultPolicy.RestrictedDirectories.Enabled = true
 	policy.DefaultPolicy.RestrictedDirectories.Linux = []string{"/restricted/"}
 	policy.DefaultPolicy.RestrictedDirectories.Mac = []string{"/restricted/"}
-	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\Cx-Flow\\"}
+	policy.DefaultPolicy.RestrictedDirectories.Windows = []string{"C:\\MyProject\\"}
 	cleanup := writePolicy(t, policy)
 	defer cleanup()
 
@@ -935,9 +935,9 @@ func TestNormalizeWorkspaceRoot(t *testing.T) {
 	tests := []struct {
 		name, in, want string
 	}{
-		{"cursor-windows-leading-slash", "/c:/Cx-Flow/Test", "c:/Cx-Flow/Test"},
-		{"already-normalized-windows", "C:/Cx-Flow/Test", "C:/Cx-Flow/Test"},
-		{"windows-backslashes", "C:\\Cx-Flow\\Test", "C:/Cx-Flow/Test"},
+		{"cursor-windows-leading-slash", "/c:/MyProject/Test", "c:/MyProject/Test"},
+		{"already-normalized-windows", "C:/MyProject/Test", "C:/MyProject/Test"},
+		{"windows-backslashes", "C:\\MyProject\\Test", "C:/MyProject/Test"},
 		{"unix-absolute", "/etc/secrets", "/etc/secrets"},
 		{"empty", "", ""},
 		{"slash-only", "/", "/"},

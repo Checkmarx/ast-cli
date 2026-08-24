@@ -3,6 +3,7 @@
 package sca
 
 import (
+	"path/filepath"
 	"reflect"
 	"sort"
 	"testing"
@@ -325,6 +326,36 @@ func TestParseInstall_ShellExpansionDropped(t *testing.T) {
 	}
 	if len(got[0].Packages) != 1 || got[0].Packages[0].Name != "requests" {
 		t.Errorf("got %v, want [requests]", got[0].Packages)
+	}
+}
+
+func TestResolveRef_AbsolutePathReturnedAsIs(t *testing.T) {
+	// Build an absolute path in an OS-appropriate way (Windows requires a
+	// drive letter for filepath.IsAbs to hold; POSIX doesn't).
+	abs, err := filepath.Abs(filepath.Join("abs", "path", "requirements.txt"))
+	if err != nil {
+		t.Fatalf("filepath.Abs: %v", err)
+	}
+	got := resolveRef(abs, filepath.Join("work", "dir"))
+	if got != abs {
+		t.Errorf("resolveRef() = %q, want %q", got, abs)
+	}
+}
+
+func TestResolveRef_EmptyWorkDirReturnsRefAsIs(t *testing.T) {
+	got := resolveRef("requirements.txt", "")
+	want := "requirements.txt"
+	if got != want {
+		t.Errorf("resolveRef() = %q, want %q", got, want)
+	}
+}
+
+func TestResolveRef_RelativeRefJoinedWithWorkDir(t *testing.T) {
+	workDir := filepath.Join("work", "dir")
+	got := resolveRef("requirements.txt", workDir)
+	want := filepath.Join(workDir, "requirements.txt")
+	if got != want {
+		t.Errorf("resolveRef() = %q, want %q", got, want)
 	}
 }
 
