@@ -2525,6 +2525,10 @@ type sonarLineIndex struct {
 
 func newSonarLineIndex() *sonarLineIndex {
 	baseDir, err := os.Getwd()
+	if err == nil {
+		// Resolved once here so resolveSourcePath can compare against it directly on every call.
+		baseDir, err = filepath.EvalSymlinks(baseDir)
+	}
 	if err != nil {
 		baseDir = ""
 	}
@@ -2533,7 +2537,7 @@ func newSonarLineIndex() *sonarLineIndex {
 
 // resolveLine reports whether the given 1-based line of fileName exists and, when it does, how many characters it holds.
 func (index *sonarLineIndex) resolveLine(fileName string, line uint) (length uint, status lineStatus) {
-	if index == nil || fileName == "" {
+	if fileName == "" {
 		return 0, lineStatusFileUnknown
 	}
 
@@ -2566,16 +2570,12 @@ func (index *sonarLineIndex) resolveSourcePath(fileName string) (path string, ok
 	cleaned := filepath.Join(index.baseDir, relative)
 
 	// EvalSymlinks confines containment to the real path, not a lexical one.
-	realBase, err := filepath.EvalSymlinks(index.baseDir)
-	if err != nil {
-		return "", false
-	}
 	realPath, err := filepath.EvalSymlinks(cleaned)
 	if err != nil {
 		return "", false
 	}
 
-	inside, err := filepath.Rel(realBase, realPath)
+	inside, err := filepath.Rel(index.baseDir, realPath)
 	if err != nil || inside == parentDir || strings.HasPrefix(inside, parentDir+string(os.PathSeparator)) {
 		return "", false
 	}

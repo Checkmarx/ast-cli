@@ -67,3 +67,6 @@ vendor/*
 
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
+
+# Local realtime-engine ignore list (per-checkout runtime state, not app code)
+/.checkmarx/
