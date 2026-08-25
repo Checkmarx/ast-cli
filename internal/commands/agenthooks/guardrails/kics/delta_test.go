@@ -3,6 +3,7 @@
 package kics
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -90,7 +91,7 @@ func TestNewFindings_DeltaDedup_SameKeyNotDoubled(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsKICS(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	reason, _ := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(reason, "KICS") {
 		t.Errorf("reason should contain KICS, got: %q", reason)
 	}
@@ -98,7 +99,7 @@ func TestFormatFindings_ReasonContainsKICS(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsFilePath(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	reason, _ := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(reason, "/project/Dockerfile") {
 		t.Errorf("reason should contain file path, got: %q", reason)
 	}
@@ -106,7 +107,7 @@ func TestFormatFindings_ReasonContainsFilePath(t *testing.T) {
 
 func TestFormatFindings_ReasonContainsSeverityAndTitle(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	reason, _ := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	reason, _ := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(reason, "HIGH") {
 		t.Errorf("reason should contain severity, got: %q", reason)
 	}
@@ -117,7 +118,7 @@ func TestFormatFindings_ReasonContainsSeverityAndTitle(t *testing.T) {
 
 func TestFormatFindings_ContextContainsFixInstruction(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "fix") && !strings.Contains(ctx, "Fix") {
 		t.Errorf("context should contain fix instruction, got: %q", ctx)
 	}
@@ -125,7 +126,7 @@ func TestFormatFindings_ContextContainsFixInstruction(t *testing.T) {
 
 func TestFormatFindings_ContextContainsDoNotBypass(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "bypass") {
 		t.Errorf("context should warn against bypass, got: %q", ctx)
 	}
@@ -182,7 +183,7 @@ func TestFormatFindings_DockerfilePlatformUsesImageRemediation(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{
 		iacResultWithPlatform("VulnerableBaseImage", "Dockerfile"),
 	}
-	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
 		t.Errorf("Dockerfile context should call imageRemediation, got: %q", ctx)
 	}
@@ -195,7 +196,7 @@ func TestFormatFindings_DockerComposePlatformUsesImageRemediation(t *testing.T) 
 	findings := []iacrealtime.IacRealtimeResult{
 		iacResultWithPlatform("VulnerableBaseImage", "DockerCompose"),
 	}
-	_, ctx := formatFindings("/project/stack.yml", findings, agenthooks.AgentClaude)
+	_, ctx := formatFindings("/project/stack.yml", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
 		t.Errorf("docker-compose context should call imageRemediation, got: %q", ctx)
 	}
@@ -205,7 +206,7 @@ func TestFormatFindings_TerraformUsesCodeRemediation(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{
 		iacResultWithPlatform("OpenSecurityGroup", "Terraform"),
 	}
-	_, ctx := formatFindings("/project/main.tf", findings, agenthooks.AgentClaude)
+	_, ctx := formatFindings("/project/main.tf", findings, "", agenthooks.AgentClaude)
 	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("Terraform context should call codeRemediation, got: %q", ctx)
 	}
@@ -230,7 +231,7 @@ func TestCursorAdditionalContext_UsesImageRemediation(t *testing.T) {
 
 func TestFormatFindings_RoutesCursorContext(t *testing.T) {
 	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
-	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentCursor)
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentCursor)
 	if !strings.Contains(ctx, "cx-devassist-kics.mdc") {
 		t.Fatalf("cursor agent should get context with rule reference, got %q", ctx)
 	}
@@ -243,11 +244,65 @@ func TestFormatFindings_RoutesCursorContext(t *testing.T) {
 	// Use a non-Docker path for the Claude assertion below: Dockerfile findings
 	// always route through imageRemediation (see isDockerImageFinding), so
 	// asserting codeRemediation here requires a generic IaC file instead.
-	_, ctx = formatFindings("/project/main.tf", findings, agenthooks.AgentClaude)
+	_, ctx = formatFindings("/project/main.tf", findings, "", agenthooks.AgentClaude)
 	if strings.Contains(ctx, "cx-devassist-kics.mdc") {
 		t.Fatalf("claude agent should not get cursor-specific rule reference, got %q", ctx)
 	}
 	if !strings.Contains(ctx, "codeRemediation") {
 		t.Fatalf("claude KICS context should reference codeRemediation, got %q", ctx)
+	}
+}
+
+func TestGeminiAdditionalContext_ContainsIgnoreVulnerability(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	ctx := geminiAdditionalContext("/project/Dockerfile", "cx", findings, "/project")
+	if !strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `--scan-type iac`) {
+		t.Errorf("expected iac scan type in suppress command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "PrivilegedContainer") {
+		t.Errorf("expected finding title in suppress command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "sim1") {
+		t.Errorf("expected similarity id in suppress command, got %q", ctx)
+	}
+	if runtime.GOOS == "windows" {
+		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
+			t.Errorf("expected PowerShell stop-parsing on Windows, got %q", ctx)
+		}
+		if !strings.Contains(ctx, `\"Title\":\"PrivilegedContainer\"`) {
+			t.Errorf("expected backslash-escaped JSON on Windows, got %q", ctx)
+		}
+	}
+}
+
+func TestAdditionalContext_GeminiUsesUnderscoreMCPNames(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{
+		iacResultWithPlatform("VulnerableBaseImage", "Dockerfile"),
+	}
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentGemini)
+	if !strings.Contains(ctx, "mcp_Checkmarx_imageRemediation") {
+		t.Errorf("Gemini context should use underscore MCP name, got: %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("Gemini context should not use double-underscore MCP name, got: %q", ctx)
+	}
+}
+
+func TestAdditionalContext_ClaudeDoesNotOfferSuppress(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	_, ctx := formatFindings("/project/Dockerfile", findings, "", agenthooks.AgentClaude)
+	if strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("Claude context should not include suppress commands, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_DoesNotOfferSuppress(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	ctx := cursorAdditionalContext("/project/Dockerfile", findings)
+	if strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("cursor context should not include suppress commands, got %q", ctx)
 	}
 }

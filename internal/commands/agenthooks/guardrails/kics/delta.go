@@ -1,13 +1,17 @@
 package kics
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
 
 // findingKey is the deduplication tuple used for delta detection.
@@ -62,17 +66,34 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 }
 
 // formatFindings builds the two verdict fields delivered to the agent.
-// Cursor receives cursorAdditionalContext (folded into agent_message); other agents
-// receive the original additionalContext (e.g. Claude additionalContext).
-func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) (reason, context string) {
+// Cursor receives cursorAdditionalContext (folded into agent_message); Gemini receives
+// suppress commands; other agents receive additionalContext (e.g. Claude additionalContext).
+func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, workDir string, agent agenthooks.AgentID) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
 	reason = permissionDecisionReason(filePath, summary)
-	if agent == agenthooks.AgentCursor {
+	switch agent {
+	case agenthooks.AgentCursor:
 		context = cursorAdditionalContext(filePath, findings)
-	} else {
+	case agenthooks.AgentGemini:
+		cxBinary := "cx"
+		if cxExe, err := os.Executable(); err == nil {
+			cxBinary = cxExe
+		}
+		context = geminiAdditionalContext(filePath, cxBinary, findings, workDir)
+	default:
 		context = additionalContext(filePath, findings)
 	}
 	return reason, context
+}
+
+// ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
+// the suppression command to the workspace ignore file, anchored at the hook event's
+// workDir.
+func ignoredFilePathFlag(workDir string) string {
+	if workDir == "" {
+		return ""
+	}
+	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.
@@ -120,6 +141,33 @@ func isDockerImageFileByName(filePath string) bool {
 		name == "compose" || strings.HasPrefix(name, "compose.")
 }
 
+// geminiIgnoredFilePathFlag pins suppression to the workspace ignore file. On Windows
+// uses double quotes and forward slashes so the flag survives PowerShell argv parsing.
+func geminiIgnoredFilePathFlag(workDir string) string {
+	if workDir == "" {
+		return ""
+	}
+	if runtime.GOOS == "windows" {
+		p := filepath.ToSlash(ignore.PathFor(workDir))
+		return fmt.Sprintf(" --ignored-file-path %q", p)
+	}
+	return ignoredFilePathFlag(workDir)
+}
+
+func geminiSuppressCommands(cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string) string {
+	var suppressCmds strings.Builder
+	for _, f := range findings {
+		data, _ := json.Marshal(iacrealtime.IgnoredIacFinding{
+			Title:        f.Title,
+			SimilarityID: f.SimilarityID,
+		})
+		ignoreFlag := geminiIgnoredFilePathFlag(workDir)
+		suppressCmds.WriteString(cursorplugin.IgnoreVulnerabilityCommand(cxBinary, "iac", data, ignoreFlag, ""))
+		suppressCmds.WriteString("\n")
+	}
+	return suppressCmds.String()
+}
+
 // additionalContext is injected into the agent's context window to drive remediation.
 // KICS is a deterministic IaC rule engine: unlike ASCA, its findings are not caused by
 // missing cross-file context, so the agent is NOT given discretion to treat findings as
@@ -144,7 +192,26 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 			"Fix every finding below, then retry the write:\n"+
 			"%s"+
 			"%s",
-		filePath, findingList.String(), remediationInstructions(filePath, findings),
+		filePath, findingList.String(), remediationInstructions(
+			filePath, findings,
+			"mcp__Checkmarx__imageRemediation", "mcp__Checkmarx__codeRemediation",
+		),
+	)
+}
+
+// geminiAdditionalContext adds suppress commands for Gemini CLI only.
+func geminiAdditionalContext(filePath, cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string) string {
+	remediation := remediationInstructions(
+		filePath, findings,
+		"mcp_Checkmarx_imageRemediation", "mcp_Checkmarx_codeRemediation",
+	)
+	return fmt.Sprintf(
+		"KICS detected IaC misconfigurations in %s. "+
+			"Do not bypass the scan by writing the same content through another tool or shell command. "+
+			"If the user chooses to remediate, follow the remediation instructions below. "+
+			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s\n"+
+			"%s",
+		filePath, geminiSuppressCommands(cxBinary, findings, workDir), remediation,
 	)
 }
 
@@ -153,30 +220,30 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 // through imageRemediation (base image CVEs, safer tags, hardening). All other
 // KICS-supported files (Terraform, Kubernetes manifests, CloudFormation, etc.) are
 // generic IaC misconfigurations and go through codeRemediation.
-func remediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+func remediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult, imageTool, codeTool string) string {
 	if isDockerImageFinding(filePath, findings) {
-		return "For each finding, call the mcp__Checkmarx__imageRemediation tool with:\n" +
-			"  {\n" +
-			"    \"imageName\": \"[image name from the finding/file, without the tag]\",\n" +
-			"    \"imageTag\": \"[image tag from the finding/file, e.g. latest]\",\n" +
-			"    \"fileType\": \"[Dockerfile or DockerCompose, matching this file]\"\n" +
-			"  }\n" +
-			"Apply the remediation guidance the tool returns (safer base image, pinned digest, " +
-			"hardening steps), then retry the write."
+		return fmt.Sprintf("For each finding, call the %s tool with:\n"+
+			"  {\n"+
+			"    \"imageName\": \"[image name from the finding/file, without the tag]\",\n"+
+			"    \"imageTag\": \"[image tag from the finding/file, e.g. latest]\",\n"+
+			"    \"fileType\": \"[Dockerfile or DockerCompose, matching this file]\"\n"+
+			"  }\n"+
+			"Apply the remediation guidance the tool returns (safer base image, pinned digest, "+
+			"hardening steps), then retry the write.", imageTool)
 	}
-	return "For each finding, call the mcp__Checkmarx__codeRemediation tool with:\n" +
-		"  {\n" +
-		"    \"type\": \"iac\",\n" +
-		"    \"metadata\": {\n" +
-		"      \"title\": \"[Title from finding]\",\n" +
-		"      \"description\": \"[Description from finding]\",\n" +
-		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n" +
-		"    }\n" +
-		"  }\n" +
-		"Apply the remediation guidance the tool returns, then retry the write. If a fix " +
-		"genuinely requires resources outside this file (for example a separate KMS key or " +
-		"a centrally-managed policy), add them as part of your change rather than skipping " +
-		"the finding."
+	return fmt.Sprintf("For each finding, call the %s tool with:\n"+
+		"  {\n"+
+		"    \"type\": \"iac\",\n"+
+		"    \"metadata\": {\n"+
+		"      \"title\": \"[Title from finding]\",\n"+
+		"      \"description\": \"[Description from finding]\",\n"+
+		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n"+
+		"    }\n"+
+		"  }\n"+
+		"Apply the remediation guidance the tool returns, then retry the write. If a fix "+
+		"genuinely requires resources outside this file (for example a separate KMS key or "+
+		"a centrally-managed policy), add them as part of your change rather than skipping "+
+		"the finding.", codeTool)
 }
 
 func cursorRemediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult) string {
