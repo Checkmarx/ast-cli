@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/pkg/errors"
+	asserts "github.com/stretchr/testify/assert"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"gotest.tools/assert"
@@ -1937,4 +1939,321 @@ func (m *customScanSummaryMockWrapper) GetScanSummaryByScanID(scanID string) (*w
 		},
 		TotalCount: 1,
 	}, nil, nil
+}
+
+// writeSourceFile creates a file with the given content inside dir and returns its path relative to dir.
+func writeSourceFile(t *testing.T, dir, name, content string) string {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	asserts.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
+	asserts.NoError(t, os.WriteFile(path, []byte(content), 0o600))
+	return filepath.ToSlash(name)
+}
+
+// assertValidSonarRange asserts a textRange satisfies the bounds SonarScanner enforces on import.
+func assertValidSonarRange(t *testing.T, tr *wrappers.SonarTextRange, totalLines, lineLength uint) {
+	t.Helper()
+	if tr == nil {
+		return // omitted entirely, so the issue is file level and always valid
+	}
+	asserts.NotZero(t, tr.StartLine, "startLine must be set when textRange is present")
+	asserts.LessOrEqual(t, tr.StartLine, totalLines, "startLine must exist in the file")
+
+	if tr.StartColumn == 0 && tr.EndColumn == 0 {
+		return // line level range, always accepted
+	}
+	asserts.LessOrEqual(t, tr.StartColumn, lineLength, "startColumn must not exceed line length")
+	asserts.LessOrEqual(t, tr.EndColumn, lineLength, "endColumn must not exceed line length")
+	asserts.Less(t, tr.StartColumn, tr.EndColumn, "range must move forward")
+}
+
+func TestClampSonarColumns(t *testing.T) {
+	tests := []struct {
+		name        string
+		startColumn uint
+		length      uint
+		lineLength  uint
+		wantStart   uint
+		wantEnd     uint
+		wantEmit    bool
+	}{
+		{
+			// Reported case: a 12 character line with Column=12, Length=6 produced endColumn 17.
+			name:        "overflowing end column is clamped to line length",
+			startColumn: 11, length: 6, lineLength: 12,
+			wantStart: 11, wantEnd: 12, wantEmit: true,
+		},
+		{
+			name:        "valid range is preserved unchanged",
+			startColumn: 4, length: 5, lineLength: 40,
+			wantStart: 4, wantEnd: 9, wantEmit: true,
+		},
+		{
+			name:        "range ending exactly at line length is valid",
+			startColumn: 0, length: 12, lineLength: 12,
+			wantStart: 0, wantEnd: 12, wantEmit: true,
+		},
+		{
+			name:        "zero length node falls back to the whole line",
+			startColumn: 4, length: 0, lineLength: 40,
+			wantStart: 0, wantEnd: 40, wantEmit: true,
+		},
+		{
+			name:        "start beyond end of line falls back to the whole line",
+			startColumn: 50, length: 3, lineLength: 12,
+			wantStart: 0, wantEnd: 12, wantEmit: true,
+		},
+		{
+			name:        "empty line yields no column range",
+			startColumn: 0, length: 3, lineLength: 0,
+			wantStart: 0, wantEnd: 0, wantEmit: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			start, end, emit := clampSonarColumns(tt.startColumn, tt.length, tt.lineLength)
+			asserts.Equal(t, tt.wantEmit, emit)
+			asserts.Equal(t, tt.wantStart, start)
+			asserts.Equal(t, tt.wantEnd, end)
+			if emit {
+				asserts.LessOrEqual(t, end, tt.lineLength)
+				asserts.Less(t, start, end)
+			}
+		})
+	}
+}
+
+func TestSonarLineIndexLineLength(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	lfFile := writeSourceFile(t, dir, "lf.ts", "one\nthree3\n")
+	crlfFile := writeSourceFile(t, dir, "crlf.ts", "one\r\nthree3\r\n")
+	bomFile := writeSourceFile(t, dir, "bom.ts", string(byteOrderMarkRune)+"abc\n")
+	utf8File := writeSourceFile(t, dir, "utf8.ts", "héllo→\n")
+	emptyLineFile := writeSourceFile(t, dir, "nested/dir/empty.ts", "\nabc\n")
+
+	index := newSonarLineIndex()
+
+	t.Run("counts characters on an LF file", func(t *testing.T) {
+		length, status := index.resolveLine(lfFile, 2)
+		asserts.Equal(t, lineStatusOK, status)
+		asserts.Equal(t, uint(6), length)
+	})
+
+	t.Run("CRLF terminator is not counted", func(t *testing.T) {
+		length, status := index.resolveLine(crlfFile, 2)
+		asserts.Equal(t, lineStatusOK, status)
+		asserts.Equal(t, uint(6), length)
+	})
+
+	t.Run("leading BOM is not counted", func(t *testing.T) {
+		length, status := index.resolveLine(bomFile, 1)
+		asserts.Equal(t, lineStatusOK, status)
+		asserts.Equal(t, uint(3), length)
+	})
+
+	t.Run("multi byte characters count as one character each", func(t *testing.T) {
+		length, status := index.resolveLine(utf8File, 1)
+		asserts.Equal(t, lineStatusOK, status)
+		// "héllo→" is 6 characters but 9 bytes.
+		asserts.Equal(t, uint(6), length)
+	})
+
+	t.Run("empty line reports zero length", func(t *testing.T) {
+		length, status := index.resolveLine(emptyLineFile, 1)
+		asserts.Equal(t, lineStatusOK, status)
+		asserts.Equal(t, uint(0), length)
+	})
+
+	t.Run("leading slash in the report path is tolerated", func(t *testing.T) {
+		length, status := index.resolveLine("/"+lfFile, 1)
+		asserts.Equal(t, lineStatusOK, status)
+		asserts.Equal(t, uint(3), length)
+	})
+
+	t.Run("line past end of a readable file is reported missing", func(t *testing.T) {
+		_, status := index.resolveLine(lfFile, 99)
+		asserts.Equal(t, lineStatusLineMissing, status)
+	})
+
+	t.Run("line zero of a readable file is reported missing", func(t *testing.T) {
+		_, status := index.resolveLine(lfFile, 0)
+		asserts.Equal(t, lineStatusLineMissing, status)
+	})
+
+	t.Run("missing file is reported unknown, not missing line", func(t *testing.T) {
+		_, status := index.resolveLine("does/not/exist.ts", 1)
+		asserts.Equal(t, lineStatusFileUnknown, status)
+	})
+
+	t.Run("empty file name is reported unknown", func(t *testing.T) {
+		_, status := index.resolveLine("", 1)
+		asserts.Equal(t, lineStatusFileUnknown, status)
+	})
+}
+
+func TestSonarLineIndexRejectsPathsOutsideBaseDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	index := newSonarLineIndex()
+
+	for _, fileName := range []string{
+		"../escape.ts",
+		"../../../../etc/passwd",
+		"nested/../../escape.ts",
+	} {
+		t.Run("rejects "+fileName, func(t *testing.T) {
+			_, ok := index.resolveSourcePath(fileName)
+			asserts.False(t, ok, "path outside the working directory must be rejected")
+		})
+	}
+
+	t.Run("rejects an absolute path", func(t *testing.T) {
+		absolute := filepath.Join(dir, "abs.ts")
+		asserts.NoError(t, os.WriteFile(absolute, []byte("abc\n"), 0o600))
+		// Absolute inputs are refused even when they resolve inside baseDir.
+		_, ok := index.resolveSourcePath(absolute)
+		asserts.False(t, ok)
+	})
+
+	t.Run("accepts a plain relative path inside the base directory", func(t *testing.T) {
+		name := writeSourceFile(t, dir, "inside.ts", "abc\n")
+		resolved, ok := index.resolveSourcePath(name)
+		asserts.True(t, ok)
+		asserts.True(t, strings.HasSuffix(resolved, "inside.ts"))
+	})
+}
+
+// TestParseSonarTextRangeCustomerRegression reproduces the reported "17 is not a valid line offset" failure end to end.
+func TestParseSonarTextRangeCustomerRegression(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	const componentLine = "@Component({" // 12 characters, line 10 below
+	source := "import { Component, inject, OnInit } from '@angular/core'\n" +
+		"import { DomSanitizer } from '@angular/platform-browser'\n" +
+		"import jwtDecode from 'jwt-decode'\n" +
+		"import { TranslateModule } from '@ngx-translate/core'\n" +
+		"import { MatCardModule } from '@angular/material/card'\n" +
+		"\n\n\n\n" + // lines 6 to 9
+		componentLine + "\n" + // line 10
+		"  selector: 'app-last-login-ip',\n"
+
+	fileName := writeSourceFile(t,
+		dir,
+		"cxone-sq-integration/juice-shop-master/frontend/src/app/last-login-ip/last-login-ip.component.ts",
+		source,
+	)
+
+	index := newSonarLineIndex()
+	node := &wrappers.ScanResultNode{
+		FileName: fileName,
+		Line:     10,
+		Column:   12,
+		Length:   6,
+	}
+
+	textRange := parseSonarTextRange(node, index)
+
+	asserts.NotNil(t, textRange)
+	asserts.Equal(t, uint(10), textRange.StartLine)
+	asserts.Equal(t, uint(11), textRange.StartColumn)
+	asserts.Equal(t, uint(12), textRange.EndColumn, "endColumn must be clamped to the 12 character line, not 17")
+	assertValidSonarRange(t, textRange, 11, uint(len(componentLine)))
+}
+
+func TestParseSonarTextRangeFallsBackToLineLevel(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	index := newSonarLineIndex()
+
+	t.Run("unreadable file keeps the line and emits no columns", func(t *testing.T) {
+		node := &wrappers.ScanResultNode{FileName: "absent.ts", Line: 7, Column: 12, Length: 6}
+		textRange := parseSonarTextRange(node, index)
+		asserts.NotNil(t, textRange)
+		asserts.Equal(t, uint(7), textRange.StartLine)
+		asserts.Zero(t, textRange.StartColumn, "columns are omitempty, so zero drops them from the report")
+		asserts.Zero(t, textRange.EndColumn)
+	})
+
+	t.Run("empty line emits no columns", func(t *testing.T) {
+		fileName := writeSourceFile(t, dir, "blank.ts", "\nabc\n")
+		node := &wrappers.ScanResultNode{FileName: fileName, Line: 1, Column: 3, Length: 4}
+		textRange := parseSonarTextRange(node, index)
+		asserts.NotNil(t, textRange)
+		asserts.Equal(t, uint(1), textRange.StartLine)
+		asserts.Zero(t, textRange.StartColumn)
+		asserts.Zero(t, textRange.EndColumn)
+	})
+}
+
+// TestParseSonarTextRangeOmitsRangeForMissingLine covers the minified-asset case where the engine reports a line past the end of the file.
+func TestParseSonarTextRangeOmitsRangeForMissingLine(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	fileName := writeSourceFile(t, dir, "assets/private/dat.gui.min.js", "var a=1\nvar b=2\n")
+	index := newSonarLineIndex()
+
+	node := &wrappers.ScanResultNode{FileName: fileName, Line: 803, Column: 5, Length: 4}
+	textRange := parseSonarTextRange(node, index)
+
+	asserts.Nil(t, textRange, "textRange must be omitted when the line does not exist in the file")
+}
+
+// TestParseSonarAllLocationsAreValid asserts every location of a result with overflowing nodes satisfies SonarQube's invariant.
+func TestParseSonarAllLocationsAreValid(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+
+	const line = "@Component({" // 12 characters
+	fileName := writeSourceFile(t, dir, "app/widget.component.ts", line+"\n"+line+"\n")
+
+	results := &wrappers.ScanResultsCollection{
+		Results: []*wrappers.ScanResult{
+			{
+				Type: params.SastType,
+				ScanResultData: wrappers.ScanResultData{
+					QueryName: "Angular_Client_Stored_DOM_XSS",
+					Nodes: []*wrappers.ScanResultNode{
+						{FileName: fileName, Line: 1, Column: 12, Length: 6},
+						{FileName: fileName, Line: 2, Column: 40, Length: 9},
+						{FileName: fileName, Line: 1, Column: 1, Length: 0},
+						{FileName: "missing.ts", Line: 3, Column: 5, Length: 4},
+						// Line beyond end of a readable file: must be dropped.
+						{FileName: fileName, Line: 803, Column: 5, Length: 4},
+					},
+				},
+			},
+		},
+	}
+
+	issues, _ := parseSonar(results)
+
+	asserts.Len(t, issues, 1)
+	// The node on line 803 is dropped: it has no valid textRange, which is mandatory on secondary locations.
+	asserts.Len(t, issues[0].SecondaryLocations, 3)
+
+	all := append([]wrappers.SonarLocation{issues[0].PrimaryLocation}, issues[0].SecondaryLocations...)
+	for i := range all {
+		location := all[i]
+		t.Run("location "+string(rune('A'+i)), func(t *testing.T) {
+			if location.FilePath != fileName {
+				// A file that is not on disk keeps its line but drops the columns.
+				asserts.NotNil(t, location.TextRange)
+				asserts.NotZero(t, location.TextRange.StartLine)
+				asserts.Zero(t, location.TextRange.StartColumn)
+				asserts.Zero(t, location.TextRange.EndColumn)
+				return
+			}
+			assertValidSonarRange(t, location.TextRange, 2, uint(len(line)))
+		})
+	}
+
+	// SonarQube rejects the whole report if any secondary location has a nil textRange.
+	for _, location := range issues[0].SecondaryLocations {
+		asserts.NotNil(t, location.TextRange, "secondary locations must always carry a textRange")
+	}
 }

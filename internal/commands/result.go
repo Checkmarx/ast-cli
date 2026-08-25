@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"text/template"
 	"time"
+	"unicode/utf8"
 
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -132,6 +134,18 @@ const (
 	statusCompleted           = "Completed"
 	statusPartial             = "Partial"
 	statusFailed              = "Failed"
+	maxSonarLineBytes         = 1024 * 1024
+	byteOrderMarkRune         = rune(0xFEFF)
+	parentDir                 = ".."
+)
+
+// lineStatus reports how much of a location the source file could confirm.
+type lineStatus int
+
+const (
+	lineStatusFileUnknown lineStatus = iota
+	lineStatusLineMissing
+	lineStatusOK
 )
 
 var (
@@ -2503,6 +2517,125 @@ func parseLocationKics(results *wrappers.ScanResult) wrappers.SonarLocation {
 	return auxLocation
 }
 
+// sonarLineIndex caches source line lengths so each report file is read at most once per export.
+type sonarLineIndex struct {
+	baseDir string
+	files   map[string][]uint
+}
+
+func newSonarLineIndex() *sonarLineIndex {
+	baseDir, err := os.Getwd()
+	if err != nil {
+		baseDir = ""
+	}
+	return &sonarLineIndex{baseDir: baseDir, files: make(map[string][]uint)}
+}
+
+// resolveLine reports whether the given 1-based line of fileName exists and, when it does, how many characters it holds.
+func (index *sonarLineIndex) resolveLine(fileName string, line uint) (length uint, status lineStatus) {
+	if index == nil || fileName == "" {
+		return 0, lineStatusFileUnknown
+	}
+
+	lengths, cached := index.files[fileName]
+	if !cached {
+		lengths = index.readLineLengths(fileName)
+		index.files[fileName] = lengths
+	}
+	if lengths == nil {
+		return 0, lineStatusFileUnknown
+	}
+
+	if line == 0 || line > uint(len(lengths)) {
+		return 0, lineStatusLineMissing
+	}
+	return lengths[line-1], lineStatusOK
+}
+
+// resolveSourcePath cleans a report file path and confines it to baseDir, rejecting anything that escapes.
+func (index *sonarLineIndex) resolveSourcePath(fileName string) (path string, ok bool) {
+	if index.baseDir == "" {
+		return "", false
+	}
+
+	relative := filepath.FromSlash(strings.TrimLeft(fileName, "/\\"))
+	if relative == "" || filepath.IsAbs(relative) || filepath.VolumeName(relative) != "" {
+		return "", false
+	}
+
+	cleaned := filepath.Join(index.baseDir, relative)
+
+	// EvalSymlinks confines containment to the real path, not a lexical one.
+	realBase, err := filepath.EvalSymlinks(index.baseDir)
+	if err != nil {
+		return "", false
+	}
+	realPath, err := filepath.EvalSymlinks(cleaned)
+	if err != nil {
+		return "", false
+	}
+
+	inside, err := filepath.Rel(realBase, realPath)
+	if err != nil || inside == parentDir || strings.HasPrefix(inside, parentDir+string(os.PathSeparator)) {
+		return "", false
+	}
+	return realPath, true
+}
+
+// readLineLengths returns the character length of each line of a file, or nil when it cannot be read in full.
+func (index *sonarLineIndex) readLineLengths(fileName string) []uint {
+	path, ok := index.resolveSourcePath(fileName)
+	if !ok {
+		return nil
+	}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer func() { _ = file.Close() }()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 0, bufio.MaxScanTokenSize), maxSonarLineBytes)
+
+	lengths := []uint{}
+	for scanner.Scan() {
+		text := scanner.Text()
+		if len(lengths) == 0 {
+			text = strings.TrimPrefix(text, string(byteOrderMarkRune))
+		}
+		text = strings.TrimSuffix(text, "\r")
+		lengths = append(lengths, uint(utf8.RuneCountInString(text)))
+	}
+	if scanner.Err() != nil {
+		return nil
+	}
+	return lengths
+}
+
+// clampSonarColumns constrains a start offset and length to a line of lineLength characters.
+func clampSonarColumns(startColumn, length, lineLength uint) (start, end uint, emit bool) {
+	if lineLength == 0 {
+		return 0, 0, false
+	}
+
+	start = startColumn
+	if start > lineLength {
+		start = lineLength
+	}
+
+	end = start + length
+	if end > lineLength {
+		end = lineLength
+	}
+
+	// No forward span left: highlight the whole line instead of an invalid zero-width range.
+	if end <= start {
+		return 0, lineLength, true
+	}
+	return start, end, true
+}
+
 func parseSonarPrimaryLocation(results *wrappers.ScanResult, lineIndex *sonarLineIndex) wrappers.SonarLocation {
 	var auxLocation wrappers.SonarLocation
 	// fill the details in the primary Location
@@ -2521,19 +2654,12 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult, lineIndex *sonar
 		for _, node := range results.ScanResultData.Nodes[1:] {
 			filePath := strings.TrimLeft(node.FileName, "/")
 			if filePath == "" {
-				// filePath is also mandatory on a secondary location. The engine
-				// occasionally returns a node with no file name, which used to be
-				// serialised as an absent field and made SonarQube reject the
-				// entire report.
+				// filePath is mandatory on a secondary location too, so a node without one is skipped.
 				continue
 			}
 			textRange := parseSonarTextRange(node, lineIndex)
 			if textRange == nil {
-				// Unlike the primary location, SonarQube treats textRange as a
-				// mandatory field on secondary locations and fails to parse the
-				// whole report without it. A node whose position cannot be
-				// expressed validly is therefore dropped: losing one step of a
-				// data flow is far better than losing the entire analysis.
+				// textRange is mandatory on secondary locations, so a node without a valid one is dropped.
 				continue
 			}
 			var auxSecondaryLocation wrappers.SonarLocation
@@ -2546,19 +2672,7 @@ func parseSonarSecondaryLocations(results *wrappers.ScanResult, lineIndex *sonar
 	return auxSecondaryLocations
 }
 
-// parseSonarTextRange maps a scan result node onto a Sonar text range.
-//
-// SonarQube validates the line and both column offsets against the file on disk
-// and aborts the entire analysis on the first invalid location, so the
-// coordinates reported by the engine are verified before being emitted. There
-// are three outcomes:
-//
-//   - the line exists: columns are clamped to its length
-//   - the line does not exist: nil is returned so that textRange is omitted and
-//     the issue is reported at file level
-//   - the file cannot be read: the line is kept and the columns are dropped,
-//     since nothing can be verified and SonarQube skips issues whose file it
-//     cannot resolve either
+// parseSonarTextRange maps a scan result node onto a Sonar text range, clamping columns to the verified line length.
 func parseSonarTextRange(results *wrappers.ScanResultNode, lineIndex *sonarLineIndex) *wrappers.SonarTextRange {
 	lineLength, status := lineIndex.resolveLine(results.FileName, results.Line)
 	if status == lineStatusLineMissing {
