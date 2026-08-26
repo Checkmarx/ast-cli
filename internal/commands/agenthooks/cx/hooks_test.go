@@ -794,3 +794,95 @@ func TestLogRemediationTelemetry_WithWrapper_Sends(t *testing.T) {
 		logRemediationTelemetry("Claude", "SCA", "finding", "remediation")
 	})
 }
+
+// pipeStdio replaces os.Stdin/os.Stdout with temp files so agenthooks.Dispatch
+// (which reads a real stdin JSON payload and writes a real stdout JSON verdict)
+// can be driven end-to-end inside a unit test. Mirrors the helper of the same
+// name in ast-cx-hooks's own codex_unified_test.go / copilot_unified_test.go.
+func pipeStdio(t *testing.T, stdin string) func() string {
+	t.Helper()
+
+	inFile, err := os.CreateTemp("", "codex-stdin-*.json")
+	assert.NoError(t, err)
+	t.Cleanup(func() { os.Remove(inFile.Name()) })
+	_, err = inFile.WriteString(stdin)
+	assert.NoError(t, err)
+	_, err = inFile.Seek(0, 0)
+	assert.NoError(t, err)
+
+	outFile, err := os.CreateTemp("", "codex-stdout-*.json")
+	assert.NoError(t, err)
+	t.Cleanup(func() { os.Remove(outFile.Name()) })
+
+	origIn, origOut := os.Stdin, os.Stdout
+	os.Stdin, os.Stdout = inFile, outFile
+	t.Cleanup(func() { os.Stdin, os.Stdout = origIn, origOut })
+
+	return func() string {
+		_ = outFile.Sync()
+		data, err := os.ReadFile(outFile.Name())
+		assert.NoError(t, err)
+		return string(data)
+	}
+}
+
+// TestCodexApplyPatch_KICSFinding_DeniesEndToEnd drives a genuine Codex CLI
+// "apply_patch" PreToolUse payload — a V4A "Add File" patch introducing a
+// Terraform file with a real KICS-detectable misconfiguration (an S3 bucket
+// with public-read ACL) — through the actual codex-pre-file-write route:
+// real stdin decoding, real Codex V4A patch parsing (codexDiff /
+// codexPatchFilePath in ast-cx-hooks), the real cxBeforeFileEdit guardrail,
+// and the real KICS extension gate + delta logic, down to a stubbed
+// container-scan call. This proves the same KICS wiring that protects Claude
+// (see TestCxBeforeFileEdit_KICSFinding_RejectsWithContext) is equally live
+// for Codex, not merely present in cxBeforeFileEdit's agent-agnostic code.
+func TestCodexApplyPatch_KICSFinding_DeniesEndToEnd(t *testing.T) {
+	resetHookGlobals(t)
+
+	agenthooks.ClearRoutes()
+	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
+	t.Cleanup(agenthooks.ClearRoutes)
+
+	// RegisterGuardrails wires up real SCA/KICS scanners; swap KICS's underlying
+	// scan for a stub (no Docker/Podman needed) and disable SCA so this test
+	// isolates the KICS guardrail's Codex wiring only.
+	kicsScanner = kics.NewScannerWithFunc(func(string, string) ([]iacrealtime.IacRealtimeResult, error) {
+		return []iacrealtime.IacRealtimeResult{{
+			Title:        "S3 Bucket Has Public Read Access",
+			SimilarityID: "sim-s3-public-read",
+			Severity:     "HIGH",
+			Description:  "S3 Bucket has an ACL defined which allows public READ Access",
+			Locations:    []realtimeengine.Location{{Line: 2}},
+		}}, nil
+	})
+	scaScanner = nil
+
+	patch := "*** Begin Patch\n" +
+		"*** Add File: main.tf\n" +
+		"+resource \"aws_s3_bucket\" \"bad\" {\n" +
+		"+  bucket = \"my-bad-bucket\"\n" +
+		"+  acl    = \"public-read\"\n" +
+		"+}\n" +
+		"*** End Patch"
+
+	reqBody := map[string]any{
+		"session_id": "codex-kics-sess",
+		"cwd":        t.TempDir(),
+		"tool_name":  "apply_patch",
+		"tool_input": map[string]string{"command": patch},
+	}
+	stdinBytes, err := json.Marshal(reqBody)
+	assert.NoError(t, err)
+
+	readStdout := pipeStdio(t, string(stdinBytes))
+
+	origArgs := os.Args
+	os.Args = []string{"cx", "codex-pre-file-write"}
+	t.Cleanup(func() { os.Args = origArgs })
+
+	agenthooks.Dispatch()
+
+	out := readStdout()
+	assert.Contains(t, out, `"permissionDecision":"deny"`)
+	assert.Contains(t, out, "KICS")
+}
