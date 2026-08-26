@@ -71,17 +71,10 @@ jobs:
   build:
     name: Build, Sign & Publish Release
     runs-on: cx-public-macos-15-x64
+    environment: release
     permissions:
-      id-token: write # required for AWS OIDC federation via configure-aws-credentials (HSM signing)
+      id-token: write # required for AWS OIDC federation via configure-aws-credentials (HSM signing + Secrets Manager)
       contents: write # required for `gh release create`/`gh release delete` to manage GitHub Releases
-    env:
-      AC_PASSWORD: ${{ secrets.AC_PASSWORD }}
-      AC_USER: ${{ secrets.AC_USER }}
-      APPLE_DEVELOPER_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
-      APPLE_DEVELOPER_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-      COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      COSIGN_PUBLIC_KEY: ${{ secrets.COSIGN_PUBLIC_KEY }}
     steps:
       - name: Install Harden Runner
         uses: checkmarx/harden-runner-action@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
@@ -97,13 +90,25 @@ jobs:
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
         with:
           go-version-file: go.mod
+      - name: Configure AWS Credentials for Secrets Manager
+        uses: step-security/configure-aws-credentials@1448016543d4432bd608e0de7871c7bf9e9be925 # v6.2.1
+        with:
+          role-to-assume: ${{ secrets.SECRET_MANAGER_ROLE_ARN }}
+          aws-region: ${{ secrets.SECRET_MANAGER_AWS_REGION }}
+          role-session-name: release-secrets-fetch
+      - name: Fetch secrets from AWS Secrets Manager
+        uses: step-security/aws-secretsmanager-get-secrets@102b6b2a2528747bcc321bb99ef326d8be7ef58f # v3.0.1
+        with:
+          secret-ids: |
+            ${{ secrets.SECRET_MANAGER_SECRET_NAME }}
+          parse-json-secrets: true
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
         with:
           # The certificates in a PKCS12 file encoded as a base64 string
-          p12-file-base64: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
+          p12-file-base64: ${{ env.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
-          p12-password: ${{ secrets.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
+          p12-password: ${{ env.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
       - name: Updating and upgrading brew to a specific version
         run: |
           brew --version
@@ -130,10 +135,11 @@ jobs:
           docker info
       - name: Login to Docker Hub
         if: inputs.dev == false
-        uses: step-security/docker-login-action@870af644803bf9f204aed474adbad2958fec048b # v4.1.0
+        uses: step-security/docker-login-action@bd6978fd4ef9a5f78130095b298b8a721afcb0d8 # v4.5.1
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+        env:
+          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKERHUB_OIDC_CONNECTIONID }}
 
       - name: Install Cosign
         if: inputs.dev == false
