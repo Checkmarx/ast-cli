@@ -123,7 +123,6 @@ func NewAstCLI(
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		seedExplicitCredentials(cmd)
-		credentialstore.Migrate()
 		CheckPreferredCredentials(cmd)
 		err := extractOptionalFlags(cmd)
 		if err != nil {
@@ -306,7 +305,10 @@ func PrintConfiguration() {
 
 // seedExplicitCredentials captures secret flag values for this invocation only;
 // they are resolved in-memory and never written to viper or the config file.
+// The explicit map is reset first so a value supplied by one invocation can
+// never override resolution for a later operation on the shared resolver.
 func seedExplicitCredentials(cmd *cobra.Command) {
+	credentialstore.ResetExplicitCredentials()
 	if cmd.Flags().Changed(params.AstAPIKeyFlag) {
 		if value, err := cmd.Flags().GetString(params.AstAPIKeyFlag); err == nil {
 			credentialstore.SetExplicitCredential(credentialstore.CredentialAPIKey, value)

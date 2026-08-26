@@ -88,7 +88,7 @@ func TestResolvePrecedence(t *testing.T) {
 		{name: "auto falls back to yaml on store miss", policy: PolicyAuto, yaml: yamlWithAPIKey, want: "yaml-secret"},
 		{name: "auto empty env ignored", policy: PolicyAuto, envValue: "", storeVal: "store", want: "store"},
 		{name: "required store hit", policy: PolicyRequired, storeVal: "store", yaml: yamlWithAPIKey, want: "store"},
-		{name: "required ignores yaml on miss", policy: PolicyRequired, yaml: yamlWithAPIKey, wantErr: ErrNotFound},
+		{name: "required missing everywhere", policy: PolicyRequired, wantErr: ErrNotFound},
 		{name: "required backend error propagates", policy: PolicyRequired, storeErr: errBackendDown, wantErr: errBackendDown},
 		{name: "auto backend error propagates without yaml fallback", policy: PolicyAuto, storeErr: errBackendDown, yaml: yamlWithAPIKey, wantErr: errBackendDown},
 		{name: "disabled uses yaml", policy: PolicyDisabled, storeVal: "store", yaml: yamlWithAPIKey, want: "yaml-secret"},
@@ -217,4 +217,43 @@ func TestDefaultResolverSingletonAndReset(t *testing.T) {
 	assert.Same(t, first, second)
 	assert.NotEmpty(t, first.filePath)
 	assert.NotNil(t, Default())
+}
+
+// ResetExplicit must clear every override so a later Resolve falls through to
+// the lower layers again; here the empty-string explicit loses to env only
+// after the reset.
+func TestResetExplicitClearsOverrides(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, yamlWithAPIKey)
+	t.Setenv(params.AstAPIKeyEnv, "env-secret")
+	resolver := NewResolver(configPath, PolicyAuto, newFakeStore())
+
+	resolver.SetExplicit(CredentialAPIKey, "")
+	got, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "", got)
+
+	resolver.ResetExplicit()
+	got, err = resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "env-secret", got)
+}
+
+// The package-level reset clears overrides on the shared default resolver,
+// which is how embedded consumers scope an override to one logical operation.
+func TestResetExplicitCredentialsPackageLevel(t *testing.T) {
+	ResetForTest()
+	defer ResetForTest()
+	t.Setenv(params.AstAPIKeyEnv, "env-secret")
+	SetDefaultResolverForTest(NewResolver(filepath.Join(t.TempDir(), "checkmarxcli.yaml"), PolicyAuto, newFakeStore()))
+
+	SetExplicitCredential(CredentialAPIKey, "explicit-secret")
+	got, err := Resolve(CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "explicit-secret", got)
+
+	ResetExplicitCredentials()
+	got, err = Resolve(CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "env-secret", got)
 }

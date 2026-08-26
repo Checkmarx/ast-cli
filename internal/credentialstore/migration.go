@@ -9,9 +9,8 @@ import (
 	"github.com/checkmarx/ast-cli/internal/params"
 )
 
-// RunMigration moves plaintext config-file credentials into the keyring and removes them from
-// the file. It exits cheaply when the active config file holds neither secret,
-// so per-invocation calls are a single file read on the steady state.
+// RunMigration moves plaintext config-file credentials into the keyring and
+// removes them from the file. Called lazily on first credential access.
 func (r *Resolver) RunMigration(ctx context.Context) {
 	if r.policy == PolicyDisabled {
 		return
@@ -22,7 +21,9 @@ func (r *Resolver) RunMigration(ctx context.Context) {
 	}
 	for _, name := range []string{CredentialAPIKey, CredentialClientSecret} {
 		if stringValue(config[viperKeyFor(name)]) != "" {
-			r.migrateOne(ctx, name, config)
+			if r.migrateOne(ctx, name, config) {
+				return
+			}
 		}
 	}
 }
@@ -32,10 +33,12 @@ func Migrate() {
 	Default().RunMigration(context.Background())
 }
 
-func (r *Resolver) migrateOne(ctx context.Context, credentialName string, config map[string]interface{}) {
+// migrateOne migrates a single credential slot; the bool return reports
+// keyring unavailability so RunMigration can skip the remaining slots.
+func (r *Resolver) migrateOne(ctx context.Context, credentialName string, config map[string]interface{}) bool {
 	yamlValue := stringValue(config[viperKeyFor(credentialName)])
 	if yamlValue == "" {
-		return
+		return false
 	}
 	current, err := r.store.Get(ctx, credentialName)
 	switch {
@@ -43,6 +46,7 @@ func (r *Resolver) migrateOne(ctx context.Context, credentialName string, config
 		r.migrateAndRemove(ctx, credentialName, yamlValue)
 	case err != nil:
 		logger.PrintfIfVerbose("credentialstore: skipping migration of %s, keyring unavailable: %v", credentialName, err)
+		return errors.Is(err, ErrKeyringUnavailable)
 	case current == yamlValue:
 		r.removeConfigFileEntryQuietly(credentialName)
 	default:
@@ -51,9 +55,26 @@ func (r *Resolver) migrateOne(ctx context.Context, credentialName string, config
 			credentialName,
 		)
 	}
+	return false
 }
 
 func (r *Resolver) migrateAndRemove(ctx context.Context, credentialName, value string) {
+	if !r.configStillHolds(credentialName, value) {
+		logger.PrintfIfVerbose(
+			"credentialstore: %s changed in config file during migration; aborting to avoid overwriting a rotated credential",
+			credentialName,
+		)
+		return
+	}
+	// Re-check the keyring itself: a concurrent `cx auth login` writes there
+	// directly, which the config-file recheck above can't detect.
+	if _, err := r.store.Get(ctx, credentialName); !errors.Is(err, ErrNotFound) {
+		logger.PrintfIfVerbose(
+			"credentialstore: %s appeared in keyring during migration; aborting to avoid overwriting a rotated credential",
+			credentialName,
+		)
+		return
+	}
 	if err := r.store.Set(ctx, credentialName, value); err != nil {
 		logger.PrintfIfVerbose("credentialstore: could not store %s in keyring, keeping config file entry: %v", credentialName, err)
 		return
@@ -65,6 +86,16 @@ func (r *Resolver) migrateAndRemove(ctx context.Context, credentialName, value s
 	}
 	r.removeConfigFileEntryQuietly(credentialName)
 	logger.PrintfIfVerbose("credentialstore: migrated %s to OS keyring", credentialName)
+}
+
+// configStillHolds reports whether the config file still carries exactly
+// value, guarding against a rotation that happened during migration.
+func (r *Resolver) configStillHolds(credentialName, value string) bool {
+	config, err := configfile.Load(r.filePath)
+	if err != nil {
+		return false
+	}
+	return stringValue(config[viperKeyFor(credentialName)]) == value
 }
 
 func (r *Resolver) removeConfigFileEntryQuietly(credentialName string) {

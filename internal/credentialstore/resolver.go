@@ -28,6 +28,7 @@ type Resolver struct {
 	policy        Policy
 	store         CredentialStore
 	explicit      map[string]string
+	migrationOnce sync.Once
 }
 
 // NewResolver builds a resolver for configFilePath; a nil store defaults to the keyring.
@@ -46,19 +47,35 @@ func NewResolver(configFilePath string, policy Policy, store CredentialStore) *R
 }
 
 // SetExplicit registers an in-process override for a credential.
+// The cobra layer resets overrides before every command via ResetExplicit.
 func (r *Resolver) SetExplicit(credentialName, value string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.explicit[credentialName] = value
 }
 
-// Resolve returns the credential value following the configured policy precedence.
-// Every non-empty result is registered with the logger's sanitizer: callers may
-// embed the value in HTTP bodies or headers that debug mode dumps verbatim.
+// ResetExplicit discards every in-process explicit override.
+func (r *Resolver) ResetExplicit() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.explicit = make(map[string]string)
+}
+
+// migrateLazily runs migration on first credential access instead of at
+// command startup, so credential-free commands never touch the keyring.
+func (r *Resolver) migrateLazily(ctx context.Context) {
+	r.migrationOnce.Do(func() {
+		r.RunMigration(ctx)
+	})
+}
+
+// Resolve returns the credential value following the configured policy
+// precedence, registering non-empty results with the logger's sanitizer.
 func (r *Resolver) Resolve(ctx context.Context, credentialName string) (string, error) {
 	if !IsValidCredentialName(credentialName) {
 		return "", ErrInvalidName
 	}
+	r.migrateLazily(ctx)
 	value, err := r.resolve(ctx, credentialName)
 	if err == nil && value != "" {
 		logger.RegisterSensitiveValue(value)
@@ -67,12 +84,12 @@ func (r *Resolver) Resolve(ctx context.Context, credentialName string) (string, 
 }
 
 // Store persists a credential following the policy: the OS keyring by
-// default, the config-file layer under PolicyDisabled — so writes and reads
-// always land in the same layer.
+// default, the config file under PolicyDisabled.
 func (r *Resolver) Store(ctx context.Context, credentialName, value string) error {
 	if !IsValidCredentialName(credentialName) {
 		return ErrInvalidName
 	}
+	r.migrateLazily(ctx)
 	if r.policy == PolicyDisabled {
 		return configfile.SetKey(r.filePath, viperKeyFor(credentialName), value)
 	}
@@ -85,6 +102,7 @@ func (r *Resolver) Clear(ctx context.Context, credentialName string) error {
 	if !IsValidCredentialName(credentialName) {
 		return ErrInvalidName
 	}
+	r.migrateLazily(ctx)
 	if r.policy == PolicyDisabled {
 		config, err := configfile.Load(r.filePath)
 		if err != nil {
@@ -99,19 +117,13 @@ func (r *Resolver) Clear(ctx context.Context, credentialName string) error {
 }
 
 // StoresInConfigFile reports whether this policy persists credentials in the
-// config file (PolicyDisabled) instead of the OS keyring. Callers use it to
-// decide whether a leftover plaintext entry must be removed after a keyring write.
+// config file (PolicyDisabled) instead of the OS keyring.
 func (r *Resolver) StoresInConfigFile() bool {
 	return r.policy == PolicyDisabled
 }
 
 // The explicit layer distinguishes "flag passed" from "flag absent" by map
-// presence, so --apikey "" wins over env/keyring/config for this invocation
-// (matching pre-keyring viper flag-over-env precedence) without ever writing
-// through to the persisted credential — Store/Clear are separate calls.
-// The environment layer has no such distinction: an empty env var is
-// indistinguishable from an unset one, so it is treated as absent. Name
-// validity is checked by the exported entry points.
+// presence, so --apikey "" still wins over env/keyring/config for this call.
 func (r *Resolver) resolve(ctx context.Context, credentialName string) (string, error) {
 	if value, ok := r.explicitValue(credentialName); ok {
 		return value, nil
@@ -153,9 +165,8 @@ func (r *Resolver) resolveAuto(ctx context.Context, credentialName string) (stri
 	if err == nil {
 		return current, nil
 	}
-	// An unreachable keyring must not break an otherwise working plaintext
-	// configuration: degrade to the config-file layer exactly like a missing
-	// entry does. Access-denied stays loud — a locked keychain needs the user.
+	// An unreachable keyring degrades to the config file like a missing entry;
+	// access-denied stays loud since a locked keychain needs the user.
 	if !errors.Is(err, ErrNotFound) && !errors.Is(err, ErrKeyringUnavailable) {
 		return "", err
 	}
@@ -207,6 +218,11 @@ func Resolve(credentialName string) (string, error) {
 // SetExplicitCredential registers an override on the default resolver.
 func SetExplicitCredential(credentialName, value string) {
 	Default().SetExplicit(credentialName, value)
+}
+
+// ResetExplicitCredentials clears every override on the default resolver.
+func ResetExplicitCredentials() {
+	Default().ResetExplicit()
 }
 
 // stringValue renders a decoded YAML value as its plaintext form.

@@ -3,6 +3,7 @@ package credentialstore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -272,5 +273,176 @@ func TestMigratePackageLevelWrapper(t *testing.T) {
 	stored, err := store.Get(context.Background(), CredentialAPIKey)
 	assert.NoError(t, err)
 	assert.Equal(t, migratedAPIKey, stored)
+	assert.Empty(t, readStoredValueForTest(t, configPath, params.AstAPIKey))
+}
+
+// Resolve must trigger migration lazily on first credential access: a fresh
+// resolver with no explicit RunMigration call still migrates the plaintext.
+func TestLazyMigrationTriggersOnFirstResolve(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := newFakeStore()
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	value, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, value)
+	assert.Empty(t, readStoredValueForTest(t, configPath, params.AstAPIKey))
+	stored, storeErr := store.Get(context.Background(), CredentialAPIKey)
+	assert.NoError(t, storeErr)
+	assert.Equal(t, migratedAPIKey, stored)
+}
+
+// The lazy trigger must run at most once per resolver: plaintext re-added by
+// another writer after a completed migration stays untouched on later calls.
+func TestLazyMigrationRunsOncePerResolver(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	resolver := NewResolver(configPath, PolicyAuto, newFakeStore())
+	ctx := context.Background()
+
+	_, err := resolver.Resolve(ctx, CredentialAPIKey)
+	assert.NoError(t, err)
+
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	_, err = resolver.Resolve(ctx, CredentialAPIKey)
+	assert.NoError(t, err)
+
+	assert.Equal(t, migratedAPIKey, readStoredValueForTest(t, configPath, params.AstAPIKey))
+}
+
+// A Store call is also a valid first access for the lazy migration.
+func TestLazyMigrationTriggersOnStore(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := newFakeStore()
+	resolver := NewResolver(configPath, PolicyAuto, store)
+	ctx := context.Background()
+
+	assert.NoError(t, resolver.Store(ctx, CredentialClientSecret, "fresh-secret"))
+
+	stored, err := store.Get(ctx, CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, stored)
+}
+
+// When the keyring looks unavailable for the first slot, remaining slots are
+// skipped for this process instead of each paying the keyring timeout.
+func TestRunMigrationStopsAfterKeyringUnavailable(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(
+		t,
+		configPath,
+		"cx_apikey: "+migratedAPIKey+"\ncx_client_secret: old-secret\n",
+	)
+	store := newFakeStore()
+	store.getErr = fmt.Errorf("dbus failed: %w", ErrKeyringUnavailable)
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	resolver.RunMigration(context.Background())
+
+	assert.Equal(t, 1, store.calls())
+	assert.Equal(t, migratedAPIKey, readStoredValueForTest(t, configPath, params.AstAPIKey))
+	assert.Equal(t, "old-secret", readStoredValueForTest(t, configPath, params.AccessKeySecretConfigKey))
+}
+
+// Disabled policy resolves from YAML without ever invoking the lazy migration.
+func TestLazyMigrationDisabledNoStoreCalls(t *testing.T) {
+	t.Setenv(params.AstAPIKeyEnv, "")
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := newFakeStore()
+	resolver := NewResolver(configPath, PolicyDisabled, store)
+
+	value, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, value)
+	assert.Equal(t, 0, store.calls())
+}
+
+// rotatingRaceStore simulates another process rotating the credential in the
+// config file while migration is between its initial read and its keyring
+// write. Migration must abort and leave the rotated value intact.
+type rotatingRaceStore struct {
+	path     string
+	mutated  bool
+	setCalls int
+}
+
+func (s *rotatingRaceStore) Get(_ context.Context, _ string) (string, error) {
+	if !s.mutated {
+		s.mutated = true
+		if err := os.WriteFile(s.path, []byte("cx_apikey: rotated-new\n"), 0o600); err != nil {
+			return "", err
+		}
+	}
+	return "", ErrNotFound
+}
+
+func (s *rotatingRaceStore) Set(context.Context, string, string) error {
+	s.setCalls++
+	return nil
+}
+
+func (s *rotatingRaceStore) Delete(context.Context, string) error { return nil }
+
+func TestMigrateAbortsWhenConfigRotatedBeforeSet(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := &rotatingRaceStore{path: configPath}
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	resolver.RunMigration(context.Background())
+
+	assert.Zero(t, store.setCalls)
+	assert.Equal(t, "rotated-new", readStoredValueForTest(t, configPath, params.AstAPIKey))
+}
+
+// raceStore simulates a concurrent `cx auth login` writing straight to the
+// keyring, which configStillHolds's config-file recheck alone can't catch.
+type raceStore struct {
+	gets     int
+	setCalls int
+}
+
+func (s *raceStore) Get(context.Context, string) (string, error) {
+	s.gets++
+	if s.gets == 1 {
+		return "", ErrNotFound
+	}
+	return "rotated-in-keyring", nil
+}
+
+func (s *raceStore) Set(context.Context, string, string) error {
+	s.setCalls++
+	return nil
+}
+
+func (s *raceStore) Delete(context.Context, string) error { return nil }
+
+func TestMigrateAbortsWhenKeyringRotatedBeforeSet(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := &raceStore{}
+	resolver := NewResolver(configPath, PolicyAuto, store)
+
+	resolver.RunMigration(context.Background())
+
+	assert.Zero(t, store.setCalls)
+	assert.Equal(t, migratedAPIKey, readStoredValueForTest(t, configPath, params.AstAPIKey))
+}
+
+// Required policy never falls back to YAML at resolve time, so the lazy
+// migration is what promotes leftover plaintext into the keyring there.
+func TestLazyMigrationUnderRequiredPolicyPromotesToKeyring(t *testing.T) {
+	t.Setenv(params.AstAPIKeyEnv, "")
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, "cx_apikey: "+migratedAPIKey+"\n")
+	store := newFakeStore()
+	resolver := NewResolver(configPath, PolicyRequired, store)
+
+	value, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, migratedAPIKey, value)
 	assert.Empty(t, readStoredValueForTest(t, configPath, params.AstAPIKey))
 }
