@@ -268,7 +268,7 @@ func TestGeminiAdditionalContext_ContainsIgnoreVulnerability(t *testing.T) {
 	if !strings.Contains(ctx, "sim1") {
 		t.Errorf("expected similarity id in suppress command, got %q", ctx)
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
 			t.Errorf("expected PowerShell stop-parsing on Windows, got %q", ctx)
 		}

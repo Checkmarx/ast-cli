@@ -6,7 +6,7 @@ import (
 )
 
 func TestQuoteDataFlag_Unix(t *testing.T) {
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		t.Skip("unix quoting on windows host")
 	}
 	got := QuoteDataFlag([]byte(`{"FileName":"a.py","Line":1,"RuleID":2}`))
@@ -17,7 +17,7 @@ func TestQuoteDataFlag_Unix(t *testing.T) {
 }
 
 func TestQuoteDataFlag_Windows(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != goosWindows {
 		t.Skip("windows quoting")
 	}
 	got := QuoteDataFlag([]byte(`{"FileName":"a.py","Line":1,"RuleID":2}`))

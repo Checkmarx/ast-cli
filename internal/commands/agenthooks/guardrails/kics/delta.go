@@ -14,6 +14,10 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
 
+// goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
+// check below (and its test) compare against it repeatedly.
+const goosWindows = "windows"
+
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the ignore-file key used by RunIacRealtimeScan: Title + "_" + SimilarityID.
 type findingKey struct {
@@ -147,7 +151,7 @@ func geminiIgnoredFilePathFlag(workDir string) string {
 	if workDir == "" {
 		return ""
 	}
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == goosWindows {
 		p := filepath.ToSlash(ignore.PathFor(workDir))
 		return fmt.Sprintf(" --ignored-file-path %q", p)
 	}
@@ -156,7 +160,8 @@ func geminiIgnoredFilePathFlag(workDir string) string {
 
 func geminiSuppressCommands(cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string) string {
 	var suppressCmds strings.Builder
-	for _, f := range findings {
+	for i := range findings {
+		f := &findings[i]
 		data, _ := json.Marshal(iacrealtime.IgnoredIacFinding{
 			Title:        f.Title,
 			SimilarityID: f.SimilarityID,
