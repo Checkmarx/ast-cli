@@ -31,12 +31,6 @@ on:
         required: true
       COSIGN_PUBLIC_KEY:
         required: true
-      DOCKER_PASSWORD:
-        required: true
-      DOCKER_USERNAME:
-        required: true
-      PERSONAL_ACCESS_TOKEN:
-        required: true
       S3_BUCKET_NAME:
         required: true
       S3_BUCKET_REGION:
@@ -100,7 +94,7 @@ jobs:
         uses: step-security/aws-secretsmanager-get-secrets@102b6b2a2528747bcc321bb99ef326d8be7ef58f # v3.0.1
         with:
           secret-ids: |
-            ${{ secrets.SECRET_MANAGER_SECRET_NAME }}
+            ,${{ secrets.SECRET_MANAGER_SECRET_NAME }}
           parse-json-secrets: true
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
@@ -183,7 +177,6 @@ jobs:
           args: ${{ env.GR_ARGS }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GO_BOT_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
           S3_BUCKET_REGION: ${{ secrets.S3_BUCKET_REGION }}
           SIGNING_REMOTE_SSH_USER: ${{ secrets.SIGNING_REMOTE_SSH_USER }}
