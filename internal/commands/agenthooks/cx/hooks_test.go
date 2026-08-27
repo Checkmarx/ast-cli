@@ -804,7 +804,7 @@ func pipeStdio(t *testing.T, stdin string) func() string {
 
 	inFile, err := os.CreateTemp("", "codex-stdin-*.json")
 	assert.NoError(t, err)
-	t.Cleanup(func() { os.Remove(inFile.Name()) })
+	t.Cleanup(func() { _ = os.Remove(inFile.Name()) })
 	_, err = inFile.WriteString(stdin)
 	assert.NoError(t, err)
 	_, err = inFile.Seek(0, 0)
@@ -812,7 +812,7 @@ func pipeStdio(t *testing.T, stdin string) func() string {
 
 	outFile, err := os.CreateTemp("", "codex-stdout-*.json")
 	assert.NoError(t, err)
-	t.Cleanup(func() { os.Remove(outFile.Name()) })
+	t.Cleanup(func() { _ = os.Remove(outFile.Name()) })
 
 	origIn, origOut := os.Stdin, os.Stdout
 	os.Stdin, os.Stdout = inFile, outFile
