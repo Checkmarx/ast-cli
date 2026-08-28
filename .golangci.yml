@@ -67,6 +67,8 @@ linters:
             - github.com/zalando/go-keyring
             - github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor
             - github.com/Checkmarx/containers-types/types
+            - github.com/Checkmarx/kics/v2
+            - github.com/rs/zerolog
     dupl:
       threshold: 500
     funlen:

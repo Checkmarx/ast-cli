@@ -1,11 +1,15 @@
 package iacrealtime
 
+import "github.com/checkmarx/ast-cli/internal/services/kicsengine"
+
 const (
-	ContainerPath            = "/path"
-	ContainerFormat          = "json"
-	ContainerTempDirPattern  = "iac-realtime"
-	KicsContainerPrefix      = "cli-iac-realtime-"
-	ContainerResultsFileName = "results.json"
+	ContainerPath           = "/path"
+	ContainerFormat         = "json"
+	ContainerTempDirPattern = "iac-realtime"
+	KicsContainerPrefix     = "cli-iac-realtime-"
+	// ContainerResultsFileName is named by the engine that writes it, so the writer and
+	// this reader cannot drift apart silently.
+	ContainerResultsFileName = kicsengine.ResultsFileName
 	InfoSeverity             = "info"
 	IacEnginePath            = "/usr/local/bin"
 

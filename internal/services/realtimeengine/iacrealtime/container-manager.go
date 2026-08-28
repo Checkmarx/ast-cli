@@ -159,7 +159,7 @@ func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
 		return err
 	}
 
-	cmd := createCommandWithEnhancedPath(resolvedEngine,
+	containerArgs := []string{
 		"run", "--rm",
 		"-v", volumeMap,
 		"--name", viper.GetString(commonParams.KicsContainerNameKey),
@@ -168,7 +168,9 @@ func (dm *ContainerManager) RunKicsContainer(engine, volumeMap string) error {
 		"-p", ContainerPath,
 		"-o", ContainerPath,
 		"--report-formats", ContainerFormat,
-	)
+	}
+
+	cmd := createCommandWithEnhancedPath(resolvedEngine, containerArgs...)
 	_, err = cmd.CombinedOutput()
 
 	return err

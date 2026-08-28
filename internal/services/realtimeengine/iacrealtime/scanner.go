@@ -1,6 +1,7 @@
 package iacrealtime
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -27,7 +28,11 @@ func NewScanner(dockerManager IContainerManager) *Scanner {
 	}
 }
 
-func (s *Scanner) RunScan(engine, volumeMap, tempDir, filePath string) ([]IacRealtimeResult, error) {
+func (s *Scanner) RunScan(ctx context.Context, engine, volumeMap, tempDir, filePath string) ([]IacRealtimeResult, error) {
+	if util.IsEmbeddedKicsEngine(engine) {
+		return s.RunEmbeddedScan(ctx, tempDir, filePath)
+	}
+
 	kicsErrCode := s.dockerManager.RunKicsContainer(engine, volumeMap)
 	return s.HandleScanResult(kicsErrCode, tempDir, filePath)
 }

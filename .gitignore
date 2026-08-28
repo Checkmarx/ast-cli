@@ -67,3 +67,14 @@ vendor/*
 
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
+# Artifacts left in the working tree by the unit test suite
+# (internal/services/export_test.go, internal/commands/pre_receive_test.go)
+internal/services/output.json
+internal/services/report.xml
+internal/services/sbom.json
+internal/services/test.txt
+internal/commands/config.yaml
+
+# Local Checkmarx guardrail state
+.checkmarx/
+internal/commands/cx_result.json

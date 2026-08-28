@@ -1,6 +1,7 @@
 package iacrealtime
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -541,7 +542,7 @@ func TestScanner_RunScan(t *testing.T) {
 			// Apply test-specific mock configuration
 			ttt.setupMock(mockContainer)
 
-			_, err := scanner.RunScan(ttt.engine, ttt.volumeMap, ttt.tempDir, ttt.filePath)
+			_, err := scanner.RunScan(context.Background(), ttt.engine, ttt.volumeMap, ttt.tempDir, ttt.filePath)
 
 			if ttt.expectErr && err == nil {
 				t.Error("RunScan() expected error but got none")

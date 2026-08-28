@@ -581,8 +581,9 @@ func scanIacRealtimeSubCommand(
 
 	scanIacRealtimeCmd.Flags().String(
 		commonParams.EngineFlag,
-		"docker",
-		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
+		"",
+		"Engine used to run IaC-Realtime. Defaults to the built-in KICS engine, which needs no "+
+			"container runtime. Pass docker or podman to scan with a container instead.",
 	)
 
 	return scanIacRealtimeCmd

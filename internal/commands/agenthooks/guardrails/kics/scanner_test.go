@@ -5,6 +5,7 @@ package kics
 import (
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
@@ -82,41 +83,28 @@ func TestNewScannerWithFunc_MockReturnsResults(t *testing.T) {
 	assert.Equal(t, mockResults, results)
 }
 
-// ── resolveContainerEngine ───────────────────────────────────────────────────
+// ── resolveEngine ────────────────────────────────────────────────────────
 
-func TestResolveContainerEngine_EnvOverrideWins(t *testing.T) {
+// The guardrail has no --engine flag, so it must reach the container-free engine by default;
+// otherwise the agent hook would still require Docker on every developer machine.
+func TestResolveEngine_DefaultsToEmbedded(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	assert.Equal(t, util.KicsEngineEmbedded, resolveEngine())
+}
+
+func TestResolveEngine_EnvOverrideSelectsContainerEngine(t *testing.T) {
 	t.Setenv(params.HooksContainerEngineEnv, enginePodman)
-	if got := resolveContainerEngine(); got != enginePodman {
-		t.Errorf("expected env override %q, got %q", enginePodman, got)
-	}
+	assert.Equal(t, enginePodman, resolveEngine())
 }
 
-func TestResolveContainerEngine_EnvOverrideArbitraryValue(t *testing.T) {
+func TestResolveEngine_EnvOverrideAcceptsArbitraryEngine(t *testing.T) {
 	t.Setenv(params.HooksContainerEngineEnv, "nerdctl")
-	if got := resolveContainerEngine(); got != "nerdctl" {
-		t.Errorf("expected env override %q, got %q", "nerdctl", got)
-	}
+	assert.Equal(t, "nerdctl", resolveEngine())
 }
 
-func TestResolveContainerEngine_FallsBackToDefaultWhenNothingResolves(t *testing.T) {
+// The embedded engine needs no binary on PATH, so an empty PATH must not change the choice.
+func TestResolveEngine_EmbeddedDoesNotDependOnPath(t *testing.T) {
 	t.Setenv(params.HooksContainerEngineEnv, "")
-	emptyDir := t.TempDir()
-	t.Setenv("PATH", emptyDir)
-
-	if got := resolveContainerEngine(); got != defaultContainerEngine {
-		t.Errorf("expected fallback default %q, got %q", defaultContainerEngine, got)
-	}
-}
-
-func TestResolveContainerEngine_DefaultContainerEngineConstant(t *testing.T) {
-	assert.Equal(t, "docker", defaultContainerEngine)
-}
-
-func TestResolveContainerEngine_EmptyEnvFallsBack(t *testing.T) {
-	t.Setenv(params.HooksContainerEngineEnv, "")
-	emptyDir := t.TempDir()
-	t.Setenv("PATH", emptyDir)
-
-	got := resolveContainerEngine()
-	assert.Equal(t, defaultContainerEngine, got)
+	t.Setenv("PATH", t.TempDir())
+	assert.Equal(t, util.KicsEngineEmbedded, resolveEngine())
 }

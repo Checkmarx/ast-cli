@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -19,15 +20,17 @@ import (
 )
 
 const (
-	npmPackageFilename        = "package.json"
-	permission                = 0644
-	permission0666            = 0666
-	containerStarting         = "Starting kics container"
-	filesContainerLocation    = "/files/"
-	filesContainerVolume      = ":/files"
-	resultsContainerLocation  = "/kics/"
-	containerRemove           = "--rm"
-	// ContainerImage is the KICS container image with pinned SHA256 digest.
+	npmPackageFilename       = "package.json"
+	permission               = 0644
+	permission0666           = 0666
+	containerStarting        = "Starting kics container"
+	filesContainerLocation   = "/files/"
+	filesContainerVolume     = ":/files"
+	resultsContainerLocation = "/kics/"
+	containerRemove          = "--rm"
+	// ContainerImage is the KICS container image, pinned by digest. Its tag must match the
+	// github.com/Checkmarx/kics/v2 version in go.mod: the container and embedded backends
+	// only agree on findings and SimilarityIDs when they run the same KICS release.
 	ContainerImage            = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
 	containerNameFlag         = "--name"
 	remediateCommand          = "remediate"
@@ -263,39 +266,43 @@ func runKicsRemediation(cmd *cobra.Command, volumeMap, tempDir string) error {
 	kicsCmd, _ := cmd.Flags().GetString(commonParams.KicsRealtimeEngine)
 	out, err := exec.Command(kicsCmd, kicsRunArgs...).CombinedOutput()
 	logger.PrintIfVerbose(string(out))
+	if err != nil {
+		os.RemoveAll(tempDir)
+	}
 	/* 	NOTE: the kics container returns 40 instead of 0 when successful!! This
 	definitely an incorrect behavior but the following check gets past it.
 	*/
+	return handleKicsRemediationOutput(out, err)
+}
+
+// handleKicsRemediationOutput interprets a KICS remediation exit status: some non-zero
+// codes mean "partially applied" and still carry a usable summary.
+func handleKicsRemediationOutput(out []byte, err error) error {
 	if err == nil {
 		logger.PrintIfVerbose(allRemediationsApplied)
 		fmt.Println(buildRemediationSummary(string(out)))
 		return nil
 	}
-	if err != nil {
-		errorMessage := err.Error()
-		extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
-		os.RemoveAll(tempDir)
-		if contains(kicsErrorCodes, extractedErrorCode) {
-			logger.PrintIfVerbose(someRemediationsApplied)
-			fmt.Println(buildRemediationSummary(string(out)))
-			return nil
-		}
-		exitError, hasExistError := err.(*exec.ExitError)
-		if hasExistError {
-			if exitError.ExitCode() == EngineNoRunningCode {
-				logger.PrintIfVerbose(errorMessage)
-				return errors.Errorf(NotRunningEngineMessage)
-			}
-		} else {
-			if strings.Contains(errorMessage, InvalidEngineError) || strings.Contains(errorMessage, InvalidEngineErrorWindows) {
-				logger.PrintIfVerbose(errorMessage)
-				return errors.Errorf(InvalidEngineMessage)
-			}
-		}
 
-		return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
+	errorMessage := err.Error()
+	extractedErrorCode := errorMessage[strings.LastIndex(errorMessage, " ")+1:]
+	if slices.Contains(kicsErrorCodes, extractedErrorCode) {
+		logger.PrintIfVerbose(someRemediationsApplied)
+		fmt.Println(buildRemediationSummary(string(out)))
+		return nil
 	}
-	return nil
+
+	if exitError, hasExitError := err.(*exec.ExitError); hasExitError {
+		if exitError.ExitCode() == EngineNoRunningCode {
+			logger.PrintIfVerbose(errorMessage)
+			return errors.New(NotRunningEngineMessage)
+		}
+	} else if strings.Contains(errorMessage, InvalidEngineError) || strings.Contains(errorMessage, InvalidEngineErrorWindows) {
+		logger.PrintIfVerbose(errorMessage)
+		return errors.New(InvalidEngineMessage)
+	}
+
+	return errors.Errorf("Check container engine state. Failed: %s", errorMessage)
 }
 
 func createKicsRemediateEnv(cmd *cobra.Command) (volume, kicsDir string, err error) {
@@ -343,15 +350,6 @@ func filenameMatcher(kicsFile []byte) (kicsFileUpdated []byte, err error) {
 		return nil, errors.New(err.Error())
 	}
 	return kicsFileUpdated, nil
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if strings.Contains(str, v) {
-			return true
-		}
-	}
-	return false
 }
 
 func buildRemediationSummary(out string) (summary string) {

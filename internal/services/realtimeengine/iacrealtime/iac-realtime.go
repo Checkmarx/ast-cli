@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -82,7 +83,10 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 		return nil, err
 	}
 
-	svc.containerManager.GenerateContainerID()
+	resolvedEngine := util.ResolveKicsEngine(engine)
+	if !util.IsEmbeddedKicsEngine(resolvedEngine) {
+		svc.containerManager.GenerateContainerID()
+	}
 
 	volumeMap, tempDir, err := svc.fileHandler.PrepareScanEnvironment(filePath)
 	if err != nil {
@@ -95,7 +99,7 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 		}
 	}()
 
-	results, err := svc.scanner.RunScan(engine, volumeMap, tempDir, filePath)
+	results, err := svc.scanner.RunScan(context.Background(), resolvedEngine, volumeMap, tempDir, filePath)
 	if err != nil {
 		return nil, err
 	}
