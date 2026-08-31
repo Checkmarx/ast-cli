@@ -176,6 +176,17 @@ func engineNameResolution(engineName, fallBackDir string) (string, error) {
 	return "", errors.Errorf("%s not found in PATH or in fallback locations: %v", engineName, checkedPaths)
 }
 
+// IsEngineRunning reports whether engineName is usable right now: resolvable on
+// this OS (PATH, plus the macOS GUI fallback paths engineNameResolution knows
+// about) AND with a responding daemon.
+func IsEngineRunning(engineName string) bool {
+	enginePath, err := engineNameResolution(engineName, IacEnginePath)
+	if err != nil {
+		return false
+	}
+	return daemonResponds(enginePath)
+}
+
 // getFallbackPaths returns a list of paths to check for the container engine
 func getFallbackPaths(engineName, fallBackDir string) []string {
 	var paths []string
