@@ -1,22 +1,14 @@
 package kics
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
-	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
-
-// goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
-// check below (and its test) compare against it repeatedly.
-const goosWindows = "windows"
 
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the ignore-file key used by RunIacRealtimeScan: Title + "_" + SimilarityID.
@@ -70,34 +62,18 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 }
 
 // formatFindings builds the two verdict fields delivered to the agent.
-// Cursor receives cursorAdditionalContext (folded into agent_message); Gemini receives
-// suppress commands; other agents receive additionalContext (e.g. Claude additionalContext).
-func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, workDir string, agent agenthooks.AgentID) (reason, context string) {
+// Cursor receives cursorAdditionalContext (folded into agent_message); other agents
+// (including Gemini) receive additionalContext, with MCP tool names adjusted per agent.
+func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
 	reason = permissionDecisionReason(filePath, summary)
 	switch agent {
 	case agenthooks.AgentCursor:
 		context = cursorAdditionalContext(filePath, findings)
-	case agenthooks.AgentGemini:
-		cxBinary := "cx"
-		if cxExe, err := os.Executable(); err == nil {
-			cxBinary = cxExe
-		}
-		context = geminiAdditionalContext(filePath, cxBinary, findings, workDir)
 	default:
-		context = additionalContext(filePath, findings)
+		context = additionalContext(filePath, findings, agent)
 	}
 	return reason, context
-}
-
-// ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that pins
-// the suppression command to the workspace ignore file, anchored at the hook event's
-// workDir.
-func ignoredFilePathFlag(workDir string) string {
-	if workDir == "" {
-		return ""
-	}
-	return fmt.Sprintf(" --ignored-file-path '%s'", ignore.PathFor(workDir))
 }
 
 // permissionDecisionReason is the human-readable deny message shown to the user.
@@ -145,40 +121,12 @@ func isDockerImageFileByName(filePath string) bool {
 		name == "compose" || strings.HasPrefix(name, "compose.")
 }
 
-// geminiIgnoredFilePathFlag pins suppression to the workspace ignore file. On Windows
-// uses double quotes and forward slashes so the flag survives PowerShell argv parsing.
-func geminiIgnoredFilePathFlag(workDir string) string {
-	if workDir == "" {
-		return ""
-	}
-	if runtime.GOOS == goosWindows {
-		p := filepath.ToSlash(ignore.PathFor(workDir))
-		return fmt.Sprintf(" --ignored-file-path %q", p)
-	}
-	return ignoredFilePathFlag(workDir)
-}
-
-func geminiSuppressCommands(cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string) string {
-	var suppressCmds strings.Builder
-	for i := range findings {
-		f := &findings[i]
-		data, _ := json.Marshal(iacrealtime.IgnoredIacFinding{
-			Title:        f.Title,
-			SimilarityID: f.SimilarityID,
-		})
-		ignoreFlag := geminiIgnoredFilePathFlag(workDir)
-		suppressCmds.WriteString(cursorplugin.IgnoreVulnerabilityCommand(cxBinary, "iac", data, ignoreFlag, ""))
-		suppressCmds.WriteString("\n")
-	}
-	return suppressCmds.String()
-}
-
 // additionalContext is injected into the agent's context window to drive remediation.
 // KICS is a deterministic IaC rule engine: unlike ASCA, its findings are not caused by
 // missing cross-file context, so the agent is NOT given discretion to treat findings as
 // false positives. Every new finding must be fixed.
-// Used for Claude, Copilot, and other non-Cursor agents.
-func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+// Used for Claude, Gemini, Copilot, and other non-Cursor agents.
+func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) string {
 	var findingList strings.Builder
 	for _, f := range findings {
 		line := 0
@@ -187,6 +135,10 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 		}
 		fmt.Fprintf(&findingList, "  - line %d [%s] %s: %s\n",
 			line, f.Severity, f.Title, f.Description)
+	}
+	imageTool, codeTool := "mcp__Checkmarx__imageRemediation", "mcp__Checkmarx__codeRemediation"
+	if agent == agenthooks.AgentGemini {
+		imageTool, codeTool = "mcp_Checkmarx_imageRemediation", "mcp_Checkmarx_codeRemediation"
 	}
 	return fmt.Sprintf(
 		"KICS detected IaC misconfigurations in %s. These are deterministic rule matches "+
@@ -197,26 +149,7 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 			"Fix every finding below, then retry the write:\n"+
 			"%s"+
 			"%s",
-		filePath, findingList.String(), remediationInstructions(
-			filePath, findings,
-			"mcp__Checkmarx__imageRemediation", "mcp__Checkmarx__codeRemediation",
-		),
-	)
-}
-
-// geminiAdditionalContext adds suppress commands for Gemini CLI only.
-func geminiAdditionalContext(filePath, cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string) string {
-	remediation := remediationInstructions(
-		filePath, findings,
-		"mcp_Checkmarx_imageRemediation", "mcp_Checkmarx_codeRemediation",
-	)
-	return fmt.Sprintf(
-		"KICS detected IaC misconfigurations in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command. "+
-			"If the user chooses to remediate, follow the remediation instructions below. "+
-			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s\n"+
-			"%s",
-		filePath, geminiSuppressCommands(cxBinary, findings, workDir), remediation,
+		filePath, findingList.String(), remediationInstructions(filePath, findings, imageTool, codeTool),
 	)
 }
 

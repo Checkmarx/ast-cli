@@ -82,7 +82,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
-		r, c := formatFindings(ev.FilePath, newResults, ev.WorkDir, ev.Agent)
+		r, c := formatFindings(ev.FilePath, newResults, ev.Agent)
 		return true, r, c
 	}
 
@@ -105,7 +105,7 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 		return false, "", ""
 	}
 
-	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir, ev.Agent)
+	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent)
 	return true, r, c
 }
 
