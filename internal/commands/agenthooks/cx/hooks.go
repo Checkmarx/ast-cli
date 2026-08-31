@@ -116,11 +116,14 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
 		return agenthooks.RejectEditWithContext(reason, context)
 	}
+	var kicsNote string
 	if kicsScanner != nil {
-		if blocked, reason, context := kics.ScanFileEdit(ev, kicsScanner); blocked {
+		blocked, reason, context, note := kics.ScanFileEdit(ev, kicsScanner)
+		if blocked {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
+		kicsNote = note
 	}
 	if scaScanner != nil {
 		for _, diff := range ev.Changes {
@@ -130,6 +133,11 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
+	}
+	// A note on an ALLOW, deliberately: blocking every IaC edit because a
+	// container engine is down would be worse than an unscanned edit.
+	if kicsNote != "" {
+		return agenthooks.AllowWithNote(kicsNote)
 	}
 	return agenthooks.AcceptEdit()
 }

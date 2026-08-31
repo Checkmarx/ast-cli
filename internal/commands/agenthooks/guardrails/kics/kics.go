@@ -1,6 +1,7 @@
 package kics
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,30 +43,35 @@ func isSupportedByKICS(filePath string) bool {
 // finds *new* vulnerabilities introduced by ev.Changes (delta-detection for edits;
 // any-vuln for new writes). Findings the user already suppressed via
 // `cx ignore-vulnerability` (the realtime ignore file) are filtered out before the
-// verdict. Fail-open on infrastructure errors (Docker unavailable, image pull fail, panic).
-func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reason, context string) {
+// verdict. Fail-open on infrastructure errors (Docker unavailable, image pull fail, panic),
+// returning a skippedNote so the skipped check is visible.
+func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reason, context, note string) {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.PrintfIfVerbose("kics guardrail: recovered from panic, failing open: %v", r)
 			blocked = false
 			reason = ""
 			context = ""
+			note = skippedNote(ev.FilePath, fmt.Errorf("internal error: %v", r))
 		}
 	}()
 
 	if !isSupportedByKICS(ev.FilePath) {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
 	newContent, originalContent, err := proposedContent(ev.FilePath, ev.Changes)
-	if err != nil || newContent == "" {
-		return false, "", ""
+	if err != nil {
+		return false, "", "", skippedNote(ev.FilePath, err)
+	}
+	if newContent == "" {
+		return false, "", "", ""
 	}
 
 	// Stage and scan the proposed (new) content
 	stagedNew, cleanupNew, err := stageForScan(ev.FilePath, newContent, ev.SessionID)
 	if err != nil {
-		return false, "", ""
+		return false, "", "", skippedNote(ev.FilePath, err)
 	}
 	defer cleanupNew()
 
@@ -74,22 +80,22 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	if err != nil {
 		// Fail open: Docker unavailable, image pull failure, feature flag disabled, etc.
 		logger.PrintfIfVerbose("kics guardrail: scan of proposed content failed, failing open: %v", err)
-		return false, "", ""
+		return false, "", "", skippedNote(ev.FilePath, err)
 	}
 	if len(newResults) == 0 {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
 		r, c := formatFindings(ev.FilePath, newResults, ev.Agent)
-		return true, r, c
+		return true, r, c, ""
 	}
 
 	// Delta: scan original content and find only newly introduced findings
 	stagedOrig, cleanupOrig, err := stageForScan(ev.FilePath, originalContent, ev.SessionID)
 	if err != nil {
-		return false, "", ""
+		return false, "", "", skippedNote(ev.FilePath, err)
 	}
 	defer cleanupOrig()
 
@@ -97,16 +103,24 @@ func ScanFileEdit(ev agenthooks.FileEditEvent, svc *Scanner) (blocked bool, reas
 	if err != nil {
 		// Fail open on original scan error
 		logger.PrintfIfVerbose("kics guardrail: scan of original content failed, failing open: %v", err)
-		return false, "", ""
+		return false, "", "", skippedNote(ev.FilePath, err)
 	}
 
 	newFindings := NewFindings(origResults, newResults)
 	if len(newFindings) == 0 {
-		return false, "", ""
+		return false, "", "", ""
 	}
 
 	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent)
-	return true, r, c
+	return true, r, c, ""
+}
+
+// skippedNote is what the user sees when the guardrail fails open. Without it a
+// file edited with no container engine running is indistinguishable from a file
+// that scanned clean — the edit is allowed either way, and nothing says why.
+func skippedNote(filePath string, err error) string {
+	return fmt.Sprintf("Checkmarx IaC guardrail skipped %s: %v. The edit was allowed without an IaC security check.",
+		filepath.Base(filePath), err)
 }
 
 // existingIgnoreFilePath returns the realtime ignore-file path anchored at workDir only
