@@ -19,7 +19,7 @@ type cycloneDXBOM struct {
 			BOMRef string `json:"bom-ref"`
 		} `json:"component"`
 	} `json:"metadata"`
-	Components   []cycloneDXComponent   `json:"components"`
+	Components   []cycloneDXComponent  `json:"components"`
 	Dependencies []cycloneDXDependency `json:"dependencies"`
 }
 
@@ -455,7 +455,7 @@ func enrichWithSbomTransitivePaths(
 			PackageManager:  scanPkg.PackageManager,
 			PackageName:     scanPkg.PackageName,
 			PackageVersion:  scanPkg.Version,
-			FilePath:        "", // Transitive packages don't have a file location in the manifest
+			FilePath:        "",                          // Transitive packages don't have a file location in the manifest
 			Locations:       []realtimeengine.Location{}, // Transitive packages have no source location
 			Status:          scanPkg.Status,
 			Vulnerabilities: convertVulnerabilities(scanPkg.Vulnerabilities),

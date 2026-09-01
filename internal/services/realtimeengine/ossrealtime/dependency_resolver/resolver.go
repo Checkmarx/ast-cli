@@ -162,7 +162,7 @@ func (s *DependencyResolverService) resolveWithCache(
 	fileHash := s.hashFile(checkFilePath)
 	s.setInCache(cacheKey, deps, fileHash)
 
-	logger.PrintfIfVerbose("✅ Resolved %s dependencies (%d total)", pkgMgr, len(deps))
+	logger.Printf("✅ Resolved %s dependencies (%d total)", pkgMgr, len(deps))
 	return deps, nil
 }
 

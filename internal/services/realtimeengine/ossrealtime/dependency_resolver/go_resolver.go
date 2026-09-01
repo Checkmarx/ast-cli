@@ -68,6 +68,11 @@ func parseGoModGraphOutput(output string) []Dependency {
 	for pkg, children := range graph {
 		name, version := splitGoModuleVersion(pkg)
 
+		// Skip root module (has no @version) and packages with empty versions
+		if version == "" {
+			continue
+		}
+
 		dep := Dependency{
 			Name:        name,
 			Version:     version,
