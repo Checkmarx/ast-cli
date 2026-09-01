@@ -2,19 +2,20 @@ package configuration
 
 import (
 	"bufio"
+	"context"
+	stderrors "errors"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/user"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/configfile"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
-	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 const configDirName = "/.checkmarx"
@@ -26,9 +27,9 @@ func PromptConfiguration() {
 	baseURI := viper.GetString(params.BaseURIKey)
 	baseURISrc := viper.GetString(params.BaseURIKey)
 	baseAuthURI := viper.GetString(params.BaseAuthURIKey)
-	accessKeySecret := viper.GetString(params.AccessKeySecretConfigKey)
+	accessKeySecret := resolveSecretForPrompt(params.AccessKeySecretConfigKey)
 	accessKey := viper.GetString(params.AccessKeyIDConfigKey)
-	accessAPIKey := viper.GetString(params.AstAPIKey)
+	accessAPIKey := resolveSecretForPrompt(params.AstAPIKey)
 	tenant := viper.GetString(params.TenantKey)
 	fmt.Print("Setup guide: https://checkmarx.com/resource/documents/en/34965-68621-checkmarx-one-cli-quick-start-guide.html\n\n")
 	// Prompt for Base URI
@@ -64,31 +65,31 @@ func PromptConfiguration() {
 	authType = strings.Replace(authType, "\n", "", -1)
 	authType = strings.Replace(authType, "\r", "", -1)
 	if strings.EqualFold(authType, "Y") {
-		fmt.Printf("AST API Key [%s]: ", obfuscateString(accessAPIKey))
+		fmt.Printf("AST API Key [%s]: ", ObfuscateString(accessAPIKey))
 		accessAPIKey, _ = reader.ReadString('\n')
 		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
 		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
 		if len(accessAPIKey) > 0 {
-			setConfigPropertyQuiet(params.AstAPIKey, accessAPIKey)
+			storeProperty(params.AstAPIKey, accessAPIKey)
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
-			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, "")
+			storeProperty(params.AccessKeySecretConfigKey, "")
 		}
 	} else {
-		fmt.Printf("Checkmarx One Client ID [%s]: ", obfuscateString(accessKey))
+		fmt.Printf("Checkmarx One Client ID [%s]: ", ObfuscateString(accessKey))
 		accessKey, _ = reader.ReadString('\n')
 		accessKey = strings.Replace(accessKey, "\n", "", -1)
 		accessKey = strings.Replace(accessKey, "\r", "", -1)
 		if len(accessKey) > 0 {
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, accessKey)
-			setConfigPropertyQuiet(params.AstAPIKey, "")
+			storeProperty(params.AstAPIKey, "")
 		}
-		fmt.Printf("Client Secret [%s]: ", obfuscateString(accessKeySecret))
+		fmt.Printf("Client Secret [%s]: ", ObfuscateString(accessKeySecret))
 		accessKeySecret, _ = reader.ReadString('\n')
 		accessKeySecret = strings.Replace(accessKeySecret, "\n", "", -1)
 		accessKeySecret = strings.Replace(accessKeySecret, "\r", "", -1)
 		if len(accessKeySecret) > 0 {
-			setConfigPropertyQuiet(params.AccessKeySecretConfigKey, accessKeySecret)
-			setConfigPropertyQuiet(params.AstAPIKey, "")
+			storeProperty(params.AccessKeySecretConfigKey, accessKeySecret)
+			storeProperty(params.AstAPIKey, "")
 		}
 	}
 }
@@ -124,7 +125,8 @@ func readLine(reader *bufio.Reader) string {
 	return strings.TrimSpace(s)
 }
 
-func obfuscateString(str string) string {
+// ObfuscateString masks all but the last four characters of a secret value.
+func ObfuscateString(str string) string {
 	if len(str) > obfuscateLimit {
 		return "******" + str[len(str)-4:]
 	} else if len(str) > 1 {
@@ -148,13 +150,77 @@ func setConfigPropertyQuiet(propName, propValue string) {
 	}
 }
 
-func SetConfigProperty(propName, propValue string) {
-	fmt.Println("Setting property [", propName, "] to value [", propValue, "]")
-	setConfigPropertyQuiet(propName, propValue)
+// SetConfigProperty stores propValue for propName via the credential resolver
+// or config file, masking the echoed value when propName is a secret.
+func SetConfigProperty(propName, propValue string) error {
+	displayValue := propValue
+	if credentialstore.IsSecret(strings.ToLower(propName)) {
+		displayValue = ObfuscateString(propValue)
+	}
+	fmt.Println("Setting property [", propName, "] to value [", displayValue, "]")
+	return setConfigProperty(strings.ToLower(propName), propValue)
+}
+
+func storeProperty(propName, propValue string) {
+	if err := setConfigProperty(propName, propValue); err != nil {
+		fmt.Println("Error storing property", propName, err)
+	}
+}
+
+func setConfigProperty(propName, propValue string) error {
+	credentialName, ok := credentialstore.CredentialForViperKey(propName)
+	if !ok {
+		setConfigPropertyQuiet(propName, propValue)
+		return nil
+	}
+	resolver := credentialstore.Default()
+	var err error
+	if propValue == "" {
+		err = resolver.Clear(context.Background(), credentialName)
+		if stderrors.Is(err, credentialstore.ErrNotFound) {
+			err = nil
+		}
+	} else {
+		err = resolver.Store(context.Background(), credentialName, propValue)
+	}
+	if err != nil {
+		return fmt.Errorf("storing %s: %w", propName, err)
+	}
+	if !resolver.StoresInConfigFile() {
+		removePlaintextEntryQuietly(propName)
+	}
+	return nil
+}
+
+func removePlaintextEntryQuietly(propName string) {
+	credentialName, ok := credentialstore.CredentialForViperKey(propName)
+	if !ok {
+		return
+	}
+	if err := credentialstore.Default().RemoveConfigFileEntry(credentialName); err != nil {
+		logger.PrintfIfVerbose("could not remove %s from config file: %v", propName, err)
+	}
+}
+
+func resolveSecretForPrompt(viperKey string) string {
+	credentialName, ok := credentialstore.CredentialForViperKey(viperKey)
+	if !ok {
+		return ""
+	}
+	value, err := credentialstore.Resolve(credentialName)
+	if err != nil {
+		return ""
+	}
+	return value
 }
 
 func LoadConfiguration() error {
 	configFilePath := viper.GetString(params.ConfigFilePathKey)
+	if configFilePath == "" {
+		// Read directly so consumers without viper bindings (tests, embedded
+		// runs) still honor the environment variable.
+		configFilePath = os.Getenv(params.ConfigFilePathEnv)
+	}
 
 	if configFilePath != "" {
 		err := validateConfigFile(configFilePath)
@@ -201,114 +267,30 @@ func validateConfigFile(configFilePath string) error {
 }
 
 func SafeWriteSingleConfigKey(configFilePath, key string, value int) error {
-	// Create a file lock
-	lock := flock.New(configFilePath + ".lock")
-	locked, err := lock.TryLock()
-	if err != nil {
-		return errors.Errorf("error acquiring lock: %s", err.Error())
-	}
-	if !locked {
-		return errors.Errorf("could not acquire lock")
-	}
-	defer func() {
-		_ = lock.Unlock()
-	}()
-
-	// Load existing configuration or initialize a new one
-	config, err := LoadConfig(configFilePath)
-	if err != nil {
-		return errors.Errorf("error loading config: %s", err.Error())
-	}
-
-	// Update the configuration key
-	config[key] = value
-
-	// Save the updated configuration back to the file
-	if err = SaveConfig(configFilePath, config); err != nil {
-		return errors.Errorf("error saving config: %s", err.Error())
-	}
-	return nil
+	return configfile.SetKey(configFilePath, key, value)
 }
 
 func SafeWriteSingleConfigKeyString(configFilePath, key string, value string) error {
-	// Create a file lock
-	lock := flock.New(configFilePath + ".lock")
-	locked, err := lock.TryLock()
-	if err != nil {
-		return errors.Errorf("error acquiring lock: %s", err.Error())
-	}
-	if !locked {
-		return errors.Errorf("could not acquire lock")
-	}
-	defer func() {
-		_ = lock.Unlock()
-	}()
-
-	// Load existing configuration or initialize a new one
-	config, err := LoadConfig(configFilePath)
-	if err != nil {
-		return errors.Errorf("error loading config: %s", err.Error())
-	}
-
-	// Update the configuration key
-	config[key] = value
-
-	// Save the updated configuration back to the file
-	if err = SaveConfig(configFilePath, config); err != nil {
-		return errors.Errorf("error saving config: %s", err.Error())
-	}
-	return nil
+	return configfile.SetKey(configFilePath, key, value)
 }
 
 // LoadConfig loads the configuration from a file. If the file does not exist
 // or is empty, it returns an empty map.
 func LoadConfig(path string) (map[string]interface{}, error) {
-	config := make(map[string]interface{})
-	file, err := os.Open(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return config, nil // Return an empty config if the file doesn't exist
-		}
-		return nil, err
-	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-
-	decoder := yaml.NewDecoder(file)
-	if err = decoder.Decode(&config); err != nil {
-		if err == io.EOF {
-			// An empty (zero-byte) config file is a valid "no config yet"
-			// state, not corruption. Treat it like a missing file and return
-			// an empty config so callers (e.g. cx auth login persisting a
-			// fresh token) can populate it instead of failing.
-			return config, nil
-		}
-		return nil, fmt.Errorf("error decoding YAML: %w", err)
-	}
-	return config, nil
+	return configfile.Load(path)
 }
 
 // SaveConfig writes the configuration to a file.
 func SaveConfig(path string, config map[string]interface{}) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-
-	encoder := yaml.NewEncoder(file)
-	if err = encoder.Encode(config); err != nil {
-		return fmt.Errorf("error encoding YAML: %w", err)
-	}
-	return nil
+	return configfile.Save(path, config)
 }
 
 func GetConfigFilePath() (string, error) {
 	configFilePath := viper.GetString(params.ConfigFilePathKey)
+	if configFilePath == "" {
+		// Test-isolation seam: harnesses set the env var without viper bindings.
+		configFilePath = os.Getenv(params.ConfigFilePathEnv)
+	}
 
 	if configFilePath == "" {
 		usr, err := user.Current()
@@ -342,9 +324,9 @@ func ShowConfiguration() {
 	fmt.Printf("%30v", "Client ID: ")
 	fmt.Println(viper.GetString(params.AccessKeyIDConfigKey))
 	fmt.Printf("%30v", "Client Secret: ")
-	fmt.Println(obfuscateString(viper.GetString(params.AccessKeySecretConfigKey)))
+	fmt.Println(ObfuscateString(resolveSecretForPrompt(params.AccessKeySecretConfigKey)))
 	fmt.Printf("%30v", "APIKey: ")
-	fmt.Println(obfuscateString(viper.GetString(params.AstAPIKey)))
+	fmt.Println(ObfuscateString(resolveSecretForPrompt(params.AstAPIKey)))
 	fmt.Printf("%30v", "Proxy: ")
 	fmt.Println(viper.GetString(params.ProxyKey))
 }

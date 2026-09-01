@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -16,13 +17,29 @@ import (
 const ContentLengthLimit = 1000000 // 1mb in bytes
 
 var sanitizeFlags = []string{
-	params.AstAPIKey, params.AccessKeyIDConfigKey, params.AccessKeySecretConfigKey,
+	params.AccessKeyIDConfigKey,
 	params.UsernameFlag, params.PasswordFlag,
-	params.AstToken, params.SSHValue,
+	params.SSHValue,
 	params.SCMTokenFlag, params.ProxyKey,
 	params.UploadURLEnv,
 	params.SCSRepoTokenFlag,
 	params.SCSRepoURLFlag,
+}
+
+var (
+	sensitiveValuesMu sync.RWMutex
+	sensitiveValues   = map[string]struct{}{}
+)
+
+// RegisterSensitiveValue masks a runtime value (e.g. the OAuth access token)
+// in all logger output, for values that no longer live in viper.
+func RegisterSensitiveValue(value string) {
+	if value == "" {
+		return
+	}
+	sensitiveValuesMu.Lock()
+	defer sensitiveValuesMu.Unlock()
+	sensitiveValues[value] = struct{}{}
 }
 
 func Print(msg string) {
@@ -70,9 +87,14 @@ func PrintResponse(r *http.Response, body bool) {
 func sanitizeLogs(msg string) string {
 	for _, flag := range sanitizeFlags {
 		value := viper.GetString(flag)
-		if len(value) > 0 {
+		if value != "" {
 			msg = strings.ReplaceAll(msg, value, "***")
 		}
+	}
+	sensitiveValuesMu.RLock()
+	defer sensitiveValuesMu.RUnlock()
+	for value := range sensitiveValues {
+		msg = strings.ReplaceAll(msg, value, "***")
 	}
 	return msg
 }
