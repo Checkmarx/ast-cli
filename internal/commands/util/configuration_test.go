@@ -39,6 +39,7 @@ func TestNewConfigCommand(t *testing.T) {
 
 func TestGetConfigFilePath_CheckmarxConfigFileExists_Success(t *testing.T) {
 	want := ".checkmarx/checkmarxcli.yaml"
+	t.Setenv(params.ConfigFilePathEnv, "")
 	got, err := configuration.GetConfigFilePath()
 
 	if err != nil {
