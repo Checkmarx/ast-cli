@@ -21,6 +21,11 @@ import (
 // --ignored-file-path, silently sending the suppression to the wrong file.
 const agentCursor = "Cursor"
 
+// agentGemini identifies Gemini CLI. Its suppress commands run through PowerShell on
+// Windows, which strips embedded double quotes from native-exe arguments, so Gemini
+// uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
+const agentGemini = "Gemini"
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -164,7 +169,9 @@ func permissionDecisionReason(filePath, summary string) string {
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user on Claude; on Gemini
 // BeforeTool it is folded into the hook deny reason by the ast-cx-hooks gemini adapter.
-// Used for Claude, Copilot, Gemini, and other non-Cursor agents.
+// Used for Claude, Copilot, Gemini, and other non-Cursor agents. Gemini suppress commands
+// use ignore.QuoteDataFlag (PowerShell-safe quoting on Windows); other agents keep the
+// original single-quoted JSON payload.
 func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
 	provenance := optionalFlagsFragment(agent, sessionID)
 	var suppressCmds strings.Builder
@@ -175,7 +182,11 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			RuleID:   f.RuleID,
 		})
 		ignoreFlag := ignoredFilePathFlag(workDir)
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
+		if agent == agentGemini {
+			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
+		} else {
+			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		}
 	}
 	skill, mcpTool := remediationTargets(agent)
 	return fmt.Sprintf(
@@ -259,7 +270,7 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 // names use single underscores (no "__"), unlike Claude Code's "plugin:skill" and
 // "mcp__Server__tool" conventions.
 func remediationTargets(agent string) (skill, mcpTool string) {
-	if agent == "Gemini" {
+	if agent == agentGemini {
 		return "/cx-security-asca", "mcp_Checkmarx_codeRemediation"
 	}
 	return "cx-devassist:cx-devassist-asca", "mcp__Checkmarx__codeRemediation"

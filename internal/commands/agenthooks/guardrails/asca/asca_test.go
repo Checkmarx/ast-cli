@@ -305,25 +305,15 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	if !strings.Contains(ctx, "ignore-vulnerability") {
 		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"FileName":"billing.py"`)) {
+	if !strings.Contains(ctx, `"FileName":"billing.py"`) {
 		t.Errorf("expected FileName in command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"Line":5`)) {
+	if !strings.Contains(ctx, `"Line":5`) {
 		t.Errorf("expected Line in command, got %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"RuleID":4059`)) {
+	if !strings.Contains(ctx, `"RuleID":4059`) {
 		t.Errorf("expected RuleID in command, got %q", ctx)
 	}
-}
-
-// quoteField adapts a raw JSON substring assertion for QuoteDataFlag's Windows
-// escaping (embedded double quotes become \" so the ignore-vulnerability --data
-// argument survives PowerShell's native-exe argument parsing).
-func quoteField(raw string) string {
-	if runtime.GOOS == "windows" {
-		return strings.ReplaceAll(raw, `"`, `\"`)
-	}
-	return raw
 }
 
 func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
@@ -349,7 +339,7 @@ func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
 	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
 		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"FileName":"a%s.py"`)) {
+	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
 		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
 	}
 }
@@ -363,10 +353,10 @@ func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 	if strings.Count(ctx, "ignore-vulnerability") != 2 {
 		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"RuleID":4059`)) {
+	if !strings.Contains(ctx, `"RuleID":4059`) {
 		t.Errorf("expected RuleID 4059, got %q", ctx)
 	}
-	if !strings.Contains(ctx, quoteField(`"RuleID":4027`)) {
+	if !strings.Contains(ctx, `"RuleID":4027`) {
 		t.Errorf("expected RuleID 4027, got %q", ctx)
 	}
 }
@@ -434,6 +424,13 @@ func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
 	_, ctx = formatFindings("a.py", findings, "", "Claude", "sess-1")
 	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data '`) {
 		t.Fatalf("claude agent should get single-quoted suppress command, got %q", ctx)
+	}
+	if runtime.GOOS == goosWindows && strings.Contains(ctx, `\"FileName\"`) {
+		t.Fatalf("claude agent should not use QuoteDataFlag Windows escaping, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", agentGemini, "sess-1")
+	if !strings.Contains(ctx, "ignore-vulnerability --scan-type asca --data "+ignore.QuoteDataFlag([]byte(`{"FileName":"a.py","Line":1,"RuleID":1}`))) {
+		t.Fatalf("gemini agent should get QuoteDataFlag suppress command, got %q", ctx)
 	}
 }
 
@@ -680,7 +677,7 @@ func TestHighestSeverity_MixedValidAndInvalid(t *testing.T) {
 }
 
 func TestAdditionalContext_GeminiUsesGeminiSkillAndMCPTool(t *testing.T) {
-	ctx := additionalContext("main.py", "cx", nil, "", "Gemini", "")
+	ctx := additionalContext("main.py", "cx", nil, "", agentGemini, "")
 	if !strings.Contains(ctx, "/cx-security-asca") {
 		t.Errorf("expected Gemini skill path, got %q", ctx)
 	}
@@ -689,5 +686,28 @@ func TestAdditionalContext_GeminiUsesGeminiSkillAndMCPTool(t *testing.T) {
 	}
 	if strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
 		t.Errorf("Claude MCP tool name should not appear for Gemini, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_GeminiUsesQuoteDataFlag(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	data := []byte(`{"FileName":"billing.py","Line":5,"RuleID":4059}`)
+	ctx := additionalContext("billing.py", "cx", findings, "", agentGemini, "")
+	want := "ignore-vulnerability --scan-type asca --data " + ignore.QuoteDataFlag(data)
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected Gemini suppress command %q, got %q", want, ctx)
+	}
+}
+
+func TestAdditionalContext_OtherAgentsUseUnescapedData(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	want := `ignore-vulnerability --scan-type asca --data '{"FileName":"billing.py","Line":5,"RuleID":4059}'`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected other agents to use unescaped --data %q, got %q", want, ctx)
 	}
 }
