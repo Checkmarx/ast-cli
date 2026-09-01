@@ -14,6 +14,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/dast"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/bitbucketserver"
@@ -121,6 +122,7 @@ func NewAstCLI(
 	// This monitors and traps situations where "extra/garbage" commands
 	// are passed to Cobra.
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		seedExplicitCredentials(cmd)
 		CheckPreferredCredentials(cmd)
 		err := extractOptionalFlags(cmd)
 		if err != nil {
@@ -144,7 +146,6 @@ func NewAstCLI(
 	}
 	// Link the environment variable to the CLI argument(s).
 	_ = viper.BindPFlag(params.AccessKeyIDConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeyIDFlag))
-	_ = viper.BindPFlag(params.AccessKeySecretConfigKey, rootCmd.PersistentFlags().Lookup(params.AccessKeySecretFlag))
 	_ = viper.BindPFlag(params.BaseURIKey, rootCmd.PersistentFlags().Lookup(params.BaseURIFlag))
 	_ = viper.BindPFlag(params.TenantKey, rootCmd.PersistentFlags().Lookup(params.TenantFlag))
 	_ = viper.BindPFlag(params.ProxyKey, rootCmd.PersistentFlags().Lookup(params.ProxyFlag))
@@ -155,7 +156,6 @@ func NewAstCLI(
 	_ = viper.BindPFlag(params.ProxyKerberosCcacheKey, rootCmd.PersistentFlags().Lookup(params.KerberosCcacheFlag))
 	_ = viper.BindPFlag(params.ClientTimeoutKey, rootCmd.PersistentFlags().Lookup(params.TimeoutFlag))
 	_ = viper.BindPFlag(params.BaseAuthURIKey, rootCmd.PersistentFlags().Lookup(params.BaseAuthURIFlag))
-	_ = viper.BindPFlag(params.AstAPIKey, rootCmd.PersistentFlags().Lookup(params.AstAPIKeyFlag))
 	_ = viper.BindPFlag(params.AgentNameKey, rootCmd.PersistentFlags().Lookup(params.AgentFlag))
 	_ = viper.BindPFlag(params.OriginKey, rootCmd.PersistentFlags().Lookup(params.OriginFlag))
 	_ = viper.BindPFlag(params.IgnoreProxyKey, rootCmd.PersistentFlags().Lookup(params.IgnoreProxyFlag))
@@ -296,7 +296,28 @@ func PrintConfiguration() {
 	logger.PrintfIfVerbose("CLI Version: %s", params.Version)
 	logger.PrintIfVerbose("CLI Configuration:")
 	for param := range util.Properties {
+		if credentialstore.IsSecret(param) {
+			continue
+		}
 		logger.PrintIfVerbose(fmt.Sprintf(configFormatString, param, viper.GetString(param)))
+	}
+}
+
+// seedExplicitCredentials captures secret flag values for this invocation only;
+// they are resolved in-memory and never written to viper or the config file.
+// The explicit map is reset first so a value supplied by one invocation can
+// never override resolution for a later operation on the shared resolver.
+func seedExplicitCredentials(cmd *cobra.Command) {
+	credentialstore.ResetExplicitCredentials()
+	if cmd.Flags().Changed(params.AstAPIKeyFlag) {
+		if value, err := cmd.Flags().GetString(params.AstAPIKeyFlag); err == nil {
+			credentialstore.SetExplicitCredential(credentialstore.CredentialAPIKey, value)
+		}
+	}
+	if cmd.Flags().Changed(params.AccessKeySecretFlag) {
+		if value, err := cmd.Flags().GetString(params.AccessKeySecretFlag); err == nil {
+			credentialstore.SetExplicitCredential(credentialstore.CredentialClientSecret, value)
+		}
 	}
 }
 

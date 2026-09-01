@@ -8,8 +8,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,8 +19,6 @@ import (
 
 // The full runAuthLogin (browser + network) is out of scope; these cover the
 // deterministic pieces: persistLogin and runAuthLogout.
-
-// swapDefaultStore swaps credentialstore.Default for a mock and restores it.
 
 // withTempConfigDir sandboxes viper at a temp config file and clears CX_APIKEY.
 func withTempConfigDir(t *testing.T) string {
@@ -29,6 +29,20 @@ func withTempConfigDir(t *testing.T) string {
 	t.Setenv(params.AstAPIKeyEnv, "")
 	t.Cleanup(func() { viper.Set(params.ConfigFilePathKey, prev) })
 	return dir
+}
+
+// swapCredentialResolver binds a mock-backed resolver to the sandbox config
+// path so credential reads/writes never reach the real OS keyring.
+func swapCredentialResolver(t *testing.T) *mock.CredentialStoreMock {
+	t.Helper()
+	configPath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		t.Fatalf("GetConfigFilePath failed: %v", err)
+	}
+	store := mock.NewCredentialStoreMock()
+	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver(configPath, credentialstore.PolicyAuto, store))
+	t.Cleanup(credentialstore.ResetForTest)
+	return store
 }
 
 // newBufferedCmd returns a cobra command whose stdout/stderr are captured.
@@ -100,6 +114,7 @@ func TestConnectionFlagsProvided(t *testing.T) {
 // Logout clears cx_apikey and is idempotent.
 func TestRunAuthLogout_ClearsYaml(t *testing.T) {
 	dir := withTempConfigDir(t)
+	swapCredentialResolver(t)
 	configPath := filepath.Join(dir, "checkmarxcli.yaml")
 	if err := configuration.SafeWriteSingleConfigKeyString(configPath, params.AstAPIKey, "stored-token"); err != nil {
 		t.Fatalf("setup yaml write failed: %v", err)
@@ -145,35 +160,37 @@ func TestRunAuthLogout_DoesNotClearClientCredentials(t *testing.T) {
 	}
 }
 
-// persistYamlLogin saves the refresh token to the config file.
-func TestPersistYamlLogin_SavesTokenAndPrintsSuccess(t *testing.T) {
+// persistLogin saves the refresh token to the credential store.
+func TestPersistLogin_SavesTokenAndPrintsSuccess(t *testing.T) {
 	_ = withTempConfigDir(t)
+	store := swapCredentialResolver(t)
 	cmd, out, _ := newBufferedCmd()
 	refreshToken := "refresh-token-abc123"
 
-	if err := persistYamlLogin(cmd, refreshToken); err != nil {
-		t.Fatalf("persistYamlLogin failed: %v", err)
+	if err := persistLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistLogin failed: %v", err)
 	}
 
-	// Check token was saved to YAML
-	if got := readYamlAPIKey(t); got != refreshToken {
-		t.Errorf("expected token saved to yaml, got %q want %q", got, refreshToken)
+	if got := store.Store[credentialstore.CredentialAPIKey]; got != refreshToken {
+		t.Errorf("expected token saved to credential store, got %q want %q", got, refreshToken)
+	}
+	if got := readYamlAPIKey(t); got != "" {
+		t.Errorf("expected legacy yaml entry scrubbed, got %q", got)
 	}
 
-	// Check success message was printed
 	if !strings.Contains(out.String(), "Successfully authenticated to Checkmarx One server!") {
 		t.Errorf("expected success message, got: %q", out.String())
 	}
 }
 
-// persistYamlLogin does not echo the token to stdout
-func TestPersistYamlLogin_DoesNotEchoToken(t *testing.T) {
+// persistLogin does not echo the token to stdout
+func TestPersistLogin_DoesNotEchoToken(t *testing.T) {
 	_ = withTempConfigDir(t)
 	cmd, out, _ := newBufferedCmd()
 	refreshToken := "secret-refresh-token-12345"
 
-	if err := persistYamlLogin(cmd, refreshToken); err != nil {
-		t.Fatalf("persistYamlLogin failed: %v", err)
+	if err := persistLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistLogin failed: %v", err)
 	}
 
 	output := out.String()
@@ -182,8 +199,8 @@ func TestPersistYamlLogin_DoesNotEchoToken(t *testing.T) {
 	}
 }
 
-// persistYamlLogin handles different token formats
-func TestPersistYamlLogin_DifferentTokenFormats(t *testing.T) {
+// persistLogin handles different token formats
+func TestPersistLogin_DifferentTokenFormats(t *testing.T) {
 	testTokens := []string{
 		"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
 		"simple-token",
@@ -193,27 +210,28 @@ func TestPersistYamlLogin_DifferentTokenFormats(t *testing.T) {
 	for _, token := range testTokens {
 		t.Run("token format", func(t *testing.T) {
 			_ = withTempConfigDir(t)
+			store := swapCredentialResolver(t)
 			cmd, _, _ := newBufferedCmd()
 
-			if err := persistYamlLogin(cmd, token); err != nil {
-				t.Fatalf("persistYamlLogin failed for token %q: %v", token, err)
+			if err := persistLogin(cmd, token); err != nil {
+				t.Fatalf("persistLogin failed for token %q: %v", token, err)
 			}
 
-			if got := readYamlAPIKey(t); got != token {
+			if got := store.Store[credentialstore.CredentialAPIKey]; got != token {
 				t.Errorf("token mismatch for %q: got %q", token, got)
 			}
 		})
 	}
 }
 
-// persistYamlLogin prints success message to stdout
-func TestPersistYamlLogin_PrintsSuccessMessage(t *testing.T) {
+// persistLogin prints success message to stdout
+func TestPersistLogin_PrintsSuccessMessage(t *testing.T) {
 	_ = withTempConfigDir(t)
 	cmd, out, _ := newBufferedCmd()
 	refreshToken := "test-token-456"
 
-	if err := persistYamlLogin(cmd, refreshToken); err != nil {
-		t.Fatalf("persistYamlLogin failed: %v", err)
+	if err := persistLogin(cmd, refreshToken); err != nil {
+		t.Fatalf("persistLogin failed: %v", err)
 	}
 
 	output := out.String()

@@ -6,12 +6,14 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/spf13/viper"
@@ -28,9 +30,22 @@ const (
 
 func TestMain(m *testing.M) {
 	log.Println("Commands tests started")
-	// Run all tests
+	// Isolate credential storage: unit tests must never touch the real OS
+	// keyring or the user's actual config file.
+	testConfigDir, err := os.MkdirTemp("", "cx-test-config")
+	if err != nil {
+		log.Fatalf("failed to create test config dir: %v", err)
+	}
+	configPath := filepath.Join(testConfigDir, "checkmarxcli.yaml")
+	if err := os.WriteFile(configPath, nil, 0o600); err != nil {
+		log.Fatalf("failed to seed test config file: %v", err)
+	}
+	_ = os.Setenv(credentialstore.KeyringModeEnvVar, "disabled")
+	_ = os.Setenv(params.ConfigFilePathEnv, configPath)
+	credentialstore.ResetForTest()
 	exitVal := m.Run()
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
+	_ = os.RemoveAll(testConfigDir)
 	log.Println("Commands tests done")
 	os.Exit(exitVal)
 }
