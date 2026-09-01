@@ -67,4 +67,3 @@ vendor/*
 
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
-/.checkmarx
