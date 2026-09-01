@@ -2233,7 +2233,7 @@ func TestParseSonarAllLocationsAreValid(t *testing.T) {
 	issues, _ := parseSonar(results)
 
 	asserts.Len(t, issues, 1)
-	// The node on line 803 is dropped: it has no valid textRange, which is mandatory on secondary locations.
+	// The node on line 803 is dropped: it has no valid textRange, which is mandatory on secondary locations as well.
 	asserts.Len(t, issues[0].SecondaryLocations, 3)
 
 	all := append([]wrappers.SonarLocation{issues[0].PrimaryLocation}, issues[0].SecondaryLocations...)
