@@ -228,11 +228,11 @@ func parseSegment(segment string) *InstallRequest {
 // and skip those tokens.
 func tokenize(segment string) []string {
 	var (
-		tokens   []string
-		cur      strings.Builder
-		sq, dq   bool
-		paren    int
-		inBT     bool
+		tokens []string
+		cur    strings.Builder
+		sq, dq bool
+		paren  int
+		inBT   bool
 	)
 	flush := func() {
 		if cur.Len() > 0 {

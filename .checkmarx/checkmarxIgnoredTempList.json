@@ -128,5 +128,135 @@
     "FileName": "npm_resolver.go",
     "Line": 195,
     "RuleID": 3005
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "axios",
+    "PackageVersion": "0.27.2"
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "graphql",
+    "PackageVersion": "16.5.0"
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "mocha",
+    "PackageVersion": "10.0.0"
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "moment",
+    "PackageVersion": "2.29.0"
+  },
+  {
+    "PackageManager": "npm",
+    "PackageName": "webpack",
+    "PackageVersion": "5.73.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.springframework.boot:spring-boot-starter-actuator",
+    "PackageVersion": "2.7.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "com.fasterxml.jackson.core:jackson-databind",
+    "PackageVersion": "2.13.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.postgresql:postgresql",
+    "PackageVersion": "42.3.1"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "mysql:mysql-connector-java",
+    "PackageVersion": "8.0.27"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "com.h2database:h2",
+    "PackageVersion": "1.4.200"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "ch.qos.logback:logback-classic",
+    "PackageVersion": "1.2.7"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.apache.commons:commons-lang3",
+    "PackageVersion": "3.12.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "commons-io:commons-io",
+    "PackageVersion": "2.11.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "com.google.guava:guava",
+    "PackageVersion": "31.0.1-jre"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "com.squareup.okhttp3:okhttp",
+    "PackageVersion": "4.9.1"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.assertj:assertj-core",
+    "PackageVersion": "3.22.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.liquibase:liquibase-core",
+    "PackageVersion": "4.6.2"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "org.apache.kafka:kafka-clients",
+    "PackageVersion": "3.0.0"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "com.rabbitmq:amqp-client",
+    "PackageVersion": "5.13.1"
+  },
+  {
+    "PackageManager": "mvn",
+    "PackageName": "io.micrometer:micrometer-core",
+    "PackageVersion": "1.8.0"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "github.com/sirupsen/logrus",
+    "PackageVersion": "v1.9.0"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "google.golang.org/grpc",
+    "PackageVersion": "v1.49.0"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "google.golang.org/protobuf",
+    "PackageVersion": "v1.28.1"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "golang.org/x/crypto",
+    "PackageVersion": "v0.5.0"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "github.com/golang-jwt/jwt/v4",
+    "PackageVersion": "v4.4.2"
+  },
+  {
+    "PackageManager": "go",
+    "PackageName": "github.com/lestrrat-go/jwx",
+    "PackageVersion": "v1.2.25"
   }
 ]

@@ -19,16 +19,16 @@ type Dependency struct {
 
 // DependencyTreeResult holds the complete tree
 type DependencyTreeResult struct {
-	PackageManager string        // "npm", "maven", "go"
-	ProjectPath    string        // scanned directory
-	RootPackage    string        // project name or main module
-	Dependencies   []Dependency  // all packages (direct + transitive)
-	Errors         []error       // non-fatal parse errors
+	PackageManager string       // "npm", "maven", "go"
+	ProjectPath    string       // scanned directory
+	RootPackage    string       // project name or main module
+	Dependencies   []Dependency // all packages (direct + transitive)
+	Errors         []error      // non-fatal parse errors
 }
 
 // ResolutionResult provides diagnostics
 type ResolutionResult struct {
-	Success      bool   // true if at least one resolver found deps
+	Success      bool // true if at least one resolver found deps
 	Dependencies []Dependency
 	Warning      string // "Lock file not found" etc
 	Error        string // "resolution failed" etc

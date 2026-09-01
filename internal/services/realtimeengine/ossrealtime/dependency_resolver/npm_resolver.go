@@ -86,10 +86,11 @@ func validateNpmLockFile(data []byte) error {
 
 // traverseNpmModernFormat handles npm v7+ "packages" format
 // In modern npm, the structure is:
-// "packages": {
-//   "": { "dependencies": { "pkg": "version" } },
-//   "node_modules/pkg": { "version": "1.0.0", "dependencies": { ... } }
-// }
+//
+//	"packages": {
+//	  "": { "dependencies": { "pkg": "version" } },
+//	  "node_modules/pkg": { "version": "1.0.0", "dependencies": { ... } }
+//	}
 func traverseNpmModernFormat(packagesMap map[string]npmPackageEntry, rootDeps map[string]string, result *[]Dependency) {
 	// Build a map of all packages by name for quick lookup
 	pkgByName := make(map[string]npmPackageEntry)

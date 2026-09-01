@@ -6,9 +6,9 @@ import "testing"
 
 func TestIsManifest(t *testing.T) {
 	tests := []struct {
-		path     string
-		wantOK   bool
-		wantFmt  Format
+		path    string
+		wantOK  bool
+		wantFmt Format
 	}{
 		{"package.json", true, FormatNpmPackageJson},
 		{"/repo/package.json", true, FormatNpmPackageJson},
@@ -127,4 +127,3 @@ func TestFormatSynthFileName(t *testing.T) {
 		}
 	}
 }
-
