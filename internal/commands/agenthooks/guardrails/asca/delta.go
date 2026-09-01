@@ -21,6 +21,11 @@ import (
 // --ignored-file-path, silently sending the suppression to the wrong file.
 const agentCursor = "Cursor"
 
+// agentGemini identifies Gemini CLI. Its suppress commands run through PowerShell on
+// Windows, which strips embedded double quotes from native-exe arguments, so Gemini
+// uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
+const agentGemini = "Gemini"
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -162,8 +167,11 @@ func permissionDecisionReason(filePath, summary string) string {
 }
 
 // additionalContext is injected into the agent's context window to drive remediation.
-// Contains all action instructions — not shown directly to the user.
-// Used for Claude, Copilot, and other non-Cursor agents.
+// Contains all action instructions — not shown directly to the user on Claude; on Gemini
+// BeforeTool it is folded into the hook deny reason by the ast-cx-hooks gemini adapter.
+// Used for Claude, Copilot, Gemini, and other non-Cursor agents. Gemini suppress commands
+// use ignore.QuoteDataFlag (PowerShell-safe quoting on Windows); other agents keep the
+// original single-quoted JSON payload.
 func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
 	provenance := optionalFlagsFragment(agent, sessionID)
 	var suppressCmds strings.Builder
@@ -174,17 +182,22 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			RuleID:   f.RuleID,
 		})
 		ignoreFlag := ignoredFilePathFlag(workDir)
-		fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		if agent == agentGemini {
+			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
+		} else {
+			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type asca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+		}
 	}
+	skill, mcpTool := remediationTargets(agent)
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
 			"Do not bypass the scan by writing the same content through another tool or shell command. "+
 			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
 			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"For each real finding, invoke the cx-devassist:cx-devassist-asca skill — "+
+			"For each real finding, invoke the %s skill — "+
 			"the findings are already in context so it will skip the scan and go directly to "+
 			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
-			"If that skill is not available in this session, call mcp__Checkmarx__codeRemediation directly:\n"+
+			"If that skill is not available in this session, call %s directly:\n"+
 			"  {\n"+
 			"    \"language\": \"[auto-detected programming language]\",\n"+
 			"    \"metadata\": {\n"+
@@ -196,7 +209,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"  }\n"+
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
 			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
-		filePath, suppressCmds.String(),
+		filePath, skill, mcpTool, suppressCmds.String(),
 	)
 }
 
@@ -250,4 +263,15 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
 		filePath, tool, suppressCmds.String(),
 	)
+}
+
+// remediationTargets returns the skill invocation and MCP tool name for the agent.
+// Gemini CLI's skills are invoked as a bare "/name" slash command and its MCP tool
+// names use single underscores (no "__"), unlike Claude Code's "plugin:skill" and
+// "mcp__Server__tool" conventions.
+func remediationTargets(agent string) (skill, mcpTool string) {
+	if agent == agentGemini {
+		return "/cx-security-asca", "mcp_Checkmarx_codeRemediation"
+	}
+	return "cx-devassist:cx-devassist-asca", "mcp__Checkmarx__codeRemediation"
 }

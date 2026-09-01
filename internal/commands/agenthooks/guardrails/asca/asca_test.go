@@ -316,6 +316,34 @@ func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	}
 }
 
+func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "sess-123")
+	want := ` --optional-flags "aiProvider=Claude;agent=Claude-cli;aiAgentSessionId=sess-123"`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected provenance flags %q in ignore command, got %q", want, ctx)
+	}
+	// Empty agent → no provenance fragment (backward-compatible default).
+	if noAgent := additionalContext("billing.py", "cx", findings, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
+		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
+func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a%s.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("a%s.py", "cx", findings, "", "Claude", "sess-1")
+	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
+		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
+	}
+	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
+		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
+	}
+}
+
 func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
@@ -396,6 +424,13 @@ func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
 	_, ctx = formatFindings("a.py", findings, "", "Claude", "sess-1")
 	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data '`) {
 		t.Fatalf("claude agent should get single-quoted suppress command, got %q", ctx)
+	}
+	if runtime.GOOS == goosWindows && strings.Contains(ctx, `\"FileName\"`) {
+		t.Fatalf("claude agent should not use QuoteDataFlag Windows escaping, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", agentGemini, "sess-1")
+	if !strings.Contains(ctx, "ignore-vulnerability --scan-type asca --data "+ignore.QuoteDataFlag([]byte(`{"FileName":"a.py","Line":1,"RuleID":1}`))) {
+		t.Fatalf("gemini agent should get QuoteDataFlag suppress command, got %q", ctx)
 	}
 }
 
@@ -639,4 +674,40 @@ func TestHighestSeverity_MixedValidAndInvalid(t *testing.T) {
 	}
 	got := highestSeverity(findings)
 	assert.Equal(t, "High", got)
+}
+
+func TestAdditionalContext_GeminiUsesGeminiSkillAndMCPTool(t *testing.T) {
+	ctx := additionalContext("main.py", "cx", nil, "", agentGemini, "")
+	if !strings.Contains(ctx, "/cx-security-asca") {
+		t.Errorf("expected Gemini skill path, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "mcp_Checkmarx_codeRemediation") {
+		t.Errorf("expected Gemini MCP tool name, got %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("Claude MCP tool name should not appear for Gemini, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_GeminiUsesQuoteDataFlag(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	data := []byte(`{"FileName":"billing.py","Line":5,"RuleID":4059}`)
+	ctx := additionalContext("billing.py", "cx", findings, "", agentGemini, "")
+	want := "ignore-vulnerability --scan-type asca --data " + ignore.QuoteDataFlag(data)
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected Gemini suppress command %q, got %q", want, ctx)
+	}
+}
+
+func TestAdditionalContext_OtherAgentsUseUnescapedData(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	want := `ignore-vulnerability --scan-type asca --data '{"FileName":"billing.py","Line":5,"RuleID":4059}'`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected other agents to use unescaped --data %q, got %q", want, ctx)
+	}
 }

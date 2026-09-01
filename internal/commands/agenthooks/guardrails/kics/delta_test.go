@@ -251,3 +251,32 @@ func TestFormatFindings_RoutesCursorContext(t *testing.T) {
 		t.Fatalf("claude KICS context should reference codeRemediation, got %q", ctx)
 	}
 }
+
+func TestAdditionalContext_GeminiUsesUnderscoreMCPNames(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{
+		iacResultWithPlatform("VulnerableBaseImage", "Dockerfile"),
+	}
+	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentGemini)
+	if !strings.Contains(ctx, "mcp_Checkmarx_imageRemediation") {
+		t.Errorf("Gemini context should use underscore MCP name, got: %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__imageRemediation") {
+		t.Errorf("Gemini context should not use double-underscore MCP name, got: %q", ctx)
+	}
+}
+
+func TestAdditionalContext_ClaudeDoesNotOfferSuppress(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	_, ctx := formatFindings("/project/Dockerfile", findings, agenthooks.AgentClaude)
+	if strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("Claude context should not include suppress commands, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_DoesNotOfferSuppress(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	ctx := cursorAdditionalContext("/project/Dockerfile", findings)
+	if strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("cursor context should not include suppress commands, got %q", ctx)
+	}
+}
