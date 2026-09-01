@@ -22,6 +22,11 @@ import (
 // --ignored-file-path, silently sending the suppression to the wrong file.
 const agentCursor = "Cursor"
 
+// agentGemini identifies Gemini CLI. Its suppress commands run through PowerShell on
+// Windows, which strips embedded double quotes from native-exe arguments, so Gemini
+// uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
+const agentGemini = "Gemini"
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -89,7 +94,9 @@ func remediationNote(subject, goal, agent string) string {
 
 // vulnerableRemediationNote returns the action steps for vulnerable packages.
 // When no safe version is found, the agent runs the per-package ignore command
-// and informs the user.
+// and informs the user. Gemini suppress commands use ignore.QuoteDataFlag
+// (PowerShell-safe quoting on Windows); other non-Cursor agents keep the
+// original single-quoted JSON payload.
 func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID string) string {
 	cxBinary := cxExecutable()
 	provenance := optionalFlagsFragment(agent, sessionID)
@@ -106,7 +113,11 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 			suppressCmds.WriteString("\n")
 		} else {
 			ignoreFlag := ignoredFilePathFlag(workDir)
-			fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
+			if agent == agentGemini {
+				fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data %s%s%s\n", cxBinary, ignore.QuoteDataFlag(data), ignoreFlag, provenance)
+			} else {
+				fmt.Fprintf(&suppressCmds, "  %s ignore-vulnerability --scan-type sca --data '%s'%s%s\n", cxBinary, string(data), ignoreFlag, provenance)
+			}
 		}
 	}
 	if agent == agentCursor {
