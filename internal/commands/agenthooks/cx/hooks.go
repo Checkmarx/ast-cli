@@ -276,6 +276,8 @@ func agentToString(agent agenthooks.AgentID) string {
 		return "Droid"
 	case agenthooks.AgentWindsurf:
 		return "Windsurf"
+	case agenthooks.AgentCodex:
+		return "Codex"
 	default:
 		return "Unknown"
 	}
