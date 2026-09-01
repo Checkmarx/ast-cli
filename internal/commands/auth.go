@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -120,8 +121,16 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.
 func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		clientID := viper.GetString(params.AccessKeyIDConfigKey)
-		clientSecret := viper.GetString(params.AccessKeySecretConfigKey)
-		apiKey := viper.GetString(params.AstAPIKey)
+		clientSecret, secretErr := credentialstore.Resolve(credentialstore.CredentialClientSecret)
+		if secretErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("auth validate: resolving client secret: %v", secretErr))
+			clientSecret = ""
+		}
+		apiKey, keyErr := credentialstore.Resolve(credentialstore.CredentialAPIKey)
+		if keyErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("auth validate: resolving api key: %v", keyErr))
+			apiKey = ""
+		}
 		if (clientID != "" && clientSecret != "") || apiKey != "" {
 			authWrapper := wrappers.NewAuthHTTPWrapper()
 			authWrapper.SetPath(viper.GetString(params.ScansPathKey))

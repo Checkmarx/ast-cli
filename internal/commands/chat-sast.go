@@ -11,6 +11,7 @@ import (
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/role"
 	"github.com/Checkmarx/gen-ai-wrapper/pkg/wrapper"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -202,8 +203,11 @@ func isAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.Tena
 }
 
 func isCxOneAPIKeyAvailable() bool {
-	apiKey := viper.GetString(params.AstAPIKey)
-	return apiKey != ""
+	apiKey, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
+	if err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("chat: resolving cx one api key: %v", err))
+	}
+	return err == nil && apiKey != ""
 }
 
 func isAzureAiGuidedRemediationEnabled(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse) bool {

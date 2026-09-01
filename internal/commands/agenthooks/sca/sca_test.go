@@ -5,6 +5,7 @@ package sca
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -233,6 +234,66 @@ func TestDenyVulnerable_EmitsProvenanceOptionalFlags(t *testing.T) {
 	// Empty agent → no provenance fragment (backward-compatible default).
 	if _, noAgent := DenyVulnerable(pkgs, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
 		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
+func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
+	got := cursorEscapeJSON(`{"PackageName":"axios"}`)
+	if runtime.GOOS == goosWindows {
+		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
+		// backslash is not a quote-escape there, so `\"` would corrupt the command.
+		want := `{""PackageName"":""axios""}`
+		if got != want {
+			t.Errorf("expected doubled-quote escaping on windows (PowerShell), got %q", got)
+		}
+	} else {
+		want := `{\"PackageName\":\"axios\"}`
+		if got != want {
+			t.Errorf("expected backslash-escaped quotes on unix (bash), got %q", got)
+		}
+	}
+}
+
+func TestDenyVulnerable_CursorUsesPluginMCPToolAndStopParsingOnWindows(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "", "Cursor", "sess-9")
+	if !strings.Contains(remediation, "mcp__plugin-cx-devassist-Checkmarx__packageRemediation") {
+		t.Errorf("cursor remediation should use plugin MCP tool name, got %q", remediation)
+	}
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(remediation, `--% ignore-vulnerability`) {
+			t.Errorf("cursor suppress command on windows should use stop-parsing, got %q", remediation)
+		}
+	} else if !strings.Contains(remediation, `ignore-vulnerability --scan-type sca --data "`) {
+		t.Errorf("cursor remediation on unix should use double-quoted suppress command, got %q", remediation)
+	}
+}
+
+func TestDenyVulnerable_GeminiUsesQuoteDataFlag(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	data := []byte(`[{"PackageManager":"npm","PackageName":"axios","PackageVersion":"0.21.0"}]`)
+	_, remediation := DenyVulnerable(pkgs, "", agentGemini, "sess-1")
+	want := "ignore-vulnerability --scan-type sca --data " + ignore.QuoteDataFlag(data)
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected Gemini suppress command %q, got %q", want, remediation)
+	}
+}
+
+func TestDenyVulnerable_OtherAgentsUseUnescapedData(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "", "Claude", "sess-1")
+	want := `ignore-vulnerability --scan-type sca --data '[{"PackageManager":"npm","PackageName":"axios","PackageVersion":"0.21.0"}]'`
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected other agents to use unescaped --data %q, got %q", want, remediation)
+	}
+	if runtime.GOOS == goosWindows && strings.Contains(remediation, `\"PackageName\"`) {
+		t.Errorf("claude agent should not use QuoteDataFlag Windows escaping, got %q", remediation)
 	}
 }
 

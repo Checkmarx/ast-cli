@@ -1,14 +1,14 @@
 module github.com/checkmarx/ast-cli
 
-go 1.26.5
+go 1.26.6
 
 require (
-	github.com/Checkmarx/ast-cx-hooks v1.0.5
+	github.com/Checkmarx/ast-cx-hooks v1.0.9
 	github.com/Checkmarx/containers-resolver v1.0.34
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
-	github.com/Checkmarx/manifest-parser v0.1.4
+	github.com/Checkmarx/manifest-parser v0.1.4-prerelease
 	github.com/Checkmarx/secret-detection v1.2.1
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/alexbrainman/sspi v0.0.0-20210105120005-909beea2cc74
@@ -29,9 +29,10 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80
 	github.com/xeipuuv/gojsonschema v1.2.0
-	golang.org/x/crypto v0.53.0
+	github.com/zalando/go-keyring v0.2.8
+	golang.org/x/crypto v0.55.0
 	golang.org/x/sync v0.22.0
-	golang.org/x/text v0.39.0
+	golang.org/x/text v0.41.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af
 	gopkg.in/yaml.v3 v3.0.1
@@ -46,10 +47,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/displaywidth v0.10.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
+	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/distribution/distribution/v3 v3.1.1 // indirect
 	github.com/docker/docker v28.0.3+incompatible // indirect
 	github.com/docker/go-events v0.0.0-20250808211157-605354379745 // indirect
 	github.com/edsrzf/mmap-go v1.2.0 // indirect
+	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -292,13 +295,13 @@ require (
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
-	golang.org/x/mod v0.37.0 // indirect
-	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/mod v0.40.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/term v0.44.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/term v0.45.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.47.0 // indirect
+	golang.org/x/tools v0.49.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genproto v0.0.0-20260128011058-8636f8732409 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
@@ -335,3 +338,5 @@ replace github.com/docker/go-connections => github.com/docker/go-connections v0.
 replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v1.13.0
 
 replace github.com/opencontainers/runtime-spec => github.com/opencontainers/runtime-spec v1.2.0
+
+replace github.com/zalando/go-keyring => github.com/checkmarx/go-keyring v0.0.0-20260812105354-1168609d33ac

@@ -2,14 +2,21 @@ package util
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const formatString = "%30v: %s\n"
 
+// proxyEnvName is used because the proxy is bound outside EnvVarsBinds.
+const proxyEnvName = params.ProxyEnv
+
+// NewEnvCheckCommand returns the `cx utils env` command.
 func NewEnvCheckCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "env",
@@ -31,12 +38,64 @@ func NewEnvCheckCommand() *cobra.Command {
 	return cmd
 }
 
+type envBinding struct {
+	key string
+	env string
+}
+
+// configurableEnvBindings maps each property in Properties to its uppercase
+// environment variable name, in declaration order. Secret properties are
+// appended explicitly: they are no longer bound to environment variables but
+// remain listed (obfuscated) configuration entries.
+// extraEnvBindings accounts for the apikey/client-secret/proxy bindings
+// appended below, which live outside params.EnvVarsBinds.
+const extraEnvBindings = 3
+
+func configurableEnvBindings() []envBinding {
+	bindings := make([]envBinding, 0, len(Properties)+extraEnvBindings)
+	for _, bind := range params.EnvVarsBinds {
+		if Properties[bind.Key] {
+			bindings = append(bindings, envBinding{key: bind.Key, env: bind.Env})
+		}
+	}
+	for _, bind := range []envBinding{
+		{key: params.AstAPIKey, env: params.AstAPIKeyEnv},
+		{key: params.AccessKeySecretConfigKey, env: params.AccessKeySecretEnv},
+	} {
+		if Properties[bind.key] {
+			bindings = append(bindings, bind)
+		}
+	}
+	if Properties[params.ProxyKey] {
+		bindings = append(bindings, envBinding{key: params.ProxyKey, env: proxyEnvName})
+	}
+	return bindings
+}
+
 func runEnvChecks() func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\nDetected Environment Variables:\n\n")
-		for param := range Properties {
-			fmt.Printf(formatString, param, os.Getenv(param))
+		for _, bind := range configurableEnvBindings() {
+			value := effectivePropertyValue(bind.key)
+			if _, isSecret := credentialstore.CredentialForViperKey(bind.key); isSecret {
+				value = configuration.ObfuscateString(value)
+			}
+			fmt.Printf(formatString, bind.env, value)
 		}
 		return nil
 	}
+}
+
+// effectivePropertyValue returns the current value of a configuration
+// property: secrets resolve through the credential store, the rest via viper.
+func effectivePropertyValue(viperKey string) string {
+	credentialName, ok := credentialstore.CredentialForViperKey(viperKey)
+	if !ok {
+		return viper.GetString(viperKey)
+	}
+	value, err := credentialstore.Resolve(credentialName)
+	if err != nil {
+		return ""
+	}
+	return value
 }

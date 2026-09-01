@@ -359,7 +359,7 @@ var skipWorkspaceWalkDirs = map[string]struct{}{
 
 // extractPromptTokens splits text into the set of distinct lowercase word
 // tokens. Word bytes are a-z, 0-9, '_', '-'; any other byte is a separator.
-// The dot is a separator so that "kedar.json" yields the tokens {"kedar","json"}
+// The dot is a separator so that "sample.json" yields the tokens {"sample","json"}
 // — the same shape produced when splitting a filename for matching.
 func extractPromptTokens(text string) map[string]struct{} {
 	tokens := map[string]struct{}{}
@@ -387,8 +387,8 @@ func extractPromptTokens(text string) map[string]struct{} {
 // are eligible for prompt-token matching. The trailing extension and any
 // leading-dot prefix are dropped, so that:
 //
-//	"Kedar"             → ["kedar"]
-//	"kedar.json"        → ["kedar"]
+//	"Sample"             → ["sample"]
+//	"sample.json"        → ["sample"]
 //	".env"              → ["env"]
 //	".env.local"        → ["env"]
 //	"config.local.json" → ["config", "local"]
@@ -425,10 +425,10 @@ func filenameNameParts(basename string) []string {
 // whole, case-insensitive token. Returns a rejection reason listing files
 // that contain secrets or exceed the size policy, or "" when clean.
 //
-// Why this guardrail exists: prompts like "check kedar file" do not contain
+// Why this guardrail exists: prompts like "check sample file" do not contain
 // an @-mention, a path separator, or a file extension, so none of the path
 // regexes fire and ScanReferencedFiles never opens the workspace file named
-// "Kedar". If that file holds a JWT, sending the prompt would still leak the
+// "Sample". If that file holds a JWT, sending the prompt would still leak the
 // secret because the model resolves the reference on the fly. This catches
 // the case at prompt-submit time. Explicit path references (absolute paths
 // or @-mentions) are handled separately by ScanReferencedFiles regardless of

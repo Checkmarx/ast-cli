@@ -168,7 +168,6 @@ const (
 	QueryIDFlag                  = "query-id"
 	SSHKeyFlag                   = "ssh-key"
 	RepoURLFlag                  = "repo-url"
-	AstToken                     = "ast-token"
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
