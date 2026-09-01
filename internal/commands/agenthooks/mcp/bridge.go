@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -28,8 +29,8 @@ import (
 // binary guaranteed present, instead of bash/node/python (none of which are
 // guaranteed across Windows/macOS/Linux or on a native, Bun-based Claude install).
 //
-// It reads the credential cx already resolved (env CX_APIKEY / cx config, loaded
-// at startup), derives the realm-scoped URL from the credential's JWT `iss`
+// It reads the credential cx already resolved (OS keyring / env CX_APIKEY / cx
+// config, loaded at startup), derives the realm-scoped URL from the credential's JWT `iss`
 // claim, and forwards newline-delimited JSON-RPC between stdin/stdout and the
 // remote MCP's Streamable HTTP endpoint (application/json + text/event-stream,
 // Mcp-Session-Id). The credential is sent ONLY in the Authorization header (the
@@ -135,17 +136,22 @@ var (
 // productionResolveAPIKey reads it. viper itself has no internal locking.
 var configMu sync.Mutex
 
-// productionResolveAPIKey returns the credential cx resolved (CX_APIKEY env / cx
-// config / active session), falling back to CHECKMARX_API_KEY for parity with the
-// previous Python bridge. Callers that need a credential written AFTER startup must
-// call reloadConfig() first (viper is a one-shot startup snapshot). The viper read
-// is guarded by configMu so it never races a concurrent reloadConfig.
+// productionResolveAPIKey returns the credential cx resolved (keyring /
+// CX_APIKEY env / cx config), falling back to CHECKMARX_API_KEY for parity with
+// the previous Python bridge. The credentialstore read covers the keyring and
+// env layers; reloadConfig() keeps the viper snapshot fresh for other keys.
 func productionResolveAPIKey() string {
+	k, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
+	if err == nil {
+		if k = strings.TrimSpace(k); k != "" {
+			return k
+		}
+	}
 	configMu.Lock()
-	k := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey))
+	v := strings.TrimSpace(viper.GetString(commonParams.AstAPIKey))
 	configMu.Unlock()
-	if k != "" {
-		return k
+	if v != "" {
+		return v
 	}
 	if k := strings.TrimSpace(os.Getenv("CHECKMARX_API_KEY")); k != "" {
 		return k
@@ -169,7 +175,7 @@ Intended to be launched by an AI coding assistant as an MCP server:
     }
   }
 
-The credential is read from cx config (or CX_APIKEY). The realm-scoped URL is
+The credential is read from the OS keyring, CX_APIKEY, or cx config. The realm-scoped URL is
 resolved by, in order: the --mcp-url flag, the CX_MCP_URL env var, the
 authoritative "ast-base-url" claim from the exchanged access token (works for
 any region/on-prem), then an offline IAM->AST host swap. Override with --mcp-url

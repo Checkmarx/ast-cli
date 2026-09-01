@@ -1,22 +1,59 @@
 package wrappers
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
+
+type fakeCredentialStore struct {
+	data      map[string]string
+	getErr    error
+	setErr    error
+	deleteErr error
+}
+
+func (f *fakeCredentialStore) Get(_ context.Context, credentialName string) (string, error) {
+	if f.getErr != nil {
+		return "", f.getErr
+	}
+	value, ok := f.data[credentialName]
+	if !ok {
+		return "", credentialstore.ErrNotFound
+	}
+	return value, nil
+}
+
+func (f *fakeCredentialStore) Set(_ context.Context, credentialName, value string) error {
+	if f.setErr != nil {
+		return f.setErr
+	}
+	f.data[credentialName] = value
+	return nil
+}
+
+func (f *fakeCredentialStore) Delete(_ context.Context, credentialName string) error {
+	if f.deleteErr != nil {
+		return f.deleteErr
+	}
+	delete(f.data, credentialName)
+	return nil
+}
 
 type mockReadCloser struct{}
 
@@ -101,11 +138,10 @@ func TestConcurrentWriteCredentialsToCache(t *testing.T) {
 	}
 	wg.Wait()
 
-	token := viper.Get(commonParams.AstToken)
-	assert.NotNil(t, token, "Token should not be nil")
-
-	tokenStr, ok := token.(string)
-	assert.True(t, ok, "Token should be a string")
+	credentialsMutex.Lock()
+	tokenStr := cachedAccessToken
+	credentialsMutex.Unlock()
+	assert.NotEmpty(t, tokenStr, "Token should not be empty")
 
 	splitToken := strings.Split(tokenStr, "_")
 	assert.Equal(t, 2, len(splitToken), "Token should split into 2 parts")
@@ -193,10 +229,15 @@ func TestGetAPIKeyPayload(t *testing.T) {
 // cx_apikey. A stale/malformed stored key previously surfaced here as a hard
 // "failed to resolve IAM realm URL" error, making login impossible until the bad
 // key was manually cleared.
+// TestGetRealmURL_LoginOverrideSkipsStoredAPIKey guards the `cx auth login` fix:
+// when ApikeyOverrideFlag is set, GetRealmURL must build the realm from the
+// explicit --base-auth-uri/--tenant flags and must NOT decode the stored
+// cx_apikey. A stale/malformed stored key previously surfaced here as a hard
+// "failed to resolve IAM realm URL" error, making login impossible until the bad
+// key was manually cleared.
 func TestGetRealmURL_LoginOverrideSkipsStoredAPIKey(t *testing.T) {
 	keys := []string{
 		commonParams.ApikeyOverrideFlag,
-		commonParams.AstAPIKey,
 		commonParams.BaseAuthURIKey,
 		commonParams.TenantKey,
 	}
@@ -210,11 +251,16 @@ func TestGetRealmURL_LoginOverrideSkipsStoredAPIKey(t *testing.T) {
 		}
 	})
 
+	store := &fakeCredentialStore{data: map[string]string{}}
+	t.Setenv("CX_CONFIG_FILE_PATH", filepath.Join(t.TempDir(), "checkmarxcli.yaml"))
+	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver("checkmarxcli.yaml", credentialstore.PolicyAuto, store))
+	t.Cleanup(credentialstore.ResetForTest)
+
 	const malformedKey = "not-a-jwt" // single segment -> ExtractFromTokenClaims fails
 
 	t.Run("override builds realm from flags despite a malformed stored key", func(t *testing.T) {
 		viper.Set(commonParams.ApikeyOverrideFlag, true)
-		viper.Set(commonParams.AstAPIKey, malformedKey)
+		store.data[credentialstore.CredentialAPIKey] = malformedKey
 		viper.Set(commonParams.BaseAuthURIKey, "https://eu.iam.checkmarx.net")
 		viper.Set(commonParams.TenantKey, "cx_seg")
 
@@ -226,7 +272,7 @@ func TestGetRealmURL_LoginOverrideSkipsStoredAPIKey(t *testing.T) {
 
 	t.Run("without override a malformed stored key still errors (unchanged)", func(t *testing.T) {
 		viper.Set(commonParams.ApikeyOverrideFlag, false)
-		viper.Set(commonParams.AstAPIKey, malformedKey)
+		store.data[credentialstore.CredentialAPIKey] = malformedKey
 		viper.Set(commonParams.BaseAuthURIKey, "https://eu.iam.checkmarx.net")
 		viper.Set(commonParams.TenantKey, "cx_seg")
 
@@ -368,4 +414,41 @@ func TestRetryHTTPIAMRequest_Fail(t *testing.T) {
 	resp, err := retryHTTPForIAMRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	assert.Error(t, err)
 	assert.Nil(t, resp)
+}
+
+// An unreachable OS keyring must surface as a keyring failure, never as a
+// silent no-credentials path.
+func TestConfigureClientCredentialsPropagatesKeyringUnavailable(t *testing.T) {
+	t.Setenv("CX_CONFIG_FILE_PATH", filepath.Join(t.TempDir(), "checkmarxcli.yaml"))
+	store := &fakeCredentialStore{
+		data:   map[string]string{},
+		getErr: fmt.Errorf("%w: dbus: failed to connect to socket", credentialstore.ErrKeyringUnavailable),
+	}
+	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver("checkmarxcli.yaml", credentialstore.PolicyAuto, store))
+	t.Cleanup(credentialstore.ResetForTest)
+
+	viper.Set(commonParams.PreferredCredentialTypeKey, "")
+
+	_, err := configureClientCredentialsAndGetNewToken()
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
+}
+
+func TestGetRealmURLPropagatesKeyringUnavailable(t *testing.T) {
+	savedOverride := viper.Get(commonParams.ApikeyOverrideFlag)
+	t.Cleanup(func() { viper.Set(commonParams.ApikeyOverrideFlag, savedOverride) })
+
+	t.Setenv("CX_CONFIG_FILE_PATH", filepath.Join(t.TempDir(), "checkmarxcli.yaml"))
+	store := &fakeCredentialStore{
+		data:   map[string]string{},
+		getErr: fmt.Errorf("%w: dbus: failed to connect to socket", credentialstore.ErrKeyringUnavailable),
+	}
+	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver("checkmarxcli.yaml", credentialstore.PolicyAuto, store))
+	t.Cleanup(credentialstore.ResetForTest)
+
+	viper.Set(commonParams.ApikeyOverrideFlag, false)
+
+	_, err := GetRealmURL()
+	assert.Error(t, err)
+	assert.ErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
 }
