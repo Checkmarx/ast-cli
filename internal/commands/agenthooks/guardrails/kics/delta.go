@@ -63,14 +63,15 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 
 // formatFindings builds the two verdict fields delivered to the agent.
 // Cursor receives cursorAdditionalContext (folded into agent_message); other agents
-// receive the original additionalContext (e.g. Claude additionalContext).
+// (including Gemini) receive additionalContext, with MCP tool names adjusted per agent.
 func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
 	reason = permissionDecisionReason(filePath, summary)
-	if agent == agenthooks.AgentCursor {
+	switch agent {
+	case agenthooks.AgentCursor:
 		context = cursorAdditionalContext(filePath, findings)
-	} else {
-		context = additionalContext(filePath, findings)
+	default:
+		context = additionalContext(filePath, findings, agent)
 	}
 	return reason, context
 }
@@ -124,8 +125,8 @@ func isDockerImageFileByName(filePath string) bool {
 // KICS is a deterministic IaC rule engine: unlike ASCA, its findings are not caused by
 // missing cross-file context, so the agent is NOT given discretion to treat findings as
 // false positives. Every new finding must be fixed.
-// Used for Claude, Copilot, and other non-Cursor agents.
-func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+// Used for Claude, Gemini, Copilot, and other non-Cursor agents.
+func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID) string {
 	var findingList strings.Builder
 	for _, f := range findings {
 		line := 0
@@ -134,6 +135,10 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 		}
 		fmt.Fprintf(&findingList, "  - line %d [%s] %s: %s\n",
 			line, f.Severity, f.Title, f.Description)
+	}
+	imageTool, codeTool := "mcp__Checkmarx__imageRemediation", "mcp__Checkmarx__codeRemediation"
+	if agent == agenthooks.AgentGemini {
+		imageTool, codeTool = "mcp_Checkmarx_imageRemediation", "mcp_Checkmarx_codeRemediation"
 	}
 	return fmt.Sprintf(
 		"KICS detected IaC misconfigurations in %s. These are deterministic rule matches "+
@@ -144,7 +149,7 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 			"Fix every finding below, then retry the write:\n"+
 			"%s"+
 			"%s",
-		filePath, findingList.String(), remediationInstructions(filePath, findings),
+		filePath, findingList.String(), remediationInstructions(filePath, findings, imageTool, codeTool),
 	)
 }
 
@@ -153,30 +158,30 @@ func additionalContext(filePath string, findings []iacrealtime.IacRealtimeResult
 // through imageRemediation (base image CVEs, safer tags, hardening). All other
 // KICS-supported files (Terraform, Kubernetes manifests, CloudFormation, etc.) are
 // generic IaC misconfigurations and go through codeRemediation.
-func remediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult) string {
+func remediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult, imageTool, codeTool string) string {
 	if isDockerImageFinding(filePath, findings) {
-		return "For each finding, call the mcp__Checkmarx__imageRemediation tool with:\n" +
-			"  {\n" +
-			"    \"imageName\": \"[image name from the finding/file, without the tag]\",\n" +
-			"    \"imageTag\": \"[image tag from the finding/file, e.g. latest]\",\n" +
-			"    \"fileType\": \"[Dockerfile or DockerCompose, matching this file]\"\n" +
-			"  }\n" +
-			"Apply the remediation guidance the tool returns (safer base image, pinned digest, " +
-			"hardening steps), then retry the write."
+		return fmt.Sprintf("For each finding, call the %s tool with:\n"+
+			"  {\n"+
+			"    \"imageName\": \"[image name from the finding/file, without the tag]\",\n"+
+			"    \"imageTag\": \"[image tag from the finding/file, e.g. latest]\",\n"+
+			"    \"fileType\": \"[Dockerfile or DockerCompose, matching this file]\"\n"+
+			"  }\n"+
+			"Apply the remediation guidance the tool returns (safer base image, pinned digest, "+
+			"hardening steps), then retry the write.", imageTool)
 	}
-	return "For each finding, call the mcp__Checkmarx__codeRemediation tool with:\n" +
-		"  {\n" +
-		"    \"type\": \"iac\",\n" +
-		"    \"metadata\": {\n" +
-		"      \"title\": \"[Title from finding]\",\n" +
-		"      \"description\": \"[Description from finding]\",\n" +
-		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n" +
-		"    }\n" +
-		"  }\n" +
-		"Apply the remediation guidance the tool returns, then retry the write. If a fix " +
-		"genuinely requires resources outside this file (for example a separate KMS key or " +
-		"a centrally-managed policy), add them as part of your change rather than skipping " +
-		"the finding."
+	return fmt.Sprintf("For each finding, call the %s tool with:\n"+
+		"  {\n"+
+		"    \"type\": \"iac\",\n"+
+		"    \"metadata\": {\n"+
+		"      \"title\": \"[Title from finding]\",\n"+
+		"      \"description\": \"[Description from finding]\",\n"+
+		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n"+
+		"    }\n"+
+		"  }\n"+
+		"Apply the remediation guidance the tool returns, then retry the write. If a fix "+
+		"genuinely requires resources outside this file (for example a separate KMS key or "+
+		"a centrally-managed policy), add them as part of your change rather than skipping "+
+		"the finding.", codeTool)
 }
 
 func cursorRemediationInstructions(filePath string, findings []iacrealtime.IacRealtimeResult) string {

@@ -271,6 +271,32 @@ func TestDenyVulnerable_CursorUsesPluginMCPToolAndStopParsingOnWindows(t *testin
 	}
 }
 
+func TestDenyVulnerable_GeminiUsesQuoteDataFlag(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	data := []byte(`[{"PackageManager":"npm","PackageName":"axios","PackageVersion":"0.21.0"}]`)
+	_, remediation := DenyVulnerable(pkgs, "", agentGemini, "sess-1")
+	want := "ignore-vulnerability --scan-type sca --data " + ignore.QuoteDataFlag(data)
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected Gemini suppress command %q, got %q", want, remediation)
+	}
+}
+
+func TestDenyVulnerable_OtherAgentsUseUnescapedData(t *testing.T) {
+	pkgs := []ossrealtime.OssPackage{
+		{PackageManager: "npm", PackageName: "axios", PackageVersion: "0.21.0"},
+	}
+	_, remediation := DenyVulnerable(pkgs, "", "Claude", "sess-1")
+	want := `ignore-vulnerability --scan-type sca --data '[{"PackageManager":"npm","PackageName":"axios","PackageVersion":"0.21.0"}]'`
+	if !strings.Contains(remediation, want) {
+		t.Errorf("expected other agents to use unescaped --data %q, got %q", want, remediation)
+	}
+	if runtime.GOOS == goosWindows && strings.Contains(remediation, `\"PackageName\"`) {
+		t.Errorf("claude agent should not use QuoteDataFlag Windows escaping, got %q", remediation)
+	}
+}
+
 func TestDenyVulnerable_MultiplePackages_EachGetsIgnoreCommand(t *testing.T) {
 	pkgs := []ossrealtime.OssPackage{
 		{PackageManager: "npm", PackageName: "lodash", PackageVersion: "4.17.0"},
