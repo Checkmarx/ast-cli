@@ -219,6 +219,9 @@ jobs:
       CX_TENANT: ${{ secrets.CX_TENANT }}
       CX_SCAN_SSH_KEY: ${{ secrets.CX_SCAN_SSH_KEY }}
       CX_ORIGIN: "cli-tests"
+      ECHO_LIBRARIES_ACCESS_KEY: ${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}
+      NPM_CONFIG_REGISTRY: https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@npm.echohq.com
+      npm_config_registry: https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@npm.echohq.com
       PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       PROXY_HOST: localhost
       PROXY_PORT: 3128
@@ -284,6 +287,12 @@ jobs:
             -v $(pwd)/internal/commands/.scripts/squid/squid.conf:/etc/squid/squid.conf \
             -v $(pwd)/internal/commands/.scripts/squid/passwords:/etc/squid/passwords \
             ubuntu/squid:5.2-22.04_beta
+
+      - name: Configure npm to use Echo registry for SCA Resolver
+        run: |
+          cat > ~/.npmrc << EOF
+          registry=https://:${ECHO_LIBRARIES_ACCESS_KEY}@npm.echohq.com
+          EOF
 
       - name: Download ScaResolver
         run: |
