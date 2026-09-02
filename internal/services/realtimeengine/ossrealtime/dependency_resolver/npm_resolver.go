@@ -34,18 +34,13 @@ func (r *NpmResolver) ResolveDependencies(projectPath string) (*DependencyTreeRe
 		return nil, fmt.Errorf("failed to read package-lock.json: %w", err)
 	}
 
-	// 2. Pre-validate JSON structure before unmarshalling (defense-in-depth)
-	if err := validateNpmLockFile(data); err != nil {
-		return nil, fmt.Errorf("npm lock file validation failed: %w", err)
-	}
-
-	// 3. Parse JSON (safe after validation)
+	// 2. Parse JSON
 	var lockFile npmLockFile
 	if err := json.Unmarshal(data, &lockFile); err != nil {
 		return nil, fmt.Errorf("failed to parse package-lock.json: %w", err)
 	}
 
-	// 4. Traverse and collect dependencies from the appropriate source
+	// 3. Traverse and collect dependencies from the appropriate source
 	var deps []Dependency
 	// Modern npm (v7+) uses "packages" field; older versions use "dependencies"
 	if len(lockFile.Packages) > 0 {
@@ -56,7 +51,7 @@ func (r *NpmResolver) ResolveDependencies(projectPath string) (*DependencyTreeRe
 		}
 	}
 
-	// 5. Extract root package name (from package.json)
+	// 4. Extract root package name (from package.json)
 	rootName := extractRootPackageName(projectPath)
 
 	return &DependencyTreeResult{
@@ -65,23 +60,6 @@ func (r *NpmResolver) ResolveDependencies(projectPath string) (*DependencyTreeRe
 		RootPackage:    rootName,
 		Dependencies:   deps,
 	}, nil
-}
-
-// validateNpmLockFile performs pre-deserialization validation
-func validateNpmLockFile(data []byte) error {
-	// First, unmarshal to generic map to validate structure
-	var rawLock map[string]interface{}
-	if err := json.Unmarshal(data, &rawLock); err != nil {
-		return fmt.Errorf("invalid JSON: %w", err)
-	}
-
-	// Validate has dependencies field or is empty (both valid)
-	if _, hasDeps := rawLock["dependencies"]; !hasDeps {
-		// Empty lock file is OK, will just have no transitive deps
-		return nil
-	}
-
-	return nil
 }
 
 // traverseNpmModernFormat handles npm v7+ "packages" format
@@ -185,13 +163,6 @@ func extractRootPackageName(projectPath string) string {
 		return "app" // fallback
 	}
 
-	// Pre-validate JSON structure before unmarshalling
-	var rawPkg map[string]interface{}
-	if err := json.Unmarshal(data, &rawPkg); err != nil {
-		return "app" // fallback
-	}
-
-	// Safe to unmarshal after validation
 	var pkg packageJSON
 	if err := json.Unmarshal(data, &pkg); err != nil {
 		return "app" // fallback

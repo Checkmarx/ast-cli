@@ -112,8 +112,7 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath, sbomF
 	} else {
 		// Option B: Generate transitive deps on-the-fly using native resolvers
 		if err := enrichWithGeneratedDeps(o, response, projectPath); err != nil {
-			logger.Printf("oss-realtime: transitive dependency enrichment failed (results may be incomplete): %v", err)
-			logger.PrintfIfVerbose("Generated deps enrichment skipped: %v", err)
+			logger.PrintfIfVerbose("oss-realtime: transitive dependency enrichment failed (results may be incomplete): %v", err)
 			// Never fail the scan on enrichment error
 		} else {
 			logger.PrintfIfVerbose("✅ Enriched response with transitive vulnerabilities")
@@ -451,18 +450,81 @@ func enrichWithGeneratedDeps(
 		return nil
 	}
 
-	// Scan transitive packages via realtime API
-	logger.Printf("🔍 Scanning %d transitive packages via realtime scanner", len(transitivePkgs))
-	req := &wrappers.RealtimeScannerPackageRequest{Packages: transitivePkgs}
-	scanResult, err := service.RealtimeScannerWrapper.ScanPackages(req)
+	// Scan transitive packages via realtime API, reusing the same cache as direct dependencies
+	logger.PrintfIfVerbose("Scanning %d transitive packages via realtime scanner", len(transitivePkgs))
+	scannedResults, err := scanTransitivePackagesWithCache(service, transitivePkgs)
 	if err != nil {
-		return fmt.Errorf("failed to scan transitive packages: %w", err)
+		return err
 	}
 
 	// Enrich response with transitive results (using same logic as SBOM enrichment)
-	enrichResponseWithTransitiveDependencies(response, scanResult.Packages, deps)
+	enrichResponseWithTransitiveDependencies(response, scannedResults, deps)
 
 	return nil
+}
+
+// scanTransitivePackagesWithCache resolves transitive packages against the shared oss-realtime
+// cache before falling back to the realtime scanner for the remainder, mirroring the caching
+// behavior already used for direct dependencies in prepareScan/scanAndCache.
+func scanTransitivePackagesWithCache(
+	service *OssRealtimeService,
+	transitivePkgs []wrappers.RealtimeScannerPackage,
+) ([]wrappers.RealtimeScannerResults, error) {
+	var results []wrappers.RealtimeScannerResults
+	var toScan []wrappers.RealtimeScannerPackage
+
+	if cache := osscache.ReadCache(); cache != nil {
+		cacheMap := osscache.BuildCacheMap(*cache)
+		for _, pkg := range transitivePkgs {
+			key := osscache.GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
+			if cachedPkg, found := cacheMap[key]; found {
+				results = append(results, cachedEntryToRealtimeScannerResult(cachedPkg))
+				continue
+			}
+			toScan = append(toScan, pkg)
+		}
+	} else {
+		toScan = transitivePkgs
+	}
+
+	logger.PrintfIfVerbose("oss-realtime: %d transitive package(s) resolved from cache, %d require scanning", len(results), len(toScan))
+
+	if len(toScan) == 0 {
+		return results, nil
+	}
+
+	req := &wrappers.RealtimeScannerPackageRequest{Packages: toScan}
+	scanResult, err := service.RealtimeScannerWrapper.ScanPackages(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan transitive packages: %w", err)
+	}
+
+	if err := osscache.AppendToCache(scanResult, createVersionMapping(req, scanResult)); err != nil {
+		logger.PrintfIfVerbose("oss-realtime: failed to update transitive cache: %v", err)
+	}
+
+	return append(results, scanResult.Packages...), nil
+}
+
+// cachedEntryToRealtimeScannerResult converts a cached package entry into the same shape
+// returned by the realtime scanner, so cached and freshly-scanned transitive packages can
+// be enriched through the same code path.
+func cachedEntryToRealtimeScannerResult(entry osscache.PackageEntry) wrappers.RealtimeScannerResults {
+	vulnerabilities := make([]wrappers.RealtimeScannerVulnerability, len(entry.Vulnerabilities))
+	for i, v := range entry.Vulnerabilities {
+		vulnerabilities[i] = wrappers.RealtimeScannerVulnerability{
+			CVE:         v.CVE,
+			Description: v.Description,
+			Severity:    v.Severity,
+		}
+	}
+	return wrappers.RealtimeScannerResults{
+		PackageManager:  entry.PackageManager,
+		PackageName:     entry.PackageName,
+		Version:         entry.PackageVersion,
+		Status:          entry.Status,
+		Vulnerabilities: vulnerabilities,
+	}
 }
 
 // enrichResponseWithTransitiveDependencies enriches response with transitive vulnerability data
@@ -477,14 +539,6 @@ func enrichResponseWithTransitiveDependencies(
 	logger.PrintfIfVerbose("enrichResponseWithTransitiveDependencies: processing %d scanned packages from realtime scanner", len(vulnPackages))
 	initialCount := len(response.Packages)
 	vulnCount := 0
-
-	// Log resolver package names for debugging
-	logger.PrintfIfVerbose("📦 Resolver has %d dependencies:", len(allDeps))
-	for i, dep := range allDeps {
-		if i < 5 {
-			logger.PrintfIfVerbose("  [%d] %s@%s (isDirect: %v)", i, dep.Name, dep.Version, dep.IsDirect)
-		}
-	}
 
 	for _, vulnPkg := range vulnPackages {
 		if vulnPkg.Status == "OK" || len(vulnPkg.Vulnerabilities) == 0 {
@@ -502,13 +556,7 @@ func enrichResponseWithTransitiveDependencies(
 		}
 
 		if depInfo == nil {
-			logger.PrintfIfVerbose("  ❌ no match for %s@%s (API) in dependency graph", vulnPkg.PackageName, vulnPkg.Version)
-			// Show what resolver has for this package name part
-			for _, dep := range allDeps {
-				if strings.Contains(dep.Name, vulnPkg.PackageName) || strings.Contains(vulnPkg.PackageName, dep.Name) {
-					logger.PrintfIfVerbose("     (but found similar: %s@%s)", dep.Name, dep.Version)
-				}
-			}
+			logger.PrintfIfVerbose("oss-realtime: no match for %s@%s in dependency graph (all deps: %d)", vulnPkg.PackageName, vulnPkg.Version, len(allDeps))
 			continue // Package not found in dependency graph
 		}
 
