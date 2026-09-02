@@ -44,7 +44,7 @@ func (r *MavenResolver) ResolveDependencies(projectPath string) (*DependencyTree
 func parseMavenTreeOutput(output string) []Dependency {
 	lines := strings.Split(output, "\n")
 	var deps []Dependency
-	var stack []string // Track parent chain by depth
+	var stack []string                   // Track parent chain by depth
 	visitedDeps := make(map[string]bool) // Deduplicate same package@version
 
 	for _, line := range lines {
@@ -102,22 +102,16 @@ func parseMavenTreeOutput(output string) []Dependency {
 		stack = append(stack, pkg.Name+":"+pkg.Version)
 	}
 
-	// Post-processing: build parent-child relationships
-	// For each dep, add it to the children of its parents
+	// Post-processing: link each dependency into its parent's Children list, using
+	// an index instead of an O(n) scan per parent (name:version -> position in deps).
+	byNameVersion := make(map[string]int, len(deps))
+	for i, dep := range deps {
+		byNameVersion[dep.Name+":"+dep.Version] = i
+	}
 	for i := range deps {
 		for _, parentKey := range deps[i].Parents {
-			if parentKey == "" {
-				continue
-			}
-			// Find the parent by matching name:version format
-			for j := range deps {
-				parentFullKey := deps[j].Name + ":" + deps[j].Version
-				if parentFullKey == parentKey {
-					// deps[i] is a child of deps[j]
-					childKey := deps[i].Name + "@" + deps[i].Version
-					deps[j].Children = append(deps[j].Children, childKey)
-					break
-				}
+			if j, found := byNameVersion[parentKey]; found {
+				deps[j].Children = append(deps[j].Children, deps[i].Name+"@"+deps[i].Version)
 			}
 		}
 	}

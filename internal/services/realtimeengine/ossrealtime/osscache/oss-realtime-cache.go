@@ -8,12 +8,17 @@ import (
 	"time"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/gofrs/flock"
 )
 
 const (
 	cacheFileName  = "oss-realtime-cache.json"
+	lockFileSuffix = ".lock"
 	ttlHoursNumber = 4
 	ttl            = ttlHoursNumber * time.Hour
+	// maxCacheEntries caps the cache file size so it can't grow unbounded across
+	// repeated scans (e.g. an IDE re-scanning on every save).
+	maxCacheEntries = 5000
 )
 
 func ReadCache() *Cache {
@@ -41,6 +46,21 @@ func ReadCache() *Cache {
 
 func WriteCache(cache Cache, cacheTTL *time.Time) error {
 	cacheFilePath := GetCacheFilePath()
+
+	// Guard the write with a file lock so concurrent scans (e.g. an IDE scanning
+	// multiple manifests at once) can't interleave writes and corrupt the cache file.
+	fileLock := flock.New(cacheFilePath + lockFileSuffix)
+	locked, err := fileLock.TryLock()
+	if err != nil {
+		return fmt.Errorf("locking oss-realtime cache file: %w", err)
+	}
+	if !locked {
+		return fmt.Errorf("oss-realtime cache file lock is held by another process")
+	}
+	defer func() {
+		_ = fileLock.Unlock()
+	}()
+
 	file, err := os.Create(cacheFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create osscache file: %w", err)
@@ -69,19 +89,43 @@ func AppendToCache(packages *wrappers.RealtimeScannerPackageResponse, versionMap
 		}
 	}
 
+	// Index existing entries by PackageID so re-scanned packages overwrite their
+	// existing entry instead of appending a duplicate (the cache file otherwise
+	// grows without bound across repeated scans of the same packages).
+	index := make(map[string]int, len(cache.Packages))
+	for i, entry := range cache.Packages {
+		index[entry.PackageID] = i
+	}
+
 	for _, pkg := range packages.Packages {
 		key := GenerateCacheKey(pkg.PackageManager, pkg.PackageName, pkg.Version)
 		vulnerabilities := vulnerabilityMapper.FromRealtimeScannerVulnerability(pkg.Vulnerabilities)
 
 		if requestedVersion, exists := versionMapping[key]; exists {
 			if !strings.EqualFold(requestedVersion, pkg.Version) && strings.EqualFold("latest", requestedVersion) {
-				cache.Packages = append(cache.Packages, createPackageEntry(&pkg, requestedVersion, vulnerabilities))
+				upsertCacheEntry(cache, index, createPackageEntry(&pkg, requestedVersion, vulnerabilities))
 			}
 		}
-		cache.Packages = append(cache.Packages, createPackageEntry(&pkg, pkg.Version, vulnerabilities))
+		upsertCacheEntry(cache, index, createPackageEntry(&pkg, pkg.Version, vulnerabilities))
+	}
+
+	// Evict the oldest entries once the cache grows past the cap.
+	if len(cache.Packages) > maxCacheEntries {
+		cache.Packages = cache.Packages[len(cache.Packages)-maxCacheEntries:]
 	}
 
 	return WriteCache(*cache, &cache.TTL)
+}
+
+// upsertCacheEntry replaces an existing cache entry with the same PackageID, or
+// appends it as a new entry if it isn't present yet.
+func upsertCacheEntry(cache *Cache, index map[string]int, entry PackageEntry) {
+	if i, exists := index[entry.PackageID]; exists {
+		cache.Packages[i] = entry
+		return
+	}
+	index[entry.PackageID] = len(cache.Packages)
+	cache.Packages = append(cache.Packages, entry)
 }
 
 func createPackageEntry(pkg *wrappers.RealtimeScannerResults, version string, vulnerabilities []Vulnerability) PackageEntry {

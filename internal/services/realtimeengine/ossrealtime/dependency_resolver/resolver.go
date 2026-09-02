@@ -1,14 +1,10 @@
 package dependency_resolver
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
-	"time"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 )
@@ -19,33 +15,22 @@ type DependencyResolver interface {
 	SupportedFiles() []string
 }
 
-// CacheEntry holds cached dependency results
-type CacheEntry struct {
-	Dependencies []Dependency
-	Timestamp    time.Time
-	FileHash     string
-}
-
-// DependencyResolverService orchestrates all resolvers
+// DependencyResolverService orchestrates all resolvers. Each resolved dependency
+// tree is cached on disk (see dependency_tree_cache.go), keyed by package manager +
+// project path and validated against a content hash of the manifest/lock file, so
+// repeated scans of an unchanged project skip re-invoking the build tool.
 type DependencyResolverService struct {
-	npmResolver   DependencyResolver
-	mavenResolver DependencyResolver
-	goResolver    DependencyResolver
-
-	// Caching
-	cache      map[string]CacheEntry
-	cacheMutex sync.RWMutex
-	cacheTTL   time.Duration
+	resolvers map[string]DependencyResolver
 }
 
 // NewDependencyResolverService creates a new service with all resolvers
 func NewDependencyResolverService() *DependencyResolverService {
 	return &DependencyResolverService{
-		npmResolver:   &NpmResolver{},
-		mavenResolver: &MavenResolver{},
-		goResolver:    &GoResolver{},
-		cache:         make(map[string]CacheEntry),
-		cacheTTL:      5 * time.Minute, // Cache for 5 minutes
+		resolvers: map[string]DependencyResolver{
+			"npm":   &NpmResolver{},
+			"maven": &MavenResolver{},
+			"go":    &GoResolver{},
+		},
 	}
 }
 
@@ -61,15 +46,12 @@ func (s *DependencyResolverService) ResolveDependencies(projectPath string) ([]D
 			result.Warning = "package-lock.json not found; npm transitive deps skipped. " +
 				"Run 'npm install' to generate lock file for full coverage."
 			logger.PrintfIfVerbose("⚠️  %s", result.Warning)
+		} else if deps, err := s.resolveWithCache("npm", projectPath, lockFilePath); err != nil {
+			result.Error = fmt.Sprintf("npm resolution failed: %v", err)
+			logger.PrintfIfVerbose("❌ %s", result.Error)
 		} else {
-			deps, err := s.resolveWithCache("npm", projectPath, lockFilePath)
-			if err != nil {
-				result.Error = fmt.Sprintf("npm resolution failed: %v", err)
-				logger.PrintfIfVerbose("❌ %s", result.Error)
-			} else {
-				allDeps = append(allDeps, deps...)
-				result.Success = true
-			}
+			allDeps = append(allDeps, deps...)
+			result.Success = true
 		}
 	}
 
@@ -79,16 +61,12 @@ func (s *DependencyResolverService) ResolveDependencies(projectPath string) ([]D
 			result.Warning = "Maven not found; maven transitive deps skipped. " +
 				"Install Maven (apt-get install maven) for full coverage."
 			logger.PrintfIfVerbose("⚠️  %s", result.Warning)
+		} else if deps, err := s.resolveWithCache("maven", projectPath, filepath.Join(projectPath, "pom.xml")); err != nil {
+			result.Error = fmt.Sprintf("maven resolution failed: %v", err)
+			logger.PrintfIfVerbose("❌ %s", result.Error)
 		} else {
-			pomPath := filepath.Join(projectPath, "pom.xml")
-			deps, err := s.resolveWithCache("maven", projectPath, pomPath)
-			if err != nil {
-				result.Error = fmt.Sprintf("maven resolution failed: %v", err)
-				logger.PrintfIfVerbose("❌ %s", result.Error)
-			} else {
-				allDeps = append(allDeps, deps...)
-				result.Success = true
-			}
+			allDeps = append(allDeps, deps...)
+			result.Success = true
 		}
 	}
 
@@ -103,15 +81,12 @@ func (s *DependencyResolverService) ResolveDependencies(projectPath string) ([]D
 			result.Warning = "Go not found; go transitive deps skipped. " +
 				"Install Go (https://golang.org/dl) for full coverage."
 			logger.PrintfIfVerbose("⚠️  %s", result.Warning)
+		} else if deps, err := s.resolveWithCache("go", projectPath, sumFilePath); err != nil {
+			result.Error = fmt.Sprintf("go resolution failed: %v", err)
+			logger.PrintfIfVerbose("❌ %s", result.Error)
 		} else {
-			deps, err := s.resolveWithCache("go", projectPath, sumFilePath)
-			if err != nil {
-				result.Error = fmt.Sprintf("go resolution failed: %v", err)
-				logger.PrintfIfVerbose("❌ %s", result.Error)
-			} else {
-				allDeps = append(allDeps, deps...)
-				result.Success = true
-			}
+			allDeps = append(allDeps, deps...)
+			result.Success = true
 		}
 	}
 
@@ -119,119 +94,35 @@ func (s *DependencyResolverService) ResolveDependencies(projectPath string) ([]D
 	return allDeps, result
 }
 
-// resolveWithCache checks cache first, then calls appropriate resolver
-func (s *DependencyResolverService) resolveWithCache(
-	pkgMgr, projectPath, checkFilePath string,
-) ([]Dependency, error) {
-	// Generate cache key
-	cacheKey := s.generateCacheKey(pkgMgr, projectPath, checkFilePath)
-
-	// Check cache
-	if cached := s.getFromCache(cacheKey, checkFilePath); cached != nil {
-		logger.PrintfIfVerbose("📦 Using cached %s dependencies", pkgMgr)
-		return cached, nil
-	}
-
-	// Resolve based on package manager
-	var deps []Dependency
-
-	switch pkgMgr {
-	case "npm":
-		result, err := s.npmResolver.ResolveDependencies(projectPath)
-		if err != nil {
-			return nil, err
-		}
-		deps = result.Dependencies
-	case "maven":
-		result, err := s.mavenResolver.ResolveDependencies(projectPath)
-		if err != nil {
-			return nil, err
-		}
-		deps = result.Dependencies
-	case "go":
-		result, err := s.goResolver.ResolveDependencies(projectPath)
-		if err != nil {
-			return nil, err
-		}
-		deps = result.Dependencies
-	default:
+// resolveWithCache checks the on-disk dependency-tree cache first (keyed by package
+// manager + project path, validated against a content hash of checkFilePath), then
+// falls back to the resolver for pkgMgr on a cache miss.
+func (s *DependencyResolverService) resolveWithCache(pkgMgr, projectPath, checkFilePath string) ([]Dependency, error) {
+	resolver, ok := s.resolvers[pkgMgr]
+	if !ok {
 		return nil, fmt.Errorf("unknown package manager: %s", pkgMgr)
 	}
 
-	// Store in cache
-	fileHash := s.hashFile(checkFilePath)
-	s.setInCache(cacheKey, deps, fileHash)
+	key := treeCacheKey(pkgMgr, projectPath)
+	manifestHash := computeManifestHash(pkgMgr, checkFilePath)
 
-	logger.Printf("✅ Resolved %s dependencies (%d total)", pkgMgr, len(deps))
-	return deps, nil
-}
+	if deps, found := readTreeCache(key, manifestHash); found {
+		logger.PrintfIfVerbose("oss-realtime: using cached %s dependency tree", pkgMgr)
+		return deps, nil
+	}
 
-// generateCacheKey creates a cache key from package manager and project path
-func (s *DependencyResolverService) generateCacheKey(pkgMgr, projectPath, filePath string) string {
-	return fmt.Sprintf("%s:%s", pkgMgr, projectPath)
-}
-
-// hashFile computes MD5 hash of a file for cache invalidation
-func (s *DependencyResolverService) hashFile(filePath string) string {
-	file, err := os.Open(filePath)
+	result, err := resolver.ResolveDependencies(projectPath)
 	if err != nil {
-		return ""
-	}
-	defer file.Close()
-
-	hash := md5.New()
-	if _, err := io.Copy(hash, file); err != nil {
-		return ""
+		return nil, err
 	}
 
-	return fmt.Sprintf("%x", hash.Sum(nil))
+	if cacheErr := writeTreeCache(key, manifestHash, result.Dependencies); cacheErr != nil {
+		logger.PrintfIfVerbose("oss-realtime: failed to update dependency tree cache: %v", cacheErr)
+	}
+
+	logger.PrintfIfVerbose("oss-realtime: resolved %s dependency tree (%d total)", pkgMgr, len(result.Dependencies))
+	return result.Dependencies, nil
 }
-
-// getFromCache retrieves dependencies from cache if valid
-func (s *DependencyResolverService) getFromCache(key, filePath string) []Dependency {
-	s.cacheMutex.RLock()
-	defer s.cacheMutex.RUnlock()
-
-	entry, exists := s.cache[key]
-	if !exists {
-		return nil
-	}
-
-	// Check if cache expired
-	if time.Since(entry.Timestamp) > s.cacheTTL {
-		return nil
-	}
-
-	// Check if file has changed (cache invalidation)
-	currentHash := s.hashFile(filePath)
-	if currentHash != entry.FileHash {
-		return nil
-	}
-
-	return entry.Dependencies
-}
-
-// setInCache stores dependencies in cache
-func (s *DependencyResolverService) setInCache(key string, deps []Dependency, fileHash string) {
-	s.cacheMutex.Lock()
-	defer s.cacheMutex.Unlock()
-
-	s.cache[key] = CacheEntry{
-		Dependencies: deps,
-		Timestamp:    time.Now(),
-		FileHash:     fileHash,
-	}
-}
-
-// ClearCache clears all cached entries (for testing or manual refresh)
-func (s *DependencyResolverService) ClearCache() {
-	s.cacheMutex.Lock()
-	defer s.cacheMutex.Unlock()
-
-	s.cache = make(map[string]CacheEntry)
-}
-
-// Helper functions
 
 // fileExists checks if a file exists
 func fileExists(path string) bool {
