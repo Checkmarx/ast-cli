@@ -1375,8 +1375,7 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
-	t.Skip("Skip this test cases due to context deadline exceeded")
-	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory, flag(params.DebugFlag)}
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
