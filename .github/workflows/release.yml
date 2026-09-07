@@ -119,6 +119,28 @@ jobs:
         id: arch
         run: |
           echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
+      - name: Remove non-essential Homebrew taps before Docker setup
+        if: inputs.dev == false
+        run: |
+          set -euo pipefail
+          # Homebrew >=6.0.13 disabled `depends_on macos: <symbol>`; stale third-party
+          # taps on the shared runner still use it and abort the `brew update` that the
+          # Docker setup action runs internally. Keep only the taps this build needs:
+          # homebrew/core + homebrew/cask (base), bearer/tap (provides gon, used for
+          # Apple notarization).
+          KEEP="homebrew/core homebrew/cask bearer/tap"
+          for tap in $(brew tap); do
+            case " ${KEEP} " in
+              *" ${tap} "*) echo "Keeping ${tap}"; continue ;;
+            esac
+            echo "Untapping ${tap}"
+            brew untap --force "${tap}" || true
+            if [ -d "$(brew --repo "${tap}")" ]; then
+              echo "ERROR: ${tap} is still present after untap"
+              exit 1
+            fi
+          done
+          brew tap
       - name: Setup Docker on macOS
         if: inputs.dev == false
         uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
