@@ -1,0 +1,5 @@
+// JavaScript event file with eval injection
+document.addEventListener("click", function(e) {
+    var code = e.target.getAttribute("data-code");
+    eval(code);
+});
