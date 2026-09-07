@@ -176,6 +176,14 @@ func engineNameResolution(engineName, fallBackDir string) (string, error) {
 	return "", errors.Errorf("%s not found in PATH or in fallback locations: %v", engineName, checkedPaths)
 }
 
+// IsEngineInstalled reports whether engineName can be resolved on this OS (PATH,
+// plus the macOS GUI fallback paths engineNameResolution knows about), regardless
+// of whether the daemon is running.
+func IsEngineInstalled(engineName string) bool {
+	_, err := engineNameResolution(engineName, IacEnginePath)
+	return err == nil
+}
+
 // IsEngineRunning reports whether engineName is usable right now: resolvable on
 // this OS (PATH, plus the macOS GUI fallback paths engineNameResolution knows
 // about) AND with a responding daemon.

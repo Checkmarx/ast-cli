@@ -332,6 +332,8 @@ func TestCxBeforeFileEdit_TotalFileSize_Rejects(t *testing.T) {
 
 func TestCxBeforeFileEdit_KICSFinding_RejectsWithContext(t *testing.T) {
 	resetHookGlobals(t)
+	tel := &recordingTelemetry{}
+	telemetryWrapper = tel
 	kicsScanner = kics.NewScannerWithFunc(func(string, string) ([]iacrealtime.IacRealtimeResult, error) {
 		return []iacrealtime.IacRealtimeResult{{
 			Title:        "Privileged Container",
@@ -356,6 +358,18 @@ func TestCxBeforeFileEdit_KICSFinding_RejectsWithContext(t *testing.T) {
 	}
 	if !strings.Contains(v.Message, "KICS") {
 		t.Errorf("expected KICS in reason, got %q", v.Message)
+	}
+	if len(tel.calls) != 2 {
+		t.Fatalf("expected 2 telemetry calls (detect + remediate), got %d", len(tel.calls))
+	}
+	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != "IaC" {
+		t.Errorf("detect telemetry = Type %q Engine %q", tel.calls[0].Type, tel.calls[0].Engine)
+	}
+	if tel.calls[1].Type != "hooks-remediate" || tel.calls[1].Engine != "IaC" {
+		t.Errorf("remediate telemetry = Type %q Engine %q", tel.calls[1].Type, tel.calls[1].Engine)
+	}
+	if tel.calls[1].ProblemSeverity != "HIGH" {
+		t.Errorf("ProblemSeverity = %q, want HIGH", tel.calls[1].ProblemSeverity)
 	}
 }
 

@@ -3,6 +3,7 @@
 package kics
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -158,4 +159,47 @@ func TestFallbackEngineFor_NoRetryWhenEngineExplicitlyOverridden(t *testing.T) {
 	stubEngineReady(t, enginePodman)
 
 	assert.Equal(t, "", fallbackEngineFor(engineDocker))
+}
+
+// ── scanErrorAfterNoFallback ─────────────────────────────────────────────────
+
+func stubEngineInstalled(t *testing.T, installed map[string]bool) {
+	t.Helper()
+	orig := engineInstalled
+	t.Cleanup(func() { engineInstalled = orig })
+	engineInstalled = func(engine string) bool { return installed[engine] }
+}
+
+func TestScanErrorAfterNoFallback_BothInstalledBothStopped(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: true})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' is installed but not running")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, errAllEnginesNotRunning, got)
+}
+
+func TestScanErrorAfterNoFallback_SingleEngineStopped(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: false})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' is installed but not running")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, primary, got)
+}
+
+func TestScanErrorAfterNoFallback_NotRunningErrorRequired(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: true})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' not found")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, primary, got)
+}
+
+func TestScanErrorAfterNoFallback_NilError(t *testing.T) {
+	assert.Nil(t, scanErrorAfterNoFallback(nil))
 }

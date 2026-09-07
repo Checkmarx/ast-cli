@@ -1,8 +1,10 @@
 package kics
 
 import (
+	"errors"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -105,6 +107,41 @@ func engineOverride() string {
 // engineReady is iacrealtime.IsEngineRunning; replaced in tests.
 var engineReady = iacrealtime.IsEngineRunning
 
+// engineInstalled is iacrealtime.IsEngineInstalled; replaced in tests.
+var engineInstalled = iacrealtime.IsEngineInstalled
+
+// errAllEnginesNotRunning is returned when Docker and Podman are both installed
+// but neither daemon is running — a distinct case from a single-engine failure
+// so agent audit logs can record container_engine=both.
+var errAllEnginesNotRunning = errors.New("container engines 'docker' and 'podman' are installed but not running. " +
+	"Start Docker Desktop or the Podman machine and retry.")
+
+func isEngineNotRunningError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "is installed but not running")
+}
+
+func bothEnginesInstalledButStopped() bool {
+	if engineOverride() != "" {
+		return false
+	}
+	if !engineInstalled(engineDocker) || !engineInstalled(enginePodman) {
+		return false
+	}
+	return !engineReady(engineDocker) && !engineReady(enginePodman)
+}
+
+// scanErrorAfterNoFallback shapes the error returned when there is no alternate
+// engine to retry — upgrading to errAllEnginesNotRunning when both are down.
+func scanErrorAfterNoFallback(err error) error {
+	if err == nil {
+		return nil
+	}
+	if bothEnginesInstalledButStopped() && isEngineNotRunningError(err) {
+		return errAllEnginesNotRunning
+	}
+	return err
+}
+
 func (s *Scanner) runRealScan(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
 	svc := iacrealtime.NewIacRealtimeService(s.jwt, s.ff, iacrealtime.NewContainerManager())
 
@@ -120,7 +157,7 @@ func (s *Scanner) runRealScan(path, ignoreFilePath string) ([]iacrealtime.IacRea
 
 	other := fallbackEngineFor(engine)
 	if other == "" {
-		return results, err
+		return results, scanErrorAfterNoFallback(err)
 	}
 
 	logger.PrintfIfVerbose("kics guardrail: %s scan failed (%v); retrying with %s", engine, err, other)

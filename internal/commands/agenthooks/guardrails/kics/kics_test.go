@@ -13,6 +13,8 @@ import (
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -108,7 +110,7 @@ func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "FROM ubuntu\nUSER root\n"}},
 	}
 
-	blocked, reason, ctx, _ := ScanFileEdit(ev, svc)
+	blocked, reason, ctx, _, sev := ScanFileEdit(&ev, svc, nil, "Claude")
 	if !blocked {
 		t.Fatal("expected edit to be blocked")
 	}
@@ -117,6 +119,9 @@ func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 	}
 	if ctx == "" {
 		t.Error("expected non-empty context")
+	}
+	if sev != "HIGH" {
+		t.Errorf("severity = %q, want HIGH", sev)
 	}
 	if !strings.Contains(reason, "KICS") {
 		t.Errorf("reason should mention KICS, got: %q", reason)
@@ -142,7 +147,7 @@ func TestScanFileEdit_EditWithNoNewFindings_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "FROM ubuntu", After: "FROM ubuntu:22.04"}},
 	}
 
-	blocked, _, _, _ := ScanFileEdit(ev, svc)
+	blocked, _, _, _, _ := ScanFileEdit(&ev, svc, nil, "Claude")
 	if blocked {
 		t.Fatal("expected edit to NOT be blocked when no new findings")
 	}
@@ -159,7 +164,7 @@ func TestScanFileEdit_ScanError_FailOpen(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "resource \"aws_s3_bucket\" \"bad\" {}"}},
 	}
 
-	blocked, _, _, _ := ScanFileEdit(ev, svc)
+	blocked, _, _, _, _ := ScanFileEdit(&ev, svc, nil, "Claude")
 	if blocked {
 		t.Fatal("expected fail-open (not blocked) on scan error")
 	}
@@ -177,7 +182,7 @@ func TestScanFileEdit_UnsupportedFile_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "package main"}},
 	}
 
-	blocked, _, _, _ := ScanFileEdit(ev, svc)
+	blocked, _, _, _, _ := ScanFileEdit(&ev, svc, nil, "Claude")
 	if blocked {
 		t.Fatal("expected NOT blocked for unsupported file")
 	}
@@ -194,7 +199,7 @@ func TestScanFileEdit_EmptyNewContent_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: ""}},
 	}
 
-	blocked, _, _, _ := ScanFileEdit(ev, svc)
+	blocked, _, _, _, _ := ScanFileEdit(&ev, svc, nil, "Claude")
 	if blocked {
 		t.Fatal("expected NOT blocked for empty content")
 	}
@@ -211,9 +216,48 @@ func TestScanFileEdit_EngineDownProducesNote(t *testing.T) {
 		Changes:  []agenthooks.FileDiff{{Before: "", After: "resource \"aws_s3_bucket\" \"b\" {}"}},
 	}
 
-	blocked, _, _, note := ScanFileEdit(ev, svc)
+	blocked, _, _, note, _ := ScanFileEdit(&ev, svc, nil, "Claude")
 
 	assert.False(t, blocked, "must fail open, not block the edit")
 	assert.Contains(t, note, "main.tf")
 	assert.Contains(t, note, "not running")
+}
+
+// ── logKicsTelemetry ─────────────────────────────────────────────────────────
+
+func TestLogKicsTelemetry_NilWrapper_NoOp(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logKicsTelemetry(nil, "Claude", "", 3)
+	})
+}
+
+func TestLogKicsTelemetry_ZeroCount_DoesNotSend(t *testing.T) {
+	sent := false
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			sent = true
+			return nil
+		},
+	}
+	logKicsTelemetry(telemetry, "Claude", "", 0)
+	assert.False(t, sent)
+}
+
+func TestLogKicsTelemetry_WithFindings_Sends(t *testing.T) {
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logKicsTelemetry(telemetry, "Claude", "sess-1", 2)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "IaC", captured.Engine)
+	assert.Equal(t, 2, captured.TotalCount)
+	assert.Equal(t, "Claude", captured.AIProvider)
+	assert.Equal(t, "hooks-detect", captured.Type)
+	assert.Equal(t, "scan", captured.SubType)
+	assert.Equal(t, "iac", captured.ScanType)
+	assert.Equal(t, "sess-1", captured.AiAgentSessionId)
 }

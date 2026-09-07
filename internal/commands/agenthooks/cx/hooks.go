@@ -118,9 +118,10 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	}
 	var kicsNote string
 	if kicsScanner != nil {
-		blocked, reason, context, note := kics.ScanFileEdit(ev, kicsScanner)
+		blocked, reason, context, note, severity := kics.ScanFileEdit(&ev, kicsScanner, telemetryWrapper, agent)
 		if blocked {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
+			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 		kicsNote = note
