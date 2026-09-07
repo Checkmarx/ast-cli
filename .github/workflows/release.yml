@@ -119,6 +119,9 @@ jobs:
         id: arch
         run: |
           echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
+      - name: Remove broken Homebrew tap before Docker setup
+        if: inputs.dev == false
+        run: brew untap hashicorp/tap || true
       - name: Setup Docker on macOS
         if: inputs.dev == false
         uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
