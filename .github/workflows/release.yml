@@ -119,31 +119,65 @@ jobs:
         id: arch
         run: |
           echo "arch=$(uname -m)" >> $GITHUB_OUTPUT
-      - name: Remove non-essential Homebrew taps before Docker setup
+      # Docker setup inlined from douglascamata/setup-docker-macos-action (last green
+      # 2026-08-19), deliberately omitting its bare `brew update`: on Homebrew >= 6.0.22
+      # that aborts while reporting on the now-disabled `depends_on macos:` DSL. Docker
+      # Desktop-based actions are not an option either - it never starts headless.
+      - name: Install Lima
         if: inputs.dev == false
+        shell: bash
         run: |
-          set -euo pipefail
-          # Homebrew >=6.0.13 disabled `depends_on macos: <symbol>`; stale third-party
-          # taps on the shared runner still use it and abort the `brew update` that the
-          # Docker setup action runs internally. Keep only the taps this build needs:
-          # homebrew/core + homebrew/cask (base), bearer/tap (provides gon, used for
-          # Apple notarization).
-          KEEP="homebrew/core homebrew/cask bearer/tap"
-          for tap in $(brew tap); do
-            case " ${KEEP} " in
-              *" ${tap} "*) echo "Keeping ${tap}"; continue ;;
-            esac
-            echo "Untapping ${tap}"
-            brew untap --force "${tap}" || true
-            if [ -d "$(brew --repo "${tap}")" ]; then
-              echo "ERROR: ${tap} is still present after untap"
-              exit 1
-            fi
-          done
-          brew tap
-      - name: Setup Docker on macOS
+          # The Lima/Colima checksums pinned below are for Darwin-x86_64 only.
+          if [[ "$(uname -s)" != "Darwin" || "$(uname -m)" != "x86_64" ]]; then
+            echo "Unsupported runner $(uname -s)-$(uname -m): Lima/Colima checksums are pinned for Darwin-x86_64 and must be updated for another architecture." >&2
+            exit 1
+          fi
+          # Pinned to the last known-good Docker setup run (32272832810, 2026-08-19), not `latest`.
+          LIMA_VERSION=v2.2.0
+          # sha256 of lima-2.2.0-Darwin-x86_64.tar.gz, from the release's SHA256SUMS asset.
+          LIMA_SHA256=0d6f99c19f6e4bc3c92730c4c29d929e6927f0cb0a0ba1a84383367135a8ff31
+          if [[ $LIMA_VERSION == v2.* ]]; then
+            sudo mkdir /usr/local/libexec
+            sudo chown $UID:$GID /usr/local/libexec
+          fi
+          LIMA_TARBALL="$RUNNER_TEMP/lima-${LIMA_VERSION:1}-$(uname -s)-$(uname -m).tar.gz"
+          curl -fsSL -o "$LIMA_TARBALL" "https://github.com/lima-vm/lima/releases/download/${LIMA_VERSION}/lima-${LIMA_VERSION:1}-$(uname -s)-$(uname -m).tar.gz"
+          echo "${LIMA_SHA256}  ${LIMA_TARBALL}" | shasum -a 256 -c -
+          tar Cxzvm /usr/local -f "$LIMA_TARBALL"
+      - name: Install Colima
         if: inputs.dev == false
-        uses: douglascamata/setup-docker-macos-action@5643cfd7e434881308f89f2f3ae8852da11df909
+        shell: bash
+        run: |
+          # Pinned to the last known-good Docker setup run (32272832810, 2026-08-19), not `latest`.
+          COLIMA_VERSION=v0.10.3
+          # sha256 of colima-Darwin-x86_64, from the release's colima-Darwin-x86_64.sha256sum asset.
+          COLIMA_SHA256=3082737fe8a98afda11cba7d9a20b6e56fe80c6153464beda04bec630758770b
+          COLIMA_BINARY="$RUNNER_TEMP/colima-$(uname)-$(uname -m)"
+          curl -fsSL -o "$COLIMA_BINARY" "https://github.com/abiosoft/colima/releases/download/${COLIMA_VERSION}/colima-$(uname)-$(uname -m)"
+          echo "${COLIMA_SHA256}  ${COLIMA_BINARY}" | shasum -a 256 -c -
+          install "$COLIMA_BINARY" /usr/local/bin/colima
+      - name: Install Docker client and Docker Compose
+        if: inputs.dev == false
+        shell: bash
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_UPGRADE: "1"
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
+        run: |
+          brew install docker docker-compose
+      - name: Configure Docker Compose plugin
+        if: inputs.dev == false
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          ln -sfn "$(brew --prefix)/opt/docker-compose/bin/docker-compose" ~/.docker/cli-plugins/docker-compose
+      - name: Start Colima
+        if: inputs.dev == false
+        shell: bash
+        run: |
+          CPU_COUNT=$(sysctl -n hw.ncpu)
+          MEMORY=$(sysctl hw.memsize | awk '{print $2/1024/1024/1024}')
+          colima start --cpu $CPU_COUNT --memory $MEMORY --arch x86_64 --vm-type=vz --mount-type=virtiofs
       - name: Test docker
         if: inputs.dev == false
         run: |
