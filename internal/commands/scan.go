@@ -60,6 +60,7 @@ const (
 	containerImagesFlagError = "--container-images flag error"
 
 	git                                     = "git"
+	gitFolderName                           = ".git"
 	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 	errorUnzippingFile                      = "an error occurred while unzipping file. Reason: "
 	containerRun                            = "run"
@@ -928,6 +929,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
 	createScanCmd.PersistentFlags().Bool(commonParams.SkipDefaultFilterFlag, false, commonParams.SkipDefaultFilterFlagUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.ExcludeGitFolderFlag, false, commonParams.ExcludeGitFolderFlagUsage)
 
 	return createScanCmd
 }
@@ -1644,7 +1646,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter bool) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1672,7 +1674,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
+		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher, excludeGitFolder)
 		if err != nil {
 			return "", err
 		}
@@ -1681,6 +1683,13 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
+			return "", err
+		}
+	}
+
+	// Add contributors.csv/metadata.json only if they were just freshly generated without error.
+	if includeGeneratedCsvJson {
+		if err := addGeneratedContributorsFiles(zipWriter, sourceDir); err != nil {
 			return "", err
 		}
 	}
@@ -1803,7 +1812,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	return nil
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher) error {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher, excludeGitFolder bool) error {
 	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -1816,7 +1825,7 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		}
 
 		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher, excludeGitFolder)
 		} else {
 			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
 		}
@@ -1847,6 +1856,10 @@ func handleFile(
 	}
 	// relPath is forward-slash path from source root, used by antMatcher.
 	relPath := filepath.ToSlash(baseDir + file.Name())
+	if isGeneratedContributorsFile(relPath) {
+		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
+		return nil
+	}
 	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) && !antMatcher.Excluded(relPath, false) {
 		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
@@ -1879,9 +1892,15 @@ func handleDir(
 	includeFilters []string,
 	file fs.FileInfo,
 	antMatcher filtering.Matcher,
+	excludeGitFolder bool,
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
+		// Exclude .git folder when --exclude-git-folder flag is passed
+		if excludeGitFolder && file.Name() == gitFolderName {
+			logger.PrintIfVerbose("The folder " + file.Name() + " is being excluded (--exclude-git-folder flag passed)")
+			return nil
+		}
 		logger.PrintIfVerbose("The folder " + file.Name() + " is being included")
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
@@ -1912,7 +1931,7 @@ func handleDir(
 	}
 
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher)
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher, excludeGitFolder)
 }
 
 func isDirFiltered(filename string, filters []string) (bool, error) {
@@ -2139,6 +2158,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
+	excludeGitFolder, _ := cmd.Flags().GetBool(commonParams.ExcludeGitFolderFlag)
+	contributorsCsvFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RepostoreCustomerContributorsCsvEnabled)
 
 	// Build the Ant-style matcher from --file-filter-ext patterns.
 	// Construction errors are surfaced immediately so the user gets clear
@@ -2199,6 +2220,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
+	contributorsCsvEnabled := (contributorsCsvFlag != nil && contributorsCsvFlag.Status) && !userProvidedZip
 
 	// containerScanTriggered must stay in this condition: without it, a container scan
 	// run with --containers-local-resolution and --skip-default-filter (and no
@@ -2298,7 +2320,22 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		} else {
 			if !isSbom {
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter)
+				// True only if contributors.csv/metadata.json were just generated successfully without error.
+				includeGeneratedCsvJson := false
+				if contributorsCsvEnabled {
+					isPrivate := detectRepositoryPrivacy(directoryPath)
+					if genErr := GenerateAndWrite(directoryPath, isPrivate); genErr != nil {
+						logger.PrintIfVerbose("Skipping contributors.csv/metadata.json generation: " + genErr.Error())
+					} else {
+						includeGeneratedCsvJson = true
+					}
+				}
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder)
+
+				// Clean up generated contributors files after successful zip creation
+				if dirPathErr == nil && includeGeneratedCsvJson {
+					_ = cleanGeneratedContributorsFiles(directoryPath)
+				}
 			}
 
 			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
@@ -4267,7 +4304,7 @@ func hasGitRepository(source string) bool {
 	}
 
 	// Check if .git exists in the root directory
-	gitPath := filepath.Join(sourceTrimmed, ".git")
+	gitPath := filepath.Join(sourceTrimmed, gitFolderName)
 	if _, err := os.Stat(gitPath); err == nil {
 		return true
 	}
@@ -4283,7 +4320,7 @@ func searchGitInSubdirectories(sourcePath string) bool {
 		if err != nil || found {
 			return nil
 		}
-		if info.IsDir() && info.Name() == ".git" {
+		if info.IsDir() && info.Name() == gitFolderName {
 			found = true
 			return filepath.SkipAll
 		}
@@ -4444,4 +4481,86 @@ func readGitIgnoreFromZip(zipPath string) ([]byte, error) {
 		return data, nil
 	}
 	return []byte(""), fmt.Errorf(".gitignore not found in zip: %s", zipPath)
+}
+
+// isGeneratedContributorsFile checks if file is contributors.csv or metadata.json to skip in zip walk.
+func isGeneratedContributorsFile(relPath string) bool {
+	return relPath == CheckmarxFolderName+"/"+ContributorsFileName ||
+		relPath == CheckmarxFolderName+"/"+MetadataFileName
+}
+
+// addGeneratedContributorsFiles reads and writes contributors.csv/metadata.json to zip; missing files OK.
+func addGeneratedContributorsFiles(zipWriter *zip.Writer, sourceDir string) error {
+	for _, fileName := range []string{ContributorsFileName, MetadataFileName} {
+		filePath := filepath.Join(sourceDir, CheckmarxFolderName, fileName)
+		dat, err := os.ReadFile(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logger.PrintIfVerbose("Skipping " + fileName + ": not found under " + CheckmarxFolderName + "/")
+				continue
+			}
+			return err
+		}
+
+		zipEntryName := CheckmarxFolderName + "/" + fileName
+		f, err := zipWriter.Create(zipEntryName)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(dat); err != nil {
+			return err
+		}
+		logger.PrintIfVerbose("Included: " + zipEntryName)
+	}
+	return nil
+}
+
+// cleanGeneratedContributorsFiles removes contributors.csv and metadata.json after zip creation.
+// Removes both files if present (either or both may exist). Preserves .checkmarx folder if other files remain.
+// Only deletes .checkmarx folder if it becomes completely empty after both files are removed.
+func cleanGeneratedContributorsFiles(directoryPath string) error {
+	checkmarxDir := filepath.Join(directoryPath, ".checkmarx")
+	if _, err := os.Stat(checkmarxDir); os.IsNotExist(err) {
+		return nil
+	}
+
+	csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+	jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+	fileRemoved := false
+
+	// Attempt to remove contributors.csv if it exists
+	if _, err := os.Stat(csvPath); err == nil {
+		if rmErr := os.Remove(csvPath); rmErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove contributors.csv: %s", rmErr.Error()))
+		} else {
+			logger.PrintIfVerbose("Removed contributors.csv after zip creation")
+			fileRemoved = true
+		}
+	}
+
+	// Attempt to remove metadata.json if it exists
+	if _, err := os.Stat(jsonPath); err == nil {
+		if rmErr := os.Remove(jsonPath); rmErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove metadata.json: %s", rmErr.Error()))
+		} else {
+			logger.PrintIfVerbose("Removed metadata.json after zip creation")
+			fileRemoved = true
+		}
+	}
+
+	// Only remove .checkmarx folder if it's empty after both contributor files removed (either or both may have existed)
+	if fileRemoved {
+		entries, err := os.ReadDir(checkmarxDir)
+		if err == nil && len(entries) == 0 {
+			if rmErr := os.Remove(checkmarxDir); rmErr != nil {
+				logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove empty .checkmarx directory: %s", rmErr.Error()))
+				return nil
+			}
+			logger.PrintIfVerbose("Removed empty .checkmarx directory (empty after removing contributor files)")
+		} else if err == nil && len(entries) > 0 {
+			logger.PrintIfVerbose(fmt.Sprintf("Kept .checkmarx directory (contains %d other file(s) e.g., containers/)", len(entries)))
+		}
+	}
+
+	return nil
 }
