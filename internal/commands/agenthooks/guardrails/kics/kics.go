@@ -159,7 +159,8 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
-		// fail-open
+		// fail-open: telemetry is best-effort and must never block the guardrail
+		logger.PrintfIfVerbose("kics guardrail: failed to send telemetry: %v", err)
 	}
 }
 

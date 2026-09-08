@@ -36,6 +36,9 @@ const (
 		"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
 		"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
 	osWindows = "windows"
+
+	telemetryEngineIaC          = "IaC"
+	telemetryTypeHooksRemediate = "hooks-remediate"
 )
 
 type recordingTelemetry struct {
@@ -362,10 +365,10 @@ func TestCxBeforeFileEdit_KICSFinding_RejectsWithContext(t *testing.T) {
 	if len(tel.calls) != 2 {
 		t.Fatalf("expected 2 telemetry calls (detect + remediate), got %d", len(tel.calls))
 	}
-	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != "IaC" {
+	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != telemetryEngineIaC {
 		t.Errorf("detect telemetry = Type %q Engine %q", tel.calls[0].Type, tel.calls[0].Engine)
 	}
-	if tel.calls[1].Type != "hooks-remediate" || tel.calls[1].Engine != "IaC" {
+	if tel.calls[1].Type != telemetryTypeHooksRemediate || tel.calls[1].Engine != telemetryEngineIaC {
 		t.Errorf("remediate telemetry = Type %q Engine %q", tel.calls[1].Type, tel.calls[1].Engine)
 	}
 	if tel.calls[1].ProblemSeverity != "HIGH" {
@@ -587,7 +590,7 @@ func TestLogRemediationTelemetry(t *testing.T) {
 		if got.Engine != "Asca" || got.ScanType != "asca" {
 			t.Errorf("Engine/ScanType = %q/%q", got.Engine, got.ScanType)
 		}
-		if got.Type != "hooks-remediate" || got.SubType != "fixWithAIAssist" {
+		if got.Type != telemetryTypeHooksRemediate || got.SubType != "fixWithAIAssist" {
 			t.Errorf("Type/SubType = %q/%q", got.Type, got.SubType)
 		}
 		if got.ProblemSeverity != "Critical" || got.AiAgentSessionId != "sess-9" {

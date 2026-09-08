@@ -113,8 +113,8 @@ var engineInstalled = iacrealtime.IsEngineInstalled
 // errAllEnginesNotRunning is returned when Docker and Podman are both installed
 // but neither daemon is running — a distinct case from a single-engine failure
 // so agent audit logs can record container_engine=both.
-var errAllEnginesNotRunning = errors.New("container engines 'docker' and 'podman' are installed but not running. " +
-	"Start Docker Desktop or the Podman machine and retry.")
+var errAllEnginesNotRunning = errors.New("container engines 'docker' and 'podman' are installed but not running; " +
+	"start Docker Desktop or the Podman machine and retry")
 
 func isEngineNotRunningError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "is installed but not running")
