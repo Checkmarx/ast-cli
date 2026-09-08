@@ -103,15 +103,11 @@ jobs:
           p12-file-base64: ${{ env.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
           p12-password: ${{ env.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      - name: Updating and upgrading brew to a specific version
-        run: |
-          brew --version
-          cd $(brew --repo)
-          git fetch --tags
-          git checkout 4.4.15
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          brew --version
       - name: Install gon
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_UPGRADE: "1"
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
         run: |
           brew install Bearer/tap/gon
       # New: detect architecture and expose as step output
