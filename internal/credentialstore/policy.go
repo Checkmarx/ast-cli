@@ -23,7 +23,7 @@ const (
 const KeyringModeEnvVar = "CX_KEYRING_MODE"
 
 const (
-	policyValueAuto     = "auto"
+	policyValueAuto     = "disabled"
 	policyValueRequired = "required"
 	policyValueDisabled = "disabled"
 )
