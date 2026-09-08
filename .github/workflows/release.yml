@@ -96,6 +96,23 @@ jobs:
           secret-ids: |
             ,${{ secrets.SECRET_MANAGER_SECRET_NAME }}
           parse-json-secrets: true
+      - name: Validate Cosign keys
+        if: inputs.dev == false
+        run: |
+          set -euo pipefail
+          tmp_key="$(mktemp)"; tmp_pub="$(mktemp)"
+          trap 'rm -f "${tmp_key}" "${tmp_pub}"' EXIT
+          printf '%b' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
+          printf '%b' "${COSIGN_PUBLIC_KEY}"  > "${tmp_pub}"
+          grep -q "BEGIN ENCRYPTED SIGSTORE PRIVATE KEY" "${tmp_key}" \
+            || { echo "ERROR: COSIGN_PRIVATE_KEY is not a Sigstore private key PEM"; exit 1; }
+          grep -q "BEGIN PUBLIC KEY" "${tmp_pub}" \
+            || { echo "ERROR: COSIGN_PUBLIC_KEY is not a public key PEM"; exit 1; }
+          [ "$(wc -l < "${tmp_key}")" -ge 2 ] \
+            || { echo "ERROR: COSIGN_PRIVATE_KEY has no line breaks after decoding"; exit 1; }
+          [ "$(wc -l < "${tmp_pub}")" -ge 2 ] \
+            || { echo "ERROR: COSIGN_PUBLIC_KEY has no line breaks after decoding"; exit 1; }
+          echo "Cosign keys look structurally valid."
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
         with:
@@ -256,7 +273,11 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY "checkmarx/ast-cli:${TAG}"
+          set -euo pipefail
+          tmp_key="$(mktemp)"
+          trap 'rm -f "${tmp_key}"' EXIT
+          printf '%b' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
+          cosign sign --yes --key "${tmp_key}" "checkmarx/ast-cli:${TAG}"
 
       #- name: Verify Docker image signature
       #  if: inputs.dev == false
