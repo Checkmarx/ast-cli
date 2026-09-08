@@ -95,6 +95,9 @@ jobs:
         with:
           secret-ids: |
             ,${{ secrets.SECRET_MANAGER_SECRET_NAME }}
+            COSIGN_PRIVATE_KEY,cosign/private_key
+            COSIGN_PUBLIC_KEY,cosign/public_key
+            COSIGN_PASSWORD,cosign/password
           parse-json-secrets: true
       - name: Validate Cosign keys
         if: inputs.dev == false
@@ -102,8 +105,8 @@ jobs:
           set -euo pipefail
           tmp_key="$(mktemp)"; tmp_pub="$(mktemp)"
           trap 'rm -f "${tmp_key}" "${tmp_pub}"' EXIT
-          printf '%b' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
-          printf '%b' "${COSIGN_PUBLIC_KEY}"  > "${tmp_pub}"
+          printf '%s' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
+          printf '%s' "${COSIGN_PUBLIC_KEY}"  > "${tmp_pub}"
           grep -q "BEGIN ENCRYPTED SIGSTORE PRIVATE KEY" "${tmp_key}" \
             || { echo "ERROR: COSIGN_PRIVATE_KEY is not a Sigstore private key PEM"; exit 1; }
           grep -q "BEGIN PUBLIC KEY" "${tmp_pub}" \
@@ -273,11 +276,7 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
         run: |
-          set -euo pipefail
-          tmp_key="$(mktemp)"
-          trap 'rm -f "${tmp_key}"' EXIT
-          printf '%b' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
-          cosign sign --yes --key "${tmp_key}" "checkmarx/ast-cli:${TAG}"
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY "checkmarx/ast-cli:${TAG}"
 
       #- name: Verify Docker image signature
       #  if: inputs.dev == false
