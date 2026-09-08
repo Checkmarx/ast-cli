@@ -179,14 +179,6 @@ jobs:
         run: |
           docker version
           docker info
-      - name: Login to Docker Hub
-        if: inputs.dev == false
-        uses: step-security/docker-login-action@bd6978fd4ef9a5f78130095b298b8a721afcb0d8 # v4.5.1
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-        env:
-          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKERHUB_OIDC_CONNECTIONID }}
-
       - name: Install Cosign
         if: inputs.dev == false
         uses: step-security/cosign-installer@8c02650536457a1c912424ab6cb9734aa3eceb56 # v4.1.1
@@ -215,7 +207,8 @@ jobs:
         env:
           DEV: ${{ inputs.dev }}
         run: |
-          args='release --clean --debug --timeout 90m'
+          # docker build/push is done in a dedicated step after GoReleaser, with a fresh Docker Hub login
+          args='release --clean --debug --timeout 90m --skip-docker'
           if [ "$DEV" = true ]; then
             args=${args}' --config=".goreleaser-dev.yml"'
           fi
@@ -235,6 +228,29 @@ jobs:
           SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
           SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
           SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
+      - name: Login to Docker Hub
+        if: inputs.dev == false
+        uses: step-security/docker-login-action@bd6978fd4ef9a5f78130095b298b8a721afcb0d8 # v4.5.1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+        env:
+          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKERHUB_OIDC_CONNECTIONID }}
+
+      - name: Build and push Docker image
+        if: inputs.dev == false
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          BUILD_DIR="$(mktemp -d)"
+          cp Dockerfile "${BUILD_DIR}/Dockerfile"
+          cp dist/cx_linux_amd64_v1/cx "${BUILD_DIR}/cx"
+          docker build "${BUILD_DIR}" \
+            -t "checkmarx/ast-cli:latest" \
+            -t "checkmarx/ast-cli:${TAG}"
+          docker push "checkmarx/ast-cli:${TAG}"
+          docker push "checkmarx/ast-cli:latest"
+
       - name: Sign Docker Image with Cosign
         if: inputs.dev == false
         env:
