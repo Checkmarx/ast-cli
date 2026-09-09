@@ -1211,3 +1211,10 @@ func TestVerifyEnginePath_ValidSystemExecutable(t *testing.T) {
 		t.Errorf("verifyEnginePath should return true for valid executable: %s", execPath)
 	}
 }
+
+// An engine that resolves nowhere is never "running", on every OS.
+func TestIsEngineRunning_UnresolvableEngine(t *testing.T) {
+	if IsEngineRunning("cx-no-such-container-engine") {
+		t.Error("IsEngineRunning should be false for an engine that is not installed")
+	}
+}

@@ -3,6 +3,7 @@
 package kics
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -10,8 +11,6 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
-
-const enginePodman = "podman"
 
 // ── NewScanner ──────────────────────────────────────────────────────────────
 
@@ -119,4 +118,88 @@ func TestResolveContainerEngine_EmptyEnvFallsBack(t *testing.T) {
 
 	got := resolveContainerEngine()
 	assert.Equal(t, defaultContainerEngine, got)
+}
+
+// ── fallbackEngineFor ────────────────────────────────────────────────────────
+
+func stubEngineReady(t *testing.T, ready string) {
+	t.Helper()
+	orig := engineReady
+	t.Cleanup(func() { engineReady = orig })
+	engineReady = func(engine string) bool { return engine == ready }
+}
+
+// A stopped Docker must hand the scan to a live Podman — otherwise the scan
+// errors, the guardrail fails open, and vulnerable IaC ships unflagged.
+func TestFallbackEngineFor_StoppedDockerFallsBackToPodman(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineReady(t, enginePodman)
+
+	assert.Equal(t, enginePodman, fallbackEngineFor(engineDocker))
+}
+
+func TestFallbackEngineFor_StoppedPodmanFallsBackToDocker(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineReady(t, engineDocker)
+
+	assert.Equal(t, engineDocker, fallbackEngineFor(enginePodman))
+}
+
+func TestFallbackEngineFor_NoRetryWhenOtherEngineIsAlsoDown(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineReady(t, "")
+
+	assert.Equal(t, "", fallbackEngineFor(engineDocker))
+}
+
+// An explicit override is the user's choice; silently switching engines under
+// them would be worse than the error they asked for.
+func TestFallbackEngineFor_NoRetryWhenEngineExplicitlyOverridden(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, engineDocker)
+	stubEngineReady(t, enginePodman)
+
+	assert.Equal(t, "", fallbackEngineFor(engineDocker))
+}
+
+// ── scanErrorAfterNoFallback ─────────────────────────────────────────────────
+
+func stubEngineInstalled(t *testing.T, installed map[string]bool) {
+	t.Helper()
+	orig := engineInstalled
+	t.Cleanup(func() { engineInstalled = orig })
+	engineInstalled = func(engine string) bool { return installed[engine] }
+}
+
+func TestScanErrorAfterNoFallback_BothInstalledBothStopped(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: true})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' is installed but not running")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, errAllEnginesNotRunning, got)
+}
+
+func TestScanErrorAfterNoFallback_SingleEngineStopped(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: false})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' is installed but not running")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, primary, got)
+}
+
+func TestScanErrorAfterNoFallback_NotRunningErrorRequired(t *testing.T) {
+	t.Setenv(params.HooksContainerEngineEnv, "")
+	stubEngineInstalled(t, map[string]bool{engineDocker: true, enginePodman: true})
+	stubEngineReady(t, "")
+
+	primary := errors.New("container engine 'docker' not found")
+	got := scanErrorAfterNoFallback(primary)
+	assert.Equal(t, primary, got)
+}
+
+func TestScanErrorAfterNoFallback_NilError(t *testing.T) {
+	assert.Nil(t, scanErrorAfterNoFallback(nil))
 }
