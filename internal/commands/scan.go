@@ -2334,7 +2334,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 				// Clean up generated contributors files after successful zip creation
 				if dirPathErr == nil && includeGeneratedCsvJson {
-					_ = cleanGeneratedContributorsFiles(directoryPath)
+					cleanGeneratedContributorsFiles(directoryPath)
 				}
 			}
 
@@ -4518,10 +4518,10 @@ func addGeneratedContributorsFiles(zipWriter *zip.Writer, sourceDir string) erro
 // cleanGeneratedContributorsFiles removes contributors.csv and metadata.json after zip creation.
 // Removes both files if present (either or both may exist). Preserves .checkmarx folder if other files remain.
 // Only deletes .checkmarx folder if it becomes completely empty after both files are removed.
-func cleanGeneratedContributorsFiles(directoryPath string) error {
+func cleanGeneratedContributorsFiles(directoryPath string) {
 	checkmarxDir := filepath.Join(directoryPath, ".checkmarx")
 	if _, err := os.Stat(checkmarxDir); os.IsNotExist(err) {
-		return nil
+		return
 	}
 
 	csvPath := filepath.Join(checkmarxDir, "contributors.csv")
@@ -4554,13 +4554,11 @@ func cleanGeneratedContributorsFiles(directoryPath string) error {
 		if err == nil && len(entries) == 0 {
 			if rmErr := os.Remove(checkmarxDir); rmErr != nil {
 				logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove empty .checkmarx directory: %s", rmErr.Error()))
-				return nil
+				return
 			}
 			logger.PrintIfVerbose("Removed empty .checkmarx directory (empty after removing contributor files)")
 		} else if err == nil && len(entries) > 0 {
 			logger.PrintIfVerbose(fmt.Sprintf("Kept .checkmarx directory (contains %d other file(s) e.g., containers/)", len(entries)))
 		}
 	}
-
-	return nil
 }

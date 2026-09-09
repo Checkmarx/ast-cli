@@ -5896,8 +5896,7 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0600))
 		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0600))
 
-		err := cleanGeneratedContributorsFiles(dirPath)
-		assert.NilError(t, err)
+		cleanGeneratedContributorsFiles(dirPath)
 
 		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
 		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
@@ -5917,8 +5916,7 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0600))
 		assert.NilError(t, os.WriteFile(otherPath, []byte("data"), 0600))
 
-		err := cleanGeneratedContributorsFiles(dirPath)
-		assert.NilError(t, err)
+		cleanGeneratedContributorsFiles(dirPath)
 
 		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
 		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
@@ -5934,8 +5932,7 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
 		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0600))
 
-		err := cleanGeneratedContributorsFiles(dirPath)
-		assert.NilError(t, err)
+		cleanGeneratedContributorsFiles(dirPath)
 
 		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
 		assert.Equal(t, false, fileExists(checkmarxDir), ".checkmarx should be removed when empty")
@@ -5943,8 +5940,8 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 
 	t.Run("handles no .checkmarx folder gracefully", func(t *testing.T) {
 		dirPath := t.TempDir()
-		err := cleanGeneratedContributorsFiles(dirPath)
-		assert.NilError(t, err, "should not error when .checkmarx doesn't exist")
+		cleanGeneratedContributorsFiles(dirPath)
+		// Should not panic or error when .checkmarx doesn't exist
 	})
 
 	t.Run("handles missing files gracefully", func(t *testing.T) {
@@ -5952,10 +5949,8 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
 		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
 
-		err := cleanGeneratedContributorsFiles(dirPath)
-		assert.NilError(t, err, "should not error when files don't exist")
+		cleanGeneratedContributorsFiles(dirPath)
+		// Should not error when files don't exist
 		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
 	})
 }
-
-

@@ -22,14 +22,21 @@ import (
 )
 
 const (
-	CheckmarxFolderName   = ".checkmarx"
-	ContributorsFileName  = "contributors.csv"
-	MetadataFileName      = "metadata.json"
+	// CheckmarxFolderName is the folder where CLI-generated metadata files are stored.
+	CheckmarxFolderName = ".checkmarx"
+	// ContributorsFileName is the filename for the CSV with contributor information.
+	ContributorsFileName = "contributors.csv"
+	// MetadataFileName is the filename for the JSON metadata file.
+	MetadataFileName = "metadata.json"
+
 	commitHistoryWindow   = 90 * 24 * time.Hour
 	defaultRemoteName     = "origin"
 	contributorsSizeLimit = 1 * 1024 * 1024 // repostore ignores contributors.csv above this size
 	generatedFilePerm     = 0o644
 	generatedDirPerm      = 0o755
+	csvFieldCount         = 4
+	urlSchemeParts        = 2 // parts when splitting by "://"
+	pathParts             = 2 // parts when splitting by "/"
 )
 
 // contributorsMetadata mirrors repostore metadata structure; omits branchName per tech design.
@@ -250,7 +257,7 @@ func parseGitLogOutput(logOutput string) []map[string]string {
 			continue
 		}
 		parts := strings.Split(line, "\x1f")
-		if len(parts) != 4 {
+		if len(parts) != csvFieldCount {
 			continue
 		}
 		commits = append(commits, map[string]string{
@@ -432,7 +439,9 @@ func isRepoPublic(repoURL string) bool {
 		logger.PrintIfVerbose(fmt.Sprintf("Repository accessibility check failed for %s: %v, treating as PRIVATE", repoURL, err))
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	isPublic := resp.StatusCode == http.StatusOK
 	if !isPublic {
@@ -442,51 +451,50 @@ func isRepoPublic(repoURL string) bool {
 }
 
 // Extract owner/repo from GitHub URLs: https://github.com/owner/repo or owner/repo
-func extractGitHubOwnerRepo(repoURL string) (string, string) {
+func extractGitHubOwnerRepo(repoURL string) (owner, repo string) {
 	url := strings.TrimSuffix(repoURL, ".git")
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
-	if len(parts) >= 2 {
-		return parts[len(parts)-2], parts[len(parts)-1]
+	if len(parts) >= pathParts {
+		return parts[len(parts)-pathParts], parts[len(parts)-1]
 	}
 	return "", ""
 }
 
 // Extract group/project from GitLab URLs: https://gitlab.com/group/project or group/project
-func extractGitLabGroupProject(repoURL string) (string, string, string) {
+func extractGitLabGroupProject(repoURL string) (group, project, host string) {
 	url := strings.TrimSuffix(repoURL, ".git")
 
 	// Extract host if present
-	var host string
 	if strings.Contains(url, "://") {
-		parts := strings.SplitN(url, "://", 2)
-		hostAndPath := strings.SplitN(parts[1], "/", 2)
-		if len(hostAndPath) == 2 {
+		parts := strings.SplitN(url, "://", urlSchemeParts)
+		hostAndPath := strings.SplitN(parts[1], "/", pathParts)
+		if len(hostAndPath) == pathParts {
 			host = hostAndPath[0]
 			url = hostAndPath[1]
 		}
 	}
 
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
-	if len(parts) >= 2 {
-		group := parts[0]
-		project := parts[1]
-		return group, project, host
+	if len(parts) >= pathParts {
+		group = parts[0]
+		project = parts[1]
+		return
 	}
 	return "", "", host
 }
 
 // Extract workspace/repo from Bitbucket URLs: https://bitbucket.org/workspace/repo
-func extractBitbucketWorkspaceRepo(repoURL string) (string, string) {
+func extractBitbucketWorkspaceRepo(repoURL string) (workspace, repo string) {
 	url := strings.TrimSuffix(repoURL, ".git")
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
-	if len(parts) >= 2 {
-		return parts[len(parts)-2], parts[len(parts)-1]
+	if len(parts) >= pathParts {
+		return parts[len(parts)-pathParts], parts[len(parts)-1]
 	}
 	return "", ""
 }
 
 // Extract org/repo from Azure DevOps URLs: https://dev.azure.com/org/_git/repo
-func extractAzureDevOpsOrgRepo(repoURL string) (string, string) {
+func extractAzureDevOpsOrgRepo(repoURL string) (org, repo string) {
 	url := strings.TrimSuffix(repoURL, ".git")
 	if strings.Contains(url, "dev.azure.com") {
 		parts := strings.Split(url, "/")

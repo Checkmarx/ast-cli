@@ -21,6 +21,8 @@ const DaMigrationEnabled = "DA_MIGRATION_ENABLED"
 const maxRetries = 3
 const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
+
+// RepostoreCustomerContributorsCsvEnabled is the feature flag for generating contributors.csv and metadata.json.
 const RepostoreCustomerContributorsCsvEnabled = "REPOSTORE_CUSTOMER_CONTRIBUTORS_CSV_ENABLED"
 
 // AISupplyChainGAEnabled is the feature flag for AI Supply Chain Engine GA.

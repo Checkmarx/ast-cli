@@ -560,10 +560,15 @@ func TestGitCommand_Success(t *testing.T) {
 	cmd.Dir = repoPath
 	require.NoError(t, cmd.Run())
 
-	// Test git config command (may be empty if not configured, but should not error)
+	// Configure git user for this test repo (required in CI)
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test git config command
 	output, err := gitCommand(repoPath, "config", "--get", "user.name")
 	assert.NoError(t, err)
-	assert.IsType(t, "", output)
+	assert.Equal(t, "Test User", output)
 }
 
 func TestGitCommand_InvalidRepo(t *testing.T) {
