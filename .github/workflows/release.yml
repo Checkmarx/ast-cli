@@ -95,7 +95,27 @@ jobs:
         with:
           secret-ids: |
             ,${{ secrets.SECRET_MANAGER_SECRET_NAME }}
+            COSIGN_PRIVATE_KEY,cosign/private_key
+            COSIGN_PUBLIC_KEY,cosign/public_key
+            COSIGN_PASSWORD,cosign/password
           parse-json-secrets: true
+      - name: Validate Cosign keys
+        if: inputs.dev == false
+        run: |
+          set -euo pipefail
+          tmp_key="$(mktemp)"; tmp_pub="$(mktemp)"
+          trap 'rm -f "${tmp_key}" "${tmp_pub}"' EXIT
+          printf '%s' "${COSIGN_PRIVATE_KEY}" > "${tmp_key}"
+          printf '%s' "${COSIGN_PUBLIC_KEY}"  > "${tmp_pub}"
+          grep -q "BEGIN ENCRYPTED SIGSTORE PRIVATE KEY" "${tmp_key}" \
+            || { echo "ERROR: COSIGN_PRIVATE_KEY is not a Sigstore private key PEM"; exit 1; }
+          grep -q "BEGIN PUBLIC KEY" "${tmp_pub}" \
+            || { echo "ERROR: COSIGN_PUBLIC_KEY is not a public key PEM"; exit 1; }
+          [ "$(wc -l < "${tmp_key}")" -ge 2 ] \
+            || { echo "ERROR: COSIGN_PRIVATE_KEY has no line breaks after decoding"; exit 1; }
+          [ "$(wc -l < "${tmp_pub}")" -ge 2 ] \
+            || { echo "ERROR: COSIGN_PUBLIC_KEY has no line breaks after decoding"; exit 1; }
+          echo "Cosign keys look structurally valid."
       - name: Import Code-Signing Certificates
         uses: Apple-Actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071 #v1
         with:
@@ -103,15 +123,11 @@ jobs:
           p12-file-base64: ${{ env.APPLE_DEVELOPER_CERTIFICATE_P12_BASE64 }}
           # The password used to import the PKCS12 file.
           p12-password: ${{ env.APPLE_DEVELOPER_CERTIFICATE_PASSWORD }}
-      - name: Updating and upgrading brew to a specific version
-        run: |
-          brew --version
-          cd $(brew --repo)
-          git fetch --tags
-          git checkout 4.4.15
-          export HOMEBREW_NO_AUTO_UPDATE=1
-          brew --version
       - name: Install gon
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_UPGRADE: "1"
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
         run: |
           brew install Bearer/tap/gon
       # New: detect architecture and expose as step output
@@ -183,14 +199,6 @@ jobs:
         run: |
           docker version
           docker info
-      - name: Login to Docker Hub
-        if: inputs.dev == false
-        uses: step-security/docker-login-action@bd6978fd4ef9a5f78130095b298b8a721afcb0d8 # v4.5.1
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-        env:
-          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKERHUB_OIDC_CONNECTIONID }}
-
       - name: Install Cosign
         if: inputs.dev == false
         uses: step-security/cosign-installer@8c02650536457a1c912424ab6cb9734aa3eceb56 # v4.1.1
@@ -219,7 +227,8 @@ jobs:
         env:
           DEV: ${{ inputs.dev }}
         run: |
-          args='release --clean --debug --timeout 90m'
+          # docker build/push is done in a dedicated step after GoReleaser, with a fresh Docker Hub login
+          args='release --clean --debug --timeout 90m --skip-docker'
           if [ "$DEV" = true ]; then
             args=${args}' --config=".goreleaser-dev.yml"'
           fi
@@ -239,6 +248,29 @@ jobs:
           SIGNING_REMOTE_SSH_HOST: ${{ secrets.SIGNING_REMOTE_SSH_HOST }}
           SIGNING_REMOTE_SSH_PRIVATE_KEY: ${{ secrets.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
           SIGNING_HSM_CREDS: ${{ secrets.SIGNING_HSM_CREDS }}
+      - name: Login to Docker Hub
+        if: inputs.dev == false
+        uses: step-security/docker-login-action@bd6978fd4ef9a5f78130095b298b8a721afcb0d8 # v4.5.1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+        env:
+          DOCKERHUB_OIDC_CONNECTIONID: ${{ secrets.DOCKERHUB_OIDC_CONNECTIONID }}
+
+      - name: Build and push Docker image
+        if: inputs.dev == false
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          BUILD_DIR="$(mktemp -d)"
+          cp Dockerfile "${BUILD_DIR}/Dockerfile"
+          cp dist/cx_linux_amd64_v1/cx "${BUILD_DIR}/cx"
+          docker build "${BUILD_DIR}" \
+            -t "checkmarx/ast-cli:latest" \
+            -t "checkmarx/ast-cli:${TAG}"
+          docker push "checkmarx/ast-cli:${TAG}"
+          docker push "checkmarx/ast-cli:latest"
+
       - name: Sign Docker Image with Cosign
         if: inputs.dev == false
         env:
