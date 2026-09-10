@@ -2,6 +2,8 @@ package commands
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -729,4 +731,105 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 			assert.Equal(t, tt.wantRepo, repo, "repo mismatch")
 		})
 	}
+}
+
+// Tests for privacy detection with mocked HTTP responses
+
+func TestFileExists(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(t *testing.T) string
+		wantTrue bool
+	}{
+		{
+			name: "file exists",
+			setup: func(t *testing.T) string {
+				f, err := os.CreateTemp(t.TempDir(), "test")
+				require.NoError(t, err)
+				path := f.Name()
+				require.NoError(t, f.Close())
+				return path
+			},
+			wantTrue: true,
+		},
+		{
+			name: "file does not exist",
+			setup: func(t *testing.T) string {
+				return "/nonexistent/path/that/does/not/exist"
+			},
+			wantTrue: false,
+		},
+		{
+			name: "directory exists",
+			setup: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantTrue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := tt.setup(t)
+			exists := fileExists(path)
+			assert.Equal(t, tt.wantTrue, exists)
+		})
+	}
+}
+
+func TestPrivacyDetectionWithMockedHTTP(t *testing.T) {
+	t.Run("detectRepositoryPrivacy returns private for empty path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// Empty directory with no .git or .checkmarx files
+		isPrivate := detectRepositoryPrivacy(tmpDir)
+		assert.True(t, isPrivate, "empty directory should default to private")
+	})
+
+	t.Run("detectRepositoryPrivacy returns private when checking nonexistent path", func(t *testing.T) {
+		isPrivate := detectRepositoryPrivacy("/nonexistent/path/that/does/not/exist")
+		assert.True(t, isPrivate, "nonexistent path should default to private")
+	})
+
+	t.Run("isPrivateByURL returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateByURL("")
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateByURL routes unknown platforms to private", func(t *testing.T) {
+		isPrivate := isPrivateByURL("https://unknown-git-hosting.com/team/repo")
+		assert.True(t, isPrivate, "unknown platform should default to private")
+	})
+}
+
+func TestIsRepoPublicWithMockedServer(t *testing.T) {
+	t.Run("public repository returns true when HTTP 200", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		// Test with mocked server URL
+		isPublic := isRepoPublic(server.URL)
+		assert.True(t, isPublic, "HTTP 200 should indicate public")
+	})
+
+	t.Run("private repository returns false when HTTP 404", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		isPublic := isRepoPublic(server.URL)
+		assert.False(t, isPublic, "HTTP 404 should indicate not public (private)")
+	})
+
+	t.Run("empty URL returns false (not public/private)", func(t *testing.T) {
+		isPublic := isRepoPublic("")
+		assert.False(t, isPublic, "empty URL should not be public")
+	})
+
+	t.Run("malformed URL returns false (not public/private)", func(t *testing.T) {
+		isPublic := isRepoPublic("://invalid")
+		assert.False(t, isPublic, "malformed URL should not be public")
+	})
 }
