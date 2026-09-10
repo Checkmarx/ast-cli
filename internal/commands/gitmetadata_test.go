@@ -673,10 +673,10 @@ func TestExtractGitLabGroupProject(t *testing.T) {
 
 func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
 	tests := []struct {
-		name           string
-		url            string
-		wantWorkspace  string
-		wantRepo       string
+		name          string
+		url           string
+		wantWorkspace string
+		wantRepo      string
 	}{
 		{
 			name:          "HTTPS Bitbucket URL",
@@ -703,9 +703,9 @@ func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
 
 func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 	tests := []struct {
-		name    string
-		url     string
-		wantOrg string
+		name     string
+		url      string
+		wantOrg  string
 		wantRepo string
 	}{
 		{
@@ -730,4 +730,3 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 		})
 	}
 }
-
