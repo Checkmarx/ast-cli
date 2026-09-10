@@ -833,3 +833,41 @@ func TestIsRepoPublicWithMockedServer(t *testing.T) {
 		assert.False(t, isPublic, "malformed URL should not be public")
 	})
 }
+
+func TestPlatformSpecificPrivacyDetection(t *testing.T) {
+	t.Run("isPrivateGitHub returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly - returns early without HTTP call
+		isPrivate := isPrivateGitHub("invalid")
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateGitHub returns private for empty owner", func(t *testing.T) {
+		// URL format that extracts to empty owner
+		isPrivate := isPrivateGitHub("")
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateGitLab returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateGitLab("invalid")
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateGitLab returns private for empty group", func(t *testing.T) {
+		// URL format that extracts to empty group
+		isPrivate := isPrivateGitLab("")
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateBitbucket returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateBitbucket("invalid")
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateAzureDevOps returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateAzureDevOps("invalid")
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+}
