@@ -70,8 +70,8 @@ func PromptConfiguration() {
 		accessAPIKey = strings.Replace(accessAPIKey, "\n", "", -1)
 		accessAPIKey = strings.Replace(accessAPIKey, "\r", "", -1)
 		if len(accessAPIKey) > 0 {
-			storeProperty(params.AstAPIKey, accessAPIKey)
 			setConfigPropertyQuiet(params.AccessKeyIDConfigKey, "")
+			storeProperty(params.AstAPIKey, accessAPIKey)
 			storeProperty(params.AccessKeySecretConfigKey, "")
 		}
 	} else {
