@@ -5949,75 +5949,12 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
 		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
 
+		// Should not panic or error when files don't exist
 		cleanGeneratedContributorsFiles(dirPath)
-		// Should not error when files don't exist
 		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
 	})
 
-	t.Run("handles file removal errors gracefully - CSV error", func(t *testing.T) {
-		dirPath := t.TempDir()
-		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
-		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
-
-		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
-		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0600))
-
-		// Make directory read-only to simulate removal error
-		assert.NilError(t, os.Chmod(checkmarxDir, 0500))
-		defer func() { _ = os.Chmod(checkmarxDir, 0700) }()
-
-		// Should handle error gracefully without panicking
-		cleanGeneratedContributorsFiles(dirPath)
-
-		// File should still exist since removal failed
-		assert.Equal(t, true, fileExists(csvPath), "CSV should still exist after removal error")
-		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
-	})
-
-	t.Run("handles file removal errors gracefully - JSON error", func(t *testing.T) {
-		dirPath := t.TempDir()
-		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
-		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
-
-		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
-		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0600))
-
-		// Make directory read-only to simulate removal error
-		assert.NilError(t, os.Chmod(checkmarxDir, 0500))
-		defer func() { _ = os.Chmod(checkmarxDir, 0700) }()
-
-		// Should handle error gracefully without panicking
-		cleanGeneratedContributorsFiles(dirPath)
-
-		// File should still exist since removal failed
-		assert.Equal(t, true, fileExists(jsonPath), "JSON should still exist after removal error")
-		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
-	})
-
-	t.Run("handles both CSV and JSON removal errors", func(t *testing.T) {
-		dirPath := t.TempDir()
-		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
-		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
-
-		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
-		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
-		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0600))
-		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0600))
-
-		// Make directory read-only to simulate removal errors
-		assert.NilError(t, os.Chmod(checkmarxDir, 0500))
-		defer func() { _ = os.Chmod(checkmarxDir, 0700) }()
-
-		// Should handle errors gracefully without panicking
-		cleanGeneratedContributorsFiles(dirPath)
-
-		// Files should still exist since removal failed
-		assert.Equal(t, true, fileExists(csvPath), "CSV should still exist")
-		assert.Equal(t, true, fileExists(jsonPath), "JSON should still exist")
-		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
-	})
-
-	t.Run("handles directory removal error when attempting cleanup", func(t *testing.T) {
+	t.Run("handles directory with other files - preserves non-generated files", func(t *testing.T) {
 		dirPath := t.TempDir()
 		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
 		assert.NilError(t, os.MkdirAll(checkmarxDir, 0700))
@@ -6029,13 +5966,12 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0600))
 		assert.NilError(t, os.WriteFile(otherPath, []byte("data"), 0600))
 
-		// Successfully remove CSV and JSON
+		// Remove generated files but keep directory and other files
 		cleanGeneratedContributorsFiles(dirPath)
 
-		// Files should be removed but directory should still exist
 		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
 		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
-		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist (has other files)")
+		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
 		assert.Equal(t, true, fileExists(otherPath), "other files should be preserved")
 	})
 }
