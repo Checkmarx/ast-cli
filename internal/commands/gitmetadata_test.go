@@ -871,3 +871,67 @@ func TestPlatformSpecificPrivacyDetection(t *testing.T) {
 		assert.True(t, isPrivate, "invalid URL should be private")
 	})
 }
+
+func TestGenerateAndWrite_WithCommits(t *testing.T) {
+	t.Run("creates metadata with commit count", func(t *testing.T) {
+		repoPath := t.TempDir()
+		repo, err := gogit.PlainInit(repoPath, false)
+		require.NoError(t, err)
+
+		_, err = repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{"https://github.com/test/repo.git"},
+		})
+		require.NoError(t, err)
+
+		worktree, err := repo.Worktree()
+		require.NoError(t, err)
+
+		sig := &object.Signature{Name: "User", Email: "user@example.com", When: time.Now()}
+		_, err = worktree.Commit("commit1", &gogit.CommitOptions{
+			Author:            sig,
+			AllowEmptyCommits: true,
+		})
+		require.NoError(t, err)
+
+		err = GenerateAndWrite(repoPath, true)
+		assert.NoError(t, err)
+
+		metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+		data, err := os.ReadFile(metadataPath)
+		require.NoError(t, err)
+
+		var metadata contributorsMetadata
+		err = json.Unmarshal(data, &metadata)
+		require.NoError(t, err)
+		assert.Equal(t, 1, metadata.CommitsCount)
+	})
+
+	t.Run("creates files for private repo with commit", func(t *testing.T) {
+		repoPath := t.TempDir()
+		repo, err := gogit.PlainInit(repoPath, false)
+		require.NoError(t, err)
+
+		_, err = repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{"https://github.com/private/repo.git"},
+		})
+		require.NoError(t, err)
+
+		worktree, err := repo.Worktree()
+		require.NoError(t, err)
+
+		sig := &object.Signature{Name: "Dev", Email: "dev@example.com", When: time.Now()}
+		_, err = worktree.Commit("work", &gogit.CommitOptions{
+			Author:            sig,
+			AllowEmptyCommits: true,
+		})
+		require.NoError(t, err)
+
+		err = GenerateAndWrite(repoPath, true)
+		assert.NoError(t, err)
+
+		metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+		assert.True(t, fileExists(metadataPath))
+	})
+}
