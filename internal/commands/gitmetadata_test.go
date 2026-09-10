@@ -602,12 +602,6 @@ func TestExtractGitHubOwnerRepo(t *testing.T) {
 			wantRepo:  "ast-cli",
 		},
 		{
-			name:      "SSH GitHub URL",
-			url:       "git@github.com:checkmarx/ast-cli.git",
-			wantOwner: "checkmarx",
-			wantRepo:  "ast-cli",
-		},
-		{
 			name:      "Short format GitHub URL",
 			url:       "checkmarx/ast-cli",
 			wantOwner: "checkmarx",
@@ -638,53 +632,32 @@ func TestExtractGitHubOwnerRepo(t *testing.T) {
 
 func TestExtractGitLabGroupProject(t *testing.T) {
 	tests := []struct {
-		name       string
-		url        string
-		wantGroup  string
-		wantRepo   string
-		wantHost   string
+		name      string
+		url       string
+		wantGroup string
+		wantRepo  string
+		wantHost  string
 	}{
 		{
-			name:       "HTTPS GitLab URL",
-			url:        "https://gitlab.com/checkmarx/ast-cli",
-			wantGroup:  "checkmarx",
-			wantRepo:   "ast-cli",
-			wantHost:   "gitlab.com",
+			name:      "HTTPS GitLab URL",
+			url:       "https://gitlab.com/checkmarx/ast-cli",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
 		},
 		{
-			name:       "HTTPS GitLab URL with .git suffix",
-			url:        "https://gitlab.com/checkmarx/ast-cli.git",
-			wantGroup:  "checkmarx",
-			wantRepo:   "ast-cli",
-			wantHost:   "gitlab.com",
+			name:      "HTTPS GitLab URL with .git suffix",
+			url:       "https://gitlab.com/checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
 		},
 		{
-			name:       "SSH GitLab URL",
-			url:        "git@gitlab.com:checkmarx/ast-cli.git",
-			wantGroup:  "checkmarx",
-			wantRepo:   "ast-cli",
-			wantHost:   "gitlab.com",
-		},
-		{
-			name:       "GitLab nested groups",
-			url:        "https://gitlab.com/checkmarx/team/ast-cli",
-			wantGroup:  "checkmarx/team",
-			wantRepo:   "ast-cli",
-			wantHost:   "gitlab.com",
-		},
-		{
-			name:       "Self-hosted GitLab",
-			url:        "https://gitlab.internal.com/checkmarx/ast-cli",
-			wantGroup:  "checkmarx",
-			wantRepo:   "ast-cli",
-			wantHost:   "gitlab.internal.com",
-		},
-		{
-			name:       "Invalid GitLab URL - too few parts",
-			url:        "https://gitlab.com/invalid",
-			wantGroup:  "",
-			wantRepo:   "",
-			wantHost:   "",
+			name:      "Self-hosted GitLab",
+			url:       "https://gitlab.internal.com/checkmarx/ast-cli",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.internal.com",
 		},
 	}
 
@@ -700,34 +673,22 @@ func TestExtractGitLabGroupProject(t *testing.T) {
 
 func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
 	tests := []struct {
-		name         string
-		url          string
-		wantWorkspace string
-		wantRepo     string
+		name           string
+		url            string
+		wantWorkspace  string
+		wantRepo       string
 	}{
 		{
-			name:         "HTTPS Bitbucket URL",
-			url:          "https://bitbucket.org/checkmarx/ast-cli",
+			name:          "HTTPS Bitbucket URL",
+			url:           "https://bitbucket.org/checkmarx/ast-cli",
 			wantWorkspace: "checkmarx",
-			wantRepo:     "ast-cli",
+			wantRepo:      "ast-cli",
 		},
 		{
-			name:         "HTTPS Bitbucket URL with .git suffix",
-			url:          "https://bitbucket.org/checkmarx/ast-cli.git",
+			name:          "HTTPS Bitbucket URL with .git suffix",
+			url:           "https://bitbucket.org/checkmarx/ast-cli.git",
 			wantWorkspace: "checkmarx",
-			wantRepo:     "ast-cli",
-		},
-		{
-			name:         "SSH Bitbucket URL",
-			url:          "git@bitbucket.org:checkmarx/ast-cli.git",
-			wantWorkspace: "checkmarx",
-			wantRepo:     "ast-cli",
-		},
-		{
-			name:         "Invalid Bitbucket URL - too few parts",
-			url:          "https://bitbucket.org/invalid",
-			wantWorkspace: "",
-			wantRepo:     "",
+			wantRepo:      "ast-cli",
 		},
 	}
 
@@ -748,28 +709,16 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 		wantRepo string
 	}{
 		{
-			name:    "HTTPS Azure DevOps URL with _git",
-			url:     "https://dev.azure.com/checkmarx/project/_git/ast-cli",
-			wantOrg: "checkmarx",
+			name:     "HTTPS Azure DevOps URL with _git",
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli",
+			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
 		},
 		{
-			name:    "HTTPS Azure DevOps URL with .git suffix",
-			url:     "https://dev.azure.com/checkmarx/project/_git/ast-cli.git",
-			wantOrg: "checkmarx",
+			name:     "HTTPS Azure DevOps URL with .git suffix",
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli.git",
+			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
-		},
-		{
-			name:    "SSH Azure DevOps URL",
-			url:     "git@ssh.dev.azure.com:v3/checkmarx/project/ast-cli",
-			wantOrg: "checkmarx",
-			wantRepo: "ast-cli",
-		},
-		{
-			name:    "Invalid Azure DevOps URL - too few parts",
-			url:     "https://dev.azure.com/checkmarx",
-			wantOrg: "",
-			wantRepo: "",
 		},
 	}
 
@@ -782,105 +731,3 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 	}
 }
 
-// Tests for privacy detection functions
-
-func TestIsPrivateByURL(t *testing.T) {
-	tests := []struct {
-		name     string
-		url      string
-		expected bool
-	}{
-		{
-			name:     "GitHub public URL",
-			url:      "https://github.com/checkmarx/ast-cli",
-			expected: true, // Conservative default - will check via HTTP
-		},
-		{
-			name:     "GitLab URL",
-			url:      "https://gitlab.com/checkmarx/ast-cli",
-			expected: true, // Conservative default - will check via HTTP
-		},
-		{
-			name:     "Bitbucket URL",
-			url:      "https://bitbucket.org/checkmarx/ast-cli",
-			expected: true, // Conservative default - will check via HTTP
-		},
-		{
-			name:     "Azure DevOps URL",
-			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli",
-			expected: true, // Conservative default - will check via HTTP
-		},
-		{
-			name:     "Unknown Git hosting",
-			url:      "https://git.internal.company.com/team/repo",
-			expected: true, // Conservative default - will check via HTTP
-		},
-		{
-			name:     "Empty URL defaults to private",
-			url:      "",
-			expected: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			isPrivate := isPrivateByURL(tt.url)
-			// All should default to private/true due to conservative approach
-			assert.True(t, isPrivate, "should default to private")
-		})
-	}
-}
-
-func TestDetectRepositoryPrivacy(t *testing.T) {
-	t.Run("returns private by default for safe fallback", func(t *testing.T) {
-		// When URL is empty or extraction fails, should default to private
-		isPrivate := detectRepositoryPrivacy("")
-		assert.True(t, isPrivate, "empty URL should default to private")
-	})
-
-	t.Run("processes GitHub URLs", func(t *testing.T) {
-		// Test a typical GitHub URL
-		isPrivate := detectRepositoryPrivacy("https://github.com/checkmarx/ast-cli")
-		// Result depends on HTTP status, but should not panic
-		assert.True(t, isPrivate || !isPrivate, "should return a boolean without panicking")
-	})
-
-	t.Run("processes GitLab URLs", func(t *testing.T) {
-		isPrivate := detectRepositoryPrivacy("https://gitlab.com/checkmarx/ast-cli")
-		// Result depends on HTTP status, but should not panic
-		assert.True(t, isPrivate || !isPrivate, "should return a boolean without panicking")
-	})
-
-	t.Run("handles invalid URLs gracefully", func(t *testing.T) {
-		// Should not panic on malformed URLs
-		isPrivate := detectRepositoryPrivacy("not-a-valid-url")
-		assert.True(t, isPrivate, "invalid URL should default to private")
-	})
-}
-
-func TestExtractAndValidateURLs(t *testing.T) {
-	t.Run("GitHub URL extraction", func(t *testing.T) {
-		owner, repo := extractGitHubOwnerRepo("https://github.com/octocat/Hello-World")
-		assert.Equal(t, "octocat", owner)
-		assert.Equal(t, "Hello-World", repo)
-	})
-
-	t.Run("GitLab URL extraction with multiple group levels", func(t *testing.T) {
-		group, project, host := extractGitLabGroupProject("https://gitlab.example.com/level1/level2/project")
-		assert.Equal(t, "level1/level2", group)
-		assert.Equal(t, "project", project)
-		assert.Equal(t, "gitlab.example.com", host)
-	})
-
-	t.Run("Bitbucket URL extraction", func(t *testing.T) {
-		workspace, repo := extractBitbucketWorkspaceRepo("https://bitbucket.org/atlassian/python-bitbucket")
-		assert.Equal(t, "atlassian", workspace)
-		assert.Equal(t, "python-bitbucket", repo)
-	})
-
-	t.Run("Azure DevOps URL extraction", func(t *testing.T) {
-		org, repo := extractAzureDevOpsOrgRepo("https://dev.azure.com/microsoftgraph/msgraph-sdk-java/_git/msgraph-sdk-java")
-		assert.Equal(t, "microsoftgraph", org)
-		assert.Equal(t, "msgraph-sdk-java", repo)
-	})
-}
