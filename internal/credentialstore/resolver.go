@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/configfile"
 	"github.com/checkmarx/ast-cli/internal/logger"
@@ -18,6 +20,8 @@ import (
 const (
 	checkmarxDirName  = ".checkmarx"
 	checkmarxFileName = "checkmarxcli.yaml"
+	// ownerOnlyFilePerm matches how configfile writes the config file: owner-only on Unix.
+	ownerOnlyFilePerm = 0o600
 )
 
 // Resolver resolves credential values across explicit, env, keyring and config-file layers.
@@ -93,7 +97,11 @@ func (r *Resolver) Store(ctx context.Context, credentialName, value string) erro
 	if r.policy == PolicyDisabled {
 		return configfile.SetKey(r.filePath, viperKeyFor(credentialName), value)
 	}
-	return r.store.Set(ctx, credentialName, value)
+	err := r.store.Set(ctx, credentialName, value)
+	if err == nil {
+		touchConfigFile(r.filePath)
+	}
+	return err
 }
 
 // Clear removes a credential following the policy, mirroring Store. A missing
@@ -113,7 +121,34 @@ func (r *Resolver) Clear(ctx context.Context, credentialName string) error {
 		}
 		return configfile.RemoveKey(r.filePath, viperKeyFor(credentialName))
 	}
-	return r.store.Delete(ctx, credentialName)
+	err := r.store.Delete(ctx, credentialName)
+	if err == nil {
+		touchConfigFile(r.filePath)
+	}
+	return err
+}
+
+// touchConfigFile bumps the config file's mtime so consumers watching it (cx-agentic-ai's hooks
+// key their caches off it) still see keyring-backed credential changes. Best-effort, never fatal.
+func touchConfigFile(path string) {
+	if path == "" {
+		return
+	}
+	now := time.Now()
+	err := os.Chtimes(path, now, now)
+	if err == nil {
+		return
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		logger.PrintfIfVerbose("credentialstore: could not touch config file mtime: %v", err)
+		return
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, ownerOnlyFilePerm)
+	if err != nil {
+		logger.PrintfIfVerbose("credentialstore: could not create config file to touch mtime: %v", err)
+		return
+	}
+	_ = file.Close()
 }
 
 // StoresInConfigFile reports whether this policy persists credentials in the
