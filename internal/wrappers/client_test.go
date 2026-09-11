@@ -416,9 +416,81 @@ func TestRetryHTTPIAMRequest_Fail(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-// An unreachable OS keyring must surface as a keyring failure, never as a
-// silent no-credentials path.
-func TestConfigureClientCredentialsPropagatesKeyringUnavailable(t *testing.T) {
+func saveCredentialViperKeys(t *testing.T) {
+	t.Helper()
+	keys := []string{
+		commonParams.AccessKeyIDConfigKey,
+		commonParams.PreferredCredentialTypeKey,
+		commonParams.BaseAuthURIKey,
+		commonParams.BaseURIKey,
+		commonParams.TenantKey,
+	}
+	saved := make(map[string]interface{}, len(keys))
+	for _, k := range keys {
+		saved[k] = viper.Get(k)
+	}
+	t.Cleanup(func() {
+		for _, k := range keys {
+			viper.Set(k, saved[k])
+		}
+	})
+	for _, k := range keys {
+		viper.Set(k, "")
+	}
+}
+
+func unavailableKeyringResolver(t *testing.T) {
+	t.Helper()
+	t.Setenv("CX_CONFIG_FILE_PATH", filepath.Join(t.TempDir(), "checkmarxcli.yaml"))
+	store := &fakeCredentialStore{
+		data:   map[string]string{},
+		getErr: fmt.Errorf("%w: dbus: failed to connect to socket", credentialstore.ErrKeyringUnavailable),
+	}
+	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver("checkmarxcli.yaml", credentialstore.PolicyAuto, store))
+	t.Cleanup(credentialstore.ResetForTest)
+}
+
+// No credential: report missing credentials, not keyring failure.
+func TestConfigureClientCredentialsKeyringUnavailableReportsMissingCredentials(t *testing.T) {
+	saveCredentialViperKeys(t)
+	unavailableKeyringResolver(t)
+
+	_, err := configureClientCredentialsAndGetNewToken()
+	assert.Error(t, err)
+	assert.NotErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
+	assert.Contains(t, err.Error(), "access key ID")
+}
+
+// Empty apikey slot must not veto OAuth env credentials.
+func TestConfigureClientCredentialsOAuthEnvSurvivesUnavailableKeyring(t *testing.T) {
+	saveCredentialViperKeys(t)
+	t.Setenv(commonParams.AccessKeySecretEnv, "env-secret")
+	unavailableKeyringResolver(t)
+	viper.Set(commonParams.AccessKeyIDConfigKey, "env-client-id")
+
+	_, err := configureClientCredentialsAndGetNewToken()
+
+	// Fails at auth URI, proving credential gate passed.
+	assert.ErrorContains(t, err, MissingURI)
+	assert.NotErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
+}
+
+func TestGetRealmURLFallsBackWhenKeyringUnavailable(t *testing.T) {
+	keys := []string{
+		commonParams.ApikeyOverrideFlag,
+		commonParams.BaseAuthURIKey,
+		commonParams.TenantKey,
+	}
+	saved := make(map[string]interface{}, len(keys))
+	for _, k := range keys {
+		saved[k] = viper.Get(k)
+	}
+	t.Cleanup(func() {
+		for _, k := range keys {
+			viper.Set(k, saved[k])
+		}
+	})
+
 	t.Setenv("CX_CONFIG_FILE_PATH", filepath.Join(t.TempDir(), "checkmarxcli.yaml"))
 	store := &fakeCredentialStore{
 		data:   map[string]string{},
@@ -427,14 +499,17 @@ func TestConfigureClientCredentialsPropagatesKeyringUnavailable(t *testing.T) {
 	credentialstore.SetDefaultResolverForTest(credentialstore.NewResolver("checkmarxcli.yaml", credentialstore.PolicyAuto, store))
 	t.Cleanup(credentialstore.ResetForTest)
 
-	viper.Set(commonParams.PreferredCredentialTypeKey, "")
+	viper.Set(commonParams.ApikeyOverrideFlag, false)
+	viper.Set(commonParams.BaseAuthURIKey, "https://eu.iam.checkmarx.net")
+	viper.Set(commonParams.TenantKey, "cx_seg")
 
-	_, err := configureClientCredentialsAndGetNewToken()
-	assert.Error(t, err)
-	assert.ErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
+	realmURL, err := GetRealmURL()
+
+	assert.NoError(t, err)
+	assert.Equal(t, "https://eu.iam.checkmarx.net/auth/realms/cx_seg", realmURL)
 }
 
-func TestGetRealmURLPropagatesKeyringUnavailable(t *testing.T) {
+func TestGetRealmURLErrorsWhenNoFallbackAvailable(t *testing.T) {
 	savedOverride := viper.Get(commonParams.ApikeyOverrideFlag)
 	t.Cleanup(func() { viper.Set(commonParams.ApikeyOverrideFlag, savedOverride) })
 
@@ -450,5 +525,5 @@ func TestGetRealmURLPropagatesKeyringUnavailable(t *testing.T) {
 
 	_, err := GetRealmURL()
 	assert.Error(t, err)
-	assert.ErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
+	assert.NotErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
 }

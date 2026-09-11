@@ -212,8 +212,10 @@ func (r *Resolver) resolveAuto(ctx context.Context, credentialName string) (stri
 		}
 		return value, nil
 	}
+	// No keyring and no file entry: report NotFound so callers can try next credential.
 	if errors.Is(err, ErrKeyringUnavailable) {
-		return "", fmt.Errorf("%w; set CX_APIKEY or CX_KEYRING_MODE=disabled to keep using the config file", err)
+		logger.PrintfIfVerbose("credentialstore: keyring unavailable and no config-file entry for %s: %v", credentialName, err)
+		return "", ErrNotFound
 	}
 	return "", err
 }

@@ -176,18 +176,27 @@ func TestResolveAutoKeyringUnavailableFallsBackToYAML(t *testing.T) {
 	assert.Equal(t, "yaml-secret", value)
 }
 
-// When the keyring is unreachable and the config file has nothing either, the
-// error must name the escape hatches rather than a bare "not found".
-func TestResolveAutoKeyringUnavailableAndConfigMissingNamesEscapeHatch(t *testing.T) {
+func TestResolveAutoKeyringUnavailableAndConfigMissingReportsNotFound(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
 	store := newFakeStore()
 	store.getErr = ErrKeyringUnavailable
 	resolver := NewResolver(configPath, PolicyAuto, store)
 
 	_, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.ErrorIs(t, err, ErrNotFound)
+	assert.NotErrorIs(t, err, ErrKeyringUnavailable)
+}
+
+// Required is keyring-only, so stays fatal.
+func TestResolveRequiredKeyringUnavailableStaysFatal(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	writePlaintextConfig(t, configPath, yamlWithAPIKey)
+	store := newFakeStore()
+	store.getErr = ErrKeyringUnavailable
+	resolver := NewResolver(configPath, PolicyRequired, store)
+
+	_, err := resolver.Resolve(context.Background(), CredentialAPIKey)
 	assert.ErrorIs(t, err, ErrKeyringUnavailable)
-	assert.ErrorContains(t, err, "CX_APIKEY")
-	assert.ErrorContains(t, err, "CX_KEYRING_MODE")
 }
 
 func TestResolveDisabledNeverConsultsStore(t *testing.T) {

@@ -607,21 +607,21 @@ func enrichWithPasswordCredentials(
 
 func configureClientCredentialsAndGetNewToken() (string, error) {
 	accessKeyID := viper.GetString(commonParams.AccessKeyIDConfigKey)
-	accessKeySecret, err := credentialstore.Resolve(credentialstore.CredentialClientSecret)
-	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
-		return "", err
-	}
-	astAPIKey, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
-	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
-		return "", err
-	}
+	accessKeySecret, secretErr := credentialstore.Resolve(credentialstore.CredentialClientSecret)
+	astAPIKey, apiKeyErr := credentialstore.Resolve(credentialstore.CredentialAPIKey)
 	var accessToken string
 	credType := viper.GetString(commonParams.PreferredCredentialTypeKey)
 
-	if accessKeyID == "" && astAPIKey == "" {
-		return "", errors.Errorf(FailedToAuth, "access key ID")
-	} else if accessKeySecret == "" && astAPIKey == "" {
-
+	if astAPIKey == "" && !(accessKeyID != "" && accessKeySecret != "") {
+		if apiKeyErr != nil && !errors.Is(apiKeyErr, credentialstore.ErrNotFound) {
+			return "", apiKeyErr
+		}
+		if secretErr != nil && !errors.Is(secretErr, credentialstore.ErrNotFound) {
+			return "", secretErr
+		}
+		if accessKeyID == "" {
+			return "", errors.Errorf(FailedToAuth, "access key ID")
+		}
 		return "", errors.Errorf(FailedToAuth, "access key secret")
 	}
 
@@ -923,8 +923,9 @@ func GetRealmURL() (string, error) {
 	override := viper.GetBool(commonParams.ApikeyOverrideFlag)
 
 	apiKey, err := credentialstore.Resolve(credentialstore.CredentialAPIKey)
-	if err != nil && !errors.Is(err, credentialstore.ErrNotFound) {
-		return "", err
+	if err != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("GetRealmURL: resolving api key: %v", err))
+		apiKey = ""
 	}
 	// On override, skip decoding the stored key so the flags win and a stale key
 	// can't block login with a decode error.
