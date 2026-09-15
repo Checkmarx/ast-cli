@@ -209,6 +209,12 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 		commits = []map[string]string{} // empty list for builds with no commits in 90 days
 	}
 
+	// Extract the actual last commit date (newest commit is first in array)
+	lastCommitDateStr := ""
+	if len(commits) > 0 {
+		lastCommitDateStr = commits[0]["date"]
+	}
+
 	// Generate CSV only for private repos
 	var csvData []byte
 	if isPrivateRepo {
@@ -222,7 +228,7 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Always generate metadata.json
-	metadataData, err := buildMetadataJSONFromSystem(remoteURL, headHash, len(commits))
+	metadataData, err := buildMetadataJSONFromSystem(remoteURL, headHash, len(commits), lastCommitDateStr)
 	if err != nil {
 		return errors.Wrap(err, "could not build metadata.json")
 	}
@@ -298,12 +304,11 @@ func convertToCoreCommits(commits []map[string]string) []*object.Commit {
 }
 
 // buildMetadataJSONFromSystem builds metadata.json using data from system git.
-func buildMetadataJSONFromSystem(remoteURL, headHash string, commitCount int) ([]byte, error) {
-	now := time.Now()
+func buildMetadataJSONFromSystem(remoteURL, headHash string, commitCount int, lastCommitDate string) ([]byte, error) {
 	metadata := contributorsMetadata{
 		RepositoryURL:  remoteURL,
 		LastCommitHash: headHash,
-		LastCommitDate: now.Format(time.RFC3339),
+		LastCommitDate: lastCommitDate,
 		CommitsCount:   commitCount,
 	}
 	return json.Marshal(metadata)
@@ -450,8 +455,38 @@ func isRepoPublic(repoURL string) bool {
 	return isPublic
 }
 
+// normalizeSSHURL converts SSH git URLs to HTTPS format for extraction.
+// Handles formats like:
+//   - git@github.com:owner/repo.git → https://github.com/owner/repo.git
+//   - git@gitlab.com:group/project.git → https://gitlab.com/group/project.git
+//   - ssh://git@github.com/owner/repo.git → https://github.com/owner/repo.git
+func normalizeSSHURL(repoURL string) string {
+	if !strings.Contains(repoURL, "://") && strings.Contains(repoURL, "@") && strings.Contains(repoURL, ":") {
+		// Handle git@host:path format
+		// git@github.com:owner/repo.git → https://github.com/owner/repo.git
+		parts := strings.SplitN(repoURL, "@", 2)
+		if len(parts) == 2 {
+			hostAndPath := strings.SplitN(parts[1], ":", 2)
+			if len(hostAndPath) == 2 {
+				return "https://" + hostAndPath[0] + "/" + hostAndPath[1]
+			}
+		}
+	} else if strings.HasPrefix(repoURL, "ssh://") {
+		// Handle ssh://git@host/path format → https://host/path
+		sshURL := strings.TrimPrefix(repoURL, "ssh://")
+		if strings.Contains(sshURL, "@") {
+			parts := strings.SplitN(sshURL, "@", 2)
+			if len(parts) == 2 {
+				return "https://" + parts[1]
+			}
+		}
+	}
+	return repoURL
+}
+
 // Extract owner/repo from GitHub URLs: https://github.com/owner/repo or owner/repo
 func extractGitHubOwnerRepo(repoURL string) (owner, repo string) {
+	repoURL = normalizeSSHURL(repoURL)
 	url := strings.TrimSuffix(repoURL, ".git")
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
 	if len(parts) >= pathParts {
@@ -462,6 +497,7 @@ func extractGitHubOwnerRepo(repoURL string) (owner, repo string) {
 
 // Extract group/project from GitLab URLs: https://gitlab.com/group/project or group/project
 func extractGitLabGroupProject(repoURL string) (group, project, host string) {
+	repoURL = normalizeSSHURL(repoURL)
 	url := strings.TrimSuffix(repoURL, ".git")
 
 	// Extract host if present
@@ -485,6 +521,7 @@ func extractGitLabGroupProject(repoURL string) (group, project, host string) {
 
 // Extract workspace/repo from Bitbucket URLs: https://bitbucket.org/workspace/repo
 func extractBitbucketWorkspaceRepo(repoURL string) (workspace, repo string) {
+	repoURL = normalizeSSHURL(repoURL)
 	url := strings.TrimSuffix(repoURL, ".git")
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
 	if len(parts) >= pathParts {
@@ -493,18 +530,28 @@ func extractBitbucketWorkspaceRepo(repoURL string) (workspace, repo string) {
 	return "", ""
 }
 
-// Extract org/repo from Azure DevOps URLs: https://dev.azure.com/org/_git/repo
+// Extract org/repo from Azure DevOps URLs: https://dev.azure.com/org/_git/repo or https://ssh.dev.azure.com/v3/org/project/repo
 func extractAzureDevOpsOrgRepo(repoURL string) (org, repo string) {
+	repoURL = normalizeSSHURL(repoURL)
 	url := strings.TrimSuffix(repoURL, ".git")
 	if strings.Contains(url, "dev.azure.com") {
 		parts := strings.Split(url, "/")
 		for i, part := range parts {
 			if part == "dev.azure.com" && i+1 < len(parts) {
 				org := parts[i+1]
-				// Find _git segment
+				// Find _git segment (HTTPS format)
 				for j := i + 2; j < len(parts); j++ {
 					if parts[j] == "_git" && j+1 < len(parts) {
 						repo := parts[j+1]
+						return org, repo
+					}
+				}
+			} else if part == "ssh.dev.azure.com" && i+1 < len(parts) && parts[i+1] == "v3" {
+				// SSH format: ssh.dev.azure.com/v3/org/project/repo
+				if i+3 < len(parts) {
+					org := parts[i+2]
+					if i+4 < len(parts) {
+						repo := parts[i+4]
 						return org, repo
 					}
 				}

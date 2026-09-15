@@ -525,7 +525,7 @@ func TestConvertToCoreCommits_RFC3339DateParsing(t *testing.T) {
 }
 
 func TestBuildMetadataJSONFromSystem_Structure(t *testing.T) {
-	data, err := buildMetadataJSONFromSystem("https://github.com/example/repo.git", "abc123def456", 42)
+	data, err := buildMetadataJSONFromSystem("https://github.com/example/repo.git", "abc123def456", 42, "2026-08-19T18:24:26Z")
 	require.NoError(t, err)
 
 	var asMap map[string]interface{}
@@ -542,7 +542,7 @@ func TestBuildMetadataJSONFromSystem_Structure(t *testing.T) {
 }
 
 func TestBuildMetadataJSONFromSystem_EmptyRepository(t *testing.T) {
-	data, err := buildMetadataJSONFromSystem("", "", 0)
+	data, err := buildMetadataJSONFromSystem("", "", 0, "")
 	require.NoError(t, err)
 
 	var asMap map[string]interface{}
@@ -621,6 +621,24 @@ func TestExtractGitHubOwnerRepo(t *testing.T) {
 			wantOwner: "",
 			wantRepo:  "",
 		},
+		{
+			name:      "SSH GitHub URL",
+			url:       "git@github.com:checkmarx/ast-cli.git",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "SSH GitHub URL without .git",
+			url:       "git@github.com:checkmarx/ast-cli",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "SSH protocol GitHub URL",
+			url:       "ssh://git@github.com/checkmarx/ast-cli.git",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
 	}
 
 	for _, tt := range tests {
@@ -661,6 +679,20 @@ func TestExtractGitLabGroupProject(t *testing.T) {
 			wantRepo:  "ast-cli",
 			wantHost:  "gitlab.internal.com",
 		},
+		{
+			name:      "SSH GitLab URL",
+			url:       "git@gitlab.com:checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "SSH self-hosted GitLab URL",
+			url:       "git@gitlab.internal.com:checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.internal.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -692,6 +724,12 @@ func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
 			wantWorkspace: "checkmarx",
 			wantRepo:      "ast-cli",
 		},
+		{
+			name:          "SSH Bitbucket URL",
+			url:           "git@bitbucket.org:checkmarx/ast-cli.git",
+			wantWorkspace: "checkmarx",
+			wantRepo:      "ast-cli",
+		},
 	}
 
 	for _, tt := range tests {
@@ -719,6 +757,12 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 		{
 			name:     "HTTPS Azure DevOps URL with .git suffix",
 			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli.git",
+			wantOrg:  "checkmarx",
+			wantRepo: "ast-cli",
+		},
+		{
+			name:     "SSH Azure DevOps URL",
+			url:      "git@ssh.dev.azure.com:v3/checkmarx/project/ast-cli.git",
 			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
 		},
