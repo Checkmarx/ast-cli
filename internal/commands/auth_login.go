@@ -16,9 +16,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-// defaultLoginClientID is the public PKCE client the IDE plugins use; its
+// defaultLoginClientID is the public PKCE client; its
 // localhost callbacks are whitelisted and it needs no client secret.
-const defaultLoginClientID = "ide-integration"
+const defaultLoginClientID = "cx-mcp-client"
 
 // configFilePerm: owner-only, since the file holds a long-lived refresh token.
 const configFilePerm = 0o600
