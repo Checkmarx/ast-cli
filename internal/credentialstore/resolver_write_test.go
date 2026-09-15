@@ -2,9 +2,11 @@ package credentialstore
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/configfile"
 	"github.com/stretchr/testify/assert"
@@ -47,9 +49,9 @@ func TestClearDisabledRemovesYAMLAndReportsMissing(t *testing.T) {
 	assert.Empty(t, value)
 }
 
-// PolicyRequired round-trips through the keyring store only; the YAML layer
-// is neither read nor written.
-func TestStoreRequiredRoundTripIgnoresYAML(t *testing.T) {
+// PolicyRequired round-trips through the keyring store only; Store touches the YAML file
+// but never writes the credential value into it.
+func TestStoreRequiredRoundTripKeepsValueOutOfYAML(t *testing.T) {
 	keyring.MockInit()
 	t.Cleanup(keyring.MockInit)
 	store := NewCredentialStore(CanonicalConfigPath(t.TempDir()))
@@ -58,9 +60,9 @@ func TestStoreRequiredRoundTripIgnoresYAML(t *testing.T) {
 
 	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "required-value"))
 
-	if _, err := os.Stat(resolver.filePath); !os.IsNotExist(err) {
-		t.Fatalf("required mode must not create the YAML file")
-	}
+	data, err := os.ReadFile(resolver.filePath)
+	assert.NoError(t, err)
+	assert.NotContains(t, string(data), "required-value")
 	value, err := resolver.Resolve(ctx, CredentialAPIKey)
 	assert.NoError(t, err)
 	assert.Equal(t, "required-value", value)
@@ -140,6 +142,70 @@ func TestClearDisabledUnreadableConfigPropagatesError(t *testing.T) {
 	err := resolver.Clear(context.Background(), CredentialAPIKey)
 	assert.Error(t, err)
 	assert.NotErrorIs(t, err, ErrNotFound)
+}
+
+// A keyring-backed Store/Clear must still bump the config file's mtime, since the credential
+// value itself never lands in the file for mtime-watching consumers to see.
+func TestStoreAndClearAutoTouchConfigFileMtime(t *testing.T) {
+	keyring.MockInit()
+	t.Cleanup(keyring.MockInit)
+	yamlPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	resolver := NewResolver(yamlPath, PolicyAuto, nil)
+	ctx := context.Background()
+
+	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "v"))
+	assert.FileExists(t, yamlPath)
+
+	// Backdate rather than sleep: filesystems with coarse mtime granularity would
+	// otherwise report both writes at the same instant.
+	past := time.Now().Add(-time.Hour)
+	assert.NoError(t, os.Chtimes(yamlPath, past, past))
+	assert.NoError(t, resolver.Clear(ctx, CredentialAPIKey))
+
+	info, err := os.Stat(yamlPath)
+	assert.NoError(t, err)
+	assert.True(t, info.ModTime().After(past))
+}
+
+// A failed keyring write must leave no trace: no config file, hence no mtime bump
+// telling consumers a credential changed.
+func TestStoreFailureDoesNotTouchConfigFile(t *testing.T) {
+	store := newFakeStore()
+	store.setErr = errors.New("keyring write failed")
+	yamlPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	resolver := NewResolver(yamlPath, PolicyAuto, store)
+
+	assert.Error(t, resolver.Store(context.Background(), CredentialAPIKey, "v"))
+	assert.NoFileExists(t, yamlPath)
+}
+
+// Unusable paths must be swallowed: a best-effort touch never fails a credential write,
+// and it never leaves a stray file behind.
+func TestTouchConfigFileToleratesUnusablePaths(t *testing.T) {
+	missingParent := filepath.Join(t.TempDir(), "no-such-dir", "checkmarxcli.yaml")
+	nonDirParent := filepath.Join(existingFile(t), "checkmarxcli.yaml")
+
+	for name, path := range map[string]string{
+		"empty path":       "",
+		"missing parent":   missingParent,
+		"parent is a file": nonDirParent,
+		"path is a dir":    t.TempDir(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			touchConfigFile(path)
+		})
+	}
+
+	assert.NoFileExists(t, missingParent)
+	assert.NoFileExists(t, nonDirParent)
+}
+
+// existingFile returns a regular file's path, for cases needing a non-directory parent.
+func existingFile(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "not-a-dir")
+	assert.NoError(t, os.WriteFile(path, []byte("x"), 0o600))
+	return path
 }
 
 // Auto mode surfaces a config-file read failure instead of masking it as
