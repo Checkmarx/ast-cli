@@ -22,6 +22,7 @@ import (
 	"time"
 	"unicode"
 
+	syftExtractor "github.com/Checkmarx/containers-syft-packages-extractor/pkg/syftPackagesExtractor"
 	"github.com/Checkmarx/containers-types/types"
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
@@ -2391,23 +2392,6 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 	return nil
 }
 
-// containerResolutionEntry mirrors just enough of
-// .checkmarx/containers/containers-resolution.json to tell which images the resolver failed on.
-//
-// The envelope (ContainerResolution/ContainerImage) lives in containers-syft-packages-extractor,
-// which the CLI only depends on indirectly and which is not on the depguard allowlist, so it is
-// restated here. The image locations, however, are the shared contract in containers-types and are
-// reused from there rather than redeclared.
-type containerResolutionEntry struct {
-	ContainerImage struct {
-		ImageName      string
-		ImageTag       string
-		Status         string `json:"status"`
-		ScanError      string
-		ImageLocations []types.ImageLocation
-	}
-}
-
 // reportUnresolvedContainerImages surfaces the images the resolver could not analyze.
 //
 // The resolver records an unresolvable image as a "Failed" entry and still returns nil, so without
@@ -2430,7 +2414,9 @@ func reportUnresolvedContainerImages(directoryPath string) error {
 		return nil
 	}
 
-	var entries []containerResolutionEntry
+	// Decoded with the producer's own type, so the CLI cannot drift from the format the
+	// resolver writes.
+	var entries []syftExtractor.ContainerResolution
 	if unmarshalErr := json.Unmarshal(content, &entries); unmarshalErr != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Could not parse container resolution file %s: %s", resolutionFilePath, unmarshalErr.Error()))
 		return nil
@@ -2467,7 +2453,7 @@ func reportUnresolvedContainerImages(directoryPath string) error {
 // isUserRequestedContainerImage reports whether the image was named explicitly through
 // --container-images. An image can be reached from several locations at once, so a single
 // UserInput origin is enough to treat it as explicitly requested.
-func isUserRequestedContainerImage(entry containerResolutionEntry) bool {
+func isUserRequestedContainerImage(entry syftExtractor.ContainerResolution) bool {
 	for _, location := range entry.ContainerImage.ImageLocations {
 		if strings.EqualFold(location.Origin, types.UserInput) {
 			return true
