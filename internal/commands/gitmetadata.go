@@ -37,6 +37,7 @@ const (
 	csvFieldCount         = 4
 	urlSchemeParts        = 2 // parts when splitting by "://"
 	pathParts             = 2 // parts when splitting by "/"
+	sshSplitParts         = 2 // parts when splitting SSH URL by "@" or ":"
 )
 
 // contributorsMetadata mirrors repostore metadata structure; omits branchName per tech design.
@@ -464,10 +465,10 @@ func normalizeSSHURL(repoURL string) string {
 	if !strings.Contains(repoURL, "://") && strings.Contains(repoURL, "@") && strings.Contains(repoURL, ":") {
 		// Handle git@host:path format
 		// git@github.com:owner/repo.git → https://github.com/owner/repo.git
-		parts := strings.SplitN(repoURL, "@", 2)
-		if len(parts) == 2 {
-			hostAndPath := strings.SplitN(parts[1], ":", 2)
-			if len(hostAndPath) == 2 {
+		parts := strings.SplitN(repoURL, "@", sshSplitParts)
+		if len(parts) == sshSplitParts {
+			hostAndPath := strings.SplitN(parts[1], ":", sshSplitParts)
+			if len(hostAndPath) == sshSplitParts {
 				return "https://" + hostAndPath[0] + "/" + hostAndPath[1]
 			}
 		}
@@ -475,8 +476,8 @@ func normalizeSSHURL(repoURL string) string {
 		// Handle ssh://git@host/path format → https://host/path
 		sshURL := strings.TrimPrefix(repoURL, "ssh://")
 		if strings.Contains(sshURL, "@") {
-			parts := strings.SplitN(sshURL, "@", 2)
-			if len(parts) == 2 {
+			parts := strings.SplitN(sshURL, "@", sshSplitParts)
+			if len(parts) == sshSplitParts {
 				return "https://" + parts[1]
 			}
 		}
