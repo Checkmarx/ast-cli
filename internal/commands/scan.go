@@ -22,6 +22,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/Checkmarx/containers-types/types"
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -122,13 +123,10 @@ const (
 	// containerResolutionStatusFailed is the status the resolver writes into
 	// containers-resolution.json for an image it could not analyze.
 	containerResolutionStatusFailed = "Failed"
-	// containerImageOriginUserInput marks an image the user named explicitly through
-	// --container-images, as opposed to one discovered inside the scanned sources.
-	containerImageOriginUserInput = "UserInput"
-	directoryCreationPrefix       = "cx-"
-	ScsScoreCardType              = "scorecard"
-	ScsSecretDetectionType        = "secret-detection"
-	ScsRepoRequiredMsg            = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	directoryCreationPrefix         = "cx-"
+	ScsScoreCardType                = "scorecard"
+	ScsSecretDetectionType          = "secret-detection"
+	ScsRepoRequiredMsg              = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
@@ -2395,18 +2393,19 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 
 // containerResolutionEntry mirrors just enough of
 // .checkmarx/containers/containers-resolution.json to tell which images the resolver failed on.
-// It is declared here rather than imported from containers-syft-packages-extractor so that the
-// CLI takes on no additional dependency for this check.
+//
+// The envelope (ContainerResolution/ContainerImage) lives in containers-syft-packages-extractor,
+// which the CLI only depends on indirectly and which is not on the depguard allowlist, so it is
+// restated here. The image locations, however, are the shared contract in containers-types and are
+// reused from there rather than redeclared.
 type containerResolutionEntry struct {
 	ContainerImage struct {
-		ImageName      string `json:"ImageName"`
-		ImageTag       string `json:"ImageTag"`
+		ImageName      string
+		ImageTag       string
 		Status         string `json:"status"`
-		ScanError      string `json:"ScanError"`
-		ImageLocations []struct {
-			Origin string `json:"Origin"`
-		} `json:"ImageLocations"`
-	} `json:"ContainerImage"`
+		ScanError      string
+		ImageLocations []types.ImageLocation
+	}
 }
 
 // reportUnresolvedContainerImages surfaces the images the resolver could not analyze.
@@ -2470,7 +2469,7 @@ func reportUnresolvedContainerImages(directoryPath string) error {
 // UserInput origin is enough to treat it as explicitly requested.
 func isUserRequestedContainerImage(entry containerResolutionEntry) bool {
 	for _, location := range entry.ContainerImage.ImageLocations {
-		if strings.EqualFold(location.Origin, containerImageOriginUserInput) {
+		if strings.EqualFold(location.Origin, types.UserInput) {
 			return true
 		}
 	}
