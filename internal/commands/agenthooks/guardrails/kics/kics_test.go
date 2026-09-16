@@ -3,6 +3,7 @@
 package kics
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,9 @@ import (
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/stretchr/testify/assert"
 )
 
 // ── isSupportedByKICS ────────────────────────────────────────────────────────
@@ -94,6 +98,18 @@ func makeResult(title, similarityID, severity, description string, line int) iac
 	}
 }
 
+// scanFileEditResult names ScanFileEdit's return values so tests that only care
+// about a subset of them don't need a long run of blank identifiers.
+type scanFileEditResult struct {
+	blocked                         bool
+	reason, context, note, severity string
+}
+
+func scanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner) scanFileEditResult {
+	blocked, reason, context, note, severity := ScanFileEdit(ev, svc, nil, "Claude")
+	return scanFileEditResult{blocked, reason, context, note, severity}
+}
+
 func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 	finding := makeResult("Privileged Container", "sim123", "HIGH", "Container runs as privileged", 5)
 	svc := NewScannerWithFunc(func(_, _ string) ([]iacrealtime.IacRealtimeResult, error) {
@@ -106,18 +122,21 @@ func TestScanFileEdit_NewFileWithFinding_Blocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "FROM ubuntu\nUSER root\n"}},
 	}
 
-	blocked, reason, ctx := ScanFileEdit(ev, svc)
-	if !blocked {
+	res := scanFileEdit(&ev, svc)
+	if !res.blocked {
 		t.Fatal("expected edit to be blocked")
 	}
-	if reason == "" {
+	if res.reason == "" {
 		t.Error("expected non-empty reason")
 	}
-	if ctx == "" {
+	if res.context == "" {
 		t.Error("expected non-empty context")
 	}
-	if !strings.Contains(reason, "KICS") {
-		t.Errorf("reason should mention KICS, got: %q", reason)
+	if res.severity != "HIGH" {
+		t.Errorf("severity = %q, want HIGH", res.severity)
+	}
+	if !strings.Contains(res.reason, "KICS") {
+		t.Errorf("reason should mention KICS, got: %q", res.reason)
 	}
 }
 
@@ -140,8 +159,8 @@ func TestScanFileEdit_EditWithNoNewFindings_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "FROM ubuntu", After: "FROM ubuntu:22.04"}},
 	}
 
-	blocked, _, _ := ScanFileEdit(ev, svc)
-	if blocked {
+	res := scanFileEdit(&ev, svc)
+	if res.blocked {
 		t.Fatal("expected edit to NOT be blocked when no new findings")
 	}
 }
@@ -157,8 +176,8 @@ func TestScanFileEdit_ScanError_FailOpen(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "resource \"aws_s3_bucket\" \"bad\" {}"}},
 	}
 
-	blocked, _, _ := ScanFileEdit(ev, svc)
-	if blocked {
+	res := scanFileEdit(&ev, svc)
+	if res.blocked {
 		t.Fatal("expected fail-open (not blocked) on scan error")
 	}
 }
@@ -175,8 +194,8 @@ func TestScanFileEdit_UnsupportedFile_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: "package main"}},
 	}
 
-	blocked, _, _ := ScanFileEdit(ev, svc)
-	if blocked {
+	res := scanFileEdit(&ev, svc)
+	if res.blocked {
 		t.Fatal("expected NOT blocked for unsupported file")
 	}
 }
@@ -192,8 +211,65 @@ func TestScanFileEdit_EmptyNewContent_NotBlocked(t *testing.T) {
 		Changes:   []agenthooks.FileDiff{{Before: "", After: ""}},
 	}
 
-	blocked, _, _ := ScanFileEdit(ev, svc)
-	if blocked {
+	res := scanFileEdit(&ev, svc)
+	if res.blocked {
 		t.Fatal("expected NOT blocked for empty content")
 	}
+}
+
+// A scan that could not run must say so — a silent fail-open is
+// indistinguishable from a clean scan, which is how unscanned IaC ships.
+func TestScanFileEdit_EngineDownProducesNote(t *testing.T) {
+	svc := NewScannerWithFunc(func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
+		return nil, errors.New("container engine 'docker' is installed but not running")
+	})
+	ev := agenthooks.FileEditEvent{
+		FilePath: filepath.Join(t.TempDir(), "main.tf"),
+		Changes:  []agenthooks.FileDiff{{Before: "", After: "resource \"aws_s3_bucket\" \"b\" {}"}},
+	}
+
+	res := scanFileEdit(&ev, svc)
+
+	assert.False(t, res.blocked, "must fail open, not block the edit")
+	assert.Contains(t, res.note, "main.tf")
+	assert.Contains(t, res.note, "not running")
+}
+
+// ── logKicsTelemetry ─────────────────────────────────────────────────────────
+
+func TestLogKicsTelemetry_NilWrapper_NoOp(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logKicsTelemetry(nil, "Claude", "", 3)
+	})
+}
+
+func TestLogKicsTelemetry_ZeroCount_DoesNotSend(t *testing.T) {
+	sent := false
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			sent = true
+			return nil
+		},
+	}
+	logKicsTelemetry(telemetry, "Claude", "", 0)
+	assert.False(t, sent)
+}
+
+func TestLogKicsTelemetry_WithFindings_Sends(t *testing.T) {
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logKicsTelemetry(telemetry, "Claude", "sess-1", 2)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "IaC", captured.Engine)
+	assert.Equal(t, 2, captured.TotalCount)
+	assert.Equal(t, "Claude", captured.AIProvider)
+	assert.Equal(t, "hooks-detect", captured.Type)
+	assert.Equal(t, "scan", captured.SubType)
+	assert.Equal(t, "iac", captured.ScanType)
+	assert.Equal(t, "sess-1", captured.AiAgentSessionId)
 }
