@@ -33,6 +33,13 @@ const realFailedResolution = `[
  }
 ]`
 
+// discoveredOnlyPayload is a Failed entry reached only through Dockerfile discovery, never named
+// explicitly by the user - the case AST-146648 deliberately chose to only warn about.
+const discoveredOnlyPayload = `[{"ContainerImage":{"ImageName":"internal/app","ImageTag":"1.0",
+		"ImageLocations":[{"Origin":"Dockerfile","Path":"/src/Dockerfile"}],
+		"status":"Failed","ScanError":"The requested image is not found or is unavailable."},
+		"ContainerPackages":[]}]`
+
 func writeResolution(t *testing.T, content string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -56,12 +63,7 @@ func TestReportUnresolvedContainerImages_UserRequestedImageFails(t *testing.T) {
 // An image only discovered inside the scanned sources warns but does not fail, preserving the
 // warn-rather-than-fail behaviour chosen in AST-146648 for images the CLI cannot reach.
 func TestReportUnresolvedContainerImages_DiscoveredImageOnlyWarns(t *testing.T) {
-	discovered := `[{"ContainerImage":{"ImageName":"internal/app","ImageTag":"1.0",
-		"ImageLocations":[{"Origin":"Dockerfile","Path":"/src/Dockerfile"}],
-		"status":"Failed","ScanError":"The requested image is not found or is unavailable."},
-		"ContainerPackages":[]}]`
-
-	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, discovered)))
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, discoveredOnlyPayload)))
 }
 
 // An image reachable both ways is still the user's explicit request, so it fails.

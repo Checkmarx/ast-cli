@@ -2430,7 +2430,7 @@ func reportUnresolvedContainerImages(directoryPath string) error {
 		}
 
 		description := fmt.Sprintf("  %s - %s", containerImageDisplayName(image.ImageName, image.ImageTag), containerImageFailureReason(image.ScanError))
-		if isUserRequestedContainerImage(entries[i]) {
+		if isUserRequestedContainerImage(&entries[i]) {
 			requested = append(requested, description)
 		} else {
 			discovered = append(discovered, description)
@@ -2453,7 +2453,7 @@ func reportUnresolvedContainerImages(directoryPath string) error {
 // isUserRequestedContainerImage reports whether the image was named explicitly through
 // --container-images. An image can be reached from several locations at once, so a single
 // UserInput origin is enough to treat it as explicitly requested.
-func isUserRequestedContainerImage(entry syftExtractor.ContainerResolution) bool {
+func isUserRequestedContainerImage(entry *syftExtractor.ContainerResolution) bool {
 	for _, location := range entry.ContainerImage.ImageLocations {
 		if strings.EqualFold(location.Origin, types.UserInput) {
 			return true

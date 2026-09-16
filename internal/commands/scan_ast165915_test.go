@@ -160,12 +160,7 @@ func TestAST165915_Defect2_FailedEntryNeverReportsSuccess(t *testing.T) {
 // Guards the one case that must keep the old lenient behaviour: an image discovered in the scanned
 // sources rather than requested by name only warns, as AST-146648 deliberately chose.
 func TestAST165915_DiscoveredImageStillOnlyWarns(t *testing.T) {
-	discovered := `[{"ContainerImage":{"ImageName":"internal/app","ImageTag":"1.0",
-		"ImageLocations":[{"Origin":"Dockerfile","Path":"/src/Dockerfile"}],
-		"status":"Failed","ScanError":"The requested image is not found or is unavailable."},
-		"ContainerPackages":[]}]`
-
-	_, err := runTicketScenario(t, discovered, "")
+	_, err := runTicketScenario(t, discoveredOnlyPayload, "")
 	assert.NilError(t, err, "an image only discovered in the sources must not fail the scan (AST-146648)")
 }
 
