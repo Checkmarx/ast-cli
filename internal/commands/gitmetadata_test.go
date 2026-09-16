@@ -249,6 +249,34 @@ func TestGenerateAndWrite_SSHRemoteURL(t *testing.T) {
 	assert.Equal(t, "git@github.com:org/repo.git", metadata.RepositoryURL)
 }
 
+func TestGenerateAndWrite_PublicRepoNoCSV(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	// Call with isPrivateRepo = false (public repo)
+	require.NoError(t, GenerateAndWrite(repoPath, false))
+
+	// Check that CSV does NOT exist (public repo should not have contributors.csv)
+	csvPath := filepath.Join(repoPath, CheckmarxFolderName, ContributorsFileName)
+	_, err := os.ReadFile(csvPath)
+	assert.Error(t, err, "public repo should NOT generate contributors.csv")
+	assert.True(t, os.IsNotExist(err), "CSV file should not exist for public repo")
+
+	// But metadata.json should still exist
+	metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+	metadataBytes, err := os.ReadFile(metadataPath)
+	require.NoError(t, err, "public repo should still generate metadata.json")
+
+	var metadata contributorsMetadata
+	err = json.Unmarshal(metadataBytes, &metadata)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, metadata.RepositoryURL, "metadata should contain repository URL")
+	assert.NotEmpty(t, metadata.LastCommitHash, "metadata should contain commit hash")
+	assert.NotEmpty(t, metadata.LastCommitDate, "metadata should contain commit date")
+}
+
 func TestGenerateAndWrite_ReplacesStaleFiles(t *testing.T) {
 	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
 		{email: "alice@example.com", name: "Alice", when: time.Now()},

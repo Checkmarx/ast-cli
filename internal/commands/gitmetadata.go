@@ -216,9 +216,16 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Extract the actual last commit date (newest commit is first in array)
+	// If no commits in 90-day window, get HEAD date directly (consistent with go-git path)
 	lastCommitDateStr := ""
 	if len(commits) > 0 {
 		lastCommitDateStr = commits[0]["date"]
+	} else {
+		// No commits in 90-day window, but HEAD still exists - get its date
+		headDate, err := gitCommand(repoPath, "log", "-1", "--format=%aI", "HEAD")
+		if err == nil && headDate != "" {
+			lastCommitDateStr = headDate
+		}
 	}
 
 	// Generate CSV only for private repos
