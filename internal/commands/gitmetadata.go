@@ -68,6 +68,11 @@ func GenerateAndWrite(repoPath string, isPrivateRepo bool) error {
 	since := time.Now().Add(-commitHistoryWindow)
 	commits, err := commitsSince(repo, since)
 	if err != nil {
+		// Fallback to system git for shallow clones or corrupted repos where go-git can't read objects
+		if strings.Contains(err.Error(), "object not found") {
+			logger.PrintfIfVerbose("go-git cannot read commit history (shallow clone or corrupted repo), falling back to system git")
+			return generateViaSystemGit(repoPath, isPrivateRepo)
+		}
 		return errors.Wrap(err, "could not read commit history")
 	}
 

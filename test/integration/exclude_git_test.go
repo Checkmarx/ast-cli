@@ -106,5 +106,5 @@ func TestExcludeGitFolder_IncludeCsvJson(t *testing.T) {
 	logText := buf.String()
 	assert.Assert(t, strings.Contains(logText, "The folder .git is being excluded"), "Expected .git exclusion message not found in logs")
 	assert.Assert(t, strings.Contains(logText, "--exclude-git-folder flag passed"), "Expected --exclude-git-folder flag confirmation message not found in logs")
-	assert.Assert(t, strings.Contains(logText, "Included: .checkmarx/metadata.json"), "Included COntributor.csv and metadata.json")
+	assert.Assert(t, strings.Contains(logText, "Included: .checkmarx/metadata.json"), "Included contributor.csv and metadata.json")
 }
