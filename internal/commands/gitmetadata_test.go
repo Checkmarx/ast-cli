@@ -1503,4 +1503,3 @@ func TestDetectRepositoryPrivacy_NoRemoteURL(t *testing.T) {
 	// Should conservatively default to private when no remote found
 	assert.True(t, result)
 }
-
