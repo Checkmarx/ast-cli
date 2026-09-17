@@ -1186,6 +1186,117 @@ func TestWriteGeneratedFilesConditional_PublicRepoNoCSV(t *testing.T) {
 	assert.True(t, fileExists(metadataPath), "should create metadata.json for all repos")
 }
 
+func TestGenerateViaSystemGit_WithSystemGitCommands(t *testing.T) {
+	// Create real git repository using system git
+	repoPath := t.TempDir()
+
+	// Initialize git repo
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Configure git user
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Set remote
+	cmd = exec.Command("git", "remote", "add", "origin", "https://github.com/test/repo.git")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Create initial commit
+	testFile := filepath.Join(repoPath, "test.txt")
+	require.NoError(t, os.WriteFile(testFile, []byte("test content"), 0644))
+
+	cmd = exec.Command("git", "add", "test.txt")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "commit", "-m", "initial commit")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test generateViaSystemGit for private repo
+	err := generateViaSystemGit(repoPath, true)
+	require.NoError(t, err)
+
+	// Verify files were created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.True(t, fileExists(csvPath), "should create contributors.csv for private repo")
+
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+
+	// Verify metadata content
+	metadataBytes, err := os.ReadFile(metadataPath)
+	require.NoError(t, err)
+
+	var metadata contributorsMetadata
+	require.NoError(t, json.Unmarshal(metadataBytes, &metadata))
+	assert.Equal(t, "https://github.com/test/repo.git", metadata.RepositoryURL)
+	assert.NotEmpty(t, metadata.LastCommitHash)
+	assert.NotEmpty(t, metadata.LastCommitDate)
+	assert.GreaterOrEqual(t, metadata.CommitsCount, 1)
+}
+
+func TestGenerateViaSystemGit_PublicRepo(t *testing.T) {
+	// Create real git repository using system git
+	repoPath := t.TempDir()
+
+	// Initialize git repo
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Configure git user
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Set remote
+	cmd = exec.Command("git", "remote", "add", "origin", "https://github.com/test/repo.git")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Create initial commit
+	testFile := filepath.Join(repoPath, "test.txt")
+	require.NoError(t, os.WriteFile(testFile, []byte("test content"), 0644))
+
+	cmd = exec.Command("git", "add", "test.txt")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "commit", "-m", "initial commit")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test generateViaSystemGit for PUBLIC repo
+	err := generateViaSystemGit(repoPath, false)
+	require.NoError(t, err)
+
+	// Verify only metadata was created (no CSV for public repos)
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.False(t, fileExists(csvPath), "should NOT create contributors.csv for public repo")
+
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+}
+
 func TestGenerateAndWrite_WithCommits(t *testing.T) {
 	t.Run("creates metadata with commit count", func(t *testing.T) {
 		repoPath := t.TempDir()
