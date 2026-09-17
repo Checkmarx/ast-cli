@@ -35,8 +35,8 @@ func TestBaseIncludeFiltersContainsNewExtensions(t *testing.T) {
 
 func TestBaseIncludeFiltersBackwardCompatibility(t *testing.T) {
 	tests := []struct {
-		name       string
-		pattern    string
+		name        string
+		pattern     string
 		shouldExist bool
 	}{
 		// Verify existing extensions are still present
@@ -138,9 +138,9 @@ func TestNewExtensionsAreOrganizedByLanguage(t *testing.T) {
 func TestNoGenericPatternsAdded(t *testing.T) {
 	// Ensure we didn't add overly generic patterns
 	genericPatterns := []string{
-		"*.txt",   // Should be specific: *requirement*.txt, *CMakeLists*.txt
-		"*.lock",  // Should be specific: yarn.lock, composer.lock, etc.
-		"*.mod",   // Should be specific: go.mod only
+		"*.txt",  // Should be specific: *requirement*.txt, *CMakeLists*.txt
+		"*.lock", // Should be specific: yarn.lock, composer.lock, etc.
+		"*.mod",  // Should be specific: go.mod only
 	}
 
 	for _, pattern := range genericPatterns {

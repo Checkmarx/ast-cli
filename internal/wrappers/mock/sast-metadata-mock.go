@@ -10,9 +10,11 @@ import (
 type SastMetadataMockWrapper struct{}
 
 const (
-	scanIDParam         = "scan-ids"
-	concurrent          = "ConcurrentTest"
+	scanIDParam = "scan-ids"
+	concurrent  = "ConcurrentTest"
+	// FakeMetadataErrorID is used to trigger error responses in mock SAST metadata calls.
 	FakeMetadataErrorID = "fake-sast-metadata-error-id"
+	// FakeMetadataEmptyID is used to trigger empty responses in mock SAST metadata calls.
 	FakeMetadataEmptyID = "fake-sast-metadata-empty-id"
 )
 
