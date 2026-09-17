@@ -29,15 +29,16 @@ const (
 	// MetadataFileName is the filename for the JSON metadata file.
 	MetadataFileName = "metadata.json"
 
-	commitHistoryWindow   = 90 * 24 * time.Hour
-	defaultRemoteName     = "origin"
-	contributorsSizeLimit = 1 * 1024 * 1024 // repostore ignores contributors.csv above this size
-	generatedFilePerm     = 0o644
-	generatedDirPerm      = 0o755
-	csvFieldCount         = 4
-	urlSchemeParts        = 2 // parts when splitting by "://"
-	pathParts             = 2 // parts when splitting by "/"
-	sshSplitParts         = 2 // parts when splitting SSH URL by "@" or ":"
+	commitHistoryWindow     = 90 * 24 * time.Hour
+	defaultRemoteName       = "origin"
+	contributorsSizeLimit   = 1 * 1024 * 1024 // repostore ignores contributors.csv above this size
+	privacyDetectionTimeout = 5               // seconds for privacy detection HTTP requests
+	generatedFilePerm       = 0o644
+	generatedDirPerm        = 0o755
+	csvFieldCount           = 4
+	urlSchemeParts          = 2 // parts when splitting by "://"
+	pathParts               = 2 // parts when splitting by "/"
+	sshSplitParts           = 2 // parts when splitting SSH URL by "@" or ":"
 )
 
 // contributorsMetadata mirrors repostore metadata structure; omits branchName per tech design.
@@ -106,10 +107,9 @@ func resolveHeadCommit(repo *gogit.Repository) (*object.Commit, error) {
 	return repo.CommitObject(head.Hash())
 }
 
-// commitsSince returns commits reachable from HEAD no older than since, sorted newest-first for dedup.
+// commitsSince returns commits from last 90 days (by author date, not committer date) sorted newest-first.
 func commitsSince(repo *gogit.Repository, since time.Time) ([]*object.Commit, error) {
-	sinceCopy := since
-	iter, err := repo.Log(&gogit.LogOptions{Since: &sinceCopy})
+	iter, err := repo.Log(&gogit.LogOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +117,14 @@ func commitsSince(repo *gogit.Repository, since time.Time) ([]*object.Commit, er
 
 	var commits []*object.Commit
 	err = iter.ForEach(func(c *object.Commit) error {
-		commits = append(commits, c)
+		if !c.Author.When.Before(since) {
+			commits = append(commits, c)
+		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-
 	sort.Slice(commits, func(i, j int) bool {
 		return commits[i].Author.When.After(commits[j].Author.When)
 	})
@@ -204,13 +205,14 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 		return errors.Wrap(err, "could not get HEAD commit via system git")
 	}
 
-	since := time.Now().Add(-commitHistoryWindow).Format("2006-01-02")
-	logOutput, err := gitCommand(repoPath, "log", "--since="+since, "--pretty=format:%aI%x1f%H%x1f%ae%x1f%an")
+	sinceCutoff := time.Now().Add(-commitHistoryWindow)
+	sinceStr := sinceCutoff.Format(time.RFC3339)
+	logOutput, err := gitCommand(repoPath, "log", "--since="+sinceStr, "--pretty=format:%aI%x1f%H%x1f%ae%x1f%an")
 	if err != nil {
 		return errors.Wrap(err, "could not get commit log via system git")
 	}
 
-	commits := parseGitLogOutput(logOutput)
+	commits := parseGitLogOutput(logOutput, sinceCutoff)
 	if len(commits) == 0 {
 		commits = []map[string]string{} // empty list for builds with no commits in 90 days
 	}
@@ -262,8 +264,8 @@ func gitCommand(repoPath string, args ...string) (string, error) {
 	return strings.TrimSpace(out.String()), nil
 }
 
-// parseGitLogOutput parses git log output (%ai<tab>%H<tab>%ae<tab>%an) and returns commits newest-first.
-func parseGitLogOutput(logOutput string) []map[string]string {
+// parseGitLogOutput parses git log output (date, hash, email, name) filtered by author date and returns newest-first.
+func parseGitLogOutput(logOutput string, sinceCutoff time.Time) []map[string]string {
 	if logOutput == "" {
 		return nil
 	}
@@ -279,6 +281,18 @@ func parseGitLogOutput(logOutput string) []map[string]string {
 		if len(parts) != csvFieldCount {
 			continue
 		}
+
+		// Filter by author date to correctly handle rebased/cherry-picked commits
+		authorDate, err := time.Parse(time.RFC3339, parts[0])
+		if err != nil {
+			// Skip commits with unparseable dates (shouldn't happen with %aI format)
+			continue
+		}
+		if !sinceCutoff.IsZero() && authorDate.Before(sinceCutoff) {
+			// Skip commits older than the cutoff
+			continue
+		}
+
 		commits = append(commits, map[string]string{
 			"date":  parts[0],
 			"hash":  parts[1],
@@ -286,12 +300,6 @@ func parseGitLogOutput(logOutput string) []map[string]string {
 			"name":  parts[3],
 		})
 	}
-
-	// Git log returns oldest-first; reverse to newest-first for dedup consistency.
-	for i, j := 0, len(commits)-1; i < j; i, j = i+1, j-1 {
-		commits[i], commits[j] = commits[j], commits[i]
-	}
-
 	return commits
 }
 
@@ -350,17 +358,17 @@ func writeGeneratedFilesConditional(repoPath string, csvData, metadataData []byt
 }
 
 // detectRepositoryPrivacy determines if repo is private/public; conservatively defaults to private for unknown repos.
-func detectRepositoryPrivacy(repoPath string) bool {
+func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) bool {
 	// Method 1: Try go-git
 	repo, err := gogit.PlainOpen(repoPath)
 	if err == nil {
-		return isPrivateByURL(remoteURL(repo))
+		return isPrivateByURL(remoteURL(repo), httpClient)
 	}
 
 	// Method 2: Try system git
 	remoteURL, err := gitCommand(repoPath, "config", "--get", "remote.origin.url")
 	if err == nil && remoteURL != "" {
-		return isPrivateByURL(remoteURL)
+		return isPrivateByURL(remoteURL, httpClient)
 	}
 
 	// Method 3: Check if contributors.csv exists (was private)
@@ -375,7 +383,7 @@ func detectRepositoryPrivacy(repoPath string) bool {
 }
 
 // isPrivateByURL detects repository privacy via public APIs (GitHub/GitLab/Bitbucket/Azure); defaults to private on any error.
-func isPrivateByURL(remoteURL string) bool {
+func isPrivateByURL(remoteURL string, httpClient *http.Client) bool {
 	if remoteURL == "" {
 		return true // Local-only repo → private
 	}
@@ -385,74 +393,70 @@ func isPrivateByURL(remoteURL string) bool {
 	// Route to appropriate API handler based on platform
 	switch {
 	case strings.Contains(urlLower, "github.com"):
-		return isPrivateGitHub(remoteURL)
+		return isPrivateGitHub(remoteURL, httpClient)
 	case strings.Contains(urlLower, "gitlab"):
-		return isPrivateGitLab(remoteURL)
+		return isPrivateGitLab(remoteURL, httpClient)
 	case strings.Contains(urlLower, "bitbucket"):
-		return isPrivateBitbucket(remoteURL)
+		return isPrivateBitbucket(remoteURL, httpClient)
 	case strings.Contains(urlLower, "dev.azure.com") || strings.Contains(urlLower, "visualstudio.com"):
-		return isPrivateAzureDevOps(remoteURL)
+		return isPrivateAzureDevOps(remoteURL, httpClient)
 	default:
 		return true // Unknown platform → conservative: default to PRIVATE
 	}
 }
 
 // isPrivateGitHub checks GitHub repo privacy via direct HTTP URL (HTTP 200 = Public, else = Private).
-func isPrivateGitHub(repoURL string) bool {
+func isPrivateGitHub(repoURL string, httpClient *http.Client) bool {
 	owner, repo := extractGitHubOwnerRepo(repoURL)
 	if owner == "" || repo == "" {
 		return true
 	}
 
 	directURL := fmt.Sprintf("https://github.com/%s/%s", owner, repo)
-	isPublic := isRepoPublic(directURL)
+	isPublic := isRepoPublic(directURL, httpClient)
 	return !isPublic
 }
 
-// isPrivateGitLab checks GitLab repo privacy via direct HTTP URL (HTTP 200 = Public, else = Private).
-func isPrivateGitLab(repoURL string) bool {
-	groupPath, projectName, host := extractGitLabGroupProject(repoURL)
+// isPrivateGitLab checks gitlab.com repo privacy via HTTP (200 = Public, else = Private); self-hosted URLs default to private for security.
+func isPrivateGitLab(repoURL string, httpClient *http.Client) bool {
+	groupPath, projectName, _ := extractGitLabGroupProject(repoURL)
 	if groupPath == "" || projectName == "" {
 		return true
 	}
 
-	if host == "" {
-		host = "gitlab.com"
-	}
-
-	directURL := fmt.Sprintf("https://%s/%s/%s", host, groupPath, projectName)
-	isPublic := isRepoPublic(directURL)
+	// Hardcode gitlab.com to prevent SSRF attacks via untrusted remote.origin.url
+	directURL := fmt.Sprintf("https://gitlab.com/%s/%s", groupPath, projectName)
+	isPublic := isRepoPublic(directURL, httpClient)
 	return !isPublic
 }
 
 // isPrivateBitbucket checks Bitbucket repo privacy via direct HTTP URL (HTTP 200 = Public, else = Private).
-func isPrivateBitbucket(repoURL string) bool {
+func isPrivateBitbucket(repoURL string, httpClient *http.Client) bool {
 	workspace, repo := extractBitbucketWorkspaceRepo(repoURL)
 	if workspace == "" || repo == "" {
 		return true
 	}
 
 	directURL := fmt.Sprintf("https://bitbucket.org/%s/%s", workspace, repo)
-	isPublic := isRepoPublic(directURL)
+	isPublic := isRepoPublic(directURL, httpClient)
 	return !isPublic
 }
 
 // isPrivateAzureDevOps checks Azure DevOps repo privacy via public API (no auth required).
-func isPrivateAzureDevOps(repoURL string) bool {
+func isPrivateAzureDevOps(repoURL string, httpClient *http.Client) bool {
 	org, repo := extractAzureDevOpsOrgRepo(repoURL)
 	if org == "" || repo == "" {
 		return true
 	}
 
 	directURL := fmt.Sprintf("https://dev.azure.com/%s/_git/%s", org, repo)
-	isPublic := isRepoPublic(directURL)
+	isPublic := isRepoPublic(directURL, httpClient)
 	return !isPublic
 }
 
-// isRepoPublic checks if repository is publicly accessible (HTTP 200 = public, else = private).
-func isRepoPublic(repoURL string) bool {
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Get(repoURL)
+// isRepoPublic checks if repository is publicly accessible via injected HTTP client (HTTP 200 = public, else = private).
+func isRepoPublic(repoURL string, httpClient *http.Client) bool {
+	resp, err := httpClient.Get(repoURL)
 	if err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Repository accessibility check failed for %s: %v, treating as PRIVATE", repoURL, err))
 		return false
@@ -468,11 +472,7 @@ func isRepoPublic(repoURL string) bool {
 	return isPublic
 }
 
-// normalizeSSHURL converts SSH git URLs to HTTPS format for extraction.
-// Handles formats like:
-//   - git@github.com:owner/repo.git → https://github.com/owner/repo.git
-//   - git@gitlab.com:group/project.git → https://gitlab.com/group/project.git
-//   - ssh://git@github.com/owner/repo.git → https://github.com/owner/repo.git
+// normalizeSSHURL converts SSH URLs to HTTPS (git@github.com:owner/repo.git → https://github.com/owner/repo.git)
 func normalizeSSHURL(repoURL string) string {
 	if !strings.Contains(repoURL, "://") && strings.Contains(repoURL, "@") && strings.Contains(repoURL, ":") {
 		// Handle git@host:path format
@@ -508,7 +508,7 @@ func extractGitHubOwnerRepo(repoURL string) (owner, repo string) {
 	return "", ""
 }
 
-// Extract group/project from GitLab URLs: https://gitlab.com/group/project or group/project
+// extractGitLabGroupProject extracts group/project from GitLab URLs, supporting nested subgroups (last segment is project, rest is group).
 func extractGitLabGroupProject(repoURL string) (group, project, host string) {
 	repoURL = normalizeSSHURL(repoURL)
 	url := strings.TrimSuffix(repoURL, ".git")
@@ -525,8 +525,9 @@ func extractGitLabGroupProject(repoURL string) (group, project, host string) {
 
 	parts := strings.FieldsFunc(url, func(r rune) bool { return r == '/' })
 	if len(parts) >= pathParts {
-		group = parts[0]
-		project = parts[1]
+		// Take last two segments (project is always the last one; group/subgroup is everything before)
+		project = parts[len(parts)-1]
+		group = strings.Join(parts[:len(parts)-1], "/")
 		return
 	}
 	return "", "", host

@@ -444,35 +444,38 @@ func TestParseGitLogOutput_BasicParsing(t *testing.T) {
 	logOutput := "2026-08-19T18:24:26+05:30\x1fabc123def456789abc123def456789abc12345\x1fuser@example.com\x1fJohn Doe\n" +
 		"2026-08-13T12:58:25+03:00\x1fdef456789abc123def456789abc123def45678\x1fjane@example.com\x1fJane Smith"
 
-	commits := parseGitLogOutput(logOutput)
+	commits := parseGitLogOutput(logOutput, time.Time{})
 	require.Len(t, commits, 2)
 
-	assert.Equal(t, "2026-08-13T12:58:25+03:00", commits[0]["date"])
-	assert.Equal(t, "def456789abc123def456789abc123def45678", commits[0]["hash"])
-	assert.Equal(t, "jane@example.com", commits[0]["email"])
-	assert.Equal(t, "Jane Smith", commits[0]["name"])
+	// Git log returns newest-first; commits[0] should be the newer commit
+	assert.Equal(t, "2026-08-19T18:24:26+05:30", commits[0]["date"])
+	assert.Equal(t, "abc123def456789abc123def456789abc12345", commits[0]["hash"])
+	assert.Equal(t, "user@example.com", commits[0]["email"])
+	assert.Equal(t, "John Doe", commits[0]["name"])
 
-	assert.Equal(t, "2026-08-19T18:24:26+05:30", commits[1]["date"])
-	assert.Equal(t, "abc123def456789abc123def456789abc12345", commits[1]["hash"])
-	assert.Equal(t, "user@example.com", commits[1]["email"])
-	assert.Equal(t, "John Doe", commits[1]["name"])
+	assert.Equal(t, "2026-08-13T12:58:25+03:00", commits[1]["date"])
+	assert.Equal(t, "def456789abc123def456789abc123def45678", commits[1]["hash"])
+	assert.Equal(t, "jane@example.com", commits[1]["email"])
+	assert.Equal(t, "Jane Smith", commits[1]["name"])
 }
 
-func TestParseGitLogOutput_RevertsToNewestFirst(t *testing.T) {
-	logOutput := "2026-07-01T10:00:00+00:00\x1f1111111111111111111111111111111111111111\x1fold@example.com\x1fOld User\n" +
+func TestParseGitLogOutput_ReturnsNewestFirst(t *testing.T) {
+	// Git log returns commits newest-first by default; test input reflects actual git output
+	logOutput := "2026-08-19T20:00:00+00:00\x1f3333333333333333333333333333333333333333\x1fnew@example.com\x1fNew User\n" +
 		"2026-07-15T15:00:00+00:00\x1f2222222222222222222222222222222222222222\x1fmid@example.com\x1fMid User\n" +
-		"2026-08-19T20:00:00+00:00\x1f3333333333333333333333333333333333333333\x1fnew@example.com\x1fNew User"
+		"2026-07-01T10:00:00+00:00\x1f1111111111111111111111111111111111111111\x1fold@example.com\x1fOld User"
 
-	commits := parseGitLogOutput(logOutput)
+	commits := parseGitLogOutput(logOutput, time.Time{})
 	require.Len(t, commits, 3)
 
+	// Should preserve git log's newest-first order
 	assert.Equal(t, "2026-08-19T20:00:00+00:00", commits[0]["date"])
 	assert.Equal(t, "2026-07-15T15:00:00+00:00", commits[1]["date"])
 	assert.Equal(t, "2026-07-01T10:00:00+00:00", commits[2]["date"])
 }
 
 func TestParseGitLogOutput_EmptyInput(t *testing.T) {
-	commits := parseGitLogOutput("")
+	commits := parseGitLogOutput("", time.Time{})
 	assert.Nil(t, commits)
 }
 
@@ -483,10 +486,11 @@ func TestParseGitLogOutput_SkipsMalformedLines(t *testing.T) {
 		"\n" +
 		"another bad line"
 
-	commits := parseGitLogOutput(logOutput)
+	commits := parseGitLogOutput(logOutput, time.Time{})
 	require.Len(t, commits, 2)
-	assert.Equal(t, "John Doe", commits[1]["name"])
-	assert.Equal(t, "Jane Smith", commits[0]["name"])
+	// Git log returns newest-first; John Doe (2026-08-19) before Jane Smith (2026-08-13)
+	assert.Equal(t, "John Doe", commits[0]["name"])
+	assert.Equal(t, "Jane Smith", commits[1]["name"])
 }
 
 func TestConvertToCoreCommits_BasicConversion(t *testing.T) {
@@ -850,30 +854,34 @@ func TestFileExists(t *testing.T) {
 }
 
 func TestPrivacyDetectionWithMockedHTTP(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
 	t.Run("detectRepositoryPrivacy returns private for empty path", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		// Empty directory with no .git or .checkmarx files
-		isPrivate := detectRepositoryPrivacy(tmpDir)
+		isPrivate := detectRepositoryPrivacy(tmpDir, mockClient)
 		assert.True(t, isPrivate, "empty directory should default to private")
 	})
 
 	t.Run("detectRepositoryPrivacy returns private when checking nonexistent path", func(t *testing.T) {
-		isPrivate := detectRepositoryPrivacy("/nonexistent/path/that/does/not/exist")
+		isPrivate := detectRepositoryPrivacy("/nonexistent/path/that/does/not/exist", mockClient)
 		assert.True(t, isPrivate, "nonexistent path should default to private")
 	})
 
 	t.Run("isPrivateByURL returns private for empty URL", func(t *testing.T) {
-		isPrivate := isPrivateByURL("")
+		isPrivate := isPrivateByURL("", mockClient)
 		assert.True(t, isPrivate, "empty URL should be private")
 	})
 
 	t.Run("isPrivateByURL routes unknown platforms to private", func(t *testing.T) {
-		isPrivate := isPrivateByURL("https://unknown-git-hosting.com/team/repo")
+		isPrivate := isPrivateByURL("https://unknown-git-hosting.com/team/repo", mockClient)
 		assert.True(t, isPrivate, "unknown platform should default to private")
 	})
 }
 
 func TestIsRepoPublicWithMockedServer(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
 	t.Run("public repository returns true when HTTP 200", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -881,7 +889,7 @@ func TestIsRepoPublicWithMockedServer(t *testing.T) {
 		defer server.Close()
 
 		// Test with mocked server URL
-		isPublic := isRepoPublic(server.URL)
+		isPublic := isRepoPublic(server.URL, mockClient)
 		assert.True(t, isPublic, "HTTP 200 should indicate public")
 	})
 
@@ -891,55 +899,57 @@ func TestIsRepoPublicWithMockedServer(t *testing.T) {
 		}))
 		defer server.Close()
 
-		isPublic := isRepoPublic(server.URL)
+		isPublic := isRepoPublic(server.URL, mockClient)
 		assert.False(t, isPublic, "HTTP 404 should indicate not public (private)")
 	})
 
 	t.Run("empty URL returns false (not public/private)", func(t *testing.T) {
-		isPublic := isRepoPublic("")
+		isPublic := isRepoPublic("", mockClient)
 		assert.False(t, isPublic, "empty URL should not be public")
 	})
 
 	t.Run("malformed URL returns false (not public/private)", func(t *testing.T) {
-		isPublic := isRepoPublic("://invalid")
+		isPublic := isRepoPublic("://invalid", mockClient)
 		assert.False(t, isPublic, "malformed URL should not be public")
 	})
 }
 
 func TestPlatformSpecificPrivacyDetection(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
 	t.Run("isPrivateGitHub returns private when extraction fails", func(t *testing.T) {
 		// Invalid URL that won't extract properly - returns early without HTTP call
-		isPrivate := isPrivateGitHub("invalid")
+		isPrivate := isPrivateGitHub("invalid", mockClient)
 		assert.True(t, isPrivate, "invalid URL should be private")
 	})
 
 	t.Run("isPrivateGitHub returns private for empty owner", func(t *testing.T) {
 		// URL format that extracts to empty owner
-		isPrivate := isPrivateGitHub("")
+		isPrivate := isPrivateGitHub("", mockClient)
 		assert.True(t, isPrivate, "empty URL should be private")
 	})
 
 	t.Run("isPrivateGitLab returns private when extraction fails", func(t *testing.T) {
 		// Invalid URL that won't extract properly
-		isPrivate := isPrivateGitLab("invalid")
+		isPrivate := isPrivateGitLab("invalid", mockClient)
 		assert.True(t, isPrivate, "invalid URL should be private")
 	})
 
 	t.Run("isPrivateGitLab returns private for empty group", func(t *testing.T) {
 		// URL format that extracts to empty group
-		isPrivate := isPrivateGitLab("")
+		isPrivate := isPrivateGitLab("", mockClient)
 		assert.True(t, isPrivate, "empty URL should be private")
 	})
 
 	t.Run("isPrivateBitbucket returns private when extraction fails", func(t *testing.T) {
 		// Invalid URL that won't extract properly
-		isPrivate := isPrivateBitbucket("invalid")
+		isPrivate := isPrivateBitbucket("invalid", mockClient)
 		assert.True(t, isPrivate, "invalid URL should be private")
 	})
 
 	t.Run("isPrivateAzureDevOps returns private when extraction fails", func(t *testing.T) {
 		// Invalid URL that won't extract properly
-		isPrivate := isPrivateAzureDevOps("invalid")
+		isPrivate := isPrivateAzureDevOps("invalid", mockClient)
 		assert.True(t, isPrivate, "invalid URL should be private")
 	})
 }
