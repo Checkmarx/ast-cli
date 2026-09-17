@@ -1,0 +1,6 @@
+<%@ page import="java.sql.*" %>
+<%
+    // Sample JSP build definition file with SQL injection
+    String id = request.getParameter("id");
+    String query = "SELECT * FROM users WHERE id = '" + id + "'";
+%>
