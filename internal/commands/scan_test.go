@@ -706,6 +706,15 @@ func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
 }
 
+func TestCreateScanWithSastBaseBranchWithoutIncremental_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-base-branch", "main")
+	assert.ErrorContains(t, err, "--sast-base-branch flag requires --sast-incremental to be set to true", err.Error())
+}
+
+func TestCreateScanWithSastBaseBranchAndIncremental_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--sast-base-branch", "main")
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
@@ -3541,11 +3550,13 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 	tests := []struct {
 		name                             string
 		requiredIncrementalSet           bool
+		requiredBaseBranchSet            bool
 		requiredFastScanSet              bool
 		requiredLightQueriesSet          bool
 		requiredRecommendedExclusionsSet bool
 		fastScanFlag                     string
 		incrementalFlag                  string
+		baseBranchFlag                   string
 		lightQueriesFlag                 string
 		recommendedExclusionsFlag        string
 		expectedConfig                   wrappers.SastConfig
@@ -3716,6 +3727,22 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 				LightQueries: "true",
 			},
 		},
+		{
+			name:                   "Incremental is true and BaseBranch is set",
+			requiredIncrementalSet: true,
+			requiredBaseBranchSet:  true,
+			incrementalFlag:        "true",
+			baseBranchFlag:         "main",
+			expectedConfig: wrappers.SastConfig{
+				Incremental: "true",
+				BaseBranch:  "main",
+			},
+		},
+		{
+			name:                  "BaseBranch is not set",
+			requiredBaseBranchSet: false,
+			expectedConfig:        wrappers.SastConfig{},
+		},
 	}
 
 	oldActualScanTypes := actualScanTypes
@@ -3734,6 +3761,7 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
 			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+			cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
@@ -3744,6 +3772,9 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			if tt.requiredIncrementalSet {
 				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+			if tt.requiredBaseBranchSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.SastBaseBranch, tt.baseBranchFlag)
 			}
 
 			if tt.requiredLightQueriesSet {
@@ -3770,6 +3801,62 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddSastScan_BaseBranchInheritedFromResubmit(t *testing.T) {
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.SastType,
+			Value: map[string]interface{}{
+				configIncremental: "true",
+				configBaseBranch:  "main",
+			},
+		},
+	}
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+	cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	actualSastConfig := *result[resultsMapValue].(*wrappers.SastConfig)
+	assert.Equal(t, "main", actualSastConfig.BaseBranch)
+	assert.Equal(t, "true", actualSastConfig.Incremental)
+}
+
+func TestAddSastScan_BaseBranchFlagOverridesResubmit(t *testing.T) {
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.SastType,
+			Value: map[string]interface{}{
+				configIncremental: "true",
+				configBaseBranch:  "main",
+			},
+		},
+	}
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+	cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.SastBaseBranch, "develop")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	actualSastConfig := *result[resultsMapValue].(*wrappers.SastConfig)
+	assert.Equal(t, "develop", actualSastConfig.BaseBranch)
 }
 
 func TestValidateScanTypes(t *testing.T) {

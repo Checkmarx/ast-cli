@@ -73,6 +73,7 @@ func (m *ScansMockWrapper) Get(scanParams map[string]string) (
 	fmt.Println("Called Get in ScansMockWrapper")
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig["incremental"] = "trueSastIncremental"
+	sastMapConfig["baseBranch"] = "baseBranchValue"
 	sastMapConfig["presetName"] = "preset"
 	sastMapConfig["filter"] = "filterValueSast"
 	sastMapConfig["engineVerbose"] = "true"

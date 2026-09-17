@@ -656,6 +656,15 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
+// Perform an incremental scan with an explicit base branch to use as the incremental baseline
+func TestIncrementalScanWithBaseBranch(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+
+	scanID, projectID := createScanIncrementalWithBaseBranch(t, Dir, projectName, map[string]string{}, SlowRepoBranch)
+
+	executeScanAssertions(t, projectID, scanID, map[string]string{})
+}
+
 func TestBranchPrimaryFlag(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 	scanID, projectID := createScanWithPrimaryBranchFlag(t, Dir, projectName, map[string]string{})
@@ -983,6 +992,10 @@ func createScanWithPrimaryBranchFlag(t *testing.T, source string, name string, t
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--sast-incremental"))
+}
+
+func createScanIncrementalWithBaseBranch(t *testing.T, source string, name string, tags map[string]string, baseBranch string) (string, string) {
+	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--sast-incremental", "--sast-base-branch", baseBranch))
 }
 
 func getProjectNameForScanTests() string {

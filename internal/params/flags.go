@@ -137,6 +137,7 @@ const (
 	ProjectGroupList               = "project-groups"
 	ProjectTagList                 = "project-tags"
 	IncrementalSast                = "sast-incremental"
+	SastBaseBranch                 = "sast-base-branch"
 	PresetName                     = "sast-preset-name"
 	Threshold                      = "threshold"
 	ThresholdFlagUsage             = "Local build threshold. Format <engine>-<severity>=<limit>. " +

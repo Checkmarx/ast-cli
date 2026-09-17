@@ -92,6 +92,7 @@ const (
 	configFilterKey                         = "filter"
 	configFilterPlatforms                   = "platforms"
 	configIncremental                       = "incremental"
+	configBaseBranch                        = "baseBranch"
 	configFastScan                          = "fastScanMode"
 	configLightQueries                      = "lightQueries"
 	configRecommendedExclusions             = "recommendedExclusions"
@@ -775,7 +776,14 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.IncrementalSast,
 		false,
-		"Incremental SAST scan should be performed.",
+		"Incremental SAST scan should be performed. Requires the tenant/project setting"+
+			" \"Incremental in Branch (API)\" to be enabled when combined with --sast-base-branch.",
+	)
+	createScanCmd.PersistentFlags().String(
+		commonParams.SastBaseBranch,
+		"",
+		"Branch to use as the baseline full scan for incremental SAST scanning. Requires --sast-incremental."+
+			" Requires the tenant/project setting \"Incremental in Branch (API)\" to be enabled.",
 	)
 
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
@@ -1116,6 +1124,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
 
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+	sastBaseBranchChanged := cmd.Flags().Changed(commonParams.SastBaseBranch)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
@@ -1137,6 +1146,10 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 	}
 
+	if sastBaseBranchChanged {
+		sastConfig.BaseBranch, _ = cmd.Flags().GetString(commonParams.SastBaseBranch)
+	}
+
 	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 
@@ -1145,14 +1158,14 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
@@ -1161,6 +1174,9 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 
 	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
 		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitBaseBranch := config.Value[configBaseBranch]; resubmitBaseBranch != nil && !sastBaseBranchChanged {
+		sastConfig.BaseBranch = resubmitBaseBranch.(string)
 	}
 	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
@@ -3850,6 +3866,13 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			return fmt.Errorf("invalid value for --%s flag, must be a valid UUID", commonParams.IacsPresetIDFlag)
 		}
 	}
+
+	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.SastBaseBranch)
+	sastIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+	if sastBaseBranch != "" && !sastIncremental {
+		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.SastBaseBranch, commonParams.IncrementalSast)
+	}
+
 	// check if flag was passed as arg
 	isBranchChanged := cmd.Flags().Changed(commonParams.BranchPrimaryFlag)
 	if isBranchChanged {

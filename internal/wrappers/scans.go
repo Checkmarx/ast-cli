@@ -122,6 +122,7 @@ type ScansWrapper interface {
 
 type SastConfig struct {
 	Incremental           string `json:"incremental,omitempty"`
+	BaseBranch            string `json:"baseBranch,omitempty"`
 	Filter                string `json:"filter,omitempty"`
 	EngineVerbose         string `json:"engineVerbose,omitempty"`
 	LanguageMode          string `json:"languageMode,omitempty"`
