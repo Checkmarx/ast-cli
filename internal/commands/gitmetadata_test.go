@@ -1383,3 +1383,32 @@ func TestGenerateAndWrite_WithCommits(t *testing.T) {
 		assert.True(t, fileExists(metadataPath))
 	})
 }
+
+func TestCommitsSince_FiltersOldCommits(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "old@example.com", name: "Old", when: now.Add(-200 * 24 * time.Hour)},
+		{email: "recent@example.com", name: "Recent", when: now.Add(-1 * 24 * time.Hour)},
+	})
+
+	repo, _ := gogit.PlainOpen(repoPath)
+	since := now.Add(-100 * 24 * time.Hour)
+	commits, _ := commitsSince(repo, since)
+
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "recent@example.com", commits[0].Author.Email)
+}
+
+func TestIsPrivateByURL_RoutingLogic(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
+	githubResult := isPrivateByURL("https://github.com/test/repo", mockClient)
+	gitlabResult := isPrivateByURL("https://gitlab.com/test/repo", mockClient)
+	bitbucketResult := isPrivateByURL("https://bitbucket.org/test/repo", mockClient)
+	azureResult := isPrivateByURL("https://dev.azure.com/test/_git/repo", mockClient)
+
+	assert.NotNil(t, githubResult)
+	assert.NotNil(t, gitlabResult)
+	assert.NotNil(t, bitbucketResult)
+	assert.NotNil(t, azureResult)
+}
