@@ -108,6 +108,52 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	})
 }
 
+// TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds runs the real containers-resolver
+// against a source directory containing a Dockerfile that references an image guaranteed to fail
+// resolution. Unlike an image named through --container-images, one only discovered inside the
+// scanned sources must warn, not fail the scan (AST-146648, preserved by the AST-165915 fix).
+func TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds(t *testing.T) {
+	sourceDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM debian:non-existent-tag-999\n"), 0o600))
+
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), sourceDir,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally, no --container-images
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "a discovered-only unresolved image must not fail scan create")
+	assert.Assert(t, projectID != "", "a discovered-only unresolved image must not fail scan create")
+}
+
+// TestContainerScan_RequestedAndDiscoveredFailuresTogether runs the real containers-resolver with
+// two simultaneous unresolved images: one named explicitly via --container-images (must fail the
+// scan) and one only discovered through a Dockerfile in the source (must only warn). Confirms the
+// two do not interfere end-to-end, against the resolver's real output rather than a synthetic file.
+func TestContainerScan_RequestedAndDiscoveredFailuresTogether(t *testing.T) {
+	sourceDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM alpine:non-existent-discovered-tag\n"), 0o600))
+
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), sourceDir,
+		flag(params.ContainerImagesFlag), "debian:non-existent-tag-999",
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+	}
+	scanErr, _ := executeCommand(t, testArgs...)
+	assert.Assert(t, scanErr != nil, "the explicitly requested unresolved image must fail the scan even alongside a merely-discovered one")
+	assertError(t, scanErr, "debian:non-existent-tag-999")
+}
+
 // TestContainerScan_SpecialCharactersInImageNames tests handling of special characters
 func TestContainerScan_SpecialCharactersInImageNames(t *testing.T) {
 	tests := []struct {
