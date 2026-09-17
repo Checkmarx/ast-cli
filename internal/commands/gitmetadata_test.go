@@ -1297,6 +1297,29 @@ func TestGenerateViaSystemGit_PublicRepo(t *testing.T) {
 	assert.True(t, fileExists(metadataPath), "should create metadata.json")
 }
 
+func TestWriteGeneratedFilesConditional_InvalidPathError(t *testing.T) {
+	// Test with invalid path to trigger MkdirAll error
+	invalidPath := "\x00invalid"
+	csvData := []byte("test csv")
+	metadataData := []byte("test metadata")
+
+	err := writeGeneratedFilesConditional(invalidPath, csvData, metadataData, true)
+	assert.Error(t, err, "should return error for invalid path")
+}
+
+func TestWriteGeneratedFilesConditional_FileExistsAsDirectory(t *testing.T) {
+	// Test error when .checkmarx path exists as file, not directory
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	require.NoError(t, os.WriteFile(checkmarxDir, []byte("blocking"), 0644))
+
+	csvData := []byte("test csv")
+	metadataData := []byte("test metadata")
+
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, true)
+	assert.Error(t, err, "should error when .checkmarx is a file")
+}
+
 func TestGenerateAndWrite_WithCommits(t *testing.T) {
 	t.Run("creates metadata with commit count", func(t *testing.T) {
 		repoPath := t.TempDir()
