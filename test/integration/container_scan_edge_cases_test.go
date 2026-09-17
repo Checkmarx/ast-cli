@@ -50,8 +50,6 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("EmptyTarFile", func(t *testing.T) {
-		// Empty tar is not a container image; local resolution records Status=Failed. Since it was
-		// named explicitly via --container-images, scan create must fail (AST-165915).
 		tarFile := filepath.Join(tempDir, "test-container.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -87,8 +85,6 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	})
 
 	t.Run("EmptyTarFileWithOtherImages", func(t *testing.T) {
-		// nginx:alpine still resolves, but the empty tar was also named explicitly via
-		// --container-images, so it must fail the scan even mixed with a valid image (AST-165915).
 		tarFile := filepath.Join(tempDir, "another-test.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -108,10 +104,8 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	})
 }
 
-// TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds runs the real containers-resolver
-// against a source directory containing a Dockerfile that references an image guaranteed to fail
-// resolution. Unlike an image named through --container-images, one only discovered inside the
-// scanned sources must warn, not fail the scan (AST-146648, preserved by the AST-165915 fix).
+// Exercises the real containers-resolver: a Dockerfile-discovered unresolved image must warn,
+// not fail the scan.
 func TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds(t *testing.T) {
 	sourceDir := t.TempDir()
 	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM debian:non-existent-tag-999\n"), 0o600))
@@ -131,10 +125,7 @@ func TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds(t *testing.T) {
 	assert.Assert(t, projectID != "", "a discovered-only unresolved image must not fail scan create")
 }
 
-// TestContainerScan_RequestedAndDiscoveredFailuresTogether runs the real containers-resolver with
-// two simultaneous unresolved images: one named explicitly via --container-images (must fail the
-// scan) and one only discovered through a Dockerfile in the source (must only warn). Confirms the
-// two do not interfere end-to-end, against the resolver's real output rather than a synthetic file.
+// A requested and a discovered failure together: the requested one must still fail the scan.
 func TestContainerScan_RequestedAndDiscoveredFailuresTogether(t *testing.T) {
 	sourceDir := t.TempDir()
 	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM alpine:non-existent-discovered-tag\n"), 0o600))

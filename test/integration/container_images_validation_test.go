@@ -182,14 +182,10 @@ func TestContainerImageValidation_MultipleImagesValidation(t *testing.T) {
 
 // TestContainerImageValidation_TarFiles tests validation of .tar file references
 func TestContainerImageValidation_TarFiles(t *testing.T) {
-	// Create a temporary .tar file for testing
 	tempDir := t.TempDir()
 	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
-	// Create an empty .tar file for testing.
-	// Flag validation only checks that the .tar exists. Local resolution records it as
-	// Status=Failed in containers-resolution.json; since it was named explicitly via
-	// --container-images, scan create must fail (AST-165915).
+	// Flag validation only checks that the .tar exists; local resolution then fails it.
 	f, err := os.Create(emptyTarFile)
 	assert.NilError(t, err, "Should create temp .tar file")
 	f.Close()
@@ -204,7 +200,7 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 			name:          "EmptyTarFile",
 			tarFile:       emptyTarFile,
 			shouldSucceed: false,
-			description:   "Empty .tar file named explicitly must fail the scan (AST-165915)",
+			description:   "Empty .tar file named explicitly must fail the scan",
 		},
 		{
 			name:          "NonExistentTarFile",
@@ -241,7 +237,6 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 
 // TestContainerImageValidation_MixedTarAndRegularImages tests mixing .tar files with regular images
 func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
-	// Empty tar is not a container image; mixed with a valid image it must not abort scan create.
 	tempDir := t.TempDir()
 	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
@@ -250,8 +245,6 @@ func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
 	f.Close()
 
 	t.Run("EmptyTarAndRegularImage", func(t *testing.T) {
-		// nginx:alpine still resolves, but the empty tar was also named explicitly via
-		// --container-images, so it must fail the scan even mixed with a valid image (AST-165915).
 		createASTIntegrationTestCommand(t)
 		imageList := fmt.Sprintf("nginx:alpine,%s", emptyTarFile)
 		testArgs := []string{
