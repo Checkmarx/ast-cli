@@ -7,13 +7,6 @@
 # Risk: Low - temporary file cleanup only affects scanning operations, not CLI runtime
 CVE-2026-33481 exp:2026-12-31
 
-# CVE-2026-34040 (HIGH): Moby Authorization bypass vulnerability
-# Library: github.com/docker/docker v28.0.3+incompatible
-# Status: Unfixed, fix available in v29.3.1
-# Risk: Accepted - Docker SDK is only used for container image scanning
-# Impact: Only relevant when used as a container registry client
-CVE-2026-34040 exp:2026-12-31
-
 # CVE-2026-33997 (MEDIUM): Moby Privilege validation bypass during plugin installation
 # Library: github.com/docker/docker v28.0.3+incompatible
 # Status: Unfixed
@@ -21,47 +14,11 @@ CVE-2026-34040 exp:2026-12-31
 # Impact: Only affects Docker daemon with untrusted plugins
 CVE-2026-33997 exp:2026-12-31
 
-# CVE-2026-50151 (HIGH): oras-go blob upload vulnerable to credential forwarding
-# Library: oras.land/oras-go/v2 v2.6.0
-# Status: Fixed in v2.6.1
-# Risk: Low - only affects registry credential forwarding via unvalidated Location header
-# Impact: Container image scanning with registry redirects
-CVE-2026-50151 exp:2026-12-31
-
-# CVE-2026-50162 (MEDIUM): oras-go file store write outside workingDir via symlink traversal
-# Library: oras.land/oras-go/v2 v2.6.0
-# Status: Fixed in v2.6.1
-# Risk: Accepted - symlink traversal only affects local filesystem operations in scanning
-# Impact: Container image analysis with malicious symbolic links
-CVE-2026-50162 exp:2026-12-31
-
-# GHSA-vh4v-2xq2-g5cg (MEDIUM): ORAS Go forwards registry credentials across registry redirects
-# Library: oras.land/oras-go/v2 v2.6.0
-# Status: Fixed in v2.6.1
-# Risk: Accepted - requires malicious registry redirect, container scanning only
-# Impact: Credential exposure in container registry operations
-GHSA-vh4v-2xq2-g5cg exp:2026-12-31
-
-# CVE-2026-48978 (LOW): oras-go malicious registry can hijack realm to exfiltrate credentials
-# Library: oras.land/oras-go/v2 v2.6.0
-# Status: Fixed in v2.6.1
-# Risk: Low - requires attacker-controlled registry, container scanning only
-# Impact: Credential exfiltration in container registry operations
-CVE-2026-48978 exp:2026-12-31
-
-# CVE-2026-6791 (UNKNOWN): glibc vulnerability
-# Libraries: glibc, glibc-locale-posix, ld-linux, libcrypt1
-# Image: wolfi 20230201 (base image)
-# Status: Fixed in glibc 2.43-r10 (current: 2.43-r8)
-# Risk: Low - affects base OS image, not application code
-# Impact: Minimal - only affects base OS components, application uses glibc runtime only
-CVE-2026-6791 exp:2026-12-31
-
-# CVE-2026-58055 (MEDIUM): libnghttp2 HTTP Request/Response Smuggling
-# Library: libnghttp2-14 v1.69.0-r0
-# Image: checkmarx/bash:5.3-r12 (base image)
-# Status: Fixed in libnghttp2-14 >= 1.70.0-r0
-# Risk: MEDIUM - HTTP/1.1 Upgrade smuggling potential
+# CVE-2026-85091 (MEDIUM): zlib heap buffer overflow
+# Library: zlib 1.3.2-r6
+# Image: checkmarx/bash:5.3-r13 (base image)
+# Status: Fixed in zlib >= 1.3.3-r0, not yet published in checkmarx/bash
+# Risk: Accepted - awaiting upstream base image patch
 # Impact: Awaiting checkmarx/bash base image patch
-# Tracking: AST-166372
-CVE-2026-58055 exp:2027-02-28
+# Tracking: AST-173242
+CVE-2026-85091 exp:2027-02-28

@@ -22,6 +22,8 @@ import (
 	"time"
 	"unicode"
 
+	syftExtractor "github.com/Checkmarx/containers-syft-packages-extractor/pkg/syftPackagesExtractor"
+	"github.com/Checkmarx/containers-types/types"
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
@@ -120,10 +122,13 @@ const (
 		"\nIf you think that you have already purchased the relevant license, please contact our support team for assistance." +
 		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
-	directoryCreationPrefix     = "cx-"
-	ScsScoreCardType            = "scorecard"
-	ScsSecretDetectionType      = "secret-detection"
-	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	// containerResolutionStatusFailed is the status the resolver writes into
+	// containers-resolution.json for an image it could not analyze.
+	containerResolutionStatusFailed = "Failed"
+	directoryCreationPrefix         = "cx-"
+	ScsScoreCardType                = "scorecard"
+	ScsSecretDetectionType          = "secret-detection"
+	ScsRepoRequiredMsg              = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
@@ -2419,8 +2424,109 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		if containerResolverErr != nil {
 			return containerResolverErr
 		}
+		// Resolve returns nil even when individual images could not be analyzed, so the
+		// resolution file has to be inspected before the scan is allowed to continue.
+		return reportUnresolvedContainerImages(directoryPath)
 	}
 	return nil
+}
+
+// reportUnresolvedContainerImages surfaces the images the resolver could not analyze.
+//
+// The resolver records an unresolvable image as a "Failed" entry and still returns nil, so without
+// this check the CLI uploads a resolution file carrying no package data and the scan completes with
+// 0 findings - byte for byte indistinguishable from a genuinely clean scan, with exit code 0
+// (AST-165915).
+//
+// Images named explicitly through --container-images are treated as an error: the user asked for
+// those by name, so failing to scan one has to fail the pipeline. Images merely discovered inside
+// the scanned sources only warn, which preserves the deliberate warn-rather-than-fail behaviour
+// chosen in AST-146648 for private images the CLI cannot reach.
+func reportUnresolvedContainerImages(directoryPath string) error {
+	resolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
+
+	content, err := os.ReadFile(resolutionFilePath)
+	if err != nil {
+		// Nothing was resolved, so there is nothing to report here. Any real failure of the
+		// resolution step itself was already returned by Resolve.
+		logger.PrintIfVerbose(fmt.Sprintf("Could not read container resolution file %s: %s", resolutionFilePath, err.Error()))
+		return nil
+	}
+
+	// Decoded with the producer's own type, so the CLI cannot drift from the format the
+	// resolver writes.
+	var entries []syftExtractor.ContainerResolution
+	if unmarshalErr := json.Unmarshal(content, &entries); unmarshalErr != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("Could not parse container resolution file %s: %s", resolutionFilePath, unmarshalErr.Error()))
+		return nil
+	}
+
+	var requested, discovered []string
+	for i := range entries {
+		image := entries[i].ContainerImage
+		if !strings.EqualFold(image.Status, containerResolutionStatusFailed) {
+			continue
+		}
+
+		description := fmt.Sprintf("  %s - %s", containerImageDisplayName(image.ImageName, image.ImageTag), containerImageFailureReason(image.ScanError))
+		if isUserRequestedContainerImage(&entries[i]) {
+			requested = append(requested, description)
+		} else {
+			discovered = append(discovered, description)
+		}
+	}
+
+	if len(discovered) > 0 {
+		logger.Print(fmt.Sprintf("WARNING: %s discovered in the scanned sources could not be resolved and %s NOT scanned:\n%s",
+			containerImageCount(len(discovered)), wasOrWere(len(discovered)), strings.Join(discovered, "\n")))
+	}
+
+	if len(requested) > 0 {
+		return errors.Errorf("%s could not be resolved and %s NOT scanned:\n%s",
+			containerImageCount(len(requested)), wasOrWere(len(requested)), strings.Join(requested, "\n"))
+	}
+
+	return nil
+}
+
+// isUserRequestedContainerImage reports whether the image was named explicitly through
+// --container-images. An image can be reached from several locations at once, so a single
+// UserInput origin is enough to treat it as explicitly requested.
+func isUserRequestedContainerImage(entry *syftExtractor.ContainerResolution) bool {
+	for _, location := range entry.ContainerImage.ImageLocations {
+		if strings.EqualFold(location.Origin, types.UserInput) {
+			return true
+		}
+	}
+	return false
+}
+
+func containerImageDisplayName(name, tag string) string {
+	if tag == "" {
+		return name
+	}
+	return name + ":" + tag
+}
+
+func containerImageFailureReason(scanError string) string {
+	if scanError == "" {
+		return "the image could not be resolved"
+	}
+	return scanError
+}
+
+func containerImageCount(count int) string {
+	if count == 1 {
+		return "1 container image"
+	}
+	return fmt.Sprintf("%d container images", count)
+}
+
+func wasOrWere(count int) string {
+	if count == 1 {
+		return "was"
+	}
+	return "were"
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
