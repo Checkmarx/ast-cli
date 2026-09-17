@@ -4,19 +4,28 @@ import (
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/pkg/errors"
 )
 
 type SastMetadataMockWrapper struct{}
 
 const (
-	scanIDParam = "scan-ids"
-	concurrent  = "ConcurrentTest"
+	scanIDParam         = "scan-ids"
+	concurrent          = "ConcurrentTest"
+	FakeMetadataErrorID = "fake-sast-metadata-error-id"
+	FakeMetadataEmptyID = "fake-sast-metadata-empty-id"
 )
 
 func (s SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) (
 	*wrappers.SastMetadataModel,
 	error,
 ) {
+	if strings.Contains(params[scanIDParam], FakeMetadataErrorID) {
+		return nil, errors.New("fake sast metadata fetch error")
+	}
+	if strings.Contains(params[scanIDParam], FakeMetadataEmptyID) {
+		return &wrappers.SastMetadataModel{TotalCount: 0, Scans: []wrappers.Scans{}}, nil
+	}
 	if strings.Contains(params[scanIDParam], concurrent) {
 		scanIDs := strings.Split(params[scanIDParam], ",")
 		return &wrappers.SastMetadataModel{

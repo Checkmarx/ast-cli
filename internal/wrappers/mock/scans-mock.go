@@ -169,6 +169,21 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 		}, nil, nil
 	}
 
+	if scanID == FakeMetadataErrorID {
+		return &wrappers.ScanResponseModel{
+			ID:              scanID,
+			Status:          "Completed",
+			SastIncremental: "false",
+		}, nil, nil
+	}
+	if scanID == FakeMetadataEmptyID {
+		return &wrappers.ScanResponseModel{
+			ID:              scanID,
+			Status:          "Completed",
+			SastIncremental: "true",
+		}, nil, nil
+	}
+
 	if scanID == "ScanRunning" {
 		return &wrappers.ScanResponseModel{
 			ID:        "ScanRunning",

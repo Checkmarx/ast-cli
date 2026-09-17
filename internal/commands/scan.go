@@ -234,7 +234,7 @@ func NewScanCommand(
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
-	showScanCmd := scanShowSubCommand(scansWrapper)
+	showScanCmd := scanShowSubCommand(scansWrapper, sastMetadataWrapper)
 
 	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
 
@@ -440,7 +440,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return workflowScanCmd
 }
 
-func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+func scanShowSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
@@ -457,7 +457,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runGetScanByIDCommand(scansWrapper),
+		RunE: runGetScanByIDCommand(scansWrapper, sastMetadataWrapper),
 	}
 	addScanIDFlag(showScanCmd, "Scan ID to show")
 	return showScanCmd
@@ -3385,7 +3385,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 	}
 }
 
-func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var scanResponseModel *wrappers.ScanResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -3402,6 +3402,12 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
+			sastMetadata, err := services.GetSastMetadataByIDs(sastMetadataWrapper, []string{scanID})
+			if err != nil {
+				logger.Printf("error getting sast metadata: %v", err)
+			} else if sastMetadata != nil && len(sastMetadata.Scans) > 0 {
+				scanResponseModel.SastIncremental = strconv.FormatBool(sastMetadata.Scans[0].IsIncremental)
+			}
 			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err

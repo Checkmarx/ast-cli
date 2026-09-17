@@ -715,6 +715,25 @@ func TestCreateScanWithSastBaseBranchAndIncremental_Passed(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--sast-base-branch", "main")
 }
 
+func TestGetScanByIDWithMetadataFetched_EnrichesWithIncrementalStatus(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", "MOCK_SCAN_ID", "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Incremental"), "expected output to contain 'Incremental', got: %s", buffer.String())
+}
+
+func TestGetScanByIDWithMetadataFetchFails_PreservesOriginalValue(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", mock.FakeMetadataErrorID, "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Full"), "expected output to contain 'Full', got: %s", buffer.String())
+	assert.Assert(t, !strings.Contains(buffer.String(), "Incremental"), "expected output NOT to contain 'Incremental', got: %s", buffer.String())
+}
+
+func TestGetScanByIDWithEmptyMetadata_UsesOriginalValue(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", mock.FakeMetadataEmptyID, "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Incremental"), "expected output to contain 'Incremental', got: %s", buffer.String())
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1

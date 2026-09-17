@@ -656,13 +656,26 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
-// Perform an incremental scan with an explicit base branch to use as the incremental baseline
 func TestIncrementalScanWithBaseBranch(t *testing.T) {
 	projectName := getProjectNameForScanTests()
+	baselineBaseBranch := SlowRepoBranch
 
-	scanID, projectID := createScanIncrementalWithBaseBranch(t, Dir, projectName, map[string]string{}, SlowRepoBranch)
+	baselineArgs := append(getCreateArgsWithName(Dir, map[string]string{}, projectName, "sast"),
+		flag(params.BranchFlag), baselineBaseBranch)
+	baselineScanID, baselineProjectID := executeCreateScan(t, baselineArgs)
 
-	executeScanAssertions(t, projectID, scanID, map[string]string{})
+	incrementalArgs := append(getCreateArgsWithName(Dir, map[string]string{}, projectName, "sast,sca,iac-security"),
+		flag(params.BranchFlag), baselineBaseBranch,
+		"--sast-incremental", "--sast-base-branch", baselineBaseBranch)
+	incrementalScanID, projectIDInc := executeCreateScan(t, incrementalArgs)
+
+	assert.Assert(t, baselineProjectID == projectIDInc, "Project IDs should match")
+
+	scan := showScan(t, incrementalScanID)
+	assert.Equal(t, scan.SastIncremental, "Incremental", "scan created with --sast-base-branch should display as Incremental")
+
+	executeScanAssertions(t, baselineProjectID, baselineScanID, map[string]string{})
+	executeScanAssertions(t, baselineProjectID, incrementalScanID, map[string]string{})
 }
 
 func TestBranchPrimaryFlag(t *testing.T) {
@@ -992,10 +1005,6 @@ func createScanWithPrimaryBranchFlag(t *testing.T, source string, name string, t
 
 func createScanIncremental(t *testing.T, source string, name string, tags map[string]string) (string, string) {
 	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--sast-incremental"))
-}
-
-func createScanIncrementalWithBaseBranch(t *testing.T, source string, name string, tags map[string]string, baseBranch string) (string, string) {
-	return executeCreateScan(t, append(getCreateArgsWithName(source, tags, name, "sast,sca,iac-security"), "--sast-incremental", "--sast-base-branch", baseBranch))
 }
 
 func getProjectNameForScanTests() string {
