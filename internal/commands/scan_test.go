@@ -6029,3 +6029,303 @@ func TestWasOrWere(t *testing.T) {
 	assert.Equal(t, wasOrWere(2), "were")
 	assert.Equal(t, wasOrWere(0), "were")
 }
+
+// zipFileCount returns count of entries in zip with given filename to guard against duplicates.
+func zipFileCount(t *testing.T, zipPath, filename string) int {
+	t.Helper()
+	r, err := zip.OpenReader(zipPath)
+	assert.NilError(t, err)
+	defer func() { _ = r.Close() }()
+	count := 0
+	for _, f := range r.File {
+		if filepath.Base(f.Name) == filename || f.Name == filename {
+			count++
+		}
+	}
+	return count
+}
+
+func TestCompressFolder_GitExcluded_WhenContributorsCsvEnabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-git-exclude-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "HEAD"),
+		".git contents should be excluded when --exclude-git-folder flag is passed")
+}
+
+func TestCompressFolder_GitIncluded_WhenContributorsCsvDisabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-git-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "HEAD"),
+		".git contents must still be force-included when --exclude-git-folder flag is not passed")
+}
+
+func TestCompressFolder_ContributorsFilesForceIncluded_WhenEnabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-force-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"),
+		[]byte(`{"repositoryUrl":"https://example.com/repo.git"}`), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, 1, zipFileCount(t, zipPath, "contributors.csv"),
+		"contributors.csv must be present exactly once, despite *.csv not being in the default include-filter allowlist")
+	assert.Equal(t, 1, zipFileCount(t, zipPath, "metadata.json"),
+		"metadata.json must be present exactly once (not duplicated by both the normal walk and the explicit add-back step)")
+}
+
+func TestCompressFolder_ContributorsFilesNotIncluded_WhenDisabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-disabled-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "contributors.csv"),
+		"without the feature flag, contributors.csv should be dropped by the default include-filter allowlist, same as before this feature existed")
+}
+
+func TestCompressFolder_StaleFilesNotIncluded_WhenGenerationFailedThisRun(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-stale-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"),
+		[]byte(`{"repositoryUrl":"https://example.com/repo.git"}`), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "HEAD"),
+		".git should still be excluded - that decision is tied to the flag alone, not generation success")
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "contributors.csv"),
+		"stale contributors.csv from a previous run must not be picked up when this run's generation failed")
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "metadata.json"),
+		"stale metadata.json from a previous run must not be picked up when this run's generation failed")
+}
+
+func TestIsGeneratedContributorsFile(t *testing.T) {
+	tests := []struct {
+		relPath  string
+		expected bool
+		desc     string
+	}{
+		{".checkmarx/contributors.csv", true, "exact match for CSV file"},
+		{".checkmarx/metadata.json", true, "exact match for JSON file"},
+		{".checkmarx/other.txt", false, "non-generated file in .checkmarx"},
+		{"contributors.csv", false, "CSV file not in .checkmarx"},
+		{"metadata.json", false, "JSON file not in .checkmarx"},
+		{".checkmarx/", false, "directory path"},
+		{"", false, "empty path"},
+		{".checkmarx/contributors.csv/", false, "trailing slash"},
+		{"nested/.checkmarx/contributors.csv", false, "nested .checkmarx path"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			result := isGeneratedContributorsFile(tt.relPath)
+			assert.Equal(t, tt.expected, result, "path: %s", tt.relPath)
+		})
+	}
+}
+
+func TestAddGeneratedContributorsFiles(t *testing.T) {
+	t.Run("both files exist and are added to zip", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvContent := []byte("2025-09-30T10:35:05Z,abc123,alice@example.com,Alice\n")
+		jsonContent := []byte(`{"repositoryUrl":"https://example.com/repo.git","commitsCount":5}`)
+
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"), csvContent, 0o600))
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"), jsonContent, 0o600))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err)
+		assert.NilError(t, zipWriter.Close())
+
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/contributors.csv"))
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/metadata.json"))
+	})
+
+	t.Run("only CSV file exists", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvContent := []byte("2025-09-30T10:35:05Z,abc123,alice@example.com,Alice\n")
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"), csvContent, 0o600))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err)
+		assert.NilError(t, zipWriter.Close())
+
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/contributors.csv"))
+		assert.Equal(t, false, zipContainsFile(t, zipPath, ".checkmarx/metadata.json"))
+	})
+
+	t.Run("no files exist should not error", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err, "should not error when files don't exist")
+	})
+}
+
+func TestCleanGeneratedContributorsFiles(t *testing.T) {
+	t.Run("removes both files and empty .checkmarx folder", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
+		assert.Equal(t, false, fileExists(checkmarxDir), ".checkmarx should be removed when empty")
+	})
+
+	t.Run("preserves .checkmarx folder if other files exist", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+		otherPath := filepath.Join(checkmarxDir, "other.txt")
+
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(otherPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
+		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should be preserved")
+		assert.Equal(t, true, fileExists(otherPath), "other files should be preserved")
+	})
+
+	t.Run("handles only CSV file existing", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(checkmarxDir), ".checkmarx should be removed when empty")
+	})
+
+	t.Run("handles no .checkmarx folder gracefully", func(t *testing.T) {
+		dirPath := t.TempDir()
+		cleanGeneratedContributorsFiles(dirPath)
+	})
+
+	t.Run("handles missing files gracefully", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		cleanGeneratedContributorsFiles(dirPath)
+		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
+	})
+}
