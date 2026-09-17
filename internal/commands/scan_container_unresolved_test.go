@@ -3,10 +3,14 @@
 package commands
 
 import (
+	"bytes"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	syftExtractor "github.com/Checkmarx/containers-syft-packages-extractor/pkg/syftPackagesExtractor"
 	"gotest.tools/assert"
 )
 
@@ -117,4 +121,176 @@ func TestReportUnresolvedContainerImages_FailureWithoutScanErrorStillReported(t 
 	assert.Assert(t, err != nil)
 	assert.ErrorContains(t, err, "c:3")
 	assert.ErrorContains(t, err, "the image could not be resolved")
+}
+
+// An empty entries array is valid JSON but carries nothing to report.
+func TestReportUnresolvedContainerImages_EmptyEntriesListIsNotAnError(t *testing.T) {
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, "[]")))
+}
+
+// A Resolved entry sitting alongside a Failed one must never leak into the failure report.
+func TestReportUnresolvedContainerImages_ResolvedEntriesAreSkippedAmongFailures(t *testing.T) {
+	mixedStatuses := `[
+		{"ContainerImage":{"ImageName":"good","ImageTag":"1","ImageLocations":[{"Origin":"UserInput"}],"status":"Resolved"},"ContainerPackages":[{"Name":"x"}]},
+		{"ContainerImage":{"ImageName":"bad","ImageTag":"2","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, mixedStatuses))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "bad:2")
+	assert.Assert(t, !strings.Contains(err.Error(), "good:1"), "a Resolved entry must never appear in the failure report")
+}
+
+// An entry reached through no location at all is not user-requested and must only warn.
+func TestReportUnresolvedContainerImages_NoLocationsIsTreatedAsDiscovered(t *testing.T) {
+	noLocations := `[{"ContainerImage":{"ImageName":"orphan","ImageTag":"1","ImageLocations":[],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, noLocations)),
+		"an entry with no locations at all must not be treated as user-requested")
+}
+
+// Status and Origin values must match case-insensitively - nothing in the ticket or the resolver's
+// contract guarantees the exact casing the two payloads observed ("Failed"/"UserInput") is the only one.
+func TestReportUnresolvedContainerImages_StatusAndOriginAreCaseInsensitive(t *testing.T) {
+	upperCase := `[{"ContainerImage":{"ImageName":"case-test","ImageTag":"1","ImageLocations":[{"Origin":"USERINPUT"}],"status":"FAILED","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, upperCase))
+	assert.Assert(t, err != nil, "case differences in status/origin must not hide a requested failure")
+	assert.ErrorContains(t, err, "case-test:1")
+}
+
+// The discovered-only warning message is user-facing output, not just a nil-error contract - assert
+// its exact wording so a refactor can't silently drop it while still returning nil.
+func TestReportUnresolvedContainerImages_DiscoveredWarningIsLogged(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, discoveredOnlyPayload))
+
+	assert.NilError(t, err)
+	loggedMsg := logBuffer.String()
+	assert.Assert(t, strings.Contains(loggedMsg, "WARNING"))
+	assert.Assert(t, strings.Contains(loggedMsg, "1 container image"))
+	assert.Assert(t, strings.Contains(loggedMsg, "was NOT scanned"))
+	assert.Assert(t, strings.Contains(loggedMsg, "internal/app:1.0"))
+}
+
+// Plural wording must be used once there is more than one discovered-only failure.
+func TestReportUnresolvedContainerImages_DiscoveredWarningPluralWording(t *testing.T) {
+	twoDiscovered := `[
+		{"ContainerImage":{"ImageName":"a","ImageTag":"1","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"x"},"ContainerPackages":[]},
+		{"ContainerImage":{"ImageName":"b","ImageTag":"2","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"y"},"ContainerPackages":[]}]`
+
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, twoDiscovered))
+
+	assert.NilError(t, err, "discovered-only failures must never fail the scan, however many there are")
+	loggedMsg := logBuffer.String()
+	assert.Assert(t, strings.Contains(loggedMsg, "2 container images"))
+	assert.Assert(t, strings.Contains(loggedMsg, "were NOT scanned"))
+}
+
+// A resolution file can carry both kinds of failure at once: the discovered one must still only
+// warn while the requested one fails the scan, and the two must not bleed into each other's message.
+func TestReportUnresolvedContainerImages_RequestedAndDiscoveredTogether(t *testing.T) {
+	mixed := `[
+		{"ContainerImage":{"ImageName":"requested-img","ImageTag":"1","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]},
+		{"ContainerImage":{"ImageName":"discovered-img","ImageTag":"2","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"boom2"},"ContainerPackages":[]}]`
+
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, mixed))
+
+	assert.Assert(t, err != nil, "a requested failure must fail the scan even alongside a merely-discovered one")
+	assert.ErrorContains(t, err, "requested-img:1")
+	assert.Assert(t, !strings.Contains(err.Error(), "discovered-img"), "the discovered image must not appear in the fatal error")
+	assert.Assert(t, strings.Contains(logBuffer.String(), "discovered-img:2"), "the discovered image must still be warned about")
+}
+
+// An image named without a tag must be displayed by name alone, with no dangling colon.
+func TestReportUnresolvedContainerImages_EmptyTagDisplaysNameOnly(t *testing.T) {
+	noTag := `[{"ContainerImage":{"ImageName":"registry.example.com/no-tag-image","ImageTag":"","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, noTag))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "registry.example.com/no-tag-image -")
+	assert.Assert(t, !strings.Contains(err.Error(), "registry.example.com/no-tag-image:"),
+		"an empty tag must not produce a trailing colon")
+}
+
+// isUserRequestedContainerImage exercised directly, independent of file/JSON plumbing.
+func TestIsUserRequestedContainerImage(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry syftExtractor.ContainerResolution
+		want  bool
+	}{
+		{
+			name:  "no locations at all",
+			entry: syftExtractor.ContainerResolution{},
+			want:  false,
+		},
+		{
+			name: "single UserInput location",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "UserInput"}},
+			}},
+			want: true,
+		},
+		{
+			name: "single Dockerfile location",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "Dockerfile"}},
+			}},
+			want: false,
+		},
+		{
+			name: "origin match is case-insensitive",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "userinput"}},
+			}},
+			want: true,
+		},
+		{
+			name: "UserInput among several locations",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "Dockerfile"}, {Origin: "UserInput"}},
+			}},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, isUserRequestedContainerImage(&tt.entry), tt.want)
+		})
+	}
+}
+
+// The small formatting helpers behind the report message, exercised directly for every branch.
+func TestContainerImageDisplayName(t *testing.T) {
+	assert.Equal(t, containerImageDisplayName("nginx", "alpine"), "nginx:alpine")
+	assert.Equal(t, containerImageDisplayName("nginx", ""), "nginx")
+}
+
+func TestContainerImageFailureReason(t *testing.T) {
+	assert.Equal(t, containerImageFailureReason(""), "the image could not be resolved")
+	assert.Equal(t, containerImageFailureReason("custom reason"), "custom reason")
+}
+
+func TestContainerImageCount(t *testing.T) {
+	assert.Equal(t, containerImageCount(1), "1 container image")
+	assert.Equal(t, containerImageCount(2), "2 container images")
+	assert.Equal(t, containerImageCount(0), "0 container images")
+}
+
+func TestWasOrWere(t *testing.T) {
+	assert.Equal(t, wasOrWere(1), "was")
+	assert.Equal(t, wasOrWere(2), "were")
+	assert.Equal(t, wasOrWere(0), "were")
 }
