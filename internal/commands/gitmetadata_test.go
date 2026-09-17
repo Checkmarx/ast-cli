@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1068,6 +1069,121 @@ func TestExtractionsReturnEmptyOnInvalidInput(t *testing.T) {
 		assert.Equal(t, "", workspace)
 		assert.Equal(t, "", repo)
 	})
+}
+
+func TestParseGitLogOutput_FiltersByAuthorDate(t *testing.T) {
+	now := time.Now()
+	cutoff := now.Add(-10 * 24 * time.Hour)
+
+	// Log output with commits before and after cutoff
+	logOutput := fmt.Sprintf(
+		"%s\x1f%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		cutoff.Add(-time.Hour).Format(time.RFC3339), "hash1", "old@example.com", "Old User",
+		cutoff.Add(24*time.Hour).Format(time.RFC3339), "hash2", "new@example.com", "New User",
+	)
+
+	commits := parseGitLogOutput(logOutput, cutoff)
+	// Only the commit after cutoff should be included
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "new@example.com", commits[0]["email"])
+}
+
+func TestParseGitLogOutput_SkipsMalformedDates(t *testing.T) {
+	logOutput := fmt.Sprintf(
+		"invalid-date\x1f%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		"hash1", "user1@example.com", "User 1",
+		time.Now().Format(time.RFC3339), "hash2", "user2@example.com", "User 2",
+	)
+
+	cutoff := time.Now().Add(-24 * time.Hour)
+	commits := parseGitLogOutput(logOutput, cutoff)
+	// Should skip the malformed date line and only include the valid one
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "user2@example.com", commits[0]["email"])
+}
+
+func TestParseGitLogOutput_SkipsIncompleteLines(t *testing.T) {
+	logOutput := fmt.Sprintf(
+		"%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		time.Now().Format(time.RFC3339), "hash1", "incomplete",
+		time.Now().Format(time.RFC3339), "hash2", "user2@example.com", "User 2",
+	)
+
+	commits := parseGitLogOutput(logOutput, time.Now().Add(-24*time.Hour))
+	// Should skip the incomplete line (only 3 fields instead of 4)
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "user2@example.com", commits[0]["email"])
+}
+
+func TestConvertToCoreCommits_HandlesParsingErrors(t *testing.T) {
+	commits := []map[string]string{
+		{
+			"date":  "invalid-date",
+			"hash":  "0000000000000000000000000000000000000000",
+			"email": "user@example.com",
+			"name":  "User",
+		},
+		{
+			"date":  time.Now().Format(time.RFC3339),
+			"hash":  "1234567890123456789012345678901234567890",
+			"email": "user2@example.com",
+			"name":  "User 2",
+		},
+	}
+
+	result := convertToCoreCommits(commits)
+	assert.Len(t, result, 2)
+	// First commit should have zero time due to parsing error
+	assert.True(t, result[0].Author.When.IsZero())
+	// Second commit should parse correctly
+	assert.False(t, result[1].Author.When.IsZero())
+}
+
+func TestWriteGeneratedFilesConditional_CreatesCheckmarxDir(t *testing.T) {
+	repoPath := t.TempDir()
+	csvData := []byte("date,hash,email,name\n2026-09-17T00:00:00Z,abc123,user@example.com,Test User")
+	metadataData := []byte(`{"repositoryUrl":"https://github.com/test/repo","lastCommitHash":"abc123","lastCommitDate":"2026-09-17T00:00:00Z","commitsCount":1}`)
+
+	// Private repo should write both files
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, true)
+	require.NoError(t, err)
+
+	// Check .checkmarx folder was created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	// Check both files exist
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(csvPath), "should create contributors.csv for private repo")
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+
+	// Verify file contents
+	csvBytes, err := os.ReadFile(csvPath)
+	require.NoError(t, err)
+	assert.Equal(t, string(csvData), string(csvBytes))
+}
+
+func TestWriteGeneratedFilesConditional_PublicRepoNoCSV(t *testing.T) {
+	repoPath := t.TempDir()
+	csvData := []byte("date,hash,email,name\n2026-09-17T00:00:00Z,abc123,user@example.com,Test User")
+	metadataData := []byte(`{"repositoryUrl":"https://github.com/test/repo","lastCommitHash":"abc123","lastCommitDate":"2026-09-17T00:00:00Z","commitsCount":1}`)
+
+	// Public repo (isPrivateRepo=false) should NOT write CSV
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, false)
+	require.NoError(t, err)
+
+	// Check .checkmarx folder was created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	// CSV should NOT exist for public repos
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.False(t, fileExists(csvPath), "should NOT create contributors.csv for public repo")
+
+	// Metadata should exist
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json for all repos")
 }
 
 func TestGenerateAndWrite_WithCommits(t *testing.T) {
