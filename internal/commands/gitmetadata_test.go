@@ -725,6 +725,27 @@ func TestExtractGitLabGroupProject(t *testing.T) {
 			wantRepo:  "ast-cli",
 			wantHost:  "gitlab.internal.com",
 		},
+		{
+			name:      "nested subgroup (two levels)",
+			url:       "https://gitlab.com/myorg/myteam/myproject",
+			wantGroup: "myorg/myteam",
+			wantRepo:  "myproject",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "nested subgroup (three levels)",
+			url:       "https://gitlab.com/org/team/platform/repo",
+			wantGroup: "org/team/platform",
+			wantRepo:  "repo",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "nested subgroup with .git suffix",
+			url:       "https://gitlab.com/org/sub1/sub2/project.git",
+			wantGroup: "org/sub1/sub2",
+			wantRepo:  "project",
+			wantHost:  "gitlab.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -805,6 +826,52 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 			org, repo := extractAzureDevOpsOrgRepo(tt.url)
 			assert.Equal(t, tt.wantOrg, org, "org mismatch")
 			assert.Equal(t, tt.wantRepo, repo, "repo mismatch")
+		})
+	}
+}
+
+func TestNormalizeSSHURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "git@github.com format",
+			input:    "git@github.com:owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "git@gitlab.com with nested path",
+			input:    "git@gitlab.com:org/team/project.git",
+			expected: "https://gitlab.com/org/team/project.git",
+		},
+		{
+			name:     "ssh:// URL with git@",
+			input:    "ssh://git@github.com/owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "ssh:// URL with gitlab",
+			input:    "ssh://git@gitlab.com/org/project.git",
+			expected: "https://gitlab.com/org/project.git",
+		},
+		{
+			name:     "already HTTPS URL",
+			input:    "https://github.com/owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "HTTP URL",
+			input:    "http://github.com/owner/repo.git",
+			expected: "http://github.com/owner/repo.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeSSHURL(tt.input)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
@@ -951,6 +1018,55 @@ func TestPlatformSpecificPrivacyDetection(t *testing.T) {
 		// Invalid URL that won't extract properly
 		isPrivate := isPrivateAzureDevOps("invalid", mockClient)
 		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateBitbucket returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateBitbucket("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateAzureDevOps returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateAzureDevOps("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+}
+
+func TestExtractionsReturnEmptyOnInvalidInput(t *testing.T) {
+	t.Run("extractGitHubOwnerRepo with empty URL", func(t *testing.T) {
+		owner, repo := extractGitHubOwnerRepo("")
+		assert.Equal(t, "", owner)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractGitLabGroupProject with empty URL", func(t *testing.T) {
+		group, project, host := extractGitLabGroupProject("")
+		assert.Equal(t, "", group)
+		assert.Equal(t, "", project)
+		assert.Equal(t, "", host)
+	})
+
+	t.Run("extractBitbucketWorkspaceRepo with empty URL", func(t *testing.T) {
+		workspace, repo := extractBitbucketWorkspaceRepo("")
+		assert.Equal(t, "", workspace)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractAzureDevOpsOrgRepo with empty URL", func(t *testing.T) {
+		org, repo := extractAzureDevOpsOrgRepo("")
+		assert.Equal(t, "", org)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractGitHubOwnerRepo with single segment", func(t *testing.T) {
+		owner, repo := extractGitHubOwnerRepo("onlysegment")
+		assert.Equal(t, "", owner)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractBitbucketWorkspaceRepo with single segment", func(t *testing.T) {
+		workspace, repo := extractBitbucketWorkspaceRepo("onlysegment")
+		assert.Equal(t, "", workspace)
+		assert.Equal(t, "", repo)
 	})
 }
 
