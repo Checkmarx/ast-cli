@@ -5348,7 +5348,7 @@ func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5379,7 +5379,7 @@ func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5412,7 +5412,7 @@ func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5451,7 +5451,7 @@ func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5536,7 +5536,7 @@ func TestCompressFolder_DefaultBehaviorUnchanged(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5557,7 +5557,7 @@ func TestCompressFolder_SkipDefaultFilter(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5587,7 +5587,7 @@ func TestCompressFolder_SkipDefaultFilter_WithAntFilterExclude(t *testing.T) {
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!excluded_by_ant/**"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5608,7 +5608,7 @@ func TestCompressFolder_SkipDefaultFilter_WithAntFilterIncludeOnly(t *testing.T)
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"**/*.customext"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5634,7 +5634,7 @@ func TestCompressFolder_DefaultFilters_WithAntFilter(t *testing.T) {
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!keep_dir/**"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
