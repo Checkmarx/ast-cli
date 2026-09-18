@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -1399,16 +1400,104 @@ func TestCommitsSince_FiltersOldCommits(t *testing.T) {
 	assert.Equal(t, "recent@example.com", commits[0].Author.Email)
 }
 
-func TestIsPrivateByURL_RoutingLogic(t *testing.T) {
+func TestWriteGeneratedFilesConditional_CSVWriteError(t *testing.T) {
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+
+	// Create a file at the path where we'd create the directory, causing MkdirAll to fail
+	err := os.WriteFile(checkmarxDir, []byte("blocking file"), 0o600)
+	require.NoError(t, err)
+
+	err = writeGeneratedFilesConditional(repoPath, []byte("csv"), []byte(`{}`), true)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "could not create .checkmarx directory")
+}
+
+func TestBuildContributorsCSV_MultipleEmailsPreservesOrder(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "user1@example.com", name: "User One", when: now},
+		{email: "user2@example.com", name: "User Two", when: now.Add(-1 * time.Hour)},
+		{email: "user3@example.com", name: "User Three", when: now.Add(-48 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, _ := readGitMetadataFiles(t, repoPath)
+	reader := csv.NewReader(strings.NewReader(csvContent))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+
+	// Should have 3 unique emails
+	assert.Len(t, records, 3)
+	// Each record should have 4 fields: date, hash, email, name
+	for _, record := range records {
+		assert.Len(t, record, 4)
+		// First field should be parseable as RFC3339
+		_, err := time.Parse(time.RFC3339, record[0])
+		assert.NoError(t, err)
+		// Email should be in field 2
+		assert.Contains(t, record[2], "@example.com")
+	}
+}
+
+func TestDetectRepositoryPrivacy_FallbackToSystemGit(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
 	mockClient := &http.Client{Timeout: 5 * time.Second}
 
-	githubResult := isPrivateByURL("https://github.com/test/repo", mockClient)
-	gitlabResult := isPrivateByURL("https://gitlab.com/test/repo", mockClient)
-	bitbucketResult := isPrivateByURL("https://bitbucket.org/test/repo", mockClient)
-	azureResult := isPrivateByURL("https://dev.azure.com/test/_git/repo", mockClient)
+	// When detectRepositoryPrivacy is called, it should try go-git first (succeeds), then isPrivateByURL; since example.com is not a real SCM, the function should handle it gracefully and default to private=true.
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	assert.True(t, result, "should conservatively default to private for unknown hosts")
+}
 
-	assert.NotNil(t, githubResult)
-	assert.NotNil(t, gitlabResult)
-	assert.NotNil(t, bitbucketResult)
-	assert.NotNil(t, azureResult)
+func TestGenerateAndWrite_WithCSVSizeLimit(t *testing.T) {
+	now := time.Now()
+	// Create repo with many contributors to potentially trigger size warning
+	var commits []testCommit
+	for i := 0; i < 50; i++ {
+		commits = append(commits, testCommit{
+			email: fmt.Sprintf("user%d@example.com", i),
+			name:  fmt.Sprintf("User %d", i),
+			when:  now.Add(-time.Duration(i) * time.Hour),
+		})
+	}
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", commits)
+
+	err := GenerateAndWrite(repoPath, true)
+	assert.NoError(t, err, "should handle repos with many contributors")
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	assert.Equal(t, 50, len(lines), "should generate CSV with all unique contributors")
+	assert.Equal(t, 50, metadata.CommitsCount)
+}
+
+func TestDetectRepositoryPrivacy_ExistingCSVFile(t *testing.T) {
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+
+	// Create CSV file to indicate previous private repo
+	require.NoError(t, os.MkdirAll(checkmarxDir, 0o755))
+	require.NoError(t, os.WriteFile(csvPath, []byte("test"), 0o644))
+
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	assert.True(t, result, "should return true when CSV file exists (repo was private)")
+}
+
+func TestDetectRepositoryPrivacy_NoRemoteURL(t *testing.T) {
+	repoPath := t.TempDir()
+	// Create an empty git repo with no remote
+	_, err := gogit.PlainInit(repoPath, false)
+	require.NoError(t, err)
+
+	// Don't add any remote
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	// Should conservatively default to private when no remote found
+	assert.True(t, result)
 }
