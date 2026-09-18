@@ -20,6 +20,7 @@ var allowedOptionalKeys = map[string]bool{
 	"aiProvider":       true,
 	"aiAgentSessionId": true,
 	"agent":            true,
+	"use-gitignore":    true,
 }
 
 // CleanURL returns a cleaned url removing double slashes

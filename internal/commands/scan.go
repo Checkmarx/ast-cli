@@ -34,6 +34,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -2144,6 +2145,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
+	if !isGitIgnoreFilter && utils.GetOptionalParam(commonParams.GitIgnoreFileFilterFlag) == "true" {
+		isGitIgnoreFilter = true
+	}
 
 	// Build the Ant-style matcher from --file-filter-ext patterns.
 	// Construction errors are surfaced immediately so the user gets clear
