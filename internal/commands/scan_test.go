@@ -3856,6 +3856,10 @@ func TestAddSastScan_BaseBranchInheritedFromResubmit(t *testing.T) {
 }
 
 func TestAddSastScan_BaseBranchFlagOverridesResubmit(t *testing.T) {
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.SastType
+	defer func() { actualScanTypes = originalScanTypes }()
+
 	resubmitConfig := []wrappers.Config{
 		{
 			Type: commonParams.SastType,
