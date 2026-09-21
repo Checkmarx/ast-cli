@@ -358,7 +358,16 @@ func writeGeneratedFilesConditional(repoPath string, csvData, metadataData []byt
 }
 
 // detectRepositoryPrivacy determines if repo is private/public; conservatively defaults to private for unknown repos.
-func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) bool {
+func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) (isPrivate bool) {
+	isPrivate = true
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("Panic in repository privacy detection for %v, treating as PRIVATE", r))
+			isPrivate = true
+		}
+	}()
+
 	// Method 1: Try go-git
 	repo, err := gogit.PlainOpen(repoPath)
 	if err == nil {
@@ -369,13 +378,6 @@ func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) bool {
 	remoteURL, err := gitCommand(repoPath, "config", "--get", "remote.origin.url")
 	if err == nil && remoteURL != "" {
 		return isPrivateByURL(remoteURL, httpClient)
-	}
-
-	// Method 3: Check if contributors.csv exists (was private)
-	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
-	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
-	if fileExists(csvPath) {
-		return true
 	}
 
 	// Default: Conservative (treat as private)

@@ -34,6 +34,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -2165,7 +2166,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
 	excludeGitFolder, _ := cmd.Flags().GetBool(commonParams.ExcludeGitFolderFlag)
-	contributorsCsvFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RepostoreCustomerContributorsCsvEnabled)
+	if !excludeGitFolder && utils.GetOptionalParam(commonParams.ExcludeGitFolderFlag) == "true" {
+		excludeGitFolder = true
+	}
 
 	// Build the Ant-style matcher from --file-filter-ext patterns.
 	// Construction errors are surfaced immediately so the user gets clear
@@ -2226,7 +2229,6 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
-	contributorsCsvEnabled := (contributorsCsvFlag != nil && contributorsCsvFlag.Status) && !userProvidedZip
 
 	// containerScanTriggered must stay in this condition: without it, a container scan
 	// run with --containers-local-resolution and --skip-default-filter (and no
@@ -2328,7 +2330,7 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			if !isSbom {
 				// True only if contributors.csv/metadata.json were just generated successfully without error.
 				includeGeneratedCsvJson := false
-				if contributorsCsvEnabled {
+				if !userProvidedZip {
 					httpClient := wrappers.GetClient(privacyDetectionTimeout)
 					isPrivate := detectRepositoryPrivacy(directoryPath, httpClient)
 					if genErr := GenerateAndWrite(directoryPath, isPrivate); genErr != nil {
