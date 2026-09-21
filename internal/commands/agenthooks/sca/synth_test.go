@@ -120,6 +120,54 @@ func TestSynthesize_DotnetDirectoryPackagesProps(t *testing.T) {
 	})
 }
 
+func TestSynthesize_ComposerJson(t *testing.T) {
+	roundTrip(t, FormatComposerJson, []Package{
+		{Name: "guzzlehttp/guzzle", Version: "6.3.3"},
+	})
+}
+
+func TestSynthesize_Bower(t *testing.T) {
+	roundTrip(t, FormatBower, []Package{
+		{Name: "lodash", Version: "4.17.21"},
+	})
+}
+
+func TestSynthesize_PubspecYaml(t *testing.T) {
+	roundTrip(t, FormatPubspecYaml, []Package{
+		{Name: "http", Version: "0.13.5"},
+	})
+}
+
+func TestSynthesize_Gemfile(t *testing.T) {
+	roundTrip(t, FormatGemfile, []Package{
+		{Name: "rails", Version: "6.0.4.7"},
+	})
+}
+
+func TestSynthesize_Podfile(t *testing.T) {
+	roundTrip(t, FormatCocoaPodsPodfile, []Package{
+		{Name: "Alamofire", Version: "5.2.0"},
+	})
+}
+
+func TestSynthesize_Podspec(t *testing.T) {
+	roundTrip(t, FormatCocoaPodsPodspec, []Package{
+		{Name: "Alamofire", Version: "5.0.0"},
+	})
+}
+
+func TestSynthesize_Cartfile(t *testing.T) {
+	roundTrip(t, FormatCarthage, []Package{
+		{Name: "Alamofire/Alamofire", Version: "5.0.0"},
+	})
+}
+
+func TestSynthesize_SwiftPackage(t *testing.T) {
+	roundTrip(t, FormatSwiftPackageManager, []Package{
+		{Name: "Alamofire", Version: "5.0.0"},
+	})
+}
+
 func TestSynthesize_UnsupportedFormat(t *testing.T) {
 	dir, _ := os.MkdirTemp("", "synth-test-")
 	defer os.RemoveAll(dir)
