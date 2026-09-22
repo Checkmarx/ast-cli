@@ -196,10 +196,10 @@ func TestCheckManifestEdit_Composer_VulnerableAddition(t *testing.T) {
     }
 }`)
 	s := scannerWith(ossrealtime.OssPackage{
-		PackageManager: "packagist",
-		PackageName:    "guzzlehttp/guzzle",
-		PackageVersion: "6.3.3",
-		Status:         "High",
+		PackageManager:  "packagist",
+		PackageName:     "guzzlehttp/guzzle",
+		PackageVersion:  "6.3.3",
+		Status:          "High",
 		Vulnerabilities: []ossrealtime.Vulnerability{{CVE: "CVE-2022-29248", Severity: "High"}},
 	})
 	finding, _, severity := s.CheckManifestEdit(manifest, after, "", "", "")
