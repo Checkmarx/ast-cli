@@ -67,6 +67,9 @@ linters:
             - github.com/checkmarx/go-keyring
             - github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor
             - github.com/Checkmarx/containers-types/types
+            - github.com/go-git/go-git/v5
+            - github.com/go-git/go-git/v5/plumbing
+            - github.com/go-git/go-git/v5/plumbing/object
     dupl:
       threshold: 500
     funlen:

@@ -22,6 +22,9 @@ const maxRetries = 3
 const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
 
+// RepostoreCustomerContributorsCsvEnabled is the feature flag for generating contributors.csv and metadata.json.
+const RepostoreCustomerContributorsCsvEnabled = "REPOSTORE_CUSTOMER_CONTRIBUTORS_CSV_ENABLED"
+
 // AISupplyChainGAEnabled is the feature flag for AI Supply Chain Engine GA.
 const AISupplyChainGAEnabled = "AI_SUPPLY_CHAIN_ENGINE_GA_ENABLED"
 
