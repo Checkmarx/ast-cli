@@ -16,10 +16,11 @@ var (
 )
 
 var allowedOptionalKeys = map[string]bool{
-	"asca-location":    true,
-	"aiProvider":       true,
-	"aiAgentSessionId": true,
-	"agent":            true,
+	"asca-location":      true,
+	"aiProvider":         true,
+	"aiAgentSessionId":   true,
+	"agent":              true,
+	"exclude-git-folder": true,
 }
 
 // CleanURL returns a cleaned url removing double slashes

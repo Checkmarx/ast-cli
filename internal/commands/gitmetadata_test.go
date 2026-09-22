@@ -1,0 +1,1503 @@
+package commands
+
+import (
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	gogit "github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// testCommit describes one fixture commit. AllowEmptyCommits means fixtures
+// don't need real file content.
+type testCommit struct {
+	email string
+	name  string
+	when  time.Time
+}
+
+func newGitMetadataTestRepo(t *testing.T, remoteURL string, commits []testCommit) string {
+	t.Helper()
+	repoPath := t.TempDir()
+
+	repo, err := gogit.PlainInit(repoPath, false)
+	require.NoError(t, err)
+
+	if remoteURL != "" {
+		_, err = repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{remoteURL},
+		})
+		require.NoError(t, err)
+	}
+
+	worktree, err := repo.Worktree()
+	require.NoError(t, err)
+
+	// Commits must be created oldest-first so the last one ends up as HEAD.
+	for _, c := range commits {
+		sig := &object.Signature{Name: c.name, Email: c.email, When: c.when}
+		_, err := worktree.Commit("test commit", &gogit.CommitOptions{
+			Author:            sig,
+			AllowEmptyCommits: true,
+		})
+		require.NoError(t, err)
+	}
+
+	return repoPath
+}
+
+func readGitMetadataFiles(t *testing.T, repoPath string) (csvContent string, metadata contributorsMetadata) {
+	t.Helper()
+	csvBytes, err := os.ReadFile(filepath.Join(repoPath, CheckmarxFolderName, ContributorsFileName))
+	require.NoError(t, err)
+
+	metadataBytes, err := os.ReadFile(filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName))
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(metadataBytes, &metadata))
+
+	return string(csvBytes), metadata
+}
+
+func TestGenerateAndWrite_Success(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: now.Add(-10 * 24 * time.Hour)},
+		{email: "bob@example.com", name: "Bob", when: now.Add(-5 * 24 * time.Hour)},
+		{email: "alice@example.com", name: "Alice", when: now.Add(-1 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	assert.Len(t, lines, 2, "expected one row per unique email, most recent commit only")
+
+	assert.Equal(t, "https://example.com/org/repo.git", metadata.RepositoryURL)
+	assert.Equal(t, 3, metadata.CommitsCount, "commitsCount should count every commit in the window, before dedup")
+	assert.NotEmpty(t, metadata.LastCommitHash)
+	assert.NotEmpty(t, metadata.LastCommitDate)
+}
+
+func TestGenerateAndWrite_MetadataJSONFieldNames(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	raw, err := os.ReadFile(filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName))
+	require.NoError(t, err)
+
+	var asMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(raw, &asMap))
+
+	assert.Contains(t, asMap, "repositoryUrl")
+	assert.Contains(t, asMap, "lastCommitHash")
+	assert.Contains(t, asMap, "lastCommitDate")
+	assert.Contains(t, asMap, "commitsCount")
+	assert.NotContains(t, asMap, "branchName", "branchName is intentionally omitted, see tech design open questions")
+	assert.NotContains(t, asMap, "commitHash", "field is named lastCommitHash, not commitHash")
+}
+
+func TestGenerateAndWrite_NoHeaderRow(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, _ := readGitMetadataFiles(t, repoPath)
+	firstLine := strings.SplitN(csvContent, ",", 2)[0]
+
+	// A header would read "date" or similar; a real row starts with an RFC3339
+	// timestamp, which always begins with a 4-digit year.
+	_, err := time.Parse(time.RFC3339, firstLine)
+	assert.NoError(t, err, "first line should be a data row (RFC3339 date), not a header")
+}
+
+func TestGenerateAndWrite_CSVColumnOrder(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "alice@example.com", name: "Alice Example", when: now},
+	})
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	fields := strings.Split(strings.TrimRight(csvContent, "\n"), ",")
+	require.Len(t, fields, 4)
+
+	assert.Equal(t, now.Format(time.RFC3339), fields[0], "field 1 must be the commit date")
+	assert.Equal(t, metadata.LastCommitHash, fields[1], "field 2 must be the commit hash")
+	assert.Equal(t, "alice@example.com", fields[2], "field 3 must be the email")
+	assert.Equal(t, "Alice Example", fields[3], "field 4 must be the username")
+}
+
+func TestGenerateAndWrite_DedupKeepsMostRecentPerEmail(t *testing.T) {
+	now := time.Now()
+	olderTime := now.Add(-20 * 24 * time.Hour)
+	newerTime := now.Add(-1 * 24 * time.Hour)
+
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "alice@example.com", name: "Alice Old", when: olderTime},
+		{email: "alice@example.com", name: "Alice New", when: newerTime},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, _ := readGitMetadataFiles(t, repoPath)
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	require.Len(t, lines, 1)
+	assert.Contains(t, lines[0], newerTime.Format(time.RFC3339))
+	assert.Contains(t, lines[0], "Alice New")
+	assert.NotContains(t, lines[0], "Alice Old")
+}
+
+func TestGenerateAndWrite_DedupIsCaseInsensitiveOnEmail(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "Alice@Example.com", name: "Alice Mixed Case", when: now.Add(-2 * 24 * time.Hour)},
+		{email: "alice@example.com", name: "Alice Lower Case", when: now.Add(-1 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	assert.Len(t, lines, 1, "differently-cased emails for the same person should dedup to one row")
+	assert.Equal(t, 2, metadata.CommitsCount, "commitsCount still counts both raw commits")
+}
+
+func TestGenerateAndWrite_ManyUniqueEmailsAllKept(t *testing.T) {
+	now := time.Now()
+	var commits []testCommit
+	for i := 0; i < 5; i++ {
+		commits = append(commits, testCommit{
+			email: strings.Repeat("u", 1) + string(rune('a'+i)) + "@example.com",
+			name:  "User",
+			when:  now.Add(-time.Duration(i) * time.Hour),
+		})
+	}
+	repoPath := newGitMetadataTestRepo(t, "", commits)
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	assert.Len(t, lines, 5, "each unique email should get its own row")
+	assert.Equal(t, 5, metadata.CommitsCount)
+}
+
+func TestGenerateAndWrite_90DayBoundary(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "old@example.com", name: "TooOld", when: now.Add(-91 * 24 * time.Hour)},
+		{email: "recent@example.com", name: "Recent", when: now.Add(-89 * 24 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	assert.Contains(t, csvContent, "recent@example.com")
+	assert.NotContains(t, csvContent, "old@example.com")
+	assert.Equal(t, 1, metadata.CommitsCount)
+}
+
+func TestGenerateAndWrite_AllCommitsOutsideWindow(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "old@example.com", name: "TooOld", when: now.Add(-200 * 24 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	assert.Empty(t, csvContent, "no commits in the window means an empty (but present) CSV")
+	assert.Equal(t, 0, metadata.CommitsCount)
+	assert.NotEmpty(t, metadata.LastCommitHash, "HEAD info is unconditional, independent of the 90-day window")
+}
+
+func TestGenerateAndWrite_NoRemote(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	_, metadata := readGitMetadataFiles(t, repoPath)
+	assert.Empty(t, metadata.RepositoryURL)
+}
+
+func TestGenerateAndWrite_SSHRemoteURL(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "git@github.com:org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	_, metadata := readGitMetadataFiles(t, repoPath)
+	assert.Equal(t, "git@github.com:org/repo.git", metadata.RepositoryURL)
+}
+
+func TestGenerateAndWrite_PublicRepoNoCSV(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	// Call with isPrivateRepo = false (public repo)
+	require.NoError(t, GenerateAndWrite(repoPath, false))
+
+	// Check that CSV does NOT exist (public repo should not have contributors.csv)
+	csvPath := filepath.Join(repoPath, CheckmarxFolderName, ContributorsFileName)
+	_, err := os.ReadFile(csvPath)
+	assert.Error(t, err, "public repo should NOT generate contributors.csv")
+	assert.True(t, os.IsNotExist(err), "CSV file should not exist for public repo")
+
+	// But metadata.json should still exist
+	metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+	metadataBytes, err := os.ReadFile(metadataPath)
+	require.NoError(t, err, "public repo should still generate metadata.json")
+
+	var metadata contributorsMetadata
+	err = json.Unmarshal(metadataBytes, &metadata)
+	require.NoError(t, err)
+
+	assert.NotEmpty(t, metadata.RepositoryURL, "metadata should contain repository URL")
+	assert.NotEmpty(t, metadata.LastCommitHash, "metadata should contain commit hash")
+	assert.NotEmpty(t, metadata.LastCommitDate, "metadata should contain commit date")
+}
+
+func TestGenerateAndWrite_ReplacesStaleFiles(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+	_, firstMetadata := readGitMetadataFiles(t, repoPath)
+
+	repo, err := gogit.PlainOpen(repoPath)
+	require.NoError(t, err)
+	worktree, err := repo.Worktree()
+	require.NoError(t, err)
+	_, err = worktree.Commit("second commit", &gogit.CommitOptions{
+		Author:            &object.Signature{Name: "Bob", Email: "bob@example.com", When: time.Now()},
+		AllowEmptyCommits: true,
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+	csvContent, secondMetadata := readGitMetadataFiles(t, repoPath)
+
+	assert.NotEqual(t, firstMetadata.LastCommitHash, secondMetadata.LastCommitHash, "second run should overwrite metadata.json with fresh data")
+	assert.Contains(t, csvContent, "bob@example.com")
+	assert.Contains(t, csvContent, "alice@example.com")
+}
+
+func TestGenerateAndWrite_RunTwiceIdenticalStateProducesIdenticalOutput(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+	firstCSV, firstMetadata := readGitMetadataFiles(t, repoPath)
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+	secondCSV, secondMetadata := readGitMetadataFiles(t, repoPath)
+
+	assert.Equal(t, firstCSV, secondCSV)
+	assert.Equal(t, firstMetadata, secondMetadata)
+}
+
+func TestGenerateAndWrite_NotAGitRepository(t *testing.T) {
+	dir := t.TempDir()
+	err := GenerateAndWrite(dir, true)
+	assert.Error(t, err)
+}
+
+func TestGenerateAndWrite_NoCommits(t *testing.T) {
+	dir := t.TempDir()
+	_, err := gogit.PlainInit(dir, false)
+	require.NoError(t, err)
+
+	err = GenerateAndWrite(dir, true)
+	assert.Error(t, err, "an empty repo has no HEAD to resolve")
+}
+
+func TestGenerateAndWrite_NonExistentPath(t *testing.T) {
+	err := GenerateAndWrite(filepath.Join(t.TempDir(), "does-not-exist"), true)
+	assert.Error(t, err)
+}
+
+// TestBuildContributorsCSV_ExceedsSizeLimitStillSucceeds exercises buildContributorsCSV
+// directly with synthetic in-memory commits (no real git repo), since creating enough
+// real commits to exceed the 1MB warning threshold would make the test very slow.
+func TestBuildContributorsCSV_ExceedsSizeLimitStillSucceeds(t *testing.T) {
+	now := time.Now()
+	commits := make([]*object.Commit, 0, 20000)
+	for i := 0; i < 20000; i++ {
+		commits = append(commits, &object.Commit{
+			Author: object.Signature{
+				Name:  "User",
+				Email: "user" + strconv.Itoa(i) + "@example.com",
+				When:  now.Add(-time.Duration(i) * time.Second),
+			},
+		})
+	}
+
+	csvData, err := buildContributorsCSV(commits)
+	require.NoError(t, err, "exceeding the size warning threshold must not fail generation")
+	assert.Greater(t, len(csvData), contributorsSizeLimit)
+
+	lines := strings.Split(strings.TrimRight(string(csvData), "\n"), "\n")
+	assert.Len(t, lines, len(commits), "all unique emails should be kept as rows")
+}
+
+func TestBuildContributorsCSV_EmptyInput(t *testing.T) {
+	csvData, err := buildContributorsCSV(nil)
+	require.NoError(t, err)
+	assert.Empty(t, csvData)
+}
+
+func TestDedupByEmail_EmptyInput(t *testing.T) {
+	assert.Empty(t, dedupByEmail(nil))
+}
+
+func TestDedupByEmail_PreservesFirstOccurrenceOrder(t *testing.T) {
+	now := time.Now()
+	commits := []*object.Commit{
+		{Author: object.Signature{Email: "a@example.com", When: now}},
+		{Author: object.Signature{Email: "b@example.com", When: now}},
+		{Author: object.Signature{Email: "a@example.com", When: now}}, // duplicate, later in slice
+		{Author: object.Signature{Email: "c@example.com", When: now}},
+	}
+
+	deduped := dedupByEmail(commits)
+	require.Len(t, deduped, 3)
+	assert.Equal(t, "a@example.com", deduped[0].Author.Email)
+	assert.Equal(t, "b@example.com", deduped[1].Author.Email)
+	assert.Equal(t, "c@example.com", deduped[2].Author.Email)
+}
+
+func TestBuildMetadataJSON_Structure(t *testing.T) {
+	headCommit := &object.Commit{
+		Author: object.Signature{When: time.Date(2025, 9, 30, 10, 35, 5, 0, time.UTC)},
+	}
+
+	data, err := buildMetadataJSON("https://example.com/repo.git", headCommit, 42)
+	require.NoError(t, err)
+
+	var asMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &asMap))
+	assert.Equal(t, "https://example.com/repo.git", asMap["repositoryUrl"])
+	assert.Equal(t, headCommit.Hash.String(), asMap["lastCommitHash"])
+	assert.Equal(t, "2025-09-30T10:35:05Z", asMap["lastCommitDate"])
+	assert.InDelta(t, 42, asMap["commitsCount"], 0)
+}
+
+func TestCommitsSince_SortsNewestFirst(t *testing.T) {
+	now := time.Now()
+	// Committed out of chronological order to verify commitsSince re-sorts them.
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "a@example.com", name: "A", when: now.Add(-5 * 24 * time.Hour)},
+		{email: "b@example.com", name: "B", when: now.Add(-1 * 24 * time.Hour)},
+		{email: "c@example.com", name: "C", when: now.Add(-10 * 24 * time.Hour)},
+	})
+
+	repo, err := gogit.PlainOpen(repoPath)
+	require.NoError(t, err)
+
+	commits, err := commitsSince(repo, now.Add(-30*24*time.Hour))
+	require.NoError(t, err)
+	require.Len(t, commits, 3)
+
+	assert.True(t, commits[0].Author.When.After(commits[1].Author.When))
+	assert.True(t, commits[1].Author.When.After(commits[2].Author.When))
+}
+
+func TestRemoteURL_ReturnsFirstURL(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/first.git", nil)
+	repo, err := gogit.PlainOpen(repoPath)
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://example.com/first.git", remoteURL(repo))
+}
+
+func TestRemoteURL_NoRemoteConfigured(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "", nil)
+	repo, err := gogit.PlainOpen(repoPath)
+	require.NoError(t, err)
+
+	assert.Empty(t, remoteURL(repo))
+}
+
+func TestParseGitLogOutput_BasicParsing(t *testing.T) {
+	logOutput := "2026-08-19T18:24:26+05:30\x1fabc123def456789abc123def456789abc12345\x1fuser@example.com\x1fJohn Doe\n" +
+		"2026-08-13T12:58:25+03:00\x1fdef456789abc123def456789abc123def45678\x1fjane@example.com\x1fJane Smith"
+
+	commits := parseGitLogOutput(logOutput, time.Time{})
+	require.Len(t, commits, 2)
+
+	// Git log returns newest-first; commits[0] should be the newer commit
+	assert.Equal(t, "2026-08-19T18:24:26+05:30", commits[0]["date"])
+	assert.Equal(t, "abc123def456789abc123def456789abc12345", commits[0]["hash"])
+	assert.Equal(t, "user@example.com", commits[0]["email"])
+	assert.Equal(t, "John Doe", commits[0]["name"])
+
+	assert.Equal(t, "2026-08-13T12:58:25+03:00", commits[1]["date"])
+	assert.Equal(t, "def456789abc123def456789abc123def45678", commits[1]["hash"])
+	assert.Equal(t, "jane@example.com", commits[1]["email"])
+	assert.Equal(t, "Jane Smith", commits[1]["name"])
+}
+
+func TestParseGitLogOutput_ReturnsNewestFirst(t *testing.T) {
+	// Git log returns commits newest-first by default; test input reflects actual git output
+	logOutput := "2026-08-19T20:00:00+00:00\x1f3333333333333333333333333333333333333333\x1fnew@example.com\x1fNew User\n" +
+		"2026-07-15T15:00:00+00:00\x1f2222222222222222222222222222222222222222\x1fmid@example.com\x1fMid User\n" +
+		"2026-07-01T10:00:00+00:00\x1f1111111111111111111111111111111111111111\x1fold@example.com\x1fOld User"
+
+	commits := parseGitLogOutput(logOutput, time.Time{})
+	require.Len(t, commits, 3)
+
+	// Should preserve git log's newest-first order
+	assert.Equal(t, "2026-08-19T20:00:00+00:00", commits[0]["date"])
+	assert.Equal(t, "2026-07-15T15:00:00+00:00", commits[1]["date"])
+	assert.Equal(t, "2026-07-01T10:00:00+00:00", commits[2]["date"])
+}
+
+func TestParseGitLogOutput_EmptyInput(t *testing.T) {
+	commits := parseGitLogOutput("", time.Time{})
+	assert.Nil(t, commits)
+}
+
+func TestParseGitLogOutput_SkipsMalformedLines(t *testing.T) {
+	logOutput := "2026-08-19T18:24:26+05:30\x1fabc123def456789abc123def456789abc12345\x1fuser@example.com\x1fJohn Doe\n" +
+		"malformed line\n" +
+		"2026-08-13T12:58:25+03:00\x1fdef456789abc123def456789abc123def45678\x1fjane@example.com\x1fJane Smith\n" +
+		"\n" +
+		"another bad line"
+
+	commits := parseGitLogOutput(logOutput, time.Time{})
+	require.Len(t, commits, 2)
+	// Git log returns newest-first; John Doe (2026-08-19) before Jane Smith (2026-08-13)
+	assert.Equal(t, "John Doe", commits[0]["name"])
+	assert.Equal(t, "Jane Smith", commits[1]["name"])
+}
+
+func TestConvertToCoreCommits_BasicConversion(t *testing.T) {
+	now := time.Now()
+	commitMaps := []map[string]string{
+		{
+			"date":  now.Format(time.RFC3339),
+			"hash":  "abc123def456789abcdef456789abcdef1234567",
+			"email": "user@example.com",
+			"name":  "Test User",
+		},
+	}
+
+	commits := convertToCoreCommits(commitMaps)
+	require.Len(t, commits, 1)
+
+	c := commits[0]
+	assert.Equal(t, "abc123def456789abcdef456789abcdef1234567", c.Hash.String())
+	assert.Equal(t, "user@example.com", c.Author.Email)
+	assert.Equal(t, "Test User", c.Author.Name)
+	assert.WithinDuration(t, now, c.Author.When, 1*time.Second)
+}
+
+func TestConvertToCoreCommits_PreservesOrder(t *testing.T) {
+	commitMaps := []map[string]string{
+		{
+			"date":  "2026-08-19T18:24:26+05:30",
+			"hash":  "1111111111111111111111111111111111111111",
+			"email": "first@example.com",
+			"name":  "First",
+		},
+		{
+			"date":  "2026-08-13T12:58:25+03:00",
+			"hash":  "2222222222222222222222222222222222222222",
+			"email": "second@example.com",
+			"name":  "Second",
+		},
+	}
+
+	commits := convertToCoreCommits(commitMaps)
+	require.Len(t, commits, 2)
+
+	assert.Equal(t, "1111111111111111111111111111111111111111", commits[0].Hash.String())
+	assert.Equal(t, "2222222222222222222222222222222222222222", commits[1].Hash.String())
+}
+
+func TestConvertToCoreCommits_RFC3339DateParsing(t *testing.T) {
+	commitMaps := []map[string]string{
+		{
+			"date":  "2026-08-19T18:24:26+05:30",
+			"hash":  "abc123",
+			"email": "user@example.com",
+			"name":  "User",
+		},
+	}
+
+	commits := convertToCoreCommits(commitMaps)
+	require.Len(t, commits, 1)
+
+	// Verify the date was parsed correctly (RFC3339 with timezone)
+	assert.Equal(t, 2026, commits[0].Author.When.Year())
+	assert.Equal(t, time.August, commits[0].Author.When.Month())
+	assert.Equal(t, 19, commits[0].Author.When.Day())
+}
+
+func TestBuildMetadataJSONFromSystem_Structure(t *testing.T) {
+	data, err := buildMetadataJSONFromSystem("https://github.com/example/repo.git", "abc123def456", 42, "2026-08-19T18:24:26Z")
+	require.NoError(t, err)
+
+	var asMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &asMap))
+
+	assert.Equal(t, "https://github.com/example/repo.git", asMap["repositoryUrl"])
+	assert.Equal(t, "abc123def456", asMap["lastCommitHash"])
+	assert.InDelta(t, 42, asMap["commitsCount"], 0)
+	assert.NotEmpty(t, asMap["lastCommitDate"])
+
+	// Verify lastCommitDate is valid RFC3339
+	_, err = time.Parse(time.RFC3339, asMap["lastCommitDate"].(string))
+	require.NoError(t, err)
+}
+
+func TestBuildMetadataJSONFromSystem_EmptyRepository(t *testing.T) {
+	data, err := buildMetadataJSONFromSystem("", "", 0, "")
+	require.NoError(t, err)
+
+	var asMap map[string]interface{}
+	require.NoError(t, json.Unmarshal(data, &asMap))
+
+	assert.Equal(t, "", asMap["repositoryUrl"])
+	assert.Equal(t, "", asMap["lastCommitHash"])
+	assert.InDelta(t, 0, asMap["commitsCount"], 0)
+}
+
+func TestGitCommand_Success(t *testing.T) {
+	// Create a real git repo for this test
+	repoPath := t.TempDir()
+
+	// Initialize a git repository using system git
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Configure git user for this test repo (required in CI)
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test git config command
+	output, err := gitCommand(repoPath, "config", "--get", "user.name")
+	assert.NoError(t, err)
+	assert.Equal(t, "Test User", output)
+}
+
+func TestGitCommand_InvalidRepo(t *testing.T) {
+	invalidPath := t.TempDir()
+	// This directory is not a git repo
+
+	_, err := gitCommand(invalidPath, "log", "--oneline")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "git command failed")
+}
+
+// Tests for URL extraction functions
+
+func TestExtractGitHubOwnerRepo(t *testing.T) {
+	tests := []struct {
+		name      string
+		url       string
+		wantOwner string
+		wantRepo  string
+	}{
+		{
+			name:      "HTTPS GitHub URL",
+			url:       "https://github.com/checkmarx/ast-cli",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "HTTPS GitHub URL with .git suffix",
+			url:       "https://github.com/checkmarx/ast-cli.git",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "Short format GitHub URL",
+			url:       "checkmarx/ast-cli",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "Invalid format - too few parts",
+			url:       "invalid",
+			wantOwner: "",
+			wantRepo:  "",
+		},
+		{
+			name:      "Empty URL",
+			url:       "",
+			wantOwner: "",
+			wantRepo:  "",
+		},
+		{
+			name:      "SSH GitHub URL",
+			url:       "git@github.com:checkmarx/ast-cli.git",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "SSH GitHub URL without .git",
+			url:       "git@github.com:checkmarx/ast-cli",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+		{
+			name:      "SSH protocol GitHub URL",
+			url:       "ssh://git@github.com/checkmarx/ast-cli.git",
+			wantOwner: "checkmarx",
+			wantRepo:  "ast-cli",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			owner, repo := extractGitHubOwnerRepo(tt.url)
+			assert.Equal(t, tt.wantOwner, owner, "owner mismatch")
+			assert.Equal(t, tt.wantRepo, repo, "repo mismatch")
+		})
+	}
+}
+
+func TestExtractGitLabGroupProject(t *testing.T) {
+	tests := []struct {
+		name      string
+		url       string
+		wantGroup string
+		wantRepo  string
+		wantHost  string
+	}{
+		{
+			name:      "HTTPS GitLab URL",
+			url:       "https://gitlab.com/checkmarx/ast-cli",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "HTTPS GitLab URL with .git suffix",
+			url:       "https://gitlab.com/checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "Self-hosted GitLab",
+			url:       "https://gitlab.internal.com/checkmarx/ast-cli",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.internal.com",
+		},
+		{
+			name:      "SSH GitLab URL",
+			url:       "git@gitlab.com:checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "SSH self-hosted GitLab URL",
+			url:       "git@gitlab.internal.com:checkmarx/ast-cli.git",
+			wantGroup: "checkmarx",
+			wantRepo:  "ast-cli",
+			wantHost:  "gitlab.internal.com",
+		},
+		{
+			name:      "nested subgroup (two levels)",
+			url:       "https://gitlab.com/myorg/myteam/myproject",
+			wantGroup: "myorg/myteam",
+			wantRepo:  "myproject",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "nested subgroup (three levels)",
+			url:       "https://gitlab.com/org/team/platform/repo",
+			wantGroup: "org/team/platform",
+			wantRepo:  "repo",
+			wantHost:  "gitlab.com",
+		},
+		{
+			name:      "nested subgroup with .git suffix",
+			url:       "https://gitlab.com/org/sub1/sub2/project.git",
+			wantGroup: "org/sub1/sub2",
+			wantRepo:  "project",
+			wantHost:  "gitlab.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			group, project, host := extractGitLabGroupProject(tt.url)
+			assert.Equal(t, tt.wantGroup, group, "group mismatch")
+			assert.Equal(t, tt.wantRepo, project, "project mismatch")
+			assert.Equal(t, tt.wantHost, host, "host mismatch")
+		})
+	}
+}
+
+func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
+	tests := []struct {
+		name          string
+		url           string
+		wantWorkspace string
+		wantRepo      string
+	}{
+		{
+			name:          "HTTPS Bitbucket URL",
+			url:           "https://bitbucket.org/checkmarx/ast-cli",
+			wantWorkspace: "checkmarx",
+			wantRepo:      "ast-cli",
+		},
+		{
+			name:          "HTTPS Bitbucket URL with .git suffix",
+			url:           "https://bitbucket.org/checkmarx/ast-cli.git",
+			wantWorkspace: "checkmarx",
+			wantRepo:      "ast-cli",
+		},
+		{
+			name:          "SSH Bitbucket URL",
+			url:           "git@bitbucket.org:checkmarx/ast-cli.git",
+			wantWorkspace: "checkmarx",
+			wantRepo:      "ast-cli",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			workspace, repo := extractBitbucketWorkspaceRepo(tt.url)
+			assert.Equal(t, tt.wantWorkspace, workspace, "workspace mismatch")
+			assert.Equal(t, tt.wantRepo, repo, "repo mismatch")
+		})
+	}
+}
+
+func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
+	tests := []struct {
+		name     string
+		url      string
+		wantOrg  string
+		wantRepo string
+	}{
+		{
+			name:     "HTTPS Azure DevOps URL with _git",
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli",
+			wantOrg:  "checkmarx",
+			wantRepo: "ast-cli",
+		},
+		{
+			name:     "HTTPS Azure DevOps URL with .git suffix",
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli.git",
+			wantOrg:  "checkmarx",
+			wantRepo: "ast-cli",
+		},
+		{
+			name:     "SSH Azure DevOps URL",
+			url:      "git@ssh.dev.azure.com:v3/checkmarx/project/ast-cli.git",
+			wantOrg:  "checkmarx",
+			wantRepo: "ast-cli",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			org, repo := extractAzureDevOpsOrgRepo(tt.url)
+			assert.Equal(t, tt.wantOrg, org, "org mismatch")
+			assert.Equal(t, tt.wantRepo, repo, "repo mismatch")
+		})
+	}
+}
+
+func TestNormalizeSSHURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "git@github.com format",
+			input:    "git@github.com:owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "git@gitlab.com with nested path",
+			input:    "git@gitlab.com:org/team/project.git",
+			expected: "https://gitlab.com/org/team/project.git",
+		},
+		{
+			name:     "ssh:// URL with git@",
+			input:    "ssh://git@github.com/owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "ssh:// URL with gitlab",
+			input:    "ssh://git@gitlab.com/org/project.git",
+			expected: "https://gitlab.com/org/project.git",
+		},
+		{
+			name:     "already HTTPS URL",
+			input:    "https://github.com/owner/repo.git",
+			expected: "https://github.com/owner/repo.git",
+		},
+		{
+			name:     "HTTP URL",
+			input:    "http://github.com/owner/repo.git",
+			expected: "http://github.com/owner/repo.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeSSHURL(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+// Tests for privacy detection with mocked HTTP responses
+
+func TestFileExists(t *testing.T) {
+	tests := []struct {
+		name     string
+		setup    func(t *testing.T) string
+		wantTrue bool
+	}{
+		{
+			name: "file exists",
+			setup: func(t *testing.T) string {
+				f, err := os.CreateTemp(t.TempDir(), "test")
+				require.NoError(t, err)
+				path := f.Name()
+				require.NoError(t, f.Close())
+				return path
+			},
+			wantTrue: true,
+		},
+		{
+			name: "file does not exist",
+			setup: func(t *testing.T) string {
+				return "/nonexistent/path/that/does/not/exist"
+			},
+			wantTrue: false,
+		},
+		{
+			name: "directory exists",
+			setup: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantTrue: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := tt.setup(t)
+			exists := fileExists(path)
+			assert.Equal(t, tt.wantTrue, exists)
+		})
+	}
+}
+
+func TestPrivacyDetectionWithMockedHTTP(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
+	t.Run("detectRepositoryPrivacy returns private for empty path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		// Empty directory with no .git or .checkmarx files
+		isPrivate := detectRepositoryPrivacy(tmpDir, mockClient)
+		assert.True(t, isPrivate, "empty directory should default to private")
+	})
+
+	t.Run("detectRepositoryPrivacy returns private when checking nonexistent path", func(t *testing.T) {
+		isPrivate := detectRepositoryPrivacy("/nonexistent/path/that/does/not/exist", mockClient)
+		assert.True(t, isPrivate, "nonexistent path should default to private")
+	})
+
+	t.Run("isPrivateByURL returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateByURL("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateByURL routes unknown platforms to private", func(t *testing.T) {
+		isPrivate := isPrivateByURL("https://unknown-git-hosting.com/team/repo", mockClient)
+		assert.True(t, isPrivate, "unknown platform should default to private")
+	})
+}
+
+func TestIsRepoPublicWithMockedServer(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
+	t.Run("public repository returns true when HTTP 200", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer server.Close()
+
+		// Test with mocked server URL
+		isPublic := isRepoPublic(server.URL, mockClient)
+		assert.True(t, isPublic, "HTTP 200 should indicate public")
+	})
+
+	t.Run("private repository returns false when HTTP 404", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer server.Close()
+
+		isPublic := isRepoPublic(server.URL, mockClient)
+		assert.False(t, isPublic, "HTTP 404 should indicate not public (private)")
+	})
+
+	t.Run("empty URL returns false (not public/private)", func(t *testing.T) {
+		isPublic := isRepoPublic("", mockClient)
+		assert.False(t, isPublic, "empty URL should not be public")
+	})
+
+	t.Run("malformed URL returns false (not public/private)", func(t *testing.T) {
+		isPublic := isRepoPublic("://invalid", mockClient)
+		assert.False(t, isPublic, "malformed URL should not be public")
+	})
+}
+
+func TestPlatformSpecificPrivacyDetection(t *testing.T) {
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
+	t.Run("isPrivateGitHub returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly - returns early without HTTP call
+		isPrivate := isPrivateGitHub("invalid", mockClient)
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateGitHub returns private for empty owner", func(t *testing.T) {
+		// URL format that extracts to empty owner
+		isPrivate := isPrivateGitHub("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateGitLab returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateGitLab("invalid", mockClient)
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateGitLab returns private for empty group", func(t *testing.T) {
+		// URL format that extracts to empty group
+		isPrivate := isPrivateGitLab("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateBitbucket returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateBitbucket("invalid", mockClient)
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateAzureDevOps returns private when extraction fails", func(t *testing.T) {
+		// Invalid URL that won't extract properly
+		isPrivate := isPrivateAzureDevOps("invalid", mockClient)
+		assert.True(t, isPrivate, "invalid URL should be private")
+	})
+
+	t.Run("isPrivateBitbucket returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateBitbucket("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+
+	t.Run("isPrivateAzureDevOps returns private for empty URL", func(t *testing.T) {
+		isPrivate := isPrivateAzureDevOps("", mockClient)
+		assert.True(t, isPrivate, "empty URL should be private")
+	})
+}
+
+func TestExtractionsReturnEmptyOnInvalidInput(t *testing.T) {
+	t.Run("extractGitHubOwnerRepo with empty URL", func(t *testing.T) {
+		owner, repo := extractGitHubOwnerRepo("")
+		assert.Equal(t, "", owner)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractGitLabGroupProject with empty URL", func(t *testing.T) {
+		group, project, host := extractGitLabGroupProject("")
+		assert.Equal(t, "", group)
+		assert.Equal(t, "", project)
+		assert.Equal(t, "", host)
+	})
+
+	t.Run("extractBitbucketWorkspaceRepo with empty URL", func(t *testing.T) {
+		workspace, repo := extractBitbucketWorkspaceRepo("")
+		assert.Equal(t, "", workspace)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractAzureDevOpsOrgRepo with empty URL", func(t *testing.T) {
+		org, repo := extractAzureDevOpsOrgRepo("")
+		assert.Equal(t, "", org)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractGitHubOwnerRepo with single segment", func(t *testing.T) {
+		owner, repo := extractGitHubOwnerRepo("onlysegment")
+		assert.Equal(t, "", owner)
+		assert.Equal(t, "", repo)
+	})
+
+	t.Run("extractBitbucketWorkspaceRepo with single segment", func(t *testing.T) {
+		workspace, repo := extractBitbucketWorkspaceRepo("onlysegment")
+		assert.Equal(t, "", workspace)
+		assert.Equal(t, "", repo)
+	})
+}
+
+func TestParseGitLogOutput_FiltersByAuthorDate(t *testing.T) {
+	now := time.Now()
+	cutoff := now.Add(-10 * 24 * time.Hour)
+
+	// Log output with commits before and after cutoff
+	logOutput := fmt.Sprintf(
+		"%s\x1f%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		cutoff.Add(-time.Hour).Format(time.RFC3339), "hash1", "old@example.com", "Old User",
+		cutoff.Add(24*time.Hour).Format(time.RFC3339), "hash2", "new@example.com", "New User",
+	)
+
+	commits := parseGitLogOutput(logOutput, cutoff)
+	// Only the commit after cutoff should be included
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "new@example.com", commits[0]["email"])
+}
+
+func TestParseGitLogOutput_SkipsMalformedDates(t *testing.T) {
+	logOutput := fmt.Sprintf(
+		"invalid-date\x1f%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		"hash1", "user1@example.com", "User 1",
+		time.Now().Format(time.RFC3339), "hash2", "user2@example.com", "User 2",
+	)
+
+	cutoff := time.Now().Add(-24 * time.Hour)
+	commits := parseGitLogOutput(logOutput, cutoff)
+	// Should skip the malformed date line and only include the valid one
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "user2@example.com", commits[0]["email"])
+}
+
+func TestParseGitLogOutput_SkipsIncompleteLines(t *testing.T) {
+	logOutput := fmt.Sprintf(
+		"%s\x1f%s\x1f%s\n%s\x1f%s\x1f%s\x1f%s",
+		time.Now().Format(time.RFC3339), "hash1", "incomplete",
+		time.Now().Format(time.RFC3339), "hash2", "user2@example.com", "User 2",
+	)
+
+	commits := parseGitLogOutput(logOutput, time.Now().Add(-24*time.Hour))
+	// Should skip the incomplete line (only 3 fields instead of 4)
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "user2@example.com", commits[0]["email"])
+}
+
+func TestConvertToCoreCommits_HandlesParsingErrors(t *testing.T) {
+	commits := []map[string]string{
+		{
+			"date":  "invalid-date",
+			"hash":  "0000000000000000000000000000000000000000",
+			"email": "user@example.com",
+			"name":  "User",
+		},
+		{
+			"date":  time.Now().Format(time.RFC3339),
+			"hash":  "1234567890123456789012345678901234567890",
+			"email": "user2@example.com",
+			"name":  "User 2",
+		},
+	}
+
+	result := convertToCoreCommits(commits)
+	assert.Len(t, result, 2)
+	// First commit should have zero time due to parsing error
+	assert.True(t, result[0].Author.When.IsZero())
+	// Second commit should parse correctly
+	assert.False(t, result[1].Author.When.IsZero())
+}
+
+func TestWriteGeneratedFilesConditional_CreatesCheckmarxDir(t *testing.T) {
+	repoPath := t.TempDir()
+	csvData := []byte("date,hash,email,name\n2026-09-17T00:00:00Z,abc123,user@example.com,Test User")
+	metadataData := []byte(`{"repositoryUrl":"https://github.com/test/repo","lastCommitHash":"abc123","lastCommitDate":"2026-09-17T00:00:00Z","commitsCount":1}`)
+
+	// Private repo should write both files
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, true)
+	require.NoError(t, err)
+
+	// Check .checkmarx folder was created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	// Check both files exist
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(csvPath), "should create contributors.csv for private repo")
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+
+	// Verify file contents
+	csvBytes, err := os.ReadFile(csvPath)
+	require.NoError(t, err)
+	assert.Equal(t, string(csvData), string(csvBytes))
+}
+
+func TestWriteGeneratedFilesConditional_PublicRepoNoCSV(t *testing.T) {
+	repoPath := t.TempDir()
+	csvData := []byte("date,hash,email,name\n2026-09-17T00:00:00Z,abc123,user@example.com,Test User")
+	metadataData := []byte(`{"repositoryUrl":"https://github.com/test/repo","lastCommitHash":"abc123","lastCommitDate":"2026-09-17T00:00:00Z","commitsCount":1}`)
+
+	// Public repo (isPrivateRepo=false) should NOT write CSV
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, false)
+	require.NoError(t, err)
+
+	// Check .checkmarx folder was created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	// CSV should NOT exist for public repos
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.False(t, fileExists(csvPath), "should NOT create contributors.csv for public repo")
+
+	// Metadata should exist
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json for all repos")
+}
+
+func TestGenerateViaSystemGit_WithSystemGitCommands(t *testing.T) {
+	// Create real git repository using system git
+	repoPath := t.TempDir()
+
+	// Initialize git repo
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Configure git user
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Set remote
+	cmd = exec.Command("git", "remote", "add", "origin", "https://github.com/test/repo.git")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Create initial commit
+	testFile := filepath.Join(repoPath, "test.txt")
+	require.NoError(t, os.WriteFile(testFile, []byte("test content"), 0644))
+
+	cmd = exec.Command("git", "add", "test.txt")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "commit", "-m", "initial commit")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test generateViaSystemGit for private repo
+	err := generateViaSystemGit(repoPath, true)
+	require.NoError(t, err)
+
+	// Verify files were created
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.True(t, fileExists(csvPath), "should create contributors.csv for private repo")
+
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+
+	// Verify metadata content
+	metadataBytes, err := os.ReadFile(metadataPath)
+	require.NoError(t, err)
+
+	var metadata contributorsMetadata
+	require.NoError(t, json.Unmarshal(metadataBytes, &metadata))
+	assert.Equal(t, "https://github.com/test/repo.git", metadata.RepositoryURL)
+	assert.NotEmpty(t, metadata.LastCommitHash)
+	assert.NotEmpty(t, metadata.LastCommitDate)
+	assert.GreaterOrEqual(t, metadata.CommitsCount, 1)
+}
+
+func TestGenerateViaSystemGit_PublicRepo(t *testing.T) {
+	// Create real git repository using system git
+	repoPath := t.TempDir()
+
+	// Initialize git repo
+	cmd := exec.Command("git", "init")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Configure git user
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Set remote
+	cmd = exec.Command("git", "remote", "add", "origin", "https://github.com/test/repo.git")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Create initial commit
+	testFile := filepath.Join(repoPath, "test.txt")
+	require.NoError(t, os.WriteFile(testFile, []byte("test content"), 0644))
+
+	cmd = exec.Command("git", "add", "test.txt")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "commit", "-m", "initial commit")
+	cmd.Dir = repoPath
+	require.NoError(t, cmd.Run())
+
+	// Test generateViaSystemGit for PUBLIC repo
+	err := generateViaSystemGit(repoPath, false)
+	require.NoError(t, err)
+
+	// Verify only metadata was created (no CSV for public repos)
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	assert.True(t, fileExists(checkmarxDir), "should create .checkmarx directory")
+
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+	assert.False(t, fileExists(csvPath), "should NOT create contributors.csv for public repo")
+
+	metadataPath := filepath.Join(checkmarxDir, MetadataFileName)
+	assert.True(t, fileExists(metadataPath), "should create metadata.json")
+}
+
+func TestWriteGeneratedFilesConditional_InvalidPathError(t *testing.T) {
+	// Test with invalid path to trigger MkdirAll error
+	invalidPath := "\x00invalid"
+	csvData := []byte("test csv")
+	metadataData := []byte("test metadata")
+
+	err := writeGeneratedFilesConditional(invalidPath, csvData, metadataData, true)
+	assert.Error(t, err, "should return error for invalid path")
+}
+
+func TestWriteGeneratedFilesConditional_FileExistsAsDirectory(t *testing.T) {
+	// Test error when .checkmarx path exists as file, not directory
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	require.NoError(t, os.WriteFile(checkmarxDir, []byte("blocking"), 0644))
+
+	csvData := []byte("test csv")
+	metadataData := []byte("test metadata")
+
+	err := writeGeneratedFilesConditional(repoPath, csvData, metadataData, true)
+	assert.Error(t, err, "should error when .checkmarx is a file")
+}
+
+func TestGenerateAndWrite_WithCommits(t *testing.T) {
+	t.Run("creates metadata with commit count", func(t *testing.T) {
+		repoPath := t.TempDir()
+		repo, err := gogit.PlainInit(repoPath, false)
+		require.NoError(t, err)
+
+		_, err = repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{"https://github.com/test/repo.git"},
+		})
+		require.NoError(t, err)
+
+		worktree, err := repo.Worktree()
+		require.NoError(t, err)
+
+		sig := &object.Signature{Name: "User", Email: "user@example.com", When: time.Now()}
+		_, err = worktree.Commit("commit1", &gogit.CommitOptions{
+			Author:            sig,
+			AllowEmptyCommits: true,
+		})
+		require.NoError(t, err)
+
+		err = GenerateAndWrite(repoPath, true)
+		assert.NoError(t, err)
+
+		metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+		data, err := os.ReadFile(metadataPath)
+		require.NoError(t, err)
+
+		var metadata contributorsMetadata
+		err = json.Unmarshal(data, &metadata)
+		require.NoError(t, err)
+		assert.Equal(t, 1, metadata.CommitsCount)
+	})
+
+	t.Run("creates files for private repo with commit", func(t *testing.T) {
+		repoPath := t.TempDir()
+		repo, err := gogit.PlainInit(repoPath, false)
+		require.NoError(t, err)
+
+		_, err = repo.CreateRemote(&config.RemoteConfig{
+			Name: "origin",
+			URLs: []string{"https://github.com/private/repo.git"},
+		})
+		require.NoError(t, err)
+
+		worktree, err := repo.Worktree()
+		require.NoError(t, err)
+
+		sig := &object.Signature{Name: "Dev", Email: "dev@example.com", When: time.Now()}
+		_, err = worktree.Commit("work", &gogit.CommitOptions{
+			Author:            sig,
+			AllowEmptyCommits: true,
+		})
+		require.NoError(t, err)
+
+		err = GenerateAndWrite(repoPath, true)
+		assert.NoError(t, err)
+
+		metadataPath := filepath.Join(repoPath, CheckmarxFolderName, MetadataFileName)
+		assert.True(t, fileExists(metadataPath))
+	})
+}
+
+func TestCommitsSince_FiltersOldCommits(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "old@example.com", name: "Old", when: now.Add(-200 * 24 * time.Hour)},
+		{email: "recent@example.com", name: "Recent", when: now.Add(-1 * 24 * time.Hour)},
+	})
+
+	repo, _ := gogit.PlainOpen(repoPath)
+	since := now.Add(-100 * 24 * time.Hour)
+	commits, _ := commitsSince(repo, since)
+
+	assert.Len(t, commits, 1)
+	assert.Equal(t, "recent@example.com", commits[0].Author.Email)
+}
+
+func TestWriteGeneratedFilesConditional_CSVWriteError(t *testing.T) {
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+
+	// Create a file at the path where we'd create the directory, causing MkdirAll to fail
+	err := os.WriteFile(checkmarxDir, []byte("blocking file"), 0o600)
+	require.NoError(t, err)
+
+	err = writeGeneratedFilesConditional(repoPath, []byte("csv"), []byte(`{}`), true)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "could not create .checkmarx directory")
+}
+
+func TestBuildContributorsCSV_MultipleEmailsPreservesOrder(t *testing.T) {
+	now := time.Now()
+	repoPath := newGitMetadataTestRepo(t, "", []testCommit{
+		{email: "user1@example.com", name: "User One", when: now},
+		{email: "user2@example.com", name: "User Two", when: now.Add(-1 * time.Hour)},
+		{email: "user3@example.com", name: "User Three", when: now.Add(-48 * time.Hour)},
+	})
+
+	require.NoError(t, GenerateAndWrite(repoPath, true))
+
+	csvContent, _ := readGitMetadataFiles(t, repoPath)
+	reader := csv.NewReader(strings.NewReader(csvContent))
+	records, err := reader.ReadAll()
+	require.NoError(t, err)
+
+	// Should have 3 unique emails
+	assert.Len(t, records, 3)
+	// Each record should have 4 fields: date, hash, email, name
+	for _, record := range records {
+		assert.Len(t, record, 4)
+		// First field should be parseable as RFC3339
+		_, err := time.Parse(time.RFC3339, record[0])
+		assert.NoError(t, err)
+		// Email should be in field 2
+		assert.Contains(t, record[2], "@example.com")
+	}
+}
+
+func TestDetectRepositoryPrivacy_FallbackToSystemGit(t *testing.T) {
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", []testCommit{
+		{email: "alice@example.com", name: "Alice", when: time.Now()},
+	})
+
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+
+	// When detectRepositoryPrivacy is called, it should try go-git first (succeeds), then isPrivateByURL; since example.com is not a real SCM, the function should handle it gracefully and default to private=true.
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	assert.True(t, result, "should conservatively default to private for unknown hosts")
+}
+
+func TestGenerateAndWrite_WithCSVSizeLimit(t *testing.T) {
+	now := time.Now()
+	// Create repo with many contributors to potentially trigger size warning
+	var commits []testCommit
+	for i := 0; i < 50; i++ {
+		commits = append(commits, testCommit{
+			email: fmt.Sprintf("user%d@example.com", i),
+			name:  fmt.Sprintf("User %d", i),
+			when:  now.Add(-time.Duration(i) * time.Hour),
+		})
+	}
+	repoPath := newGitMetadataTestRepo(t, "https://example.com/org/repo.git", commits)
+
+	err := GenerateAndWrite(repoPath, true)
+	assert.NoError(t, err, "should handle repos with many contributors")
+
+	csvContent, metadata := readGitMetadataFiles(t, repoPath)
+	lines := strings.Split(strings.TrimRight(csvContent, "\n"), "\n")
+	assert.Equal(t, 50, len(lines), "should generate CSV with all unique contributors")
+	assert.Equal(t, 50, metadata.CommitsCount)
+}
+
+func TestDetectRepositoryPrivacy_ExistingCSVFile(t *testing.T) {
+	repoPath := t.TempDir()
+	checkmarxDir := filepath.Join(repoPath, CheckmarxFolderName)
+	csvPath := filepath.Join(checkmarxDir, ContributorsFileName)
+
+	// Create CSV file to indicate previous private repo
+	require.NoError(t, os.MkdirAll(checkmarxDir, 0o755))
+	require.NoError(t, os.WriteFile(csvPath, []byte("test"), 0o644))
+
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	assert.True(t, result, "should return true when CSV file exists (repo was private)")
+}
+
+func TestDetectRepositoryPrivacy_NoRemoteURL(t *testing.T) {
+	repoPath := t.TempDir()
+	// Create an empty git repo with no remote
+	_, err := gogit.PlainInit(repoPath, false)
+	require.NoError(t, err)
+
+	// Don't add any remote
+	mockClient := &http.Client{Timeout: 5 * time.Second}
+	result := detectRepositoryPrivacy(repoPath, mockClient)
+	// Should conservatively default to private when no remote found
+	assert.True(t, result)
+}

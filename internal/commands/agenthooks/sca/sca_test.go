@@ -182,6 +182,35 @@ func TestCheckManifestEdit_NewMaliciousAddition(t *testing.T) {
 	}
 }
 
+func TestCheckManifestEdit_Composer_VulnerableAddition(t *testing.T) {
+	dir, err := os.MkdirTemp("", "ck-edit-composer-")
+	if err != nil {
+		t.Fatalf("mkdtemp: %v", err)
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	manifest := filepath.Join(dir, "composer.json")
+	after := []byte(`{
+    "name": "sca-scan-temp",
+    "require": {
+        "guzzlehttp/guzzle": "6.3.3"
+    }
+}`)
+	s := scannerWith(ossrealtime.OssPackage{
+		PackageManager:  "packagist",
+		PackageName:     "guzzlehttp/guzzle",
+		PackageVersion:  "6.3.3",
+		Status:          "High",
+		Vulnerabilities: []ossrealtime.Vulnerability{{CVE: "CVE-2022-29248", Severity: "High"}},
+	})
+	finding, _, severity := s.CheckManifestEdit(manifest, after, "", "", "")
+	if !strings.Contains(finding, "vulnerabilities") {
+		t.Errorf("expected vulnerable finding, got %q", finding)
+	}
+	if severity == "" {
+		t.Errorf("expected non-empty severity")
+	}
+}
+
 func TestCheckManifestEdit_OnlyVersionBumpOfCleanPkg(t *testing.T) {
 	dir, err := os.MkdirTemp("", "ck-edit-test-")
 	if err != nil {
