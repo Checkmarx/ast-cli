@@ -666,13 +666,13 @@ func TestIncrementalScanWithBaseBranch(t *testing.T) {
 
 	incrementalArgs := append(getCreateArgsWithName(Dir, map[string]string{}, projectName, "sast,sca,iac-security"),
 		flag(params.BranchFlag), baselineBaseBranch,
-		"--sast-incremental", "--sast-base-branch", baselineBaseBranch)
+		"--sast-incremental", "--base-branch", baselineBaseBranch)
 	incrementalScanID, projectIDInc := executeCreateScan(t, incrementalArgs)
 
 	assert.Assert(t, baselineProjectID == projectIDInc, "Project IDs should match")
 
 	scan := showScan(t, incrementalScanID)
-	assert.Equal(t, scan.SastIncremental, "Incremental", "scan created with --sast-base-branch should display as Incremental")
+	assert.Equal(t, scan.SastIncremental, "Incremental", "scan created with --base-branch should display as Incremental")
 
 	executeScanAssertions(t, baselineProjectID, baselineScanID, map[string]string{})
 	executeScanAssertions(t, baselineProjectID, incrementalScanID, map[string]string{})

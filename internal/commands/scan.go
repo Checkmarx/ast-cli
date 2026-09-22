@@ -781,14 +781,12 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(
 		commonParams.IncrementalSast,
 		false,
-		"Incremental SAST scan should be performed. Requires the tenant/project setting"+
-			" \"Incremental in Branch (API)\" to be enabled when combined with --sast-base-branch.",
+		"Incremental SAST scan should be performed.",
 	)
 	createScanCmd.PersistentFlags().String(
-		commonParams.SastBaseBranch,
+		commonParams.BaseBranch,
 		"",
-		"Branch to use as the baseline full scan for incremental SAST scanning. Requires --sast-incremental."+
-			" Requires the tenant/project setting \"Incremental in Branch (API)\" to be enabled.",
+		"Base branch for incremental scan comparison.",
 	)
 
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
@@ -1129,7 +1127,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
 
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
-	sastBaseBranchChanged := cmd.Flags().Changed(commonParams.SastBaseBranch)
+	sastBaseBranchChanged := cmd.Flags().Changed(commonParams.BaseBranch)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
@@ -1152,7 +1150,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	}
 
 	if sastBaseBranchChanged {
-		sastConfig.BaseBranch, _ = cmd.Flags().GetString(commonParams.SastBaseBranch)
+		sastConfig.BaseBranch, _ = cmd.Flags().GetString(commonParams.BaseBranch)
 	}
 
 	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
@@ -3979,10 +3977,10 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 		}
 	}
 
-	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.SastBaseBranch)
+	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.BaseBranch)
 	sastIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
 	if sastBaseBranch != "" && !sastIncremental {
-		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.SastBaseBranch, commonParams.IncrementalSast)
+		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.BaseBranch, commonParams.IncrementalSast)
 	}
 
 	// check if flag was passed as arg

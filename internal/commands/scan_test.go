@@ -708,12 +708,12 @@ func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
 }
 
 func TestCreateScanWithSastBaseBranchWithoutIncremental_Failed(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-base-branch", "main")
-	assert.ErrorContains(t, err, "--sast-base-branch flag requires --sast-incremental to be set to true", err.Error())
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "main")
+	assert.ErrorContains(t, err, "--base-branch flag requires --sast-incremental to be set to true", err.Error())
 }
 
 func TestCreateScanWithSastBaseBranchAndIncremental_Passed(t *testing.T) {
-	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--sast-base-branch", "main")
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--base-branch", "main")
 }
 
 func TestGetScanByIDWithMetadataFetched_EnrichesWithIncrementalStatus(t *testing.T) {
@@ -3781,7 +3781,7 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
 			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
-			cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
+			cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
@@ -3794,7 +3794,7 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
 			}
 			if tt.requiredBaseBranchSet {
-				_ = cmdCommand.PersistentFlags().Set(commonParams.SastBaseBranch, tt.baseBranchFlag)
+				_ = cmdCommand.PersistentFlags().Set(commonParams.BaseBranch, tt.baseBranchFlag)
 			}
 
 			if tt.requiredLightQueriesSet {
@@ -3844,7 +3844,7 @@ func TestAddSastScan_BaseBranchInheritedFromResubmit(t *testing.T) {
 		Long:  `Scan a project`,
 	}
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
-	cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
+	cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
 
 	_ = cmdCommand.Execute()
 
@@ -3876,10 +3876,10 @@ func TestAddSastScan_BaseBranchFlagOverridesResubmit(t *testing.T) {
 		Long:  `Scan a project`,
 	}
 	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
-	cmdCommand.PersistentFlags().String(commonParams.SastBaseBranch, "", "Base branch for incremental SAST scan")
+	cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
 
 	_ = cmdCommand.Execute()
-	_ = cmdCommand.Flags().Set(commonParams.SastBaseBranch, "develop")
+	_ = cmdCommand.Flags().Set(commonParams.BaseBranch, "develop")
 
 	result := addSastScan(cmdCommand, resubmitConfig)
 
