@@ -42,6 +42,22 @@ func Synthesize(format Format, pkgs []Package, dir string) (string, error) {
 		content = synthGradleVersionCatalog(pkgs)
 	case FormatSbtBuild:
 		content = synthSbt(pkgs)
+	case FormatBower:
+		content, err = synthBower(pkgs)
+	case FormatComposerJson:
+		content, err = synthComposerJson(pkgs)
+	case FormatPubspecYaml:
+		content = synthPubspecYaml(pkgs)
+	case FormatGemfile:
+		content = synthGemfile(pkgs)
+	case FormatCocoaPodsPodfile:
+		content = synthPodfile(pkgs)
+	case FormatCocoaPodsPodspec:
+		content = synthPodspec(pkgs)
+	case FormatCarthage:
+		content = synthCartfile(pkgs)
+	case FormatSwiftPackageManager:
+		content = synthSwiftPackage(pkgs)
 	default:
 		return "", fmt.Errorf("sca: unsupported synth format %d", format)
 	}
@@ -198,5 +214,120 @@ func synthSbt(pkgs []Package) []byte {
 		}
 		fmt.Fprintf(&b, "libraryDependencies += \"%s\" %% \"%s\" %% \"%s\"\n", group, artifact, v)
 	}
+	return []byte(b.String())
+}
+
+func synthComposerJson(pkgs []Package) ([]byte, error) {
+	require := make(map[string]string, len(pkgs))
+	for _, p := range pkgs {
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		require[p.Name] = v
+	}
+	manifest := map[string]any{
+		"name":    "sca-scan-temp",
+		"require": require,
+	}
+	return json.MarshalIndent(manifest, "", "  ")
+}
+
+func synthBower(pkgs []Package) ([]byte, error) {
+	deps := make(map[string]string, len(pkgs))
+	for _, p := range pkgs {
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		deps[p.Name] = v
+	}
+	manifest := map[string]any{
+		"name":         "sca-scan-temp",
+		"dependencies": deps,
+	}
+	return json.MarshalIndent(manifest, "", "  ")
+}
+
+func synthPubspecYaml(pkgs []Package) []byte {
+	var b strings.Builder
+	b.WriteString("name: sca_scan_temp\nenvironment:\n  sdk: '>=2.12.0 <4.0.0'\ndependencies:\n")
+	for _, p := range pkgs {
+		v := p.Version
+		if v == "" {
+			v = "any"
+		}
+		fmt.Fprintf(&b, "  %s: %s\n", p.Name, v)
+	}
+	return []byte(b.String())
+}
+
+func synthGemfile(pkgs []Package) []byte {
+	var b strings.Builder
+	b.WriteString("source 'https://rubygems.org'\n\n")
+	for _, p := range pkgs {
+		if p.Version != "" {
+			fmt.Fprintf(&b, "gem '%s', '%s'\n", p.Name, p.Version)
+		} else {
+			fmt.Fprintf(&b, "gem '%s'\n", p.Name)
+		}
+	}
+	return []byte(b.String())
+}
+
+func synthPodfile(pkgs []Package) []byte {
+	var b strings.Builder
+	for _, p := range pkgs {
+		if p.Version != "" {
+			fmt.Fprintf(&b, "pod '%s', '%s'\n", p.Name, p.Version)
+		} else {
+			fmt.Fprintf(&b, "pod '%s'\n", p.Name)
+		}
+	}
+	return []byte(b.String())
+}
+
+func synthPodspec(pkgs []Package) []byte {
+	var b strings.Builder
+	b.WriteString("Pod::Spec.new do |s|\n")
+	b.WriteString("  s.name = 'sca-scan-temp'\n")
+	b.WriteString("  s.version = '1.0.0'\n")
+	for _, p := range pkgs {
+		if p.Version != "" {
+			fmt.Fprintf(&b, "  s.dependency '%s', '%s'\n", p.Name, p.Version)
+		} else {
+			fmt.Fprintf(&b, "  s.dependency '%s'\n", p.Name)
+		}
+	}
+	b.WriteString("end\n")
+	return []byte(b.String())
+}
+
+func synthCartfile(pkgs []Package) []byte {
+	var b strings.Builder
+	for _, p := range pkgs {
+		v := p.Version
+		if v == "" {
+			v = "latest"
+		}
+		fmt.Fprintf(&b, "github \"%s\" \"%s\"\n", p.Name, v)
+	}
+	return []byte(b.String())
+}
+
+func synthSwiftPackage(pkgs []Package) []byte {
+	var b strings.Builder
+	b.WriteString("// swift-tools-version:5.5\nimport PackageDescription\n\n")
+	b.WriteString("let package = Package(\n")
+	b.WriteString("    name: \"sca-scan-temp\",\n")
+	b.WriteString("    dependencies: [\n")
+	for _, p := range pkgs {
+		v := p.Version
+		if v == "" {
+			v = "1.0.0"
+		}
+		fmt.Fprintf(&b, "        .package(url: \"https://github.com/sca-scan/%s.git\", exact: \"%s\"),\n", p.Name, v)
+	}
+	b.WriteString("    ]\n)\n")
 	return []byte(b.String())
 }

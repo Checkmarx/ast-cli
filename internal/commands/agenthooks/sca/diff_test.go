@@ -93,6 +93,21 @@ func TestAddedPackages_Sbt_AddedPackage(t *testing.T) {
 	}
 }
 
+func TestAddedPackages_Composer_NewFile(t *testing.T) {
+	after := []byte(`{
+    "require": {
+        "guzzlehttp/guzzle": "6.3.3"
+    }
+}`)
+	added, err := AddedPackages("composer.json", nil, after)
+	if err != nil {
+		t.Fatalf("AddedPackages: %v", err)
+	}
+	if len(added) != 1 || added[0].Name != "guzzlehttp/guzzle" || added[0].Version != "6.3.3" {
+		t.Errorf("got added=%v, want guzzlehttp/guzzle@6.3.3", added)
+	}
+}
+
 func TestAddedPackages_UnparseableContent(t *testing.T) {
 	// Note: behaviour for unparseable content depends on the upstream parser.
 	// We assert that errors flow back to the caller, not that any specific
