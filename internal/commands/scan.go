@@ -2165,6 +2165,9 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
+	if !isGitIgnoreFilter && utils.GetOptionalParam("use-gitignore") == "true" {
+		isGitIgnoreFilter = true
+	}
 	excludeGitFolder, _ := cmd.Flags().GetBool(commonParams.ExcludeGitFolderFlag)
 	if !excludeGitFolder && utils.GetOptionalParam(commonParams.ExcludeGitFolderFlag) == "true" {
 		excludeGitFolder = true
