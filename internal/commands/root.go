@@ -133,6 +133,9 @@ func NewAstCLI(
 			return err
 		}
 		PrintConfiguration()
+		if viper.GetBool(params.InsecureFlag) {
+			fmt.Println("WARNING: --insecure flag is enabled. This disables SSL/TLS certificate verification. Do NOT use this flag in production unless your security team has explicitly evaluated and approved the risk.")
+		}
 		err = configuration.LoadConfiguration()
 		if err != nil {
 			return err
