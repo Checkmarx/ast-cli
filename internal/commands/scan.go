@@ -1675,8 +1675,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 
+	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
+	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1694,7 +1697,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher, excludeGitFolder)
+		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, antMatcher, excludeGitFolder)
 		if err != nil {
 			return "", err
 		}
@@ -4023,7 +4026,10 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 
 	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.BaseBranch)
 	sastIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
-	if sastBaseBranch != "" && !sastIncremental {
+	if cmd.Flags().Changed(commonParams.BaseBranch) && strings.TrimSpace(sastBaseBranch) == "" {
+		return fmt.Errorf("--%s flag cannot be empty. Please provide a valid branch name", commonParams.BaseBranch)
+	}
+	if strings.TrimSpace(sastBaseBranch) != "" && !sastIncremental {
 		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.BaseBranch, commonParams.IncrementalSast)
 	}
 

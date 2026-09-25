@@ -716,6 +716,16 @@ func TestCreateScanWithSastBaseBranchAndIncremental_Passed(t *testing.T) {
 	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--base-branch", "main")
 }
 
+func TestCreateScanWithEmptyBaseBranch_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "")
+	assert.ErrorContains(t, err, "--base-branch flag cannot be empty. Please provide a valid branch name", err.Error())
+}
+
+func TestCreateScanWithWhitespaceBaseBranch_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "   ")
+	assert.ErrorContains(t, err, "--base-branch flag cannot be empty. Please provide a valid branch name", err.Error())
+}
+
 func TestGetScanByIDWithMetadataFetched_EnrichesWithIncrementalStatus(t *testing.T) {
 	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", "MOCK_SCAN_ID", "--format", "table")
 	assert.NilError(t, err)
