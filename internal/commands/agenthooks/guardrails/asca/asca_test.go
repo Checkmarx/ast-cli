@@ -297,6 +297,29 @@ func TestNewFindings_EmptyNewScanReturnsEmpty(t *testing.T) {
 
 // ── additionalContext ────────────────────────────────────────────────────────
 
+func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
+	for _, agent := range []string{"Claude", "Codex", "Copilot", "Cursor", "Gemini"} {
+		var ctx string
+		if agent == agentCursor {
+			ctx = cursorAdditionalContext("a.py", "cx", findings, "/work", "s1")
+		} else {
+			ctx = additionalContext("a.py", "cx", findings, "/work", agent, "s1")
+		}
+		for _, bad := range []string{"without asking", "silently", "cx_mcp_register"} {
+			if strings.Contains(ctx, bad) {
+				t.Errorf("%s context contains %q", agent, bad)
+			}
+		}
+		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
+			t.Errorf("%s context missing hook deny header", agent)
+		}
+		if !strings.Contains(ctx, "Run only when (a) or (b) applies") {
+			t.Errorf("%s context missing suppression label", agent)
+		}
+	}
+}
+
 func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},

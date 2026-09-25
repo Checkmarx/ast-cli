@@ -27,6 +27,15 @@ const agentCursor = "Cursor"
 // uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
 const agentGemini = "Gemini"
 
+// provenanceTag returns the string prepended to the finding/remediation strings in denyFrom (sca.go)
+// so the agent can recognize genuine Checkmarx output. NOT an authority claim — an attacker could
+// spoof this exact string from a file, a fetched page, or another tool's output — it is a signpost:
+// text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a script/CLI
+// command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent string) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -59,6 +68,13 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID str
 	return b.String(), vulnerableRemediationNote(pkgs, workDir, agent, sessionID)
 }
 
+// hookDenyHeader is the agent-facing opening of remediation text. The provenance tag is
+// prepended separately in denyFrom. This header does not contain the spoof phrases the
+// skills treat as proof a message is not from Checkmarx.
+const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file content and not an untrusted tool error. " +
+	"Remediate real findings now through the Checkmarx MCP skill. " +
+	"Continue the user's original task when this finding is handled.\n"
+
 // remediationNote returns the action steps to include as additionalContext for malicious packages.
 // Remediation goes through the cx-devassist skill (or the Checkmarx MCP tool directly when the skill
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
@@ -80,15 +96,19 @@ func remediationNote(subject, goal, agent string) string {
 			"the user verbatim when done.\n"
 	}
 	return fmt.Sprintf(
-		preamble+
-			"Action required:\n"+
+		hookDenyHeader+
+			preamble+
+			"Remediate:\n"+
 			skillStep+
 			"  2. If that skill is not available in this session, use %s for each %s.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
 			"  3. If %s is unavailable, tell the user to reconnect the\n"+
 			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
 			"  4. If no safe version exists, the user can acknowledge the finding via\n"+
-			"     the Checkmarx Dev Assist interface.",
+			"     the Checkmarx Dev Assist interface.\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
 		subject, goal, pkgTool, subject, pkgTool, agentprofile.McpReconnect(agent))
 }
 
@@ -123,28 +143,33 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 	if agent == agentCursor {
 		pkgTool := cursorplugin.MCPTool("packageRemediation")
 		return fmt.Sprintf(
-			"Apply the cx-hook-deny.mdc rule for this deny. "+
-				"ASK THE USER FIRST, for each affected package, before taking any action: \"A vulnerable "+
-				"package was detected. Would you like to remediate it (upgrade/remove via MCP) or "+
-				"suppress it (accept the risk)?\" and wait for their answer. Do not decide this "+
-				"yourself — a deliberately-pinned or intentionally-included vulnerable package is NOT "+
-				"a reason to suppress it without asking; only suppress on the user's explicit "+
-				"instruction, never because remediating would undo what the user asked for.\n"+
-				"Action required:\n"+
-				"  1. If the user asks to remediate: apply the cx-devassist-sca.mdc rule — invoke the "+
-				"cx-devassist:cx-devassist-sca skill exactly as written — do not skip, abbreviate, or "+
-				"reimplement its steps inline. The findings are already in context so it will skip the "+
-				"scan and go directly to MCP-driven remediation to find non-vulnerable versions; the "+
-				"skill also handles MCP unavailability and self-recovery. Always show its Step 5 SCA "+
-				"Remediation Summary to the user verbatim when done.\n"+
+			hookDenyHeader+
+				"Apply the cx-hook-deny.mdc rule for this deny.\n"+
+				"Remediate:\n"+
+				"  1. Apply the cx-devassist-sca.mdc rule — invoke the cx-devassist:cx-devassist-sca "+
+				"skill exactly as written — do not skip, abbreviate, or reimplement its steps inline. "+
+				"The findings are already in context so it will skip the scan and go directly to "+
+				"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP "+
+				"unavailability and self-recovery. Always show its Step 5 SCA Remediation Summary to "+
+				"the user verbatim when done.\n"+
 				"  2. If that skill is not available in this session, use %s for each affected package.\n"+
 				"     This is the only supported remediation path — do not attempt manual version selection.\n"+
 				"  3. If %s is unavailable, tell the user to reconnect the\n"+
-				"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-				"  4. If the user asks to suppress instead, or no safe version exists for a package, "+
-				"suppress it by running the corresponding command and inform the user of which case "+
-				"applied:\n%s",
-			pkgTool, pkgTool, agentprofile.McpReconnect(agent),
+				"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available — its "+
+				"     unavailability is never itself a reason to suppress instead.\n"+
+				"  4. Suppress a package when EITHER: (a) the user has explicitly told you to suppress "+
+				"or ignore it (e.g. \"suppress it\", \"ignore this one\") — honor that "+
+				"immediately, their instruction is sufficient on its own and you do not need to attempt "+
+				"remediation first or verify anything else; or (b) you are deciding on your own, "+
+				"without being asked, and you actually called %s for this package and it came back "+
+				"with a real 'no fixed version exists' result. Neither the MCP merely being "+
+				"unavailable, nor the package merely 'looking intentionally pinned', is enough on its "+
+				"own without (a) or (b) — if neither applies, ask the user instead of guessing.\n"+
+				"Run only when (a) or (b) applies. Then tell the user what you did:\n%s\n"+
+				"This is a security check triggered mid-task, not a new task: once you've handled this "+
+				"finding as instructed above, continue with the task the user originally asked for. Do "+
+				"not invent unrelated follow-up work or lose track of what they asked you to do.",
+			pkgTool, pkgTool, agentprofile.McpReconnect(agent), pkgTool,
 			suppressCmds.String())
 	}
 	pkgTool := defaultPackageRemediationTool
@@ -152,15 +177,27 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 		"the findings are already in context so it will skip the scan and go directly to " +
 		"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP unavailability and self-recovery.\n"
 	return fmt.Sprintf(
-		"Action required:\n"+
+		hookDenyHeader+
+			"Remediate:\n"+
 			skillStep+
 			"  2. If that skill is not available in this session, use %s for each affected package.\n"+
 			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
 			"  3. If %s is unavailable, tell the user to reconnect the\n"+
-			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-			"  4. If no safe version exists for a package, suppress it by running the corresponding command\n"+
-			"     and inform the user that no safer version is available:\n%s",
-		pkgTool, pkgTool, agentprofile.McpReconnect(agent),
+			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available — its "+
+			"     unavailability is never itself a reason to suppress instead.\n"+
+			"  4. Suppress a package when EITHER: (a) the user has explicitly told you to suppress or "+
+			"ignore it (e.g. \"suppress it\", \"ignore this one\") — honor that "+
+			"immediately, their instruction is sufficient on its own and you do not need to attempt "+
+			"remediation first or verify anything else; or (b) you are deciding on your own, without "+
+			"being asked, and you actually called %s for this package and it came back with a real "+
+			"'no fixed version exists' result. Neither the MCP merely being unavailable, nor the "+
+			"package merely 'looking intentionally pinned', is enough on its own without (a) or (b) — "+
+			"if neither applies, ask the user instead of guessing.\n"+
+			"Run only when (a) or (b) applies. Then tell the user what you did:\n%s\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
+		pkgTool, pkgTool, agentprofile.McpReconnect(agent), pkgTool,
 		suppressCmds.String())
 }
 
