@@ -1,0 +1,8 @@
+public class WebObjectsComponent {
+    public String processInput(String input) {
+        // Command injection vulnerability
+        String cmd = "echo " + input;
+        Runtime.getRuntime().exec(cmd);
+        return input;
+    }
+}

@@ -45,6 +45,7 @@ jobs:
           CP="${CP}|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog"
           CP="${CP}|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScaRealtime"
           CP="${CP}|TestScanType|TestValidateScan|TestScanGenerating|TestResult|TestCodeBashing"
+          CP="${CP}|TestScanWithNewFileExtensions_VerifyIncluded|TestScanWithExistingExtensions_VerifyBackwardCompatibility|TestScanWithConservativeFiltering_VerifyGenericPatternsExcluded"
           CP="${CP}|TestRiskManagement|TestCreateQueryDescription|TestPR|TestPreReceive"
           CP="${CP}|TestPre_Receive|TestProject|TestCreateEmptyProject|TestCreateAlreadyExisting"
           CP="${CP}|TestCreateWithInvalid|TestCreateProjectWhen|TestGetProject|TestSastUpdate"
@@ -108,7 +109,7 @@ jobs:
           # 2 ── Scan Operations (list, show, logs, kics, sca; needs pre-run cleanup)
           - name: scan-ops
             label: "Scan Operations"
-            run_pattern: "TestScanListWith|TestScanShowRequired|TestRequiredScanId|TestScaResolver|TestInvalidSource|TestIncrementalScan|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScaRealtime|TestScanType|TestValidateScan|TestScanGenerating"
+            run_pattern: "TestScanListWith|TestScanShowRequired|TestRequiredScanId|TestScaResolver|TestInvalidSource|TestIncrementalScan|TestBranchPrimary|TestCancelScan|TestScanTimeout|TestScanWorkflow|TestScanLog|TestPartialScan|TestFailedScan|TestRunKics|TestRunSca|TestScaRealtime|TestScanType|TestValidateScan|TestScanGenerating|TestScanWithNewFileExtensions_VerifyIncluded|TestScanWithExistingExtensions_VerifyBackwardCompatibility|TestScanWithConservativeFiltering_VerifyGenericPatternsExcluded"
             timeout: "90m"
             needs_precommit: "false"
             run_cleandata: "true"

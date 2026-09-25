@@ -96,6 +96,7 @@ const (
 	configFilterKey                         = "filter"
 	configFilterPlatforms                   = "platforms"
 	configIncremental                       = "incremental"
+	configBaseBranch                        = "baseBranch"
 	configFastScan                          = "fastScanMode"
 	configLightQueries                      = "lightQueries"
 	configRecommendedExclusions             = "recommendedExclusions"
@@ -240,7 +241,7 @@ func NewScanCommand(
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
-	showScanCmd := scanShowSubCommand(scansWrapper)
+	showScanCmd := scanShowSubCommand(scansWrapper, sastMetadataWrapper)
 
 	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
 
@@ -446,7 +447,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return workflowScanCmd
 }
 
-func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+func scanShowSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
@@ -463,7 +464,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runGetScanByIDCommand(scansWrapper),
+		RunE: runGetScanByIDCommand(scansWrapper, sastMetadataWrapper),
 	}
 	addScanIDFlag(showScanCmd, "Scan ID to show")
 	return showScanCmd
@@ -783,6 +784,11 @@ func scanCreateSubCommand(
 		commonParams.IncrementalSast,
 		false,
 		"Incremental SAST scan should be performed.",
+	)
+	createScanCmd.PersistentFlags().String(
+		commonParams.BaseBranch,
+		"",
+		"Base branch for incremental scan comparison.",
 	)
 
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
@@ -1124,6 +1130,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
 
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+	sastBaseBranchChanged := cmd.Flags().Changed(commonParams.BaseBranch)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
@@ -1145,6 +1152,10 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 	}
 
+	if sastBaseBranchChanged {
+		sastConfig.BaseBranch, _ = cmd.Flags().GetString(commonParams.BaseBranch)
+	}
+
 	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 
@@ -1153,14 +1164,14 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
@@ -1169,6 +1180,9 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 
 	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
 		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitBaseBranch := config.Value[configBaseBranch]; resubmitBaseBranch != nil && !sastBaseBranchChanged {
+		sastConfig.BaseBranch = resubmitBaseBranch.(string)
 	}
 	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
@@ -1661,8 +1675,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 
+	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
+	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1680,7 +1697,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter, skipDefaultFilter), getIncludeFilters(userIncludeFilter, skipDefaultFilter), antMatcher, excludeGitFolder)
+		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, antMatcher, excludeGitFolder)
 		if err != nil {
 			return "", err
 		}
@@ -3519,7 +3536,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 	}
 }
 
-func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var scanResponseModel *wrappers.ScanResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -3536,6 +3553,12 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
+			sastMetadata, err := services.GetSastMetadataByIDs(sastMetadataWrapper, []string{scanID})
+			if err != nil {
+				logger.Printf("error getting sast metadata: %v", err)
+			} else if sastMetadata != nil && len(sastMetadata.Scans) > 0 {
+				scanResponseModel.SastIncremental = strconv.FormatBool(sastMetadata.Scans[0].IsIncremental)
+			}
 			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err
@@ -4000,6 +4023,16 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			return fmt.Errorf("invalid value for --%s flag, must be a valid UUID", commonParams.IacsPresetIDFlag)
 		}
 	}
+
+	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.BaseBranch)
+	sastIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+	if cmd.Flags().Changed(commonParams.BaseBranch) && strings.TrimSpace(sastBaseBranch) == "" {
+		return fmt.Errorf("--%s flag cannot be empty. Please provide a valid branch name", commonParams.BaseBranch)
+	}
+	if strings.TrimSpace(sastBaseBranch) != "" && !sastIncremental {
+		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.BaseBranch, commonParams.IncrementalSast)
+	}
+
 	// check if flag was passed as arg
 	isBranchChanged := cmd.Flags().Changed(commonParams.BranchPrimaryFlag)
 	if isBranchChanged {
