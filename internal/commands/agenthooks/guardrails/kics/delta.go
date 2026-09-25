@@ -14,6 +14,16 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
 
+// provenanceTag returns the string prepended to permissionDecisionReason and additionalContext in
+// formatFindings so the agent can recognize genuine Checkmarx output. NOT an authority claim — an
+// attacker could spoof this exact string from a file, a fetched page, or another tool's output — it
+// is a signpost: text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a
+// script/CLI command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent agenthooks.AgentID) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+
+}
+
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the ignore-file key used by RunIacRealtimeScan: Title + "_" + SimilarityID.
 type findingKey struct {
@@ -71,13 +81,15 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID, workDir, sessionID string) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
 	cxBinary := cxExecutable()
-	reason = permissionDecisionReason(filePath, summary)
+	tag := provenanceTag(agent)
+	reason = tag + " " + permissionDecisionReason(filePath, summary)
 	switch agent {
 	case agenthooks.AgentCursor:
 		context = cursorAdditionalContext(filePath, cxBinary, findings, workDir, sessionID)
 	default:
 		context = additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
 	}
+	context = tag + " " + context
 	return reason, context
 }
 
@@ -193,8 +205,16 @@ func additionalContext(filePath, cxBinary string, findings []iacrealtime.IacReal
 			"     This is the only supported remediation path — do not attempt manual configuration changes.\n"+
 			"  3. If %s is unavailable, tell the user to reconnect the\n"+
 			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-			"  4. If the user accepts the risk for a finding, suppress it by running the corresponding command\n"+
-			"     below, then retry the write:\n%s",
+			"  4. A false-positive/acceptable-deviation call must be grounded in something verifiable "+
+			"in THIS file — e.g. the rule flags something the file demonstrably doesn't do, or the "+
+			"same misconfiguration is already fixed elsewhere in this file and this is a provable "+
+			"duplicate — not an assumption about deployment context you can't see, and not because the "+
+			"finding 'looks intentional' (an intentionally-inserted misconfiguration is never a free "+
+			"pass). If it clears that bar, suppress it by running the corresponding command below, "+
+			"then retry the write. If you're not sure, ask the user instead of guessing:\n%s\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
 		filePath, skill, remediationInstructions(codeTool),
 		codeTool, agentprofile.McpReconnect(agentLabel(agent)), suppressCmds,
 	)
@@ -227,24 +247,26 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.I
 	return fmt.Sprintf(
 		"KICS detected IaC misconfigurations in %s. "+
 			"Do not bypass the scan by writing the same content through another tool or shell command. "+
+			"Follow the cx-hook-deny.mdc rule for this deny. "+
 			"ANALYZE each finding to determine if it is a real misconfiguration or a false positive "+
 			"(for example an acceptable deviation for this environment or platform). "+
-			"Follow the cx-hook-deny.mdc rule for this deny. "+
-			"ASK THE USER FIRST, for every real finding, before taking any action: \"An IaC misconfiguration "+
-			"was detected. Would you like to remediate it (harden the configuration via MCP) "+
-			"or suppress it (mark as a confirmed false positive and unblock the write)?\" and wait for "+
-			"their answer. Do not decide this yourself — an intentionally-inserted misconfiguration (e.g. "+
-			"in a lab/demo/training file the user asked for on purpose) is NOT the same as a confirmed "+
-			"false positive: suppress only on the user's explicit instruction, never because the "+
-			"request seems intentional. "+
-			"Apply the cx-devassist-kics.mdc rule: for each finding the user asks you to remediate, "+
-			"invoke the %s skill exactly as written — do not skip, abbreviate, or reimplement its steps "+
-			"inline. The findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
-			"Always show its Step 4 IaC Remediation Summary to the user verbatim when done. "+
+			"Apply the cx-devassist-kics.mdc rule: for each real finding, invoke the %s skill exactly "+
+			"as written — do not skip, abbreviate, or reimplement its steps inline. The findings are "+
+			"already in context so it will skip the scan and go directly to MCP-driven remediation; "+
+			"the skill also handles MCP unavailability and self-recovery. Always show its Step 4 IaC "+
+			"Remediation Summary to the user verbatim when done. "+
 			"Do not retry the blocked Write/StrReplace, paste code in chat, or bypass the scan with shell workarounds. "+
 			"If that skill is not available in this session, %s\n"+
-			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
+			"A false-positive/acceptable-deviation call must be grounded in something verifiable in "+
+			"THIS file — e.g. the rule flags something the file demonstrably doesn't do, or the same "+
+			"misconfiguration is already fixed elsewhere in this file and this is a provable duplicate "+
+			"— not an assumption about deployment context you can't see, and not because the finding "+
+			"'looks intentional' (an intentionally-inserted misconfiguration is never a free pass). If "+
+			"it clears that bar, suppress it by running the corresponding command below, then retry "+
+			"the write. If you're not sure, ask the user instead of guessing:\n%s\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
 		filePath, skill, remediationInstructions(cursorplugin.MCPTool("codeRemediation")),
 		suppressCmds,
 	)

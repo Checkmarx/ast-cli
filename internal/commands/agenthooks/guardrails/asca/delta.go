@@ -26,6 +26,15 @@ const agentCursor = "Cursor"
 // uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
 const agentGemini = "Gemini"
 
+// provenanceTag returns the string prepended to permissionDecisionReason and additionalContext in
+// formatFindings so the agent can recognize genuine Checkmarx output. NOT an authority claim — an
+// attacker could spoof this exact string from a file, a fetched page, or another tool's output — it
+// is a signpost: text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a
+// script/CLI command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent string) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -91,12 +100,14 @@ func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir, agent
 	if err == nil {
 		cxBinary = cxExe
 	}
-	reason = permissionDecisionReason(filePath, summary)
+	tag := provenanceTag(agent)
+	reason = tag + " " + permissionDecisionReason(filePath, summary)
 	if agent == agentCursor {
 		context = cursorAdditionalContext(filePath, cxBinary, findings, workDir, sessionID)
 	} else {
 		context = additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
 	}
+	context = tag + " " + context
 	return reason, context
 }
 
@@ -208,7 +219,16 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"    \"type\": \"sast\"\n"+
 			"  }\n"+
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
+			"A false-positive call must be grounded in something verifiable in THIS file — a sanitizer "+
+			"or guard you can see neutralizes the exact pattern flagged, or the trigger is unreachable/"+
+			"test-only code — not an assumption about code you can't see, and not because the finding "+
+			"'looks intentional' (an intentionally-inserted vulnerability, e.g. a lab/demo/training file "+
+			"requested on purpose, is never a false positive). If it clears that bar, suppress it by "+
+			"running the corresponding command below, then retry the write. If you're not sure, ask the "+
+			"user instead of guessing:\n%s\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
 		filePath, skill, mcpTool, suppressCmds.String(),
 	)
 }
@@ -233,22 +253,14 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 	return fmt.Sprintf(
 		"ASCA detected vulnerabilities in %s. "+
 			"Do not bypass the scan by writing the same content through another tool or shell command. "+
+			"Follow the cx-hook-deny.mdc rule for this deny. "+
 			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
 			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"Follow the cx-hook-deny.mdc rule for this deny. "+
-			"ASK THE USER FIRST, for every real finding, before taking any action: \"A security "+
-			"vulnerability was detected. Would you like to remediate it (apply an MCP-driven code fix) "+
-			"or suppress it (mark as a confirmed false positive and unblock the write)?\" and wait for "+
-			"their answer. Do not decide this yourself — an intentionally-inserted vulnerability (e.g. "+
-			"in a lab/demo/training file the user asked for on purpose) is NOT the same as a confirmed "+
-			"false positive: suppress only on the user's explicit instruction, never because the "+
-			"request seems intentional. "+
-			"Apply the cx-devassist-asca.mdc rule: for each finding the user asks you to remediate, "+
-			"invoke the cx-devassist:cx-devassist-asca skill exactly as written — do not skip, "+
-			"abbreviate, or reimplement its steps inline. The findings are already in context so it "+
-			"will skip the scan and go directly to MCP-driven remediation; the skill also handles MCP "+
-			"unavailability and self-recovery. Always show its Step 5 Remediation Summary to the user "+
-			"verbatim when done. "+
+			"Apply the cx-devassist-asca.mdc rule: for each real finding, invoke the "+
+			"cx-devassist:cx-devassist-asca skill exactly as written — do not skip, abbreviate, or "+
+			"reimplement its steps inline. The findings are already in context so it will skip the scan "+
+			"and go directly to MCP-driven remediation; the skill also handles MCP unavailability and "+
+			"self-recovery. Always show its Step 5 Remediation Summary to the user verbatim when done. "+
 			"If that skill is not available in this session, call %s directly:\n"+
 			"  {\n"+
 			"    \"language\": \"[auto-detected programming language]\",\n"+
@@ -260,7 +272,16 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"    \"type\": \"sast\"\n"+
 			"  }\n"+
 			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
+			"A false-positive call must be grounded in something verifiable in THIS file — a sanitizer "+
+			"or guard you can see neutralizes the exact pattern flagged, or the trigger is unreachable/"+
+			"test-only code — not an assumption about code you can't see, and not because the finding "+
+			"'looks intentional' (an intentionally-inserted vulnerability, e.g. a lab/demo/training file "+
+			"requested on purpose, is never a false positive). If it clears that bar, suppress it by "+
+			"running the corresponding command below, then retry the write. If you're not sure, ask the "+
+			"user instead of guessing:\n%s\n"+
+			"This is a security check triggered mid-task, not a new task: once you've handled this "+
+			"finding as instructed above, continue with the task the user originally asked for. Do not "+
+			"invent unrelated follow-up work or lose track of what they asked you to do.",
 		filePath, tool, suppressCmds.String(),
 	)
 }

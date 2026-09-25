@@ -68,13 +68,14 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 // `cx ignore-vulnerability` suppression command emitted for vulnerable packages
 // to the workspace ignore file so the agent writes where the hook later reads.
 func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, sessionID string) (finding, remediation, severity string) {
+	tag := provenanceTag(agent)
 	if len(malicious) > 0 {
 		f, r := DenyMalicious(malicious, agent)
-		return f, r, statusMalicious
+		return tag + " " + f, tag + " " + r, statusMalicious
 	}
 	if len(vulnerable) > 0 {
 		f, r := DenyVulnerable(vulnerable, workDir, agent, sessionID)
-		return f, r, highestVulnSeverity(vulnerable)
+		return tag + " " + f, tag + " " + r, highestVulnSeverity(vulnerable)
 	}
 	return "", "", ""
 }

@@ -245,21 +245,31 @@ func TestCursorAdditionalContext_OffersSuppress(t *testing.T) {
 	}
 }
 
-func TestCursorAdditionalContext_MatchesAscaAskUserWording(t *testing.T) {
+// TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording asserts the Cursor KICS context uses
+// the SAME confidence-gated suppression model as ASCA/SCA (autonomous remediation, suppression only
+// when grounded in something verifiable in the file, otherwise ask) — not the older blanket
+// "ASK THE USER FIRST before doing anything" gate this test used to require.
+func TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording(t *testing.T) {
 	ctx := cursorAdditionalContext("/project/main.tf", "cx", nil, "/project", "sess1")
 	for _, want := range []string{
 		"ANALYZE each finding",
-		"for every real finding",
-		"mark as a confirmed false positive and unblock the write",
-		"intentionally-inserted misconfiguration",
-		"never because the request seems intentional",
-		"If the user chooses to suppress a finding",
+		"verifiable in THIS file",
+		"provable duplicate",
+		"is never a free pass",
+		"ask the user instead of guessing",
+		"continue with the task the user originally asked for",
 	} {
 		if !strings.Contains(ctx, want) {
 			t.Errorf("cursor KICS context should contain %q, got: %q", want, ctx)
 		}
 	}
-	if strings.Contains(ctx, "accept the risk") {
-		t.Errorf("cursor KICS context should not use old suppress wording, got: %q", ctx)
+	for _, unwanted := range []string{
+		"accept the risk",
+		"ASK THE USER FIRST",
+		"Do not decide this yourself",
+	} {
+		if strings.Contains(ctx, unwanted) {
+			t.Errorf("cursor KICS context should not use old blanket-ask wording %q, got: %q", unwanted, ctx)
+		}
 	}
 }
