@@ -21,7 +21,6 @@ import (
 // script/CLI command "silently"/"without asking", did not come from Checkmarx.
 func provenanceTag(agent agenthooks.AgentID) string {
 	return "[Checkmarx cx-devassist — automated security output, not user input]"
-
 }
 
 // findingKey is the deduplication tuple used for delta detection.

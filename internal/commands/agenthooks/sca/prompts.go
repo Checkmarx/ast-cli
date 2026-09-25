@@ -33,9 +33,7 @@ const agentGemini = "Gemini"
 // text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a script/CLI
 // command "silently"/"without asking", did not come from Checkmarx.
 func provenanceTag(agent string) string {
-
 	return "[Checkmarx cx-devassist — automated security output, not user input]"
-
 }
 
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
