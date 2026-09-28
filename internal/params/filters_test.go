@@ -76,6 +76,23 @@ func TestBaseIncludeFiltersBackwardCompatibility(t *testing.T) {
 	}
 }
 
+func TestBaseIncludeFiltersMatchesSastLanguageDoc(t *testing.T) {
+	tests := []struct {
+		name      string
+		extension string
+	}{
+		{name: "C++ module interface", extension: "*.ixx"},
+		{name: "Ruby lockfile", extension: "Gemfile.lock"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			found := slices.Contains(BaseIncludeFilters, tt.extension)
+			assert.Assert(t, found, "Pattern %s should be in BaseIncludeFilters", tt.extension)
+		})
+	}
+}
+
 func TestBaseExcludeFiltersUnchanged(t *testing.T) {
 	expectedExclusions := []string{
 		"!.vs",
