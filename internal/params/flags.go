@@ -303,6 +303,7 @@ const (
 	IncludeNodesQueryParam     = "include-nodes"
 	SortQueryParam             = "sort"
 	SearchQueryParam           = "search"
+	AIClassificationQueryParam = "ai-classification"
 	Profile                    = "default"
 	BaseURI                    = ""
 	BaseIAMURI                 = ""

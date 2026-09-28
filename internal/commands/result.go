@@ -176,6 +176,7 @@ var (
 				commonParams.StatusQueryParam,
 				commonParams.SeverityQueryParam,
 				commonParams.StateQueryParam,
+				commonParams.AIClassificationQueryParam,
 			}, ",",
 		),
 	)
@@ -2959,6 +2960,10 @@ func parseSarifResultSast(result *wrappers.ScanResult, scanResults []wrappers.Sa
 				},
 			},
 		},
+	}
+
+	if result.ScanResultData.AIClassification != nil {
+		scanResult.Properties = &wrappers.SarifResultProperties{AIClassification: result.ScanResultData.AIClassification}
 	}
 
 	scanResults = append(scanResults, scanResult)

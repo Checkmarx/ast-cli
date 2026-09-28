@@ -105,6 +105,7 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 		}, nil, nil
 	}
 	if params["scan-id"] == "SAST_ONLY" {
+		aiClassification := "TP"
 		return &wrappers.ScanResultsCollection{
 			TotalCount: 1,
 			Results: []*wrappers.ScanResult{
@@ -113,8 +114,9 @@ func (r ResultsMockWrapper) GetAllResultsByScanID(params map[string]string) (
 					ID:       "1",
 					Severity: "high",
 					ScanResultData: wrappers.ScanResultData{
-						LanguageName: "JavaScript",
-						QueryName:    "mock-query-name-1",
+						LanguageName:     "JavaScript",
+						QueryName:        "mock-query-name-1",
+						AIClassification: &aiClassification,
 						Nodes: []*wrappers.ScanResultNode{
 							{
 								FileName: "dummy-file-name-1",
