@@ -27,13 +27,10 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]stri
 	if err != nil {
 		return nil, err
 	}
-	decoder := json.NewDecoder(resp.Body)
-
 	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
+		_ = resp.Body.Close()
 	}()
+	decoder := json.NewDecoder(resp.Body)
 
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
@@ -42,7 +39,7 @@ func (s *SastIncrementalHTTPWrapper) GetSastMetadataByIDs(params map[string]stri
 		if err != nil {
 			return nil, fmt.Errorf("%v %s", err, failedToParseGetAll)
 		}
-		return nil, err
+		return nil, fmt.Errorf("%d - %s", errorModel.Code, errorModel.Message)
 	case http.StatusOK:
 		model := SastMetadataModel{}
 		err = decoder.Decode(&model)

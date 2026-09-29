@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -9,14 +10,20 @@ import (
 type SastMetadataMockWrapper struct{}
 
 const (
-	scanIDParam = "scan-ids"
-	concurrent  = "ConcurrentTest"
+	scanIDParam         = "scan-ids"
+	concurrent          = "ConcurrentTest"
+	errorTrigger        = "TriggerError"
+	tooManyIDsErrorCode = 3102
+	tooManyIDsMessage   = "Too many ids in url"
 )
 
 func (s SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) (
 	*wrappers.SastMetadataModel,
 	error,
 ) {
+	if strings.Contains(params[scanIDParam], errorTrigger) {
+		return nil, fmt.Errorf("%d - %s", tooManyIDsErrorCode, tooManyIDsMessage)
+	}
 	if strings.Contains(params[scanIDParam], concurrent) {
 		scanIDs := strings.Split(params[scanIDParam], ",")
 		return &wrappers.SastMetadataModel{
