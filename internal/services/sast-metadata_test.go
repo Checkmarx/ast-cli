@@ -48,6 +48,28 @@ func TestGetSastMetadataByIDs(t *testing.T) {
 	}
 }
 
+func TestGetSastMetadataByIDs_BatchFailureIsSurfacedNotPanicked(t *testing.T) {
+	// A failing batch must be reliably surfaced as an error, not raced past or dereferenced as nil.
+	scanIDs := append(createScanIDs(BatchSize), createErrorScanIDs(BatchSize)...)
+	scanIDs = append(scanIDs, createScanIDs(BatchSize)...)
+
+	wrapper := &mock.SastMetadataMockWrapper{}
+	actual, err := GetSastMetadataByIDs(wrapper, scanIDs)
+
+	assert.Nil(t, actual)
+	if assert.Error(t, err) {
+		assert.Contains(t, err.Error(), "Too many ids in url")
+	}
+}
+
+func createErrorScanIDs(count int) []string {
+	scanIDs := make([]string, count)
+	for i := 0; i < count; i++ {
+		scanIDs[i] = fmt.Sprintf("TriggerError%d", i)
+	}
+	return scanIDs
+}
+
 func createScanIDs(count int) []string {
 	scanIDs := make([]string, count)
 	for i := 0; i < count; i++ {
