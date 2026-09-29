@@ -442,7 +442,7 @@ func TestRemediation_OmitsInjectionTriggers(t *testing.T) {
 				t.Errorf("%s remediation missing hook deny header: %q", agent, text)
 			}
 		}
-		if !strings.Contains(remediation, "Run only when (a) or (b) applies") {
+		if !strings.Contains(remediation, "that still needs (a) or (b)") {
 			t.Errorf("%s vulnerable remediation missing suppression label", agent)
 		}
 	}

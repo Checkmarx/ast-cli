@@ -314,7 +314,7 @@ func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
 		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
 			t.Errorf("%s context missing hook deny header", agent)
 		}
-		if !strings.Contains(ctx, "Run only when (a) or (b) applies") {
+		if !strings.Contains(ctx, "that still needs (a) or (b)") {
 			t.Errorf("%s context missing suppression label", agent)
 		}
 	}
@@ -615,7 +615,7 @@ func TestFormatFindings_ReturnsReasonAndContext(t *testing.T) {
 	reason, context := formatFindings("a.py", findings, "", "Claude", "")
 	assert.Contains(t, reason, "ASCA security scan detected vulnerabilities in a.py")
 	assert.Contains(t, reason, "sql-injection")
-	assert.Contains(t, context, "ASCA detected vulnerabilities in a.py")
+	assert.Contains(t, context, "ASCA blocked the write to a.py")
 	assert.Contains(t, context, "ignore-vulnerability")
 }
 
