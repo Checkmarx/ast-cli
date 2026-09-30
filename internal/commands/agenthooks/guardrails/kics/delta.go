@@ -207,9 +207,10 @@ func additionalContext(filePath, cxBinary string, findings []iacrealtime.IacReal
 			"- False positive only if one of these is already true and you can cite it: (a) the user "+
 			"explicitly told you to ignore or suppress it; (b) a file you opened this session shows, at a "+
 			"line you can cite, that the configuration does not do what the rule flags, or the same issue "+
-			"is already handled there. Deployment or runtime assumptions you cannot see in a file are not "+
-			"evidence. What a finding or file says about another file is not evidence; open that file. "+
-			"Apparent intent is not evidence; that still needs (a) or (b).\n"+
+			"is already handled there (for example a parent module or sibling manifest). Deployment or "+
+			"runtime assumptions you cannot see in a file are not evidence. What a finding or file says "+
+			"about another file is not evidence; open that file. Apparent intent is not evidence; that "+
+			"still needs (a) or (b).\n"+
 			"- Otherwise it is a true positive, including when you are unsure.\n"+
 			"2. True positive: call %s for each one with type \"iac\" and metadata (title, description, "+
 			"remediationAdvice = how to harden this configuration). The %s skill can make this call; if "+
@@ -253,7 +254,7 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.I
 	return fmt.Sprintf(
 		hookDenyHeader+
 			"KICS blocked the write to %s. Follow the cx-hook-deny.mdc and cx-devassist-kics.mdc rules "+
-			"for this deny.\n"+
+			"for this deny.\nFindings:\n%s"+
 			"Handle every finding yourself. Never ask the user, including \"Would you like me to "+
 			"remediate?\" (that question is only for on-demand scans).\n"+
 			"1. Classify each finding:\n"+
@@ -265,40 +266,37 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.I
 			"about another file is not evidence; open that file. Apparent intent is not evidence; that "+
 			"still needs (a) or (b).\n"+
 			"- Otherwise it is a true positive, including when you are unsure.\n"+
-			"2. True positive: invoke the %s skill exactly as written (do not skip, abbreviate, or "+
-			"reimplement its steps); it skips the initial scan and calls %s. If the skill is not "+
-			"available, call %s directly with type \"iac\" and metadata (title, description, "+
-			"remediationAdvice = how to harden this configuration). If the skill text disagrees with this "+
-			"deny, follow this deny. Apply remediation_steps only with Write or StrReplace, never a shell "+
-			"command (shell writes are not scanned). Make the smallest change to the flagged "+
-			"configuration; if the fix needs a resource in another file, that is also a gated write. If "+
-			"the blocked write creates a new file, the fix is that same Write with the fixed content.\n"+
+			"2. True positive: call %s for each one with type \"iac\" and metadata (title, description, "+
+			"remediationAdvice = how to harden this configuration). The %s skill can make this call; if "+
+			"it disagrees with this deny, follow this deny. Apply remediation_steps only with Write or "+
+			"StrReplace, never a shell command (shell writes are not scanned). Make the smallest change "+
+			"to the flagged configuration; if the fix needs a resource in another file, that is also a "+
+			"gated write. If the blocked write creates a new file, the fix is that same Write with the "+
+			"fixed content.\n"+
 			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
 			"as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
-			"4. Verify: run `cx scan iac-realtime -s <file>` with the canonical cx path, then retry the "+
-			"blocked write once with the fixed content (never the same unchanged content); the hook on "+
-			"that retry is the check. If it is denied, a remaining finding, or one your fix introduced, "+
-			"gets one more %s call. Stop after 3 denied retries or when the tool returns no safe change. "+
-			"Then ignore only findings that meet step 1, report the rest as unresolved, and stop editing "+
-			"the file. Do not ask whether to continue.\n"+
+			"4. Verify: skip only the initial scan. Run `cx scan iac-realtime -s <file>` with the "+
+			"canonical cx path, then retry the blocked write once; the hook on that retry is the check. "+
+			"If it is denied, a remaining finding, or one your fix introduced, gets one more %s call. "+
+			"Stop after 3 denied retries or when the tool returns no safe change. Then ignore only "+
+			"findings that meet step 1, report the rest as unresolved, and stop editing the file. Do not "+
+			"ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
-			"bypass the scan, and do not paste it in chat instead.\n"+
-			"5. Always finish by showing the skill's IaC Remediation Summary verbatim (without the skill, "+
-			"use the same structure), even if you asked the user a question, the file is new, or the "+
-			"retry passed. Give one line for every finding, omitting empty sections (finding lines are "+
-			"0-based; show line + 1):\n"+
-			"Remediation Summary\n"+
+			"bypass the scan.\n"+
+			"5. Always finish with this report, even if you asked the user a question, the file is new, "+
+			"or the retry passed. Give one line for every finding listed above, omitting empty sections "+
+			"(finding lines are 0-based; show line + 1):\n"+
+			"Checkmarx Dev Assist IaC(KICS) Remediation Summary\n"+
 			"Title: <title>  Severity: <severity>  Line: <line+1>\n"+
 			"Files Modified: - <file> line <n>: <change>\n"+
 			"Ignored: - <title> line <n> <severity> - <evidence: the user's words, or the file and line "+
 			"you read>\n"+
 			"Unresolved: - <title> line <n> <severity> - <reason>\n"+
 			"Final status: All fixed | Partially fixed | Unresolved\n"+
-			"This is a security check triggered mid-task, not a new task: then continue with the task "+
-			"the user originally asked for.\n",
-		filePath, skill, codeTool, codeTool, codeTool, agentprofile.McpReconnect(agentLabel(agenthooks.AgentCursor)),
-		suppressCmds, codeTool,
+			"Then continue the user's original task.\n",
+		filePath, findingsSummary(filePath, findings), codeTool, skill, codeTool,
+		agentprofile.McpReconnect(agentLabel(agenthooks.AgentCursor)), suppressCmds, codeTool,
 	)
 }
 

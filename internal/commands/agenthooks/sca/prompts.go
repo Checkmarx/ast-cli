@@ -56,7 +56,7 @@ func DenyMalicious(pkgs []ossrealtime.OssPackage, agent string) (finding, remedi
 		packages.WriteString(line)
 	}
 	b.WriteString("\nDo NOT proceed with the installation.")
-	return b.String(), remediationNote("malicious package", "safest available version", packages.String(), agent)
+	return b.String(), remediationNote(packages.String(), agent)
 }
 
 // DenyVulnerable returns the finding and remediation strings for one or more
@@ -80,21 +80,19 @@ const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file
 // Remediation goes through the cx-devassist skill (or the Checkmarx MCP tool directly when the skill
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
 // reconnect phrasing is per-agent, from agentprofile.McpReconnect.
-func remediationNote(subject, goal, packages, agent string) string {
+func remediationNote(packages, agent string) string {
 	if agent == agentCursor {
 		pkgTool := cursorplugin.MCPTool("packageRemediation")
 		return fmt.Sprintf(
 			hookDenyHeader+
 				"SCA blocked the write because it adds a known-malicious package. Follow the "+
-				"cx-hook-deny.mdc and cx-devassist-sca.mdc rules for this deny.\n"+
+				"cx-hook-deny.mdc and cx-devassist-sca.mdc rules for this deny.\nFindings:\n%s"+
 				"Handle this yourself; never ask the user to choose. A malicious package has no ignore "+
 				"path: never run cx ignore-vulnerability for it, and never install it.\n"+
-				"1. For each %s, invoke the cx-devassist:cx-devassist-sca skill exactly as written (do "+
-				"not skip, abbreviate, or reimplement its steps); it skips the initial scan and calls %s "+
-				"to find the %s. If the skill is not available, call %s directly. If the skill text "+
-				"disagrees with this deny, follow this deny. Apply what it returns (a safe version, or "+
-				"removing the dependency) only by editing the manifest with Write or StrReplace, never an "+
-				"install command. Do not guess a safe version.\n"+
+				"1. Call %s for each malicious package. The cx-devassist:cx-devassist-sca skill can make "+
+				"this call; if it disagrees with this deny, follow this deny. Apply what it returns (a safe "+
+				"version, or removing the dependency) only by editing the manifest with Write or StrReplace, "+
+				"never an install command. Do not guess a safe version.\n"+
 				"2. If %s is unavailable, retry the write with only that dependency omitted and every "+
 				"other change kept. Report that, and tell the user to %s.\n"+
 				"3. Verify: retry the blocked write once; the hook re-scanning it is the check. Do not run "+
@@ -105,16 +103,14 @@ func remediationNote(subject, goal, packages, agent string) string {
 				"do that for them, and do not ask them to choose.\n"+
 				"Never install it through a shell command or write it through another tool or file to "+
 				"bypass the scan.\n"+
-				"5. Always finish by showing the skill's SCA Remediation Summary verbatim (without the "+
-				"skill, use the same structure), even if you asked the user a question, the file is new, "+
+				"5. Always finish with this report, even if you asked the user a question, the file is new, "+
 				"or the retry passed. Give one line for every package listed above:\n"+
 				"SCA Remediation Summary\n"+
 				"Package: <name> - blocked: known-malicious\n"+
 				"Outcome: replaced with <version> | removed | left out, unresolved\n"+
 				"Final status: All resolved | Unresolved\n"+
-				"This is a security check triggered mid-task, not a new task: continue with the task the "+
-				"user originally asked for only after the package is no longer in the write.\n",
-			subject, pkgTool, goal, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
+				"Continue the user's original task only after the package is no longer in the write.\n",
+			packages, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
 	}
 
 	pkgTool := defaultPackageRemediationTool
@@ -177,10 +173,14 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 	}
 	if agent == agentCursor {
 		pkgTool := cursorplugin.MCPTool("packageRemediation")
+		var findingLines strings.Builder
+		for _, p := range pkgs {
+			fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(p), vulnDetail(p))
+		}
 		return fmt.Sprintf(
 			hookDenyHeader+
 				"SCA blocked the write. Follow the cx-hook-deny.mdc and cx-devassist-sca.mdc rules for "+
-				"this deny.\n"+
+				"this deny.\nFindings:\n%s"+
 				"Handle every package yourself. Never ask the user, including \"Would you like me to "+
 				"remediate?\" (that question is only for on-demand scans).\n"+
 				"1. Classify each package:\n"+
@@ -190,14 +190,13 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 				"upgrade, or the tool being unavailable is not evidence; that still needs (a) or (b).\n"+
 				"- Otherwise it is a true positive, including when you are unsure. A CVE is a true "+
 				"positive unless (a) or (b) is met.\n"+
-				"2. True positive: invoke the cx-devassist:cx-devassist-sca skill exactly as written (do "+
-				"not skip, abbreviate, or reimplement its steps); it skips the initial scan and calls %s. "+
-				"If the skill is not available, call %s directly, following its input schema (at least "+
-				"package manager, name, version, and CVEs). If the skill text disagrees with this deny, "+
-				"follow this deny. Apply the version change only by editing the affected manifest entries "+
-				"with Write or StrReplace. Never run npm install, pip install, go mod tidy, or any install "+
-				"command; if the lockfile needs refreshing, say so in the summary. If the blocked write "+
-				"creates a new file, the fix is that same Write with the fixed versions.\n"+
+				"2. True positive: call %s for each package, following its input schema (at least package "+
+				"manager, name, version, and CVEs). The cx-devassist:cx-devassist-sca skill can make this "+
+				"call; if it disagrees with this deny, follow this deny. Apply the version change only by "+
+				"editing the affected manifest entries with Write or StrReplace. Never run npm install, "+
+				"pip install, go mod tidy, or any install command; if the lockfile needs refreshing, say "+
+				"so in the summary. If the blocked write creates a new file, the fix is that same Write "+
+				"with the fixed versions.\n"+
 				"If %s is unavailable, do not choose a version yourself and ignore nothing because of it. "+
 				"Report the packages as unresolved and tell the user to %s.\n"+
 				"3. False positive: run exactly this command for it:\n%s"+
@@ -209,11 +208,9 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 				"ask whether to continue.\n"+
 				"Never write this content through another tool, a shell command, or a different file to "+
 				"bypass the scan.\n"+
-				"5. Always finish by showing the skill's SCA Remediation Summary verbatim (without the "+
-				"skill, use the same structure), even if you asked the user a question, the file is new, "+
-				"or the retry passed. Give one line for every package listed above, omitting empty "+
-				"sections:\n"+
-				"SCA Remediation Summary\n"+
+				"5. Always finish with this report, even if you asked the user a question, the file is new, "+
+				"or the retry passed. Give one line for every package listed above, omitting empty sections:\n"+
+				"Checkmarx Dev Assist SCA Remediation Summary\n"+
 				"Package: <name> <old-version> -> <new-version>  Manager: <manager>  Issue: <CVE list> "+
 				"(<severity>)\n"+
 				"Ignored: - <package@version> - <CVE list> - <evidence: the user's words, or the MCP \"no "+
@@ -221,9 +218,8 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 				"Unresolved: - <package@version> - <reason>\n"+
 				"Lockfile refresh needed: yes | no\n"+
 				"Final status: All fixed | Partially fixed | Unresolved\n"+
-				"This is a security check triggered mid-task, not a new task: then continue with the task "+
-				"the user originally asked for.\n",
-			pkgTool, pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent),
+				"Then continue the user's original task.\n",
+			findingLines.String(), pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent),
 			suppressCmds.String(), pkgTool)
 	}
 	pkgTool := defaultPackageRemediationTool

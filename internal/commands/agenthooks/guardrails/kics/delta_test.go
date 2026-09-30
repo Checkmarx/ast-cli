@@ -260,8 +260,10 @@ func TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording(t *testing.T)
 		"Never ask the user",
 		"cx scan iac-realtime -s",
 		"Stop after 3 denied retries",
-		"Always finish by showing",
-		"continue with the task the user originally asked for",
+		"Always finish with this report",
+		"Checkmarx Dev Assist IaC(KICS) Remediation Summary",
+		"Then continue the user's original task.",
+		"parent module or sibling manifest",
 	} {
 		if !strings.Contains(ctx, want) {
 			t.Errorf("cursor KICS context should contain %q, got: %q", want, ctx)
@@ -272,6 +274,7 @@ func TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording(t *testing.T)
 		"ASK THE USER FIRST",
 		"Do not decide this yourself",
 		"ask the user instead of guessing",
+		"exactly as written",
 	} {
 		if strings.Contains(ctx, unwanted) {
 			t.Errorf("cursor KICS context should not use old blanket-ask wording %q, got: %q", unwanted, ctx)
