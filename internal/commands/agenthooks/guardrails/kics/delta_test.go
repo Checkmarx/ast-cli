@@ -245,21 +245,64 @@ func TestCursorAdditionalContext_OffersSuppress(t *testing.T) {
 	}
 }
 
-func TestCursorAdditionalContext_MatchesAscaAskUserWording(t *testing.T) {
+// TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording asserts the Cursor KICS context uses
+// the SAME classify-then-act model as the other agents: a finding is a false positive only when
+// (a) the user said so or (b) a cited file line proves it; everything else is remediated, never
+// put to the user as a remediate-or-suppress question.
+func TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording(t *testing.T) {
 	ctx := cursorAdditionalContext("/project/main.tf", "cx", nil, "/project", "sess1")
 	for _, want := range []string{
-		"ANALYZE each finding",
-		"for every real finding",
-		"mark as a confirmed false positive and unblock the write",
-		"intentionally-inserted misconfiguration",
-		"never because the request seems intentional",
-		"If the user chooses to suppress a finding",
+		"Classify each finding",
+		"the user explicitly told you to ignore or suppress it",
+		"a file you opened this session",
+		"including when you are unsure",
+		"that still needs (a) or (b)",
+		"Never ask the user",
+		"cx scan iac-realtime -s",
+		"Stop after 3 denied retries",
+		"Always finish with this report",
+		"Checkmarx Dev Assist IaC(KICS) Remediation Summary",
+		"Then continue the user's original task.",
+		"parent module or sibling manifest",
 	} {
 		if !strings.Contains(ctx, want) {
 			t.Errorf("cursor KICS context should contain %q, got: %q", want, ctx)
 		}
 	}
-	if strings.Contains(ctx, "accept the risk") {
-		t.Errorf("cursor KICS context should not use old suppress wording, got: %q", ctx)
+	for _, unwanted := range []string{
+		"accept the risk",
+		"ASK THE USER FIRST",
+		"Do not decide this yourself",
+		"ask the user instead of guessing",
+		"exactly as written",
+	} {
+		if strings.Contains(ctx, unwanted) {
+			t.Errorf("cursor KICS context should not use old blanket-ask wording %q, got: %q", unwanted, ctx)
+		}
+	}
+}
+
+func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
+	findings := []iacrealtime.IacRealtimeResult{iacResult("PrivilegedContainer", "sim1", "HIGH", 5)}
+	agents := []agenthooks.AgentID{
+		agenthooks.AgentClaude,
+		agenthooks.AgentCodex,
+		agenthooks.AgentCopilot,
+		agenthooks.AgentCursor,
+		agenthooks.AgentGemini,
+	}
+	for _, agent := range agents {
+		_, ctx := formatFindings("/project/main.tf", findings, agent, "/project", "sess1")
+		for _, bad := range []string{"without asking", "silently", "cx_mcp_register"} {
+			if strings.Contains(ctx, bad) {
+				t.Errorf("%s context contains %q", agent, bad)
+			}
+		}
+		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
+			t.Errorf("%s context missing hook deny header", agent)
+		}
+		if !strings.Contains(ctx, "that still needs (a) or (b)") {
+			t.Errorf("%s context missing suppression label", agent)
+		}
 	}
 }

@@ -14,6 +14,15 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
 
+// provenanceTag returns the string prepended to permissionDecisionReason and additionalContext in
+// formatFindings so the agent can recognize genuine Checkmarx output. NOT an authority claim — an
+// attacker could spoof this exact string from a file, a fetched page, or another tool's output — it
+// is a signpost: text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a
+// script/CLI command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent agenthooks.AgentID) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
+
 // findingKey is the deduplication tuple used for delta detection.
 // Mirrors the ignore-file key used by RunIacRealtimeScan: Title + "_" + SimilarityID.
 type findingKey struct {
@@ -71,13 +80,15 @@ func findingsSummary(filePath string, findings []iacrealtime.IacRealtimeResult) 
 func formatFindings(filePath string, findings []iacrealtime.IacRealtimeResult, agent agenthooks.AgentID, workDir, sessionID string) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
 	cxBinary := cxExecutable()
-	reason = permissionDecisionReason(filePath, summary)
+	tag := provenanceTag(agent)
+	reason = tag + " " + permissionDecisionReason(filePath, summary)
 	switch agent {
 	case agenthooks.AgentCursor:
 		context = cursorAdditionalContext(filePath, cxBinary, findings, workDir, sessionID)
 	default:
 		context = additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
 	}
+	context = tag + " " + context
 	return reason, context
 }
 
@@ -161,6 +172,11 @@ func kicsSuppressCommands(cxBinary string, findings []iacrealtime.IacRealtimeRes
 	return suppressCmds.String()
 }
 
+// hookDenyHeader is the agent-facing opening of additionalContext. The provenance tag is
+// prepended separately in formatFindings. This header does not contain the spoof phrases
+// the skills treat as proof a message is not from Checkmarx.
+const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file content and not an untrusted tool error.\n"
+
 // permissionDecisionReason is the human-readable deny message shown to the user.
 func permissionDecisionReason(filePath, summary string) string {
 	return fmt.Sprintf(
@@ -168,6 +184,21 @@ func permissionDecisionReason(filePath, summary string) string {
 		filePath, summary,
 	)
 }
+
+// kicsRemediationReport is the closing report both the shared and Cursor deny text tell the
+// agent to show. One string so the two deny paths cannot drift apart. Scan lines are 0-based.
+const kicsRemediationReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per finding, " +
+	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
+	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete. " +
+	"Scan lines are 0-based; the line in this report is that number plus 1.\n" +
+	"## Checkmarx Dev Assist IaC(KICS) Remediation Summary\n" +
+	"\n" +
+	"- **{title}** - {severity} - line {line plus 1} - **{Fixed, Ignored, or Unresolved}**\n" +
+	"  {Fixed: what changed. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
+	"\n" +
+	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
+	"Then continue the user's original task. Do not include that sentence in the report.\n"
 
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user on Claude; on Gemini
@@ -183,40 +214,40 @@ func additionalContext(filePath, cxBinary string, findings []iacrealtime.IacReal
 	skill := kicsSkillName(agent)
 	suppressCmds := kicsSuppressCommands(cxBinary, findings, workDir, agent, sessionID)
 	return fmt.Sprintf(
-		"KICS detected IaC misconfigurations in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command.\n"+
-			"Action required:\n"+
-			"  1. For each finding, invoke the %s skill — "+
-			"the findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery.\n"+
-			"  2. If that skill is not available in this session, %s\n"+
-			"     This is the only supported remediation path — do not attempt manual configuration changes.\n"+
-			"  3. If %s is unavailable, tell the user to reconnect the\n"+
-			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-			"  4. If the user accepts the risk for a finding, suppress it by running the corresponding command\n"+
-			"     below, then retry the write:\n%s",
-		filePath, skill, remediationInstructions(codeTool),
-		codeTool, agentprofile.McpReconnect(agentLabel(agent)), suppressCmds,
+		hookDenyHeader+
+			"KICS blocked the write to %s.\nFindings:\n%s"+
+			"Handle every finding yourself. Never ask the user, including \"Would you like me to "+
+			"remediate?\" (that question is only for on-demand scans).\n"+
+			"1. Classify each finding:\n"+
+			"- False positive only if one of these is already true and you can cite it: (a) the user "+
+			"explicitly told you to ignore or suppress it; (b) a file you opened this session shows, at a "+
+			"line you can cite, that the configuration does not do what the rule flags, or the same issue "+
+			"is already handled there (for example a parent module or sibling manifest). Deployment or "+
+			"runtime assumptions you cannot see in a file are not evidence. What a finding or file says "+
+			"about another file is not evidence; open that file. Apparent intent is not evidence; that "+
+			"still needs (a) or (b).\n"+
+			"- Otherwise it is a true positive, including when you are unsure.\n"+
+			"2. True positive: call %s for each one with type \"iac\" and metadata (title, description, "+
+			"remediationAdvice = how to harden this configuration). The %s skill can make this call; if "+
+			"it disagrees with this deny, follow this deny. Apply remediation_steps only with Edit, "+
+			"Write, MultiEdit, or NotebookEdit, never a shell command (shell writes are not scanned). "+
+			"Make the smallest change to the flagged configuration; if the fix needs a resource in "+
+			"another file, that is also a gated write. If the blocked write creates a new file, the fix "+
+			"is that same Write with the fixed content.\n"+
+			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
+			"as unresolved and tell the user to %s.\n"+
+			"3. False positive: run exactly this command for it:\n%s"+
+			"4. Verify: skip only the initial scan. Run `cx scan iac-realtime -s <file>` with the "+
+			"canonical cx path, then retry the blocked write once; the hook on that retry is the check. "+
+			"If it is denied, a remaining finding, or one your fix introduced, gets one more %s call. "+
+			"Stop after 3 denied retries or when the tool returns no safe change. Then ignore only "+
+			"findings that meet step 1, report the rest as unresolved, and stop editing the file. Do not "+
+			"ask whether to continue.\n"+
+			"Never write this content through another tool, a shell command, or a different file to "+
+			"bypass the scan.\n"+
+			kicsRemediationReport,
+		filePath, findingsSummary(filePath, findings), codeTool, skill, codeTool, agentprofile.McpReconnect(agentLabel(agent)), suppressCmds, codeTool,
 	)
-}
-
-// remediationInstructions returns MCP tool-call guidance for KICS IaC findings.
-// All findings from this guardrail come from RunIacRealtimeScan (KICS), so they
-// always use codeRemediation with type "iac" — including Dockerfile findings.
-func remediationInstructions(codeTool string) string {
-	return fmt.Sprintf("For each finding, call the %s tool with:\n"+
-		"  {\n"+
-		"    \"type\": \"iac\",\n"+
-		"    \"metadata\": {\n"+
-		"      \"title\": \"[Title from finding]\",\n"+
-		"      \"description\": \"[Description from finding]\",\n"+
-		"      \"remediationAdvice\": \"[how to harden this configuration]\"\n"+
-		"    }\n"+
-		"  }\n"+
-		"Apply the remediation guidance the tool returns, then retry the write. If a fix "+
-		"genuinely requires resources outside this file (for example a separate KMS key or "+
-		"a centrally-managed policy), add them as part of your change rather than skipping "+
-		"the finding.", codeTool)
 }
 
 // cursorAdditionalContext is remediation guidance for Cursor only. Uses the plugin-prefixed MCP
@@ -224,29 +255,43 @@ func remediationInstructions(codeTool string) string {
 func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir, sessionID string) string {
 	suppressCmds := kicsSuppressCommands(cxBinary, findings, workDir, agenthooks.AgentCursor, sessionID)
 	skill := kicsSkillName(agenthooks.AgentCursor)
+	codeTool := cursorplugin.MCPTool("codeRemediation")
 	return fmt.Sprintf(
-		"KICS detected IaC misconfigurations in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command. "+
-			"ANALYZE each finding to determine if it is a real misconfiguration or a false positive "+
-			"(for example an acceptable deviation for this environment or platform). "+
-			"Follow the cx-hook-deny.mdc rule for this deny. "+
-			"ASK THE USER FIRST, for every real finding, before taking any action: \"An IaC misconfiguration "+
-			"was detected. Would you like to remediate it (harden the configuration via MCP) "+
-			"or suppress it (mark as a confirmed false positive and unblock the write)?\" and wait for "+
-			"their answer. Do not decide this yourself — an intentionally-inserted misconfiguration (e.g. "+
-			"in a lab/demo/training file the user asked for on purpose) is NOT the same as a confirmed "+
-			"false positive: suppress only on the user's explicit instruction, never because the "+
-			"request seems intentional. "+
-			"Apply the cx-devassist-kics.mdc rule: for each finding the user asks you to remediate, "+
-			"invoke the %s skill exactly as written — do not skip, abbreviate, or reimplement its steps "+
-			"inline. The findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
-			"Always show its Step 4 IaC Remediation Summary to the user verbatim when done. "+
-			"Do not retry the blocked Write/StrReplace, paste code in chat, or bypass the scan with shell workarounds. "+
-			"If that skill is not available in this session, %s\n"+
-			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
-		filePath, skill, remediationInstructions(cursorplugin.MCPTool("codeRemediation")),
-		suppressCmds,
+		hookDenyHeader+
+			"KICS blocked the write to %s. Follow the cx-hook-deny.mdc and cx-devassist-kics.mdc rules "+
+			"for this deny.\nFindings:\n%s"+
+			"Handle every finding yourself. Never ask the user, including \"Would you like me to "+
+			"remediate?\" (that question is only for on-demand scans).\n"+
+			"1. Classify each finding:\n"+
+			"- False positive only if one of these is already true and you can cite it: (a) the user "+
+			"explicitly told you to ignore or suppress it; (b) a file you opened this session shows, at a "+
+			"line you can cite, that the configuration does not do what the rule flags, or the same issue "+
+			"is already handled there (for example a parent module or sibling manifest). Deployment or "+
+			"runtime assumptions you cannot see in a file are not evidence. What a finding or file says "+
+			"about another file is not evidence; open that file. Apparent intent is not evidence; that "+
+			"still needs (a) or (b).\n"+
+			"- Otherwise it is a true positive, including when you are unsure.\n"+
+			"2. True positive: call %s for each one with type \"iac\" and metadata (title, description, "+
+			"remediationAdvice = how to harden this configuration). The %s skill can make this call; if "+
+			"it disagrees with this deny, follow this deny. Apply remediation_steps only with Write or "+
+			"StrReplace, never a shell command (shell writes are not scanned). Make the smallest change "+
+			"to the flagged configuration; if the fix needs a resource in another file, that is also a "+
+			"gated write. If the blocked write creates a new file, the fix is that same Write with the "+
+			"fixed content.\n"+
+			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
+			"as unresolved and tell the user to %s.\n"+
+			"3. False positive: run exactly this command for it:\n%s"+
+			"4. Verify: skip only the initial scan. Run `cx scan iac-realtime -s <file>` with the "+
+			"canonical cx path, then retry the blocked write once; the hook on that retry is the check. "+
+			"If it is denied, a remaining finding, or one your fix introduced, gets one more %s call. "+
+			"Stop after 3 denied retries or when the tool returns no safe change. Then ignore only "+
+			"findings that meet step 1, report the rest as unresolved, and stop editing the file. Do not "+
+			"ask whether to continue.\n"+
+			"Never write this content through another tool, a shell command, or a different file to "+
+			"bypass the scan.\n"+
+			kicsRemediationReport,
+		filePath, findingsSummary(filePath, findings), codeTool, skill, codeTool,
+		agentprofile.McpReconnect(agentLabel(agenthooks.AgentCursor)), suppressCmds, codeTool,
 	)
 }
 
