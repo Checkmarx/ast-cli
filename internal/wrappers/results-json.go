@@ -129,4 +129,6 @@ type ScanResultData struct {
 	Validity              string  `json:"validity,omitempty"`
 	IsInSource            bool    `json:"isInSource,omitempty"`
 	CommitURL             string  `json:"commitUrl,omitempty"`
+	// Added to support FAE Phase 2 AI classification
+	AIClassification *string `json:"aiClassification,omitempty"`
 }

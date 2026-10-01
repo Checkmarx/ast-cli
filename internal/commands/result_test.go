@@ -228,6 +228,46 @@ func TestRunWithoutScsResults_Other_AgentsShouldNotShowScsResults(t *testing.T) 
 	mock.SetScsMockVarsToDefault()
 }
 
+func TestRunGetResultsByScanIdJSONFormat_AIClassificationPresentWhenSetByServer(t *testing.T) {
+	clearFlags()
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "SAST_ONLY", "--report-format", "json")
+
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+
+	var scanResultsCollection *wrappers.ScanResultsCollection
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+	assert.Assert(t, len(scanResultsCollection.Results) == 1)
+	assert.Assert(t, scanResultsCollection.Results[0].ScanResultData.AIClassification != nil)
+	assert.Equal(t, "TP", *scanResultsCollection.Results[0].ScanResultData.AIClassification)
+
+	// The raw JSON must carry the key, not just the unmarshalled struct
+	assert.Assert(t, strings.Contains(string(reportBytes), `"aiClassification":"TP"`))
+
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
+func TestRunGetResultsByScanIdJSONFormat_AIClassificationOmittedWhenAbsent(t *testing.T) {
+	clearFlags()
+
+	execCmdNilAssertion(t, "results", "show", "--scan-id", "MOCK", "--report-format", "json")
+
+	reportBytes, err := os.ReadFile(fileName + "." + printer.FormatJSON)
+	assert.NilError(t, err, "Error reading file")
+
+	var scanResultsCollection *wrappers.ScanResultsCollection
+	err = json.Unmarshal(reportBytes, &scanResultsCollection)
+	assert.NilError(t, err, "Error unmarshalling JSON data")
+	for i := range scanResultsCollection.Results {
+		assert.Assert(t, scanResultsCollection.Results[i].ScanResultData.AIClassification == nil)
+	}
+	assert.Assert(t, !strings.Contains(string(reportBytes), "aiClassification"))
+
+	removeFileBySuffix(t, printer.FormatJSON)
+}
+
 func TestRunNilResults_Other_AgentsShouldNotShowAnyResults(t *testing.T) {
 	clearFlags()
 
@@ -393,6 +433,38 @@ func TestParseSarifResultSastClampsZeroColumns(t *testing.T) {
 	assert.Equal(t, uint(2), threadLocations[0].Location.PhysicalLocation.Region.EndColumn)
 	assert.Equal(t, uint(1), threadLocations[1].Location.PhysicalLocation.Region.StartColumn)
 	assert.Equal(t, uint(6), threadLocations[1].Location.PhysicalLocation.Region.EndColumn)
+}
+
+func TestParseSarifResultSastSetsAIClassificationWhenPresent(t *testing.T) {
+	aiClassification := "TP"
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			AIClassification: &aiClassification,
+			Nodes: []*wrappers.ScanResultNode{
+				{FileName: "/src/app.go", Line: 10, Column: 1, Length: 5},
+			},
+		},
+	}
+
+	sarifResults := parseSarifResultSast(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Assert(t, sarifResults[0].Properties != nil)
+	assert.Assert(t, sarifResults[0].Properties.AIClassification != nil)
+	assert.Equal(t, "TP", *sarifResults[0].Properties.AIClassification)
+}
+
+func TestParseSarifResultSastOmitsPropertiesWhenAIClassificationAbsent(t *testing.T) {
+	result := &wrappers.ScanResult{
+		ScanResultData: wrappers.ScanResultData{
+			Nodes: []*wrappers.ScanResultNode{
+				{FileName: "/src/app.go", Line: 10, Column: 1, Length: 5},
+			},
+		},
+	}
+
+	sarifResults := parseSarifResultSast(result, nil)
+	assert.Assert(t, len(sarifResults) == 1)
+	assert.Assert(t, sarifResults[0].Properties == nil)
 }
 
 func TestParseSarifResultKicsClampsZeroStartLine(t *testing.T) {
