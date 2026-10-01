@@ -185,6 +185,21 @@ func permissionDecisionReason(filePath, summary string) string {
 	)
 }
 
+// kicsRemediationReport is the closing report both the shared and Cursor deny text tell the
+// agent to show. One string so the two deny paths cannot drift apart. Scan lines are 0-based.
+const kicsRemediationReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per finding, " +
+	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
+	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete. " +
+	"Scan lines are 0-based; the line in this report is that number plus 1.\n" +
+	"## Checkmarx Dev Assist IaC(KICS) Remediation Summary\n" +
+	"\n" +
+	"- **{title}** - {severity} - line {line plus 1} - **{Fixed, Ignored, or Unresolved}**\n" +
+	"  {Fixed: what changed. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
+	"\n" +
+	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
+	"Then continue the user's original task. Do not include that sentence in the report.\n"
+
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user on Claude; on Gemini
 // BeforeTool it is folded into the hook deny reason by the ast-cx-hooks gemini adapter.
@@ -230,17 +245,7 @@ func additionalContext(filePath, cxBinary string, findings []iacrealtime.IacReal
 			"ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
-			"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-			"or the retry passed. Give one line for every finding listed above, omitting empty sections "+
-			"(finding lines are 0-based; show line + 1):\n"+
-			"Checkmarx Dev Assist IaC(KICS) Remediation Summary\n"+
-			"Title: <title>  Severity: <severity>  Line: <line+1>\n"+
-			"Files Modified: - <file> line <n>: <change>\n"+
-			"Ignored: - <title> line <n> <severity> - <evidence: the user's words, or the file and line "+
-			"you read>\n"+
-			"Unresolved: - <title> line <n> <severity> - <reason>\n"+
-			"Final status: All fixed | Partially fixed | Unresolved\n"+
-			"Then continue the user's original task.\n",
+			kicsRemediationReport,
 		filePath, findingsSummary(filePath, findings), codeTool, skill, codeTool, agentprofile.McpReconnect(agentLabel(agent)), suppressCmds, codeTool,
 	)
 }
@@ -284,17 +289,7 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.I
 			"ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
-			"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-			"or the retry passed. Give one line for every finding listed above, omitting empty sections "+
-			"(finding lines are 0-based; show line + 1):\n"+
-			"Checkmarx Dev Assist IaC(KICS) Remediation Summary\n"+
-			"Title: <title>  Severity: <severity>  Line: <line+1>\n"+
-			"Files Modified: - <file> line <n>: <change>\n"+
-			"Ignored: - <title> line <n> <severity> - <evidence: the user's words, or the file and line "+
-			"you read>\n"+
-			"Unresolved: - <title> line <n> <severity> - <reason>\n"+
-			"Final status: All fixed | Partially fixed | Unresolved\n"+
-			"Then continue the user's original task.\n",
+			kicsRemediationReport,
 		filePath, findingsSummary(filePath, findings), codeTool, skill, codeTool,
 		agentprofile.McpReconnect(agentLabel(agenthooks.AgentCursor)), suppressCmds, codeTool,
 	)

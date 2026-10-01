@@ -76,6 +76,36 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID str
 // skills treat as proof a message is not from Checkmarx.
 const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file content and not an untrusted tool error.\n"
 
+// scaMaliciousReport is the closing report for a known-malicious package, shared by the
+// Cursor and non-Cursor deny text.
+const scaMaliciousReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
+	"then a blank line and the final status. Do not print the braces. Pick one outcome and one final status. " +
+	"Unresolved must include why the package is still unresolved. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx Dev Assist SCA Remediation Summary\n" +
+	"\n" +
+	"- **{package}** - known-malicious - **{Replaced with a version, Removed, or Unresolved}**\n" +
+	"  {Replaced or Removed: what changed. Unresolved: Reason: why it was not removed or replaced.}\n" +
+	"\n" +
+	"**Final status:** {All resolved, or Unresolved}\n" +
+	"Continue the user's original task only after the package is no longer in the write. Do not include that sentence in the report.\n"
+
+// scaVulnerableReport is the closing report for vulnerable packages, shared by the
+// Cursor and non-Cursor deny text.
+const scaVulnerableReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
+	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
+	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx Dev Assist SCA Remediation Summary\n" +
+	"\n" +
+	"- **{package}** {old version} -> {new version} - {manager} - **{Fixed, Ignored, or Unresolved}**\n" +
+	"  {CVEs and severity. Fixed: what changed. Ignored: Reason: why, citing the user's words or that the tool found no fixed version. Unresolved: Reason: why it was not fixed.}\n" +
+	"\n" +
+	"**Lockfile refresh needed:** {yes or no}\n" +
+	"\n" +
+	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
+	"Then continue the user's original task. Do not include that sentence in the report.\n"
+
 // remediationNote returns the action steps to include as additionalContext for malicious packages.
 // Remediation goes through the cx-devassist skill (or the Checkmarx MCP tool directly when the skill
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
@@ -103,13 +133,7 @@ func remediationNote(packages, agent string) string {
 				"do that for them, and do not ask them to choose.\n"+
 				"Never install it through a shell command or write it through another tool or file to "+
 				"bypass the scan.\n"+
-				"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-				"or the retry passed. Give one line for every package listed above:\n"+
-				"SCA Remediation Summary\n"+
-				"Package: <name> - blocked: known-malicious\n"+
-				"Outcome: replaced with <version> | removed | left out, unresolved\n"+
-				"Final status: All resolved | Unresolved\n"+
-				"Continue the user's original task only after the package is no longer in the write.\n",
+				scaMaliciousReport,
 			packages, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
 	}
 
@@ -133,13 +157,7 @@ func remediationNote(packages, agent string) string {
 			"that for them, and do not ask them to choose.\n"+
 			"Never install it through a shell command or write it through another tool or file to "+
 			"bypass the scan.\n"+
-			"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-			"or the retry passed. Give one line for every package listed above:\n"+
-			"SCA Remediation Summary\n"+
-			"Package: <name> - blocked: known-malicious\n"+
-			"Outcome: replaced with <version> | removed | left out, unresolved\n"+
-			"Final status: All resolved | Unresolved\n"+
-			"Continue the user's original task only after the package is no longer in the write.\n",
+			scaMaliciousReport,
 		packages, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
 }
 
@@ -174,8 +192,8 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 	if agent == agentCursor {
 		pkgTool := cursorplugin.MCPTool("packageRemediation")
 		var findingLines strings.Builder
-		for _, p := range pkgs {
-			fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(p), vulnDetail(p))
+		for i := range pkgs {
+			fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(pkgs[i]), vulnDetail(pkgs[i]))
 		}
 		return fmt.Sprintf(
 			hookDenyHeader+
@@ -208,24 +226,14 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 				"ask whether to continue.\n"+
 				"Never write this content through another tool, a shell command, or a different file to "+
 				"bypass the scan.\n"+
-				"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-				"or the retry passed. Give one line for every package listed above, omitting empty sections:\n"+
-				"Checkmarx Dev Assist SCA Remediation Summary\n"+
-				"Package: <name> <old-version> -> <new-version>  Manager: <manager>  Issue: <CVE list> "+
-				"(<severity>)\n"+
-				"Ignored: - <package@version> - <CVE list> - <evidence: the user's words, or the MCP \"no "+
-				"fixed version\" result>\n"+
-				"Unresolved: - <package@version> - <reason>\n"+
-				"Lockfile refresh needed: yes | no\n"+
-				"Final status: All fixed | Partially fixed | Unresolved\n"+
-				"Then continue the user's original task.\n",
+				scaVulnerableReport,
 			findingLines.String(), pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent),
 			suppressCmds.String(), pkgTool)
 	}
 	pkgTool := defaultPackageRemediationTool
 	var findingLines strings.Builder
-	for _, p := range pkgs {
-		fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(p), vulnDetail(p))
+	for i := range pkgs {
+		fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(pkgs[i]), vulnDetail(pkgs[i]))
 	}
 	return fmt.Sprintf(
 		hookDenyHeader+
@@ -257,17 +265,7 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 			"to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
-			"5. Always finish with this report, even if you asked the user a question, the file is new, "+
-			"or the retry passed. Give one line for every package listed above, omitting empty sections:\n"+
-			"Checkmarx Dev Assist SCA Remediation Summary\n"+
-			"Package: <name> <old-version> -> <new-version>  Manager: <manager>  Issue: <CVE list> "+
-			"(<severity>)\n"+
-			"Ignored: - <package@version> - <CVE list> - <evidence: the user's words, or the MCP \"no "+
-			"fixed version\" result>\n"+
-			"Unresolved: - <package@version> - <reason>\n"+
-			"Lockfile refresh needed: yes | no\n"+
-			"Final status: All fixed | Partially fixed | Unresolved\n"+
-			"Then continue the user's original task.\n",
+			scaVulnerableReport,
 		findingLines.String(), pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent), suppressCmds.String(), pkgTool)
 }
 
