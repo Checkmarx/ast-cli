@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -10,8 +11,11 @@ import (
 type SastMetadataMockWrapper struct{}
 
 const (
-	scanIDParam = "scan-ids"
-	concurrent  = "ConcurrentTest"
+	scanIDParam         = "scan-ids"
+	concurrent          = "ConcurrentTest"
+	errorTrigger        = "TriggerError"
+	tooManyIDsErrorCode = 3102
+	tooManyIDsMessage   = "Too many ids in url"
 	// FakeMetadataErrorID is used to trigger error responses in mock SAST metadata calls.
 	FakeMetadataErrorID = "fake-sast-metadata-error-id"
 	// FakeMetadataEmptyID is used to trigger empty responses in mock SAST metadata calls.
@@ -22,6 +26,9 @@ func (s SastMetadataMockWrapper) GetSastMetadataByIDs(params map[string]string) 
 	*wrappers.SastMetadataModel,
 	error,
 ) {
+	if strings.Contains(params[scanIDParam], errorTrigger) {
+		return nil, fmt.Errorf("%d - %s", tooManyIDsErrorCode, tooManyIDsMessage)
+	}
 	if strings.Contains(params[scanIDParam], FakeMetadataErrorID) {
 		return nil, errors.New("fake sast metadata fetch error")
 	}
