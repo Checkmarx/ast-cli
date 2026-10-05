@@ -2421,6 +2421,7 @@ func initSonarIssue(result *wrappers.ScanResult) wrappers.SonarIssues {
 	engineType := strings.TrimSpace(result.Type)
 	if engineType == commonParams.SastType {
 		sonarIssue.RuleID = result.ScanResultData.LanguageName + " - " + result.ScanResultData.QueryName
+		sonarIssue.AiClassification = result.ScanResultData.AIClassification
 	} else if engineType == commonParams.KicsType {
 		sonarIssue.RuleID = result.ScanResultData.QueryName
 	} else if engineType == commonParams.ScaType {

@@ -24,6 +24,7 @@ type SonarIssues struct {
 	PrimaryLocation    SonarLocation   `json:"primaryLocation"`
 	EffortMinutes      uint            `json:"effortMinutes,omitempty"`
 	SecondaryLocations []SonarLocation `json:"secondaryLocations"`
+	AiClassification   *string         `json:"aiClassification,omitempty"` // SAST-only
 }
 
 type SonarLocation struct {
