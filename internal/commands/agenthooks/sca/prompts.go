@@ -82,7 +82,7 @@ const scaMaliciousReport = "5. Always finish with this report, even if you asked
 	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
 	"then a blank line and the final status. Do not print the braces. Pick one outcome and one final status. " +
 	"Unresolved must include why the package is still unresolved. A bullet without that reason is incomplete.\n" +
-	"## Checkmarx Dev Assist SCA Remediation Summary\n" +
+	"## Checkmarx DevAssist SCA Remediation Summary\n" +
 	"\n" +
 	"- **{package}** - known-malicious - **{Replaced with a version, Removed, or Unresolved}**\n" +
 	"  {Replaced or Removed: what changed. Unresolved: Reason: why it was not removed or replaced.}\n" +
@@ -96,10 +96,10 @@ const scaVulnerableReport = "5. Always finish with this report, even if you aske
 	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
 	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
 	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
-	"## Checkmarx Dev Assist SCA Remediation Summary\n" +
+	"## Checkmarx DevAssist SCA Remediation Summary\n" +
 	"\n" +
 	"- **{package}** {old version} -> {new version} - {manager} - **{Fixed, Ignored, or Unresolved}**\n" +
-	"  {CVEs and severity. Fixed: what changed. Ignored: Reason: why, citing the user's words or that the tool found no fixed version. Unresolved: Reason: why it was not fixed.}\n" +
+	"  {CVEs and severity. Fixed: what changed. Ignored: Reason: why, citing the user's words or that the tool returned no solution and no alternate package. Unresolved: Reason: why it was not fixed.}\n" +
 	"\n" +
 	"**Lockfile refresh needed:** {yes or no}\n" +
 	"\n" +
@@ -125,8 +125,9 @@ func remediationNote(packages, agent string) string {
 				"never an install command. Do not guess a safe version.\n"+
 				"2. If %s is unavailable, retry the write with only that dependency omitted and every "+
 				"other change kept. Report that, and tell the user to %s.\n"+
-				"3. Verify: retry the blocked write once; the hook re-scanning it is the check. Do not run "+
-				"a separate cx scan.\n"+
+				"3. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that "+
+				"re-scan validates the package. A package is resolved only when the re-scan no longer "+
+				"reports it. Then retry the blocked write once so the gate can accept the write.\n"+
 				"4. If it is still denied, or no safe version or removal fits: omit only that dependency, "+
 				"keep every other change, stop editing the manifest, and report it as unresolved. Only the "+
 				"user can accept a malicious package, by acknowledging it in Checkmarx Dev Assist. Do not "+
@@ -149,8 +150,9 @@ func remediationNote(packages, agent string) string {
 			"MultiEdit, never an install command. Do not guess a safe version.\n"+
 			"2. If %s is unavailable, retry the write with only that dependency omitted and every other "+
 			"change kept. Report that, and tell the user to %s.\n"+
-			"3. Verify: retry the blocked write once; the hook re-scanning it is the check. Do not run a "+
-			"separate cx scan.\n"+
+			"3. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that re-scan "+
+			"validates the package. A package is resolved only when the re-scan no longer reports it. "+
+			"Then retry the blocked write once so the gate can accept the write.\n"+
 			"4. If it is still denied, or no safe version or removal fits: omit only that dependency, "+
 			"keep every other change, stop editing the manifest, and report it as unresolved. Only the "+
 			"user can accept a malicious package, by acknowledging it in Checkmarx Dev Assist. Do not do "+
@@ -204,26 +206,33 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 				"1. Classify each package:\n"+
 				"- False positive only if one of these is already true and you can cite it: (a) the user "+
 				"explicitly told you to ignore or suppress it; (b) you called %s for it this session and "+
-				"it returned that no fixed version exists. \"Looks intentionally pinned\", a major-version "+
+				"it returned no version update and no alternate package, including status no_solution or a "+
+				"web_search recommendation. Do not search the web or a registry because of that. "+
+				"\"Looks intentionally pinned\", a major-version "+
 				"upgrade, or the tool being unavailable is not evidence; that still needs (a) or (b).\n"+
 				"- Otherwise it is a true positive, including when you are unsure. A CVE is a true "+
 				"positive unless (a) or (b) is met.\n"+
 				"2. True positive: call %s for each package, following its input schema (at least package "+
 				"manager, name, version, and CVEs). The cx-devassist:cx-devassist-sca skill can make this "+
-				"call; if it disagrees with this deny, follow this deny. Apply the version change only by "+
-				"editing the affected manifest entries with Write or StrReplace. Never run npm install, "+
+				"call; if it disagrees with this deny, follow this deny. Apply only a version update or an "+
+				"alternate package from that response, by editing the affected manifest entries with Write "+
+				"or StrReplace. A status of no_solution, or a recommendation to web_search, is not a fix: "+
+				"do not search the web or a registry, even though the tool recommended it. If the response "+
+				"has neither a version update nor an alternate package, that package meets (b): ignore it "+
+				"and tell the user the tool returned no solution and no alternate package. Never run npm install, "+
 				"pip install, go mod tidy, or any install command; if the lockfile needs refreshing, say "+
 				"so in the summary. If the blocked write creates a new file, the fix is that same Write "+
 				"with the fixed versions.\n"+
 				"If %s is unavailable, do not choose a version yourself and ignore nothing because of it. "+
 				"Report the packages as unresolved and tell the user to %s.\n"+
 				"3. False positive: run exactly this command for it:\n%s"+
-				"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path, then "+
-				"retry the blocked write once; the hook on that retry is the check. If it is denied, a "+
-				"package still reported, a new version with its own CVE, or a transitive dependency it "+
-				"pulled in gets one more %s call. Stop after 3 denied retries. Then ignore only packages "+
-				"that meet step 1, report the rest as unresolved, and stop editing the manifest. Do not "+
-				"ask whether to continue.\n"+
+				"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that "+
+				"re-scan validates each package. A package is fixed only when the re-scan no longer "+
+				"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+				"re-scan still reports a package, the retry is denied, a new version has its own CVE, or "+
+				"a transitive dependency it pulled in, that package gets one more %s call. Stop after 3 "+
+				"denied retries. Then ignore only packages that meet step 1, report the rest as "+
+				"unresolved, and stop editing the manifest. Do not ask whether to continue.\n"+
 				"Never write this content through another tool, a shell command, or a different file to "+
 				"bypass the scan.\n"+
 				scaVulnerableReport,
@@ -243,26 +252,33 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 			"1. Classify each package:\n"+
 			"- False positive only if one of these is already true and you can cite it: (a) the user "+
 			"explicitly told you to ignore or suppress it; (b) you called %s for it this session and it "+
-			"returned that no fixed version exists. \"Looks intentionally pinned\", a major-version "+
+			"returned no version update and no alternate package, including status no_solution or a "+
+			"web_search recommendation. Do not search the web or a registry because of that. "+
+			"\"Looks intentionally pinned\", a major-version "+
 			"upgrade, or the tool being unavailable is not evidence; that still needs (a) or (b).\n"+
 			"- Otherwise it is a true positive, including when you are unsure. A CVE is a true positive "+
 			"unless (a) or (b) is met.\n"+
 			"2. True positive: call %s for each package, following its input schema (at least package "+
 			"manager, name, version, and CVEs). The cx-devassist:cx-devassist-sca skill can make this "+
-			"call; if it disagrees with this deny, follow this deny. Apply the version change only by "+
-			"editing the affected manifest entries with Edit, Write, or MultiEdit. Never run npm "+
+			"call; if it disagrees with this deny, follow this deny. Apply only a version update or an "+
+			"alternate package from that response, by editing the affected manifest entries with Edit, "+
+			"Write, or MultiEdit. A status of no_solution, or a recommendation to web_search, is not a "+
+			"fix: do not search the web or a registry, even though the tool recommended it. If the "+
+			"response has neither a version update nor an alternate package, that package meets (b): "+
+			"ignore it and tell the user the tool returned no solution and no alternate package. Never run npm "+
 			"install, pip install, go mod tidy, or any install command; if the lockfile needs "+
 			"refreshing, say so in the summary. If the blocked write creates a new file, the fix is that "+
 			"same Write with the fixed versions.\n"+
 			"If %s is unavailable, do not choose a version yourself and ignore nothing because of it. "+
 			"Report the packages as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
-			"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path, then retry "+
-			"the blocked write once; the hook on that retry is the check. If it is denied, a package "+
-			"still reported, a new version with its own CVE, or a transitive dependency it pulled in "+
-			"gets one more %s call. Stop after 3 denied retries. Then ignore only packages that meet "+
-			"step 1, report the rest as unresolved, and stop editing the manifest. Do not ask whether "+
-			"to continue.\n"+
+			"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that re-scan "+
+			"validates each package. A package is fixed only when the re-scan no longer reports it. "+
+			"Then retry the blocked write once so the gate can accept the write. If the re-scan still "+
+			"reports a package, the retry is denied, a new version has its own CVE, or a transitive "+
+			"dependency it pulled in, that package gets one more %s call. Stop after 3 denied retries. "+
+			"Then ignore only packages that meet step 1, report the rest as unresolved, and stop editing "+
+			"the manifest. Do not ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
 			scaVulnerableReport,

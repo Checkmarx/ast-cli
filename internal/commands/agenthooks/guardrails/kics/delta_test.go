@@ -261,7 +261,7 @@ func TestCursorAdditionalContext_MatchesAscaConfidenceGatedWording(t *testing.T)
 		"cx scan iac-realtime -s",
 		"Stop after 3 denied retries",
 		"Always finish with this report",
-		"Checkmarx Dev Assist IaC(KICS) Remediation Summary",
+		"Checkmarx DevAssist IaC(KICS) Remediation Summary",
 		"Then continue the user's original task.",
 		"parent module or sibling manifest",
 	} {
@@ -293,10 +293,13 @@ func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
 	}
 	for _, agent := range agents {
 		_, ctx := formatFindings("/project/main.tf", findings, agent, "/project", "sess1")
-		for _, bad := range []string{"without asking", "silently", "cx_mcp_register"} {
+		for _, bad := range []string{"without asking", "silently", "cx_mcp_register", "the hook on that retry is the check"} {
 			if strings.Contains(ctx, bad) {
 				t.Errorf("%s context contains %q", agent, bad)
 			}
+		}
+		if !strings.Contains(ctx, "that re-scan validates the finding") {
+			t.Errorf("%s context missing re-scan validation: %q", agent, ctx)
 		}
 		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
 			t.Errorf("%s context missing hook deny header", agent)

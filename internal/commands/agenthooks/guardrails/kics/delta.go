@@ -192,7 +192,7 @@ const kicsRemediationReport = "5. Always finish with this report, even if you as
 	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
 	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete. " +
 	"Scan lines are 0-based; the line in this report is that number plus 1.\n" +
-	"## Checkmarx Dev Assist IaC(KICS) Remediation Summary\n" +
+	"## Checkmarx DevAssist IaC(KICS) Remediation Summary\n" +
 	"\n" +
 	"- **{title}** - {severity} - line {line plus 1} - **{Fixed, Ignored, or Unresolved}**\n" +
 	"  {Fixed: what changed. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
@@ -238,11 +238,12 @@ func additionalContext(filePath, cxBinary string, findings []iacrealtime.IacReal
 			"as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
 			"4. Verify: skip only the initial scan. Run `cx scan iac-realtime -s <file>` with the "+
-			"canonical cx path, then retry the blocked write once; the hook on that retry is the check. "+
-			"If it is denied, a remaining finding, or one your fix introduced, gets one more %s call. "+
-			"Stop after 3 denied retries or when the tool returns no safe change. Then ignore only "+
-			"findings that meet step 1, report the rest as unresolved, and stop editing the file. Do not "+
-			"ask whether to continue.\n"+
+			"canonical cx path; that re-scan validates the finding. A finding is fixed only when the "+
+			"re-scan no longer reports it. Then retry the blocked write once so the gate can accept the "+
+			"write. If the re-scan still reports it, the retry is denied, or your fix introduced a "+
+			"finding, that finding gets one more %s call. Stop after 3 denied retries or when the tool "+
+			"returns no safe change. Then ignore only findings that meet step 1, report the rest as "+
+			"unresolved, and stop editing the file. Do not ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
 			kicsRemediationReport,
@@ -282,11 +283,12 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []iacrealtime.I
 			"as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
 			"4. Verify: skip only the initial scan. Run `cx scan iac-realtime -s <file>` with the "+
-			"canonical cx path, then retry the blocked write once; the hook on that retry is the check. "+
-			"If it is denied, a remaining finding, or one your fix introduced, gets one more %s call. "+
-			"Stop after 3 denied retries or when the tool returns no safe change. Then ignore only "+
-			"findings that meet step 1, report the rest as unresolved, and stop editing the file. Do not "+
-			"ask whether to continue.\n"+
+			"canonical cx path; that re-scan validates the finding. A finding is fixed only when the "+
+			"re-scan no longer reports it. Then retry the blocked write once so the gate can accept the "+
+			"write. If the re-scan still reports it, the retry is denied, or your fix introduced a "+
+			"finding, that finding gets one more %s call. Stop after 3 denied retries or when the tool "+
+			"returns no safe change. Then ignore only findings that meet step 1, report the rest as "+
+			"unresolved, and stop editing the file. Do not ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
 			kicsRemediationReport,

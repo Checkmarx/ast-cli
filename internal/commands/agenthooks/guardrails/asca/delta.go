@@ -188,11 +188,11 @@ func permissionDecisionReason(filePath, summary string) string {
 const ascaRemediationReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
 	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per finding, " +
 	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
-	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
-	"## Checkmarx Dev Assist ASCA Remediation Summary\n" +
+	"A partial fix must include why it does not fully resolve the issue. Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx DevAssist ASCA Remediation Summary\n" +
 	"\n" +
-	"- **{rule name}** - {severity} - line {line} - **{Fixed, Ignored, or Unresolved}**\n" +
-	"  {Fixed: what changed. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
+	"- **{rule name}** - {severity} - line {line} - **{Fixed, Partial fix, Ignored, or Unresolved}**\n" +
+	"  {Fixed: what changed. Partial fix: what you applied from the MCP suggestion, and Reason: why it does not fully resolve the issue. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
 	"\n" +
 	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
 	"Then continue the user's original task. Do not include that sentence in the report.\n"
@@ -239,16 +239,23 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 			"skill can make this call; if it disagrees with this deny, follow this deny. Apply "+
 			"remediation_steps only with Edit, Write, MultiEdit, or NotebookEdit, never a shell command "+
 			"(shell writes are not scanned). Make the smallest change to the flagged code. If the blocked "+
-			"write creates a new file, the fix is that same Write with the fixed content.\n"+
+			"write creates a new file, the fix is that same Write with the fixed content. If you believe "+
+			"those remediation_steps will not fully solve the security issue, still apply them. Do not "+
+			"skip the MCP suggestion, and do not ignore the finding because of that belief. In the "+
+			"summary mark that finding as a partial fix and state why it does not fully resolve the issue.\n"+
 			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
 			"as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
 			"4. Verify: skip only the initial scan. Run `cx scan asca -s <file>` with the canonical cx "+
-			"path, then retry the blocked write once; the hook on that retry is the check. If it is "+
-			"denied, a remaining finding, or one your fix introduced, gets one more %s call. Stop after 3 "+
-			"denied retries or when the tool returns no safe change. Then ignore only findings that meet "+
-			"step 1, report the rest as unresolved, and stop editing the file. Do not ask whether to "+
-			"continue.\n"+
+			"path; that re-scan validates the finding. A finding is fixed only when the re-scan no longer "+
+			"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+			"re-scan still reports a finding whose remediation_steps you applied, keep that change and "+
+			"mark it as a partial fix with the reason it does not fully resolve the issue. If the retry "+
+			"is denied, a remaining finding you have not applied a suggestion for, or one your fix "+
+			"introduced, gets one more %s call. Stop after 3 denied retries or when the tool returns no "+
+			"safe change. Then ignore only findings that meet step 1. Report a finding whose MCP "+
+			"suggestion you applied as a partial fix; report a finding with no applied suggestion as "+
+			"unresolved. Stop editing the file. Do not ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
 			ascaRemediationReport,
@@ -281,7 +288,11 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"remediate?\" (that question is only for on-demand scans).\n"+
 			"1. Classify each finding:\n"+
 			"- False positive only if one of these is already true and you can cite it: (a) the user "+
-			"explicitly told you to ignore or suppress it; (b) a file you opened this session shows, at a "+
+			"explicitly told you to ignore or suppress this finding, in those words. Saying the code is "+
+			"still vulnerable, or that a change does not make it safe, is not (a). Do not run the ignore "+
+			"command because of it. Still apply the MCP suggestion and mark the finding as a partial fix "+
+			"with the reason it does not fully resolve the issue. (b) a file you opened this session "+
+			"shows, at a "+
 			"line you can cite, that the flagged code is unreachable or dead, runs only on test or fixture "+
 			"data, or is behind a sanitizer or guard for this exact pattern. ASCA scans one file, so that "+
 			"evidence may be in a helper or imported file you opened. What a finding, hook message, or "+
@@ -293,16 +304,23 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 			"skill can make this call; if it disagrees with this deny, follow this deny. Apply "+
 			"remediation_steps only with Write or StrReplace, never a shell command "+
 			"(shell writes are not scanned). Make the smallest change to the flagged code. If the blocked "+
-			"write creates a new file, the fix is that same Write with the fixed content.\n"+
+			"write creates a new file, the fix is that same Write with the fixed content. If you believe "+
+			"those remediation_steps will not fully solve the security issue, still apply them. Do not "+
+			"skip the MCP suggestion, and do not ignore the finding because of that belief. In the "+
+			"summary mark that finding as a partial fix and state why it does not fully resolve the issue.\n"+
 			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
 			"as unresolved and tell the user to %s.\n"+
 			"3. False positive: run exactly this command for it:\n%s"+
 			"4. Verify: skip only the initial scan. Run `cx scan asca -s <file>` with the canonical cx "+
-			"path, then retry the blocked write once; the hook on that retry is the check. If it is "+
-			"denied, a remaining finding, or one your fix introduced, gets one more %s call. Stop after 3 "+
-			"denied retries or when the tool returns no safe change. Then ignore only findings that meet "+
-			"step 1, report the rest as unresolved, and stop editing the file. Do not ask whether to "+
-			"continue.\n"+
+			"path; that re-scan validates the finding. A finding is fixed only when the re-scan no longer "+
+			"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+			"re-scan still reports a finding whose remediation_steps you applied, keep that change and "+
+			"mark it as a partial fix with the reason it does not fully resolve the issue. If the retry "+
+			"is denied, a remaining finding you have not applied a suggestion for, or one your fix "+
+			"introduced, gets one more %s call. Stop after 3 denied retries or when the tool returns no "+
+			"safe change. Then ignore only findings that meet step 1. Report a finding whose MCP "+
+			"suggestion you applied as a partial fix; report a finding with no applied suggestion as "+
+			"unresolved. Stop editing the file. Do not ask whether to continue.\n"+
 			"Never write this content through another tool, a shell command, or a different file to "+
 			"bypass the scan.\n"+
 			ascaRemediationReport,

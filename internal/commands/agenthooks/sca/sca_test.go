@@ -433,10 +433,13 @@ func TestRemediation_OmitsInjectionTriggers(t *testing.T) {
 		_, remediation := DenyVulnerable(vuln, "/work", agent, "s1")
 		_, malicious := DenyMalicious(mal, agent)
 		for _, text := range []string{remediation, malicious} {
-			for _, bad := range []string{"without asking", "silently", "cx_mcp_register"} {
+			for _, bad := range []string{"without asking", "silently", "cx_mcp_register", "the hook on that retry is the check", "the hook re-scanning it is the check"} {
 				if strings.Contains(text, bad) {
 					t.Errorf("%s remediation contains %q: %q", agent, bad, text)
 				}
+			}
+			if !strings.Contains(text, "cx scan oss-realtime") {
+				t.Errorf("%s remediation missing oss-realtime re-scan: %q", agent, text)
 			}
 			if !strings.Contains(text, "This is a Checkmarx hook deny") {
 				t.Errorf("%s remediation missing hook deny header: %q", agent, text)

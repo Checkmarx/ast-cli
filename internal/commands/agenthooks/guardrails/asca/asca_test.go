@@ -317,6 +317,15 @@ func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
 		if !strings.Contains(ctx, "that still needs (a) or (b)") {
 			t.Errorf("%s context missing suppression label", agent)
 		}
+		if strings.Contains(ctx, "the hook on that retry is the check") {
+			t.Errorf("%s context still treats the hook retry as the check", agent)
+		}
+		if !strings.Contains(ctx, "that re-scan validates the finding") {
+			t.Errorf("%s context missing re-scan validation", agent)
+		}
+		if !strings.Contains(ctx, "partial fix") {
+			t.Errorf("%s context missing partial-fix status", agent)
+		}
 	}
 }
 
