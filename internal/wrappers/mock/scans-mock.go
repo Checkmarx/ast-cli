@@ -73,6 +73,7 @@ func (m *ScansMockWrapper) Get(scanParams map[string]string) (
 	fmt.Println("Called Get in ScansMockWrapper")
 	sastMapConfig := make(map[string]interface{})
 	sastMapConfig["incremental"] = "trueSastIncremental"
+	sastMapConfig["baseBranch"] = "baseBranchValue"
 	sastMapConfig["presetName"] = "preset"
 	sastMapConfig["filter"] = "filterValueSast"
 	sastMapConfig["engineVerbose"] = "true"
@@ -165,6 +166,21 @@ func (m *ScansMockWrapper) GetByID(scanID string) (*wrappers.ScanResponseModel, 
 				{Status: wrappers.ScanCompleted, Name: "sast"},
 				{Status: wrappers.ScanFailed, Name: "kics", Details: "error message from kics scanner", ErrorCode: 6455},
 			},
+		}, nil, nil
+	}
+
+	if scanID == FakeMetadataErrorID {
+		return &wrappers.ScanResponseModel{
+			ID:              scanID,
+			Status:          "Completed",
+			SastIncremental: "false",
+		}, nil, nil
+	}
+	if scanID == FakeMetadataEmptyID {
+		return &wrappers.ScanResponseModel{
+			ID:              scanID,
+			Status:          "Completed",
+			SastIncremental: "true",
 		}, nil, nil
 	}
 
