@@ -198,7 +198,6 @@ func updateProject(project *wrappers.ProjectResponseModel,
 	} else {
 		projModel.MainBranch = project.MainBranch
 	}
-	projModel.RepoURL = project.RepoURL
 
 	if projectTags == "" && projectPrivatePackage == "" && isBranchPrimary == false {
 		logger.PrintIfVerbose("No tags or branch to update. Skipping project update.")

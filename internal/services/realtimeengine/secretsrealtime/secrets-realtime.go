@@ -115,7 +115,8 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	}
 	ignoredSecrets, err := loadIgnoredSecrets(ignoredFilePath)
 	if err != nil {
-		return nil, errorconstants.NewRealtimeEngineError("failed to load ignored secrets").Error()
+		logger.PrintfIfVerbose("secrets-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		return results, nil
 	}
 	ignoreMap := buildIgnoreMap(ignoredSecrets)
 	results = filterIgnoredSecrets(results, ignoreMap)

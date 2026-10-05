@@ -2,6 +2,12 @@ package params
 
 // Flags
 const (
+	// OAuth browser login (cx auth login)
+	LoginPortFlag           = "port"
+	LoginPortFlagUsage      = "Local port for the OAuth callback listener (0 = pick a free port)"
+	LoginNoBrowserFlag      = "no-browser"
+	LoginNoBrowserFlagUsage = "Print the authorization URL instead of opening a browser"
+
 	AllStatesFlag                  = "all"
 	AgentFlag                      = "agent"
 	AiProviderFlag                 = "ai-provider"
@@ -112,6 +118,8 @@ const (
 	ProjectName                    = "project-name"
 	ScanTypes                      = "scan-types"
 	ScanTypeFlag                   = "scan-type"
+	IgnoreDataFlag                 = "data"
+	IgnoreRemoveFlag               = "remove"
 	ScanResubmit                   = "resubmit"
 	KicsRealtimeFile               = "file"
 	KicsRealtimeEngine             = "engine"
@@ -129,6 +137,7 @@ const (
 	ProjectGroupList               = "project-groups"
 	ProjectTagList                 = "project-tags"
 	IncrementalSast                = "sast-incremental"
+	BaseBranch                     = "base-branch"
 	PresetName                     = "sast-preset-name"
 	Threshold                      = "threshold"
 	ThresholdFlagUsage             = "Local build threshold. Format <engine>-<severity>=<limit>. " +
@@ -159,7 +168,6 @@ const (
 	QueryIDFlag                  = "query-id"
 	SSHKeyFlag                   = "ssh-key"
 	RepoURLFlag                  = "repo-url"
-	AstToken                     = "ast-token"
 	SSHValue                     = "ssh-value"
 	KicsContainerNameKey         = "kics-container-name"
 	KicsPlatformsFlag            = "kics-platforms"
@@ -188,8 +196,14 @@ const (
 	LogFileUsage                 = "Saves logs to the specified file path only"
 	LogFileConsoleFlag           = "log-file-console"
 	LogFileConsoleUsage          = "Saves logs to the specified file path as well as to the console"
+	SkipDefaultFilterFlag        = "skip-default-filter"
+	SkipDefaultFilterFlagUsage   = "Skip the default file filter."
+	ExcludeGitFolderFlag         = "exclude-git-folder"
+	ExcludeGitFolderFlagUsage    = "Exclude .git folder from scan source upload zip."
 	GitIgnoreFileFilterFlag      = "use-gitignore"
 	GitIgnoreFileFilterUsage     = "Exclude files and directories from the scan based on the patterns defined in the directory's .gitignore file"
+	AntFilterFlag                = "file-filter-ext"
+	AntFilterUsage               = "Filter files/folders to include or exclude using Apache Ant-style glob patterns (e.g. **/*.java, !**/test/**)."
 	// INDIVIDUAL FILTER FLAGS
 	SastFilterFlag  = "sast-filter"
 	SastFilterUsage = "SAST filter"

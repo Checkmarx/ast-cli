@@ -71,6 +71,20 @@ func TestOssRealtimeScan_PackageJsonFile_Success(t *testing.T) {
 	defer deleteCacheFile()
 }
 
+func TestOssRealtimeScan_UnsupportedManifestFormat_ReturnsError(t *testing.T) {
+	// Test with unsupported file format - should return error (using a .py file which is not a supported manifest)
+	args := []string{
+		"scan", "oss-realtime",
+		flag(commonParams.SourcesFlag), "data/python-vul-file.py",
+	}
+	err, _ := executeCommand(t, args...)
+	// Should fail with error
+	assert.NotNil(t, err, "Should fail with unsupported manifest format")
+	// Error message should indicate unsupported format
+	assert.Contains(t, err.Error(), "OSS Realtime scanner doesn't currently support scanning",
+		"Error message should indicate that format is not supported")
+}
+
 func validateCacheFileExist() bool {
 	cacheFilePath := os.TempDir() + "/oss-realtime-cache.json"
 	if _, err := os.Stat(cacheFilePath); os.IsNotExist(err) {

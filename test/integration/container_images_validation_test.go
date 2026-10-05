@@ -182,12 +182,10 @@ func TestContainerImageValidation_MultipleImagesValidation(t *testing.T) {
 
 // TestContainerImageValidation_TarFiles tests validation of .tar file references
 func TestContainerImageValidation_TarFiles(t *testing.T) {
-	// Create a temporary .tar file for testing
 	tempDir := t.TempDir()
 	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
-	// Create an empty .tar file for testing
-	// Note: An empty tar file is NOT a valid container image, so it should fail during processing
+	// Flag validation only checks that the .tar exists; local resolution then fails it.
 	f, err := os.Create(emptyTarFile)
 	assert.NilError(t, err, "Should create temp .tar file")
 	f.Close()
@@ -202,7 +200,7 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 			name:          "EmptyTarFile",
 			tarFile:       emptyTarFile,
 			shouldSucceed: false,
-			description:   "Empty .tar file should fail during container resolution (not a valid container image)",
+			description:   "Empty .tar file named explicitly must fail the scan",
 		},
 		{
 			name:          "NonExistentTarFile",
@@ -239,8 +237,6 @@ func TestContainerImageValidation_TarFiles(t *testing.T) {
 
 // TestContainerImageValidation_MixedTarAndRegularImages tests mixing .tar files with regular images
 func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
-	// Create a temporary .tar file for testing
-	// Note: An empty tar file is NOT a valid container image
 	tempDir := t.TempDir()
 	emptyTarFile := filepath.Join(tempDir, "test-image.tar")
 
@@ -249,7 +245,6 @@ func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
 	f.Close()
 
 	t.Run("EmptyTarAndRegularImage", func(t *testing.T) {
-		// Empty tar file should fail during container resolution
 		createASTIntegrationTestCommand(t)
 		imageList := fmt.Sprintf("nginx:alpine,%s", emptyTarFile)
 		testArgs := []string{
@@ -262,7 +257,7 @@ func TestContainerImageValidation_MixedTarAndRegularImages(t *testing.T) {
 			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
 		err, _ := executeCommand(t, testArgs...)
-		assert.Assert(t, err != nil, "Expected error for empty tar file mixed with valid images")
+		assert.Assert(t, err != nil, "an unresolved image named explicitly must fail the scan even mixed with a valid one")
 	})
 
 	t.Run("EmptyTarAndInvalidRegularImage", func(t *testing.T) {

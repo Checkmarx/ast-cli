@@ -197,3 +197,56 @@ func Test_runScanASCAWithAscaLocationFlagCommand(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateASCALocationFlags(t *testing.T) {
+	tests := []struct {
+		name       string
+		flagSet    bool
+		flagValue  string
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:      "Test flag not set - should not error",
+			flagSet:   false,
+			flagValue: "",
+			wantErr:   false,
+		},
+		{
+			name:      "Test flag set with valid value - should not error",
+			flagSet:   true,
+			flagValue: "/path/to/vorpal",
+			wantErr:   false,
+		},
+		{
+			name:       "Test flag set with empty value - should error",
+			flagSet:    true,
+			flagValue:  "",
+			wantErr:    true,
+			wantErrMsg: "asca-location flag is provided but empty",
+		},
+		{
+			name:       "Test flag set with whitespace only - should error",
+			flagSet:    true,
+			flagValue:  "   ",
+			wantErr:    true,
+			wantErrMsg: "asca-location flag is provided but empty",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String(commonParams.ASCALocationFlag, tt.flagValue, "")
+			if tt.flagSet {
+				_ = cmd.Flags().Set(commonParams.ASCALocationFlag, tt.flagValue)
+			}
+			err := validateASCALocationFlags(cmd)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateASCALocationFlags() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && err.Error() != tt.wantErrMsg {
+				t.Errorf("validateASCALocationFlags() error message = %v, wantErrMsg %v", err.Error(), tt.wantErrMsg)
+			}
+		})
+	}
+}

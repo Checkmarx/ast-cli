@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -14,6 +15,15 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime/osscache"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
+)
+
+const (
+	pkgManagerGradle    = "gradle"
+	pkgManagerSbt       = "sbt"
+	pkgManagerMvn       = "mvn"
+	pkgManagerCocoapods = "cocoapods"
+	pkgManagerCarthage  = "carthage"
+	pkgManagerSwift     = "swift"
 )
 
 // convertLocations converts models.Location to realtimeengine.Location
@@ -68,6 +78,10 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 		return nil, errorconstants.NewRealtimeEngineError("invalid file path").Error()
 	}
 
+	if err := validateSupportedManifestFile(filePath); err != nil {
+		return nil, err
+	}
+
 	pkgs, err := parseManifest(filePath)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to parse manifest file %s: %v", filePath, err)
@@ -89,11 +103,11 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	if ignoredFilePath != "" {
 		ignoredPkgs, err := loadIgnoredPackages(ignoredFilePath)
 		if err != nil {
-			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored packages").Error()
+			logger.PrintfIfVerbose("oss-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
+			ignoreMap := buildIgnoreMap(ignoredPkgs)
+			response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 		}
-
-		ignoreMap := buildIgnoreMap(ignoredPkgs)
-		response.Packages = filterIgnoredPackages(response.Packages, ignoreMap)
 	}
 
 	return response, nil
@@ -144,7 +158,7 @@ func enrichResponseWithRealtimeScannerResults(
 	for _, pkg := range result.Packages {
 		entry := getPackageEntryFromPackageMap(packageMap, &pkg)
 		response.Packages = append(response.Packages, OssPackage{
-			PackageManager:  pkg.PackageManager,
+			PackageManager:  entry.PackageManager,
 			PackageName:     pkg.PackageName,
 			PackageVersion:  pkg.Version,
 			FilePath:        entry.FilePath,
@@ -166,6 +180,82 @@ func getPackageEntryFromPackageMap(
 		entry = packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, "latest")]
 	}
 	return &entry
+}
+
+// IsSupportedManifestFile reports whether filePath names a manifest file the
+// OSS realtime scanner is able to parse and scan. Exported so other callers
+// (e.g. the agent-hooks SCA guardrails) can gate on the same rule set instead
+// of re-implementing their own list of supported manifest files.
+func IsSupportedManifestFile(filePath string) bool {
+	return validateSupportedManifestFile(filePath) == nil
+}
+
+// validateSupportedManifestFile checks if the manifest file format is supported by OSS realtime scanner.
+func validateSupportedManifestFile(filePath string) error {
+	manifestFileName := filepath.Base(filePath)
+	manifestFileExtension := filepath.Ext(manifestFileName)
+
+	// Check supported extensions
+	supportedExtensions := map[string]bool{
+		".csproj":  true,
+		".sbt":     true,
+		".podspec": true,
+	}
+
+	// Check supported filenames
+	supportedFilenames := map[string]bool{
+		"pom.xml":                  true,
+		"package.json":             true,
+		"bower.json":               true,
+		"Directory.Packages.props": true,
+		"packages.config":          true,
+		"go.mod":                   true,
+		"build.gradle":             true,
+		"build.gradle.kts":         true,
+		"libs.versions.toml":       true,
+		"setup.cfg":                true,
+		"setup.py":                 true,
+		"pyproject.toml":           true,
+		"Podfile":                  true,
+		"Cartfile":                 true,
+		"Cartfile.private":         true,
+		"Gemfile":                  true,
+		"composer.json":            true,
+		"pubspec.yaml":             true,
+		"Package.swift":            true,
+	}
+
+	// Check by extension
+	if supportedExtensions[manifestFileExtension] {
+		return nil
+	}
+
+	// Check by filename
+	if supportedFilenames[manifestFileName] {
+		return nil
+	}
+
+	// Special handling for .txt files (check prefix)
+	if manifestFileExtension == ".txt" {
+		if strings.HasPrefix(manifestFileName, "requirement") ||
+			strings.HasPrefix(manifestFileName, "packages") ||
+			strings.HasPrefix(manifestFileName, "constraint") {
+			return nil
+		}
+	}
+
+	// Special handling for .podspec.json files (CocoaPods pod specifications in JSON format)
+	if strings.HasSuffix(manifestFileName, ".podspec.json") {
+		return nil
+	}
+
+	// Special handling for Package@swift-X.Y.swift multi-toolchain variant files
+	if strings.HasPrefix(manifestFileName, "Package@swift-") && strings.HasSuffix(manifestFileName, ".swift") {
+		return nil
+	}
+
+	// Manifest format is not supported
+	return errorconstants.NewRealtimeEngineError(fmt.Sprintf("OSS Realtime scanner doesn't currently support scanning '%s' file.", manifestFileName)).Error()
 }
 
 // parseManifest parses the manifest file and returns a list of packages.
@@ -220,12 +310,19 @@ func prepareScan(pkgs []models.Package) (*OssPackageResults, *wrappers.RealtimeS
 func createPackageMap(pkgs []models.Package) map[string]OssPackage {
 	packageMap := make(map[string]OssPackage)
 	for _, pkg := range pkgs {
-		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = OssPackage{
+		entry := OssPackage{
 			PackageManager: pkg.PackageManager,
 			PackageName:    pkg.PackageName,
 			PackageVersion: pkg.Version,
 			FilePath:       pkg.FilePath,
 			Locations:      convertLocations(pkg.Locations),
+		}
+		packageMap[generatePackageMapEntry(pkg.PackageManager, pkg.PackageName, pkg.Version)] = entry
+		if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
+			packageMap[generatePackageMapEntry(pkgManagerMvn, pkg.PackageName, pkg.Version)] = entry
+		}
+		if pkg.PackageManager == pkgManagerCocoapods || pkg.PackageManager == pkgManagerCarthage {
+			packageMap[generatePackageMapEntry(pkgManagerSwift, pkg.PackageName, pkg.Version)] = entry
 		}
 	}
 	return packageMap
@@ -277,8 +374,15 @@ func createVersionMapping(requestPackages *wrappers.RealtimeScannerPackageReques
 
 // pkgToRequest transforms a parsed package into a scan request.
 func pkgToRequest(pkg *models.Package) wrappers.RealtimeScannerPackage {
+	pkgManager := pkg.PackageManager
+	if pkg.PackageManager == pkgManagerGradle || pkg.PackageManager == pkgManagerSbt {
+		pkgManager = pkgManagerMvn
+	}
+	if pkg.PackageManager == pkgManagerCocoapods || pkg.PackageManager == pkgManagerCarthage {
+		pkgManager = pkgManagerSwift
+	}
 	return wrappers.RealtimeScannerPackage{
-		PackageManager: pkg.PackageManager,
+		PackageManager: pkgManager,
 		PackageName:    pkg.PackageName,
 		Version:        pkg.Version,
 	}

@@ -1,0 +1,713 @@
+//go:build !integration
+
+package asca
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+
+	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+)
+
+// ── ProposedContent ─────────────────────────────────────────────────────────
+
+func TestProposedContent_FullFileWrite(t *testing.T) {
+	newContent, _, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
+		{Before: "", After: "print('hello')"},
+	}, agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newContent != "print('hello')" {
+		t.Fatalf("want %q, got %q", "print('hello')", newContent)
+	}
+}
+
+func TestProposedContent_FullFileWrite_OriginalEmpty_WhenFileAbsent(t *testing.T) {
+	_, orig, err := ProposedContent("/nonexistent/auth.py", []agenthooks.FileDiff{
+		{Before: "", After: "new content"},
+	}, agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if orig != "" {
+		t.Fatalf("expected empty originalContent for absent file, got %q", orig)
+	}
+}
+
+func TestProposedContent_StringReplaceEdit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.py")
+	if err := os.WriteFile(path, []byte("x = 1\ny = 2\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
+		{Before: "y = 2", After: "y = 99"},
+	}, agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if origContent != "x = 1\ny = 2\n" {
+		t.Fatalf("unexpected orig: %q", origContent)
+	}
+	if newContent != "x = 1\ny = 99\n" {
+		t.Fatalf("unexpected new: %q", newContent)
+	}
+}
+
+func TestProposedContent_MissingBeforeFailsOpen(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.py")
+	if err := os.WriteFile(path, []byte("a = 1\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Before string not present → returns original unchanged
+	newContent, origContent, err := ProposedContent(path, []agenthooks.FileDiff{
+		{Before: "NOTHERE", After: "replacement"},
+	}, agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newContent != origContent {
+		t.Fatalf("expected content unchanged, got %q", newContent)
+	}
+}
+
+func TestProposedContent_MultiEdit(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "app.py")
+	if err := os.WriteFile(path, []byte("a\nb\nc\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	newContent, _, err := ProposedContent(path, []agenthooks.FileDiff{
+		{Before: "a", After: "A"},
+		{Before: "b", After: "B"},
+	}, agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newContent != "A\nB\nc\n" {
+		t.Fatalf("unexpected multi-edit result: %q", newContent)
+	}
+}
+
+// ── stageForScan / safeSessionTag ───────────────────────────────────────────
+
+const wantAnonTag = "anon"
+
+func TestSafeSessionTag_Empty(t *testing.T) {
+	if got := safeSessionTag(""); got != wantAnonTag {
+		t.Fatalf("want anon, got %q", got)
+	}
+}
+
+func TestSafeSessionTag_AllSpecialChars(t *testing.T) {
+	if got := safeSessionTag("!!!???"); got != wantAnonTag {
+		t.Fatalf("want anon, got %q", got)
+	}
+}
+
+func TestSafeSessionTag_UUID(t *testing.T) {
+	got := safeSessionTag("550e8400-e29b-41d4-a716-446655440000")
+	if len(got) > 8 {
+		t.Fatalf("expected ≤8 chars, got %q (len %d)", got, len(got))
+	}
+	for _, r := range got {
+		isAllowedChar := (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') ||
+			(r >= '0' && r <= '9') || r == '-' || r == '_'
+		if !isAllowedChar {
+			t.Fatalf("unexpected char %q in tag %q", r, got)
+		}
+	}
+}
+
+func TestStageForScan_CreatesFileWithOriginalBasename(t *testing.T) {
+	staged, cleanup, err := stageForScan("/some/path/auth.py", "content", "sess123", agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	if filepath.Base(staged) != "auth.py" {
+		t.Fatalf("expected basename auth.py, got %q", filepath.Base(staged))
+	}
+	data, err := os.ReadFile(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "content" {
+		t.Fatalf("file content mismatch: %q", string(data))
+	}
+}
+
+func TestStageForScan_DirNameContainsSessionTag(t *testing.T) {
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "abc123", agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	dir := filepath.Dir(staged)
+	base := filepath.Base(dir)
+	if !strings.Contains(base, "asca-hook-") {
+		t.Fatalf("expected dir name to contain asca-hook-, got %q", base)
+	}
+	if !strings.Contains(base, "abc123") {
+		t.Fatalf("expected dir name to contain session tag, got %q", base)
+	}
+}
+
+func TestStageForScan_CleanupRemovesDir(t *testing.T) {
+	staged, cleanup, err := stageForScan("/tmp/foo.py", "x", "sess", agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Dir(staged)
+	cleanup()
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatal("expected temp dir to be removed after cleanup")
+	}
+}
+
+func TestStageForScan_EmptyOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("", "content", "sess", agenthooks.AgentID("test"))
+	if err == nil {
+		t.Fatal("expected error for empty original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup() // must be safe to call (noop) even on the error path
+}
+
+func TestStageForScan_DotDotOriginalPath_ReturnsError(t *testing.T) {
+	staged, cleanup, err := stageForScan("..", "content", "sess", agenthooks.AgentID("test"))
+	if err == nil {
+		t.Fatal("expected error for '..' original path")
+	}
+	if staged != "" {
+		t.Fatalf("expected empty staged path on error, got %q", staged)
+	}
+	if !strings.Contains(err.Error(), "invalid basename") {
+		t.Fatalf("expected invalid basename error, got %v", err)
+	}
+	cleanup()
+}
+
+func TestStageForScan_FileMode(t *testing.T) {
+	if runtime.GOOS == goosWindows {
+		t.Skip("Unix permission bits (0600) are not enforced on Windows; validated on Linux/macOS CI")
+	}
+	staged, cleanup, err := stageForScan("/tmp/secret.py", "secret", "s1", agenthooks.AgentID("test"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	info, err := os.Stat(staged)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if perm := info.Mode().Perm(); perm != 0o600 {
+		t.Fatalf("expected mode 0600, got %04o", perm)
+	}
+}
+
+// ── NewFindings ──────────────────────────────────────────────────────────────
+
+func scanDetail(ruleID uint32, line string) grpcs.ScanDetail {
+	return grpcs.ScanDetail{
+		RuleID:          ruleID,
+		ProblematicLine: line,
+		Severity:        "HIGH",
+		RuleName:        "test-rule",
+	}
+}
+
+func TestNewFindings_NilOriginalReturnsAll(t *testing.T) {
+	newScan := []grpcs.ScanDetail{scanDetail(1, "bad code")}
+	got := NewFindings(nil, newScan)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 finding, got %d", len(got))
+	}
+}
+
+func TestNewFindings_IdenticalScansReturnsEmpty(t *testing.T) {
+	scan := []grpcs.ScanDetail{scanDetail(42, "subprocess.run(cmd, shell=True)")}
+	got := NewFindings(scan, scan)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 new findings, got %d", len(got))
+	}
+}
+
+func TestNewFindings_NewVulnReturned(t *testing.T) {
+	orig := []grpcs.ScanDetail{scanDetail(1, "line A")}
+	newScan := []grpcs.ScanDetail{
+		scanDetail(1, "line A"),
+		scanDetail(2, "line B"),
+	}
+	got := NewFindings(orig, newScan)
+	if len(got) != 1 || got[0].RuleID != 2 {
+		t.Fatalf("expected finding for ruleID 2, got %v", got)
+	}
+}
+
+func TestNewFindings_OldVulnNotInNewIsIgnored(t *testing.T) {
+	orig := []grpcs.ScanDetail{scanDetail(99, "old line")}
+	newScan := []grpcs.ScanDetail{scanDetail(1, "new line")}
+	got := NewFindings(orig, newScan)
+	if len(got) != 1 || got[0].RuleID != 1 {
+		t.Fatalf("unexpected findings: %v", got)
+	}
+}
+
+func TestNewFindings_TrimSpaceDeduplication(t *testing.T) {
+	// Same rule + same line but with different surrounding whitespace → treated as same
+	orig := []grpcs.ScanDetail{scanDetail(5, "  shell=True  ")}
+	newScan := []grpcs.ScanDetail{scanDetail(5, "shell=True")}
+	got := NewFindings(orig, newScan)
+	if len(got) != 0 {
+		t.Fatalf("expected trimspace dedup, got %d findings", len(got))
+	}
+}
+
+func TestNewFindings_EmptyNewScanReturnsEmpty(t *testing.T) {
+	orig := []grpcs.ScanDetail{scanDetail(1, "x")}
+	got := NewFindings(orig, nil)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 findings, got %d", len(got))
+	}
+}
+
+// ── additionalContext ────────────────────────────────────────────────────────
+
+func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	if !strings.Contains(ctx, "ignore-vulnerability") {
+		t.Errorf("expected ignore-vulnerability command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"FileName":"billing.py"`) {
+		t.Errorf("expected FileName in command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"Line":5`) {
+		t.Errorf("expected Line in command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4059`) {
+		t.Errorf("expected RuleID in command, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_EmitsProvenanceOptionalFlags(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "sess-123")
+	want := ` --optional-flags "aiProvider=Claude;agent=Claude-cli;aiAgentSessionId=sess-123"`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected provenance flags %q in ignore command, got %q", want, ctx)
+	}
+	// Empty agent → no provenance fragment (backward-compatible default).
+	if noAgent := additionalContext("billing.py", "cx", findings, "", "", ""); strings.Contains(noAgent, "--optional-flags") {
+		t.Errorf("expected no --optional-flags when agent is empty, got %q", noAgent)
+	}
+}
+
+func TestAdditionalContext_FileNameWithPercent_NotMisformatted(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a%s.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("a%s.py", "cx", findings, "", "Claude", "sess-1")
+	if strings.Contains(ctx, "%!s") || strings.Contains(ctx, "MISSING") {
+		t.Errorf("a %%-containing filename leaked a format verb into the output: %q", ctx)
+	}
+	if !strings.Contains(ctx, `"FileName":"a%s.py"`) {
+		t.Errorf("expected the literal filename in the ignore command, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_MultipleFindings_EachGetsCommand(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+		{FileName: "billing.py", Line: 12, RuleID: 4027},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	if strings.Count(ctx, "ignore-vulnerability") != 2 {
+		t.Errorf("expected 2 ignore commands for 2 findings, got: %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4059`) {
+		t.Errorf("expected RuleID 4059, got %q", ctx)
+	}
+	if !strings.Contains(ctx, `"RuleID":4027`) {
+		t.Errorf("expected RuleID 4027, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_EmptyFindings_StillContainsRemediationInstruction(t *testing.T) {
+	ctx := additionalContext("main.py", "cx", nil, "", "Claude", "")
+	if !strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("expected codeRemediation instruction even with no findings, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_UsesPluginMCPTool(t *testing.T) {
+	ctx := cursorAdditionalContext("main.py", "cx", nil, "", "")
+	if !strings.Contains(ctx, "mcp__plugin-cx-devassist-Checkmarx__codeRemediation") {
+		t.Errorf("expected plugin-prefixed MCP tool, got %q", ctx)
+	}
+}
+
+func TestCursorAdditionalContext_CursorSuppressCommandUsesStopParsingOnWindows(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "Demo.java", Line: 5, RuleID: 1027}}
+	ctx := cursorAdditionalContext("Demo.java", "cx", findings, "", "sess-1")
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
+			t.Errorf("expected PowerShell stop-parsing on windows, got %q", ctx)
+		}
+		if strings.Contains(ctx, `""FileName""`) {
+			t.Errorf("must not use doubled-quote escaping, got %q", ctx)
+		}
+		if !strings.Contains(ctx, `\"FileName\"`) {
+			t.Errorf("expected backslash-escaped JSON in stop-parsing form, got %q", ctx)
+		}
+	}
+}
+
+func TestCursorEscapeJSON_MatchesTheShellCursorActuallyRunsOn(t *testing.T) {
+	got := cursorEscapeJSON(`{"FileName":"Demo.java"}`)
+	if runtime.GOOS == goosWindows {
+		// PowerShell double-quoted strings escape an embedded `"` by doubling it; a
+		// backslash is not a quote-escape there, so `\"` would corrupt the command.
+		want := `{""FileName"":""Demo.java""}`
+		if got != want {
+			t.Errorf("expected doubled-quote escaping on windows (PowerShell), got %q", got)
+		}
+	} else {
+		want := `{\"FileName\":\"Demo.java\"}`
+		if got != want {
+			t.Errorf("expected backslash-escaped quotes on unix (bash), got %q", got)
+		}
+	}
+}
+
+func TestFormatFindings_RoutesCursorQuoting(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
+	_, ctx := formatFindings("a.py", findings, "", "Cursor", "sess-1")
+	if runtime.GOOS == goosWindows {
+		if !strings.Contains(ctx, `--% ignore-vulnerability`) {
+			t.Fatalf("cursor agent on windows should get stop-parsing suppress command, got %q", ctx)
+		}
+	} else if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data "`) {
+		t.Fatalf("cursor agent on unix should get double-quoted suppress command, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "mcp__plugin-cx-devassist-Checkmarx__codeRemediation") {
+		t.Fatalf("cursor agent should get plugin MCP tool name, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", "Claude", "sess-1")
+	if !strings.Contains(ctx, `ignore-vulnerability --scan-type asca --data '`) {
+		t.Fatalf("claude agent should get single-quoted suppress command, got %q", ctx)
+	}
+	if runtime.GOOS == goosWindows && strings.Contains(ctx, `\"FileName\"`) {
+		t.Fatalf("claude agent should not use QuoteDataFlag Windows escaping, got %q", ctx)
+	}
+	_, ctx = formatFindings("a.py", findings, "", agentGemini, "sess-1")
+	if !strings.Contains(ctx, "ignore-vulnerability --scan-type asca --data "+ignore.QuoteDataFlag([]byte(`{"FileName":"a.py","Line":1,"RuleID":1}`))) {
+		t.Fatalf("gemini agent should get QuoteDataFlag suppress command, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_PinsIgnoredFilePathToWorkDir(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	workDir := filepath.Join("repo", "ws")
+	ctx := additionalContext("billing.py", "cx", findings, workDir, "Claude", "")
+	want := "--ignored-file-path '" + ignore.PathFor(workDir) + "'"
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected context to pin %q, got %q", want, ctx)
+	}
+}
+
+func TestAdditionalContext_EmptyWorkDirOmitsIgnoredFilePath(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	if strings.Contains(ctx, "--ignored-file-path") {
+		t.Errorf("expected no ignored-file-path flag for empty workDir, got %q", ctx)
+	}
+}
+
+// ── isSupportedByASCA ────────────────────────────────────────────────────────
+
+func TestIsSupportedByASCA(t *testing.T) {
+	tests := []struct {
+		path string
+		want bool
+	}{
+		{"main.py", true},
+		{"main.PY", true},
+		{"App.java", true},
+		{"index.js", true},
+		{"component.tsx", true},
+		{"Program.cs", true},
+		{"server.go", true},
+		{"readme.md", false},
+		{"data.json", false},
+		{"noextension", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, tt.want, isSupportedByASCA(tt.path))
+		})
+	}
+}
+
+// ── ScanFileEdit fail-open branches ──────────────────────────────────────────
+
+func TestScanFileEdit_UnsupportedExtension_ReturnsFalse(t *testing.T) {
+	blocked, reason, context, _ := ScanFileEdit(&agenthooks.FileEditEvent{FilePath: "notes.txt"}, nil, "Claude")
+	assert.False(t, blocked)
+	assert.Empty(t, reason)
+	assert.Empty(t, context)
+}
+
+func TestScanFileEdit_EmptyProposedContent_ReturnsFalse(t *testing.T) {
+	ev := agenthooks.FileEditEvent{
+		FilePath: filepath.Join(t.TempDir(), "empty.py"),
+		Changes:  []agenthooks.FileDiff{{Before: "", After: ""}},
+	}
+	blocked, reason, context, _ := ScanFileEdit(&ev, nil, "Claude")
+	assert.False(t, blocked)
+	assert.Empty(t, reason)
+	assert.Empty(t, context)
+}
+
+// ── existingIgnoreFilePath ───────────────────────────────────────────────────
+
+func TestExistingIgnoreFilePath_FileMissing_ReturnsEmpty(t *testing.T) {
+	assert.Empty(t, existingIgnoreFilePath(t.TempDir()))
+}
+
+func TestExistingIgnoreFilePath_FileExists_ReturnsPath(t *testing.T) {
+	workDir := t.TempDir()
+	ignorePath := ignore.PathFor(workDir)
+	assert.NoError(t, os.MkdirAll(filepath.Dir(ignorePath), 0o755))
+	assert.NoError(t, os.WriteFile(ignorePath, []byte("[]"), 0o600))
+
+	assert.Equal(t, ignorePath, existingIgnoreFilePath(workDir))
+}
+
+// ── shouldUpdateVersion ──────────────────────────────────────────────────────
+
+func TestShouldUpdateVersion_DefaultTrue(t *testing.T) {
+	viper.Set(params.DisableASCALatestVersionKey, "")
+	defer viper.Set(params.DisableASCALatestVersionKey, "")
+
+	assert.True(t, shouldUpdateVersion())
+}
+
+func TestShouldUpdateVersion_DisabledReturnsFalse(t *testing.T) {
+	viper.Set(params.DisableASCALatestVersionKey, "true")
+	defer viper.Set(params.DisableASCALatestVersionKey, "")
+
+	assert.False(t, shouldUpdateVersion())
+}
+
+// ── logASCATelemetry ─────────────────────────────────────────────────────────
+
+func TestLogASCATelemetry_NilWrapper_NoOp(t *testing.T) {
+	assert.NotPanics(t, func() {
+		logASCATelemetry(nil, "Claude", "", 3)
+	})
+}
+
+func TestLogASCATelemetry_ZeroCount_DoesNotSend(t *testing.T) {
+	sent := false
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			sent = true
+			return nil
+		},
+	}
+	logASCATelemetry(telemetry, "Claude", "", 0)
+	assert.False(t, sent)
+}
+
+func TestLogASCATelemetry_WithFindings_Sends(t *testing.T) {
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logASCATelemetry(telemetry, "Claude", "", 2)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "Asca", captured.Engine)
+	assert.Equal(t, 2, captured.TotalCount)
+	assert.Equal(t, "Claude", captured.AIProvider)
+}
+
+// ── findingsSummary / formatFindings ─────────────────────────────────────────
+
+func TestFindingsSummary_IncludesRemediation(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10, Remediation: "use parameterized queries"},
+	}
+	summary := findingsSummary(findings)
+	assert.Contains(t, summary, "a.py line 3 [HIGH] sql-injection (rule_id 10) — use parameterized queries")
+}
+
+func TestFindingsSummary_MissingRemediation_UsesDefaultText(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10},
+	}
+	summary := findingsSummary(findings)
+	assert.Contains(t, summary, "No remediation provided")
+}
+
+func TestFormatFindings_ReturnsReasonAndContext(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "a.py", Line: 3, Severity: "HIGH", RuleName: "sql-injection", RuleID: 10},
+	}
+	reason, context := formatFindings("a.py", findings, "", "Claude", "")
+	assert.Contains(t, reason, "ASCA security scan detected vulnerabilities in a.py")
+	assert.Contains(t, reason, "sql-injection")
+	assert.Contains(t, context, "ASCA detected vulnerabilities in a.py")
+	assert.Contains(t, context, "ignore-vulnerability")
+}
+
+// ── highestSeverity comprehensive coverage ──────────────────────────────────
+
+func TestHighestSeverity_Critical(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Medium"},
+		{Severity: "Critical"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Critical", got)
+}
+
+func TestHighestSeverity_High(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "High"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "High", got)
+}
+
+func TestHighestSeverity_Medium(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Medium"},
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Medium", got)
+}
+
+func TestHighestSeverity_Low(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Low"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Low", got)
+}
+
+func TestHighestSeverity_Empty(t *testing.T) {
+	got := highestSeverity(nil)
+	assert.Empty(t, got)
+}
+
+func TestHighestSeverity_UnknownSeverity_Ignored(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Unknown"},
+		{Severity: "Medium"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Medium", got)
+}
+
+func TestHighestSeverity_AllUnknown_ReturnsEmpty(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Unknown"},
+		{Severity: "Mysterious"},
+	}
+	got := highestSeverity(findings)
+	assert.Empty(t, got)
+}
+
+func TestHighestSeverity_CriticalAndHigh_CriticalWins(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "High"},
+		{Severity: "Critical"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "Critical", got)
+}
+
+func TestHighestSeverity_MixedValidAndInvalid(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{Severity: "Invalid"},
+		{Severity: "High"},
+		{Severity: "Unknown"},
+	}
+	got := highestSeverity(findings)
+	assert.Equal(t, "High", got)
+}
+
+func TestAdditionalContext_GeminiUsesGeminiSkillAndMCPTool(t *testing.T) {
+	ctx := additionalContext("main.py", "cx", nil, "", agentGemini, "")
+	if !strings.Contains(ctx, "/cx-security-asca") {
+		t.Errorf("expected Gemini skill path, got %q", ctx)
+	}
+	if !strings.Contains(ctx, "mcp_Checkmarx_codeRemediation") {
+		t.Errorf("expected Gemini MCP tool name, got %q", ctx)
+	}
+	if strings.Contains(ctx, "mcp__Checkmarx__codeRemediation") {
+		t.Errorf("Claude MCP tool name should not appear for Gemini, got %q", ctx)
+	}
+}
+
+func TestAdditionalContext_GeminiUsesQuoteDataFlag(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	data := []byte(`{"FileName":"billing.py","Line":5,"RuleID":4059}`)
+	ctx := additionalContext("billing.py", "cx", findings, "", agentGemini, "")
+	want := "ignore-vulnerability --scan-type asca --data " + ignore.QuoteDataFlag(data)
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected Gemini suppress command %q, got %q", want, ctx)
+	}
+}
+
+func TestAdditionalContext_OtherAgentsUseUnescapedData(t *testing.T) {
+	findings := []grpcs.ScanDetail{
+		{FileName: "billing.py", Line: 5, RuleID: 4059},
+	}
+	ctx := additionalContext("billing.py", "cx", findings, "", "Claude", "")
+	want := `ignore-vulnerability --scan-type asca --data '{"FileName":"billing.py","Line":5,"RuleID":4059}'`
+	if !strings.Contains(ctx, want) {
+		t.Errorf("expected other agents to use unescaped --data %q, got %q", want, ctx)
+	}
+}

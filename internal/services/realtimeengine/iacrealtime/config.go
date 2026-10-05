@@ -9,6 +9,7 @@ type IacRealtimeResult struct {
 	ExpectedValue string                    `json:"ExpectedValue"`
 	ActualValue   string                    `json:"ActualValue"`
 	Severity      string                    `json:"Severity"`
+	Platform      string                    `json:"Platform"`
 	FilePath      string                    `json:"FilePath"`
 	Locations     []realtimeengine.Location `json:"Locations"`
 }

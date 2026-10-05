@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"sync"
 
@@ -11,7 +12,8 @@ import (
 )
 
 const (
-	BatchSize = 200
+	// BatchSize must not exceed the sast-metadata backend's per-request scan-ids cap (currently 50).
+	BatchSize = 50
 )
 
 func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scanIDs []string) (*wrappers.SastMetadataModel, error) {
@@ -21,7 +23,7 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 
 	var wg sync.WaitGroup
 	results := make(chan wrappers.SastMetadataModel, totalBatches)
-	errors := make(chan error, totalBatches)
+	errCh := make(chan error, totalBatches)
 	ctx := context.Background()
 
 	for i := 0; i < totalBatches; i++ {
@@ -46,21 +48,23 @@ func GetSastMetadataByIDs(sastMetaDataWrapper wrappers.SastMetadataWrapper, scan
 
 			result, err := sastMetaDataWrapper.GetSastMetadataByIDs(batchParams)
 			if err != nil {
-				errors <- err
+				errCh <- err
 				return
 			}
 			results <- *result
 		}()
 	}
 
-	go func() {
-		wg.Wait()
-		close(results)
-		close(errors)
-	}()
+	wg.Wait()
+	close(results)
+	close(errCh)
 
-	if len(errors) > 0 {
-		return nil, <-errors
+	if len(errCh) > 0 {
+		var batchErrs []error
+		for batchErr := range errCh {
+			batchErrs = append(batchErrs, batchErr)
+		}
+		return nil, errors.Join(batchErrs...)
 	}
 
 	var models []wrappers.SastMetadataModel

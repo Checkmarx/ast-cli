@@ -21,14 +21,14 @@ func TestInstallOrUpgrade_firstInstallation_Success(t *testing.T) {
 
 func firstInstallation() error {
 	os.RemoveAll(ascaconfig.Params.WorkingDir())
-	_, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params)
+	_, err := osinstaller.InstallOrUpgrade(&ascaconfig.Params, nil)
 	return err
 }
 
 func TestInstallOrUpgrade_installationIsUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
 	assert.NilError(t, err, "Error on first installation of asca")
-	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params)
+	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params, nil)
 	assert.NilError(t, err, "Error when not need to upgrade")
 }
 
@@ -36,7 +36,7 @@ func TestInstallOrUpgrade_installationIsNotUpToDate_Success(t *testing.T) {
 	err := firstInstallation()
 	assert.NilError(t, err, "Error on first installation of asca")
 	changeHashFile()
-	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params)
+	_, err = osinstaller.InstallOrUpgrade(&ascaconfig.Params, nil)
 	assert.NilError(t, err, "Error when need to upgrade")
 	fileExists, _ := osinstaller.FileExists(ascaconfig.Params.ExecutableFilePath())
 	assert.Assert(t, fileExists, "Executable file not found")

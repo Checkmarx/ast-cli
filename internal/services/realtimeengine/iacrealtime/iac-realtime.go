@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -102,10 +103,11 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 	if ignoredFilePath != "" {
 		ignored, err := loadIgnoredIacFindings(ignoredFilePath)
 		if err != nil {
-			return nil, errorconstants.NewRealtimeEngineError("failed to load ignored IaC findings").Error()
+			logger.PrintfIfVerbose("iac-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
+		} else {
+			ignoreMap := buildIgnoreMap(ignored)
+			results = filterIgnoredFindings(results, ignoreMap)
 		}
-		ignoreMap := buildIgnoreMap(ignored)
-		results = filterIgnoredFindings(results, ignoreMap)
 	}
 
 	return results, nil
@@ -172,6 +174,25 @@ func engineNameResolution(engineName, fallBackDir string) (string, error) {
 	checkedPaths := make([]string, len(fallbackPaths))
 	copy(checkedPaths, fallbackPaths)
 	return "", errors.Errorf("%s not found in PATH or in fallback locations: %v", engineName, checkedPaths)
+}
+
+// IsEngineInstalled reports whether engineName can be resolved on this OS (PATH,
+// plus the macOS GUI fallback paths engineNameResolution knows about), regardless
+// of whether the daemon is running.
+func IsEngineInstalled(engineName string) bool {
+	_, err := engineNameResolution(engineName, IacEnginePath)
+	return err == nil
+}
+
+// IsEngineRunning reports whether engineName is usable right now: resolvable on
+// this OS (PATH, plus the macOS GUI fallback paths engineNameResolution knows
+// about) AND with a responding daemon.
+func IsEngineRunning(engineName string) bool {
+	enginePath, err := engineNameResolution(engineName, IacEnginePath)
+	if err != nil {
+		return false
+	}
+	return daemonResponds(enginePath)
 }
 
 // getFallbackPaths returns a list of paths to check for the container engine

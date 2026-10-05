@@ -1,4 +1,4 @@
-FROM checkmarx/bash:5.3-r12-02a1aad732e7ab@sha256:02a1aad732e7ab0659b212d83c2a0bb548d9d8bdec23336f6c0b44f8f3435cb8
+FROM checkmarx/bash:5.3-r13-f99a9136837d1b@sha256:63716ceab566d449b6c1de5032f0ca1e6da5ffa8627b419941f07b35451e3626
 USER nonroot
 
 COPY cx /app/bin/cx

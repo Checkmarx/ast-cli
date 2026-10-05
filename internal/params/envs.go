@@ -24,6 +24,7 @@ const (
 	CodeBashingPathEnv                  = "CX_CODEBASHING_PATH"
 	GroupsPathEnv                       = "CX_GROUPS_PATH"
 	AgentNameEnv                        = "CX_AGENT_NAME"
+	HooksContainerEngineEnv             = "CX_HOOKS_CONTAINER_ENGINE"
 	OriginEnv                           = "CX_ORIGIN"
 	ProjectsPathEnv                     = "CX_PROJECTS_PATH"
 	ApplicationsPathEnv                 = "CX_APPLICATIONS_PATH"

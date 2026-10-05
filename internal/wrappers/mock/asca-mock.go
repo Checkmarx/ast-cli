@@ -11,7 +11,8 @@ var (
 )
 
 type ASCAMockWrapper struct {
-	Port int
+	Port       int
+	CustomScan func(fileName, sourceCode string) (*grpcs.ScanResult, error)
 }
 
 func NewASCAMockWrapper(port int) *ASCAMockWrapper {
@@ -19,6 +20,9 @@ func NewASCAMockWrapper(port int) *ASCAMockWrapper {
 }
 
 func (v *ASCAMockWrapper) Scan(fileName, sourceCode string) (*grpcs.ScanResult, error) {
+	if v.CustomScan != nil {
+		return v.CustomScan(fileName, sourceCode)
+	}
 	if fileName == "csharp-no-vul.cs" {
 		return ReturnFailureResponseMock(), nil
 	}

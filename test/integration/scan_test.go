@@ -656,6 +656,28 @@ func TestIncrementalScan(t *testing.T) {
 	executeScanAssertions(t, projectIDInc, scanIDInc, map[string]string{})
 }
 
+func TestIncrementalScanWithBaseBranch(t *testing.T) {
+	projectName := getProjectNameForScanTests()
+	baselineBaseBranch := SlowRepoBranch
+
+	baselineArgs := append(getCreateArgsWithName(Dir, map[string]string{}, projectName, "sast"),
+		flag(params.BranchFlag), baselineBaseBranch)
+	baselineScanID, baselineProjectID := executeCreateScan(t, baselineArgs)
+
+	incrementalArgs := append(getCreateArgsWithName(Dir, map[string]string{}, projectName, "sast,sca,iac-security"),
+		flag(params.BranchFlag), baselineBaseBranch,
+		"--sast-incremental", "--base-branch", baselineBaseBranch)
+	incrementalScanID, projectIDInc := executeCreateScan(t, incrementalArgs)
+
+	assert.Assert(t, baselineProjectID == projectIDInc, "Project IDs should match")
+
+	scan := showScan(t, incrementalScanID)
+	assert.Equal(t, scan.SastIncremental, "Incremental", "scan created with --base-branch should display as Incremental")
+
+	executeScanAssertions(t, baselineProjectID, baselineScanID, map[string]string{})
+	executeScanAssertions(t, baselineProjectID, incrementalScanID, map[string]string{})
+}
+
 func TestBranchPrimaryFlag(t *testing.T) {
 	projectName := getProjectNameForScanTests()
 	scanID, projectID := createScanWithPrimaryBranchFlag(t, Dir, projectName, map[string]string{})
@@ -1375,7 +1397,7 @@ func TestRunKicsScanWithAdditionalParams(t *testing.T) {
 }
 
 func TestRunScaRealtimeScan(t *testing.T) {
-	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory}
+	args := []string{scanCommand, "sca-realtime", "--project-dir", projectDirectory, flag(params.DebugFlag)}
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err)
@@ -2164,8 +2186,7 @@ func TestCreateAsyncScan_ChangedCachedTokenAndPollingScanStatus_Success(t *testi
 	}
 	scanID, _ := executeCreateScan(t, args)
 	scanWrapper := wrappers.NewHTTPScansWrapper(viper.GetString(params.ScansPathKey))
-	wrappers.CachedAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4"
-	wrappers.CachedAccessTime = time.Now()
+	wrappers.SetCachedAccessTokenForTest("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMiwiaXNzIjoiaHR0cHM6Ly9kZXUuaWFtLmNoZWNrbWFyeC5uZXQvYXV0aC9yZWFsbXMvZ2FsYWN0aWNhIiwiYXN0LWJhc2UtdXJsIjoiaHR0cHM6Ly9kZXUuYXN0LmNoZWNrbWFyeC5uZXQifQ.j0MMhLKBkmvJ_vz5xjvvut5UfN7OJVPqV-RwJ3NdKD4")
 	viper.Set(params.TokenExpirySecondsKey, 300)
 	scan, _, err := scanWrapper.GetByID(scanID)
 	asserts.Nil(t, err)
@@ -2746,4 +2767,262 @@ func TestCreateScan_AsMultipartUpload_Success(t *testing.T) {
 	assert.NilError(t, err)
 	log.SetOutput(os.Stderr)
 	assert.Assert(t, strings.Contains(buf.String(), "Uploading source code in multiple parts"), "Test for uploading file in multiple parts failed.")
+}
+
+// Scenario 1: Test scan creation with a project already associated with an application
+// Pre-condition: Project and application exist and are already linked
+// Verifies the CLI skips reassociation and logs the expected message during scan creation.
+func TestScanCreate_ProjectAlreadyAssociatedWithApplication_SkipsAssociation(t *testing.T) {
+	// Capture debug output to verify log messages
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "TestProjectAppAssign", // Pre-existing project
+		flag(params.ApplicationName), "TestApplicationProAssign", // Pre-existing, already associated application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "main",
+		flag(params.DebugFlag),
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with already-associated project and application should succeed")
+
+	logOutput := buf.String()
+	assert.Assert(t, strings.Contains(logOutput, "Project is already associated with the application. Skipping association"),
+		"Expected log message about skipping association not found. Log output: %s", logOutput)
+}
+
+// Scenario 2: Create a scan with a new project and an existing application
+// Pre-condition: Application already exists
+// Verifies the project is created, linked to the application, and a success message is logged.
+func TestScanCreate_NewProjectWithExistingApplication_SuccessfullyUpdatesApplication(t *testing.T) {
+	// Capture debug output to verify log messages
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_, projectName := createNewProject(t, nil, nil, GenerateRandomProjectNameForScan())
+	defer deleteProjectByName(t, projectName)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName, // NEW project (created at runtime)
+		flag(params.ApplicationName), "TestApplicationForProject", // PRE-EXISTING application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.BranchFlag), "main",
+		flag(params.DebugFlag),
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with new project and existing application should succeed")
+
+	logOutput := buf.String()
+	assert.Assert(t, strings.Contains(logOutput, "Successfully updated the application"),
+		"Expected log message about successful application update not found. Log output: %s", logOutput)
+}
+
+// Scenario 3: Test scan creation using manually provided existing project and application with --branch-primary and --project-tags.
+// Verifies that project parameters are updated successfully (when application-level query override is performed) and the scan completes without errors.
+// this test only validates successful execution, not specific log messages.
+func TestScanCreate_ProjectAlreadyAssociatedWithApplication_BranchPrimaryQueryOverride(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), "TestProjectQueryOverride", // Pre-existing, manually provided project
+		flag(params.ApplicationName), "TestApplicationQueryOverride", // Pre-existing, manually provided application
+		flag(params.SourcesFlag), "data/sources-gitignore.zip",
+		flag(params.ScanTypes), "sast,iac-security", // Scan types as comma-separated value
+		flag(params.BranchFlag), "main",
+		flag(params.BranchPrimaryFlag), // Branch primary flag
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+
+	err, _ := executeCommand(t, args...)
+	assert.NilError(t, err, "Scan creation with branch-primary and query override flags should succeed without error")
+}
+
+// Create a scan using the Ant-style filter (--file-filter-ext) against the
+// existing test/integration/data folder.
+// Assert only files matching the include pattern are kept, and the excluded
+// "manifests" directory (which also contains .json files) is dropped even
+// though its nested files would otherwise match the include pattern.
+func TestScanCreateAntFilterIncludeAndExcludeDirectory(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.AntFilterFlag), "**/*.json,!manifests/**",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with --file-filter-ext include/exclude should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "results.json"),
+		"top-level .json files should be included by the ant filter",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "manifests/") && strings.Contains(logText, "Excluded"),
+		"the manifests/ directory should be excluded by the ant filter, even though it contains .json files",
+	)
+}
+
+// Create a scan using the Ant-style filter with a negation rule that
+// re-includes a subset of an otherwise excluded directory.
+// Assert the re-included direct child is kept while a nested (two-level-deep)
+// file under the same directory remains excluded, and a non-json sibling
+// file is also excluded.
+func TestScanCreateAntFilterExcludeDirectoryWithReinclude(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.AntFilterFlag), "!manifests/**,manifests/*.json",
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with --file-filter-ext negation re-include should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "manifests/package.json"),
+		"manifests/package.json should be re-included by the negation rule (direct child)",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Excluded") &&
+			strings.Contains(logText, "manifests/no_dep_packageJson"),
+		"manifests/no_dep_packageJson/package.json is two levels deep and should remain excluded",
+	)
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Excluded") && strings.Contains(logText, "requirements.txt"),
+		"manifests/requirements.txt is not json and should remain excluded",
+	)
+}
+
+// Case 00280970: whitelist filtering (--file-include) must be case-agnostic.
+// Add an inclusion for an uppercase extension pattern and assert real files
+// on disk with the lowercase extension (under test/integration/data, which
+// has .txt files not covered by the default scannable extension list) are
+// still picked up.
+func TestScanCreateIncludeFilterIsCaseInsensitive(t *testing.T) {
+	_, projectName := getRootProject(t)
+
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), projectName,
+		flag(params.SourcesFlag), "data",
+		flag(params.ScanTypes), params.IacType,
+		flag(params.IncludeFilterFlag), "*.TXT", // uppercase pattern; actual files on disk are lowercase .txt
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan creation with uppercase --file-include pattern should succeed")
+
+	logText := buf.String()
+
+	assert.Assert(
+		t,
+		strings.Contains(logText, "Included: ") && strings.Contains(logText, "broken_link.txt"),
+		"uppercase --file-include pattern *.TXT should still match lowercase .txt files on disk",
+	)
+}
+
+// Directory source with --skip-default-filter should scan successfully
+func TestScanCreateSkipDefaultFilterDirectory(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Dir,
+		flag(params.ScanTypes), params.SastType,
+		flag(params.SkipDefaultFilterFlag),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	// Capture log output to assert the skip-default-filter code path actually ran
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	executeCmdWithTimeOutNilAssertion(t, "Skip default filter scan should complete", timeout, args...)
+
+	assert.Assert(t, strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base exclude file filter."),
+		"expected skip-default-filter log line to be printed")
+	assert.Assert(t, strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base include file filter."),
+		"expected skip-default-filter log line to be printed")
+}
+
+// Zip source with --skip-default-filter should scan successfully
+func TestScanCreateSkipDefaultFilterZip(t *testing.T) {
+	args := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), Zip,
+		flag(params.ScanTypes), params.SastType,
+		flag(params.SkipDefaultFilterFlag),
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.DebugFlag),
+	}
+
+	// Capture log output to assert the skip-default-filter code path actually ran
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	executeCmdWithTimeOutNilAssertion(t, "Skip default filter zip scan should complete", timeout, args...)
+
+	assert.Assert(t, !strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base exclude file filter."),
+		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
+	assert.Assert(t, !strings.Contains(buf.String(),
+		"--skip-default-filter set: skipping default base include file filter."),
+		"The skip-default-filter log line should not be printed as expected; however, the ZIP file is not being extracted because the --skip-default-filter flag is passed.")
 }

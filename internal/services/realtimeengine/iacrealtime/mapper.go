@@ -45,6 +45,7 @@ func (m *Mapper) ConvertKicsToIacResults(
 				ExpectedValue: loc.ExpectedValue,
 				ActualValue:   loc.ActualValue,
 				Severity:      m.mapSeverity(result.Severity),
+				Platform:      result.Platform,
 				FilePath:      filePath,
 				SimilarityID:  loc.SimilarityID,
 				Locations: []realtimeengine.Location{

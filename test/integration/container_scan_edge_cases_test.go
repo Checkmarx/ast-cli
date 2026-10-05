@@ -50,8 +50,6 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("EmptyTarFile", func(t *testing.T) {
-		// Create an empty .tar file
-		// Note: An empty tar file is NOT a valid container image, so container resolution will fail
 		tarFile := filepath.Join(tempDir, "test-container.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -65,10 +63,9 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 			flag(params.ContainerImagesFlag), tarFile,
 			flag(params.BranchFlag), "dummy_branch",
 			flag(params.ScanTypes), params.ContainersTypeFlag,
-			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
-		err, _ = executeCommand(t, testArgs...)
-		assert.Assert(t, err != nil, "Expected error for empty tar file (not a valid container image)")
+		scanErr, _ := executeCommand(t, testArgs...)
+		assert.Assert(t, scanErr != nil, "an empty tar named explicitly must fail the scan")
 	})
 
 	t.Run("NonExistentTarFile", func(t *testing.T) {
@@ -88,8 +85,6 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 	})
 
 	t.Run("EmptyTarFileWithOtherImages", func(t *testing.T) {
-		// Create an empty .tar file
-		// Note: An empty tar file is NOT a valid container image, so container resolution will fail
 		tarFile := filepath.Join(tempDir, "another-test.tar")
 		f, err := os.Create(tarFile)
 		assert.NilError(t, err)
@@ -103,11 +98,51 @@ func TestContainerScan_TarFileValidation(t *testing.T) {
 			flag(params.ContainerImagesFlag), "nginx:alpine," + tarFile,
 			flag(params.BranchFlag), "dummy_branch",
 			flag(params.ScanTypes), params.ContainersTypeFlag,
-			flag(params.ScanInfoFormatFlag), printer.FormatJSON,
 		}
-		err, _ = executeCommand(t, testArgs...)
-		assert.Assert(t, err != nil, "Expected error for empty tar file mixed with other images")
+		scanErr, _ := executeCommand(t, testArgs...)
+		assert.Assert(t, scanErr != nil, "an unresolved image named explicitly must fail the scan even mixed with a valid one")
 	})
+}
+
+// Exercises the real containers-resolver: a Dockerfile-discovered unresolved image must warn,
+// not fail the scan.
+func TestContainerScan_DiscoveredOnlyFailureWarnsButSucceeds(t *testing.T) {
+	sourceDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM debian:non-existent-tag-999\n"), 0o600))
+
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), sourceDir,
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally, no --container-images
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+		flag(params.ScanInfoFormatFlag), printer.FormatJSON,
+	}
+	scanID, projectID := executeCreateScan(t, testArgs)
+	assert.Assert(t, scanID != "", "a discovered-only unresolved image must not fail scan create")
+	assert.Assert(t, projectID != "", "a discovered-only unresolved image must not fail scan create")
+}
+
+// A requested and a discovered failure together: the requested one must still fail the scan.
+func TestContainerScan_RequestedAndDiscoveredFailuresTogether(t *testing.T) {
+	sourceDir := t.TempDir()
+	assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, "Dockerfile"), []byte("FROM alpine:non-existent-discovered-tag\n"), 0o600))
+
+	createASTIntegrationTestCommand(t)
+	testArgs := []string{
+		"scan", "create",
+		flag(params.ProjectName), getProjectNameForScanTests(),
+		flag(params.SourcesFlag), sourceDir,
+		flag(params.ContainerImagesFlag), "debian:non-existent-tag-999",
+		flag(params.ContainerResolveLocallyFlag), // Enable resolve locally
+		flag(params.BranchFlag), "dummy_branch",
+		flag(params.ScanTypes), params.ContainersTypeFlag,
+	}
+	scanErr, _ := executeCommand(t, testArgs...)
+	assert.Assert(t, scanErr != nil, "the explicitly requested unresolved image must fail the scan even alongside a merely-discovered one")
+	assertError(t, scanErr, "debian:non-existent-tag-999")
 }
 
 // TestContainerScan_SpecialCharactersInImageNames tests handling of special characters

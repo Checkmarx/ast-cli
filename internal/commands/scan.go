@@ -22,15 +22,19 @@ import (
 	"time"
 	"unicode"
 
+	syftExtractor "github.com/Checkmarx/containers-syft-packages-extractor/pkg/syftPackagesExtractor"
+	"github.com/Checkmarx/containers-types/types"
 	"github.com/checkmarx/ast-cli/internal/commands/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/scarealtime"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	"github.com/checkmarx/ast-cli/internal/constants"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/filtering"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/osinstaller"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
@@ -59,13 +63,14 @@ const (
 	containerImagesFlagError = "--container-images flag error"
 
 	git                                     = "git"
+	gitFolderName                           = ".git"
 	invalidSSHSource                        = "provided source does not need a key. Make sure you are defining the right source or remove the flag --ssh-key"
 	errorUnzippingFile                      = "an error occurred while unzipping file. Reason: "
 	containerRun                            = "run"
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics:v2.1.20"
+	containerImage                          = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -91,6 +96,7 @@ const (
 	configFilterKey                         = "filter"
 	configFilterPlatforms                   = "platforms"
 	configIncremental                       = "incremental"
+	configBaseBranch                        = "baseBranch"
 	configFastScan                          = "fastScanMode"
 	configLightQueries                      = "lightQueries"
 	configRecommendedExclusions             = "recommendedExclusions"
@@ -118,10 +124,13 @@ const (
 		"\nIf you think that you have already purchased the relevant license, please contact our support team for assistance." +
 		"\nLicensed packages: %s"
 	containerResolutionFileName = "containers-resolution.json"
-	directoryCreationPrefix     = "cx-"
-	ScsScoreCardType            = "scorecard"
-	ScsSecretDetectionType      = "secret-detection"
-	ScsRepoRequiredMsg          = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
+	// containerResolutionStatusFailed is the status the resolver writes into
+	// containers-resolution.json for an image it could not analyze.
+	containerResolutionStatusFailed = "Failed"
+	directoryCreationPrefix         = "cx-"
+	ScsScoreCardType                = "scorecard"
+	ScsSecretDetectionType          = "secret-detection"
+	ScsRepoRequiredMsg              = "SCS scan failed to start: Scorecard scan is missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
 	ScsRepoWarningMsg = "SCS scan warning: Unable to start Scorecard scan due to missing required flags, please include in the ast-cli arguments: " +
 		"--scs-repo-url your_repo_url --scs-repo-token your_repo_token"
@@ -232,7 +241,7 @@ func NewScanCommand(
 
 	listScansCmd := scanListSubCommand(scansWrapper, sastMetadataWrapper)
 
-	showScanCmd := scanShowSubCommand(scansWrapper)
+	showScanCmd := scanShowSubCommand(scansWrapper, sastMetadataWrapper)
 
 	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
 
@@ -438,7 +447,7 @@ func scanWorkflowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 	return workflowScanCmd
 }
 
-func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
+func scanShowSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) *cobra.Command {
 	showScanCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show information about a scan",
@@ -455,7 +464,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper) *cobra.Command {
 			`,
 			),
 		},
-		RunE: runGetScanByIDCommand(scansWrapper),
+		RunE: runGetScanByIDCommand(scansWrapper, sastMetadataWrapper),
 	}
 	addScanIDFlag(showScanCmd, "Scan ID to show")
 	return showScanCmd
@@ -493,7 +502,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		"The file source should be the path to a single file",
 	)
 
-	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to a JSON file listing ignored ASCA findings")
 	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to custom location where ASCA engine is installed")
 	_ = viper.BindPFlag(commonParams.ASCALocationKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
 
@@ -776,6 +785,11 @@ func scanCreateSubCommand(
 		false,
 		"Incremental SAST scan should be performed.",
 	)
+	createScanCmd.PersistentFlags().String(
+		commonParams.BaseBranch,
+		"",
+		"Base branch for incremental scan comparison.",
+	)
 
 	createScanCmd.PersistentFlags().String(commonParams.PresetName, "", "The name of the Checkmarx preset to use.")
 	createScanCmd.PersistentFlags().String(commonParams.IacsPresetIDFlag, "", commonParams.IacsPresetIDUsage)
@@ -925,6 +939,9 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.SbomFlag, false, "Scan only the specified SBOM file (supported formats xml or json)")
 	createScanCmd.PersistentFlags().Bool(commonParams.NoScanFlag, false, "Prevents CxOne scan from running after SBOM is generated locally. Relevant only when --sbom-first is submitted under --sca-resolver-params. Submitting this flag without --sbom-first causes an error.")
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
+	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.SkipDefaultFilterFlag, false, commonParams.SkipDefaultFilterFlagUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.ExcludeGitFolderFlag, false, commonParams.ExcludeGitFolderFlagUsage)
 
 	return createScanCmd
 }
@@ -1113,6 +1130,7 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 	sastRecommendedExclusionsChanged := cmd.Flags().Changed(commonParams.SastRecommendedExclusionsFlags)
 
 	sastIncrementalChanged := cmd.Flags().Changed(commonParams.IncrementalSast)
+	sastBaseBranchChanged := cmd.Flags().Changed(commonParams.BaseBranch)
 
 	if sastFastScanChanged {
 		fastScan, _ := cmd.Flags().GetBool(commonParams.SastFastScanFlag)
@@ -1134,6 +1152,10 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 		sastConfig.Incremental = strconv.FormatBool(incrementalVal)
 	}
 
+	if sastBaseBranchChanged {
+		sastConfig.BaseBranch, _ = cmd.Flags().GetString(commonParams.BaseBranch)
+	}
+
 	sastConfig.PresetName, _ = cmd.Flags().GetString(commonParams.PresetName)
 	sastConfig.Filter, _ = cmd.Flags().GetString(commonParams.SastFilterFlag)
 
@@ -1142,14 +1164,14 @@ func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[strin
 			continue
 		}
 
-		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
+		overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged, &sastConfig, config)
 	}
 
 	sastMapConfig[resultsMapValue] = &sastConfig
 	return sastMapConfig
 }
 
-func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
+func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBaseBranchChanged, sastLightQueryChanged, sastRecommendedExclusionsChanged bool, sastConfig *wrappers.SastConfig, config wrappers.Config) {
 	setIfEmpty := func(configValue *string, resubmitValue interface{}) {
 		if *configValue == "" && resubmitValue != nil {
 			*configValue = resubmitValue.(string)
@@ -1158,6 +1180,9 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 
 	if resubmitIncremental := config.Value[configIncremental]; resubmitIncremental != nil && !sastIncrementalChanged {
 		sastConfig.Incremental = resubmitIncremental.(string)
+	}
+	if resubmitBaseBranch := config.Value[configBaseBranch]; resubmitBaseBranch != nil && !sastBaseBranchChanged {
+		sastConfig.BaseBranch = resubmitBaseBranch.(string)
 	}
 	if resubmitFastScan := config.Value[configFastScan]; resubmitFastScan != nil && !sastFastScanChanged {
 		sastConfig.FastScanMode = resubmitFastScan.(string)
@@ -1184,9 +1209,8 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastLi
 
 func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
 	//  Add the aisc resubmit config, currently no value is passed in config
-	aiSupplyChainEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainEnabled)
 	aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
-	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainEnabled.Status && aiSupplyChainGAEnabled.Status {
+	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainGAEnabled.Status {
 		aiscMapConfig := make(map[string]interface{})
 		aiscConfig := wrappers.AISCConfig{}
 		aiscMapConfig[resultsMapType] = commonParams.AiscType
@@ -1642,7 +1666,7 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (string, error) {
+func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1651,8 +1675,11 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	defer outputFile.Close()
 	zipWriter := zip.NewWriter(outputFile)
 
+	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
+	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1670,7 +1697,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, getExcludeFilters(filter), getIncludeFilters(userIncludeFilter))
+		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, antMatcher, excludeGitFolder)
 		if err != nil {
 			return "", err
 		}
@@ -1679,6 +1706,13 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string) (s
 	if len(scaToolPath) > 0 && len(scaResolverResultsFile) > 0 {
 		err = addScaResults(zipWriter)
 		if err != nil {
+			return "", err
+		}
+	}
+
+	// Add contributors.csv/metadata.json only if they were just freshly generated without error.
+	if includeGeneratedCsvJson {
+		if err := addGeneratedContributorsFiles(zipWriter, sourceDir); err != nil {
 			return "", err
 		}
 	}
@@ -1702,7 +1736,7 @@ func isSingleContainerScanTriggered() bool {
 }
 
 // isDirEmpty checks if a directory is empty or if all files are filtered out
-func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, error) {
+func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher filtering.Matcher) (bool, error) {
 	empty := true
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -1715,20 +1749,32 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, erro
 			return nil
 		}
 
-		// Skip directories
-		if info.IsDir() {
-			return nil
-		}
-
 		// Get relative path
 		relPath, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
 		}
+		relPathSlash := filepath.ToSlash(relPath)
+
+		// Prune excluded directories rather than descending into them.
+		if info.IsDir() {
+			legacyFiltered, fErr := isDirFiltered(info.Name(), excludeFilters)
+			if fErr != nil {
+				return fErr
+			}
+			if legacyFiltered {
+				return filepath.SkipDir
+			}
+			if antMatcher.Excluded(relPathSlash, true) && !antMatcher.MustDescend(relPathSlash) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 
 		// Check if file passes filters
 		filename := filepath.Base(relPath)
-		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) {
+		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) &&
+			!antMatcher.Excluded(relPathSlash, false) {
 			empty = false
 			return filepath.SkipAll // We found at least one file that will be included
 		}
@@ -1739,11 +1785,19 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string) (bool, erro
 	return empty, err
 }
 
-func getIncludeFilters(userIncludeFilter string) []string {
+func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
+	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
+		return buildFilters([]string{}, userIncludeFilter)
+	}
 	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
 }
 
-func getExcludeFilters(userExcludeFilter string) []string {
+func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
+	if skipDefaultFilter {
+		logger.PrintIfVerbose("--skip-default-filter set: skipping default base exclude file filter.")
+		return buildFilters([]string{}, userExcludeFilter)
+	}
 	return buildFilters(commonParams.BaseExcludeFilters, userExcludeFilter)
 }
 
@@ -1781,7 +1835,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	return nil
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string) error {
+func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher, excludeGitFolder bool) error {
 	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -1794,9 +1848,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		}
 
 		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher, excludeGitFolder)
 		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo)
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
 		}
 
 		if err != nil {
@@ -1813,6 +1867,7 @@ func handleFile(
 	filters,
 	includeFilters []string,
 	file fs.FileInfo,
+	antMatcher filtering.Matcher,
 ) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
@@ -1822,7 +1877,14 @@ func handleFile(
 			return nil
 		}
 	}
-	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) {
+	// relPath is forward-slash path from source root, used by antMatcher.
+	relPath := filepath.ToSlash(baseDir + file.Name())
+	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
+	if isGeneratedContributorsFile(relPath) {
+		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
+		return nil
+	}
+	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) && !antMatcher.Excluded(relPath, false) {
 		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
@@ -1853,14 +1915,22 @@ func handleDir(
 	filters,
 	includeFilters []string,
 	file fs.FileInfo,
+	antMatcher filtering.Matcher,
+	excludeGitFolder bool,
 ) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
+		// Exclude .git folder when --exclude-git-folder flag is passed
+		if excludeGitFolder && file.Name() == gitFolderName {
+			logger.PrintIfVerbose("The folder " + file.Name() + " is being excluded (--exclude-git-folder flag passed)")
+			return nil
+		}
 		logger.PrintIfVerbose("The folder " + file.Name() + " is being included")
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
 		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 	}
 
+	// Legacy exclude filter (e.g. !node_modules from BaseExcludeFilters).
 	isFiltered, err := isDirFiltered(file.Name(), filters)
 	if err != nil {
 		return err
@@ -1869,8 +1939,23 @@ func handleDir(
 		logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
 		return nil
 	}
+
+	// Ant-style pattern exclusion with negation support.
+	// relPath is the forward-slash path from the source root.
+	relPath := filepath.ToSlash(baseDir + file.Name())
+	if antMatcher.Excluded(relPath, true) {
+		// Before pruning the entire sub-tree, check whether a later negation
+		// rule may re-include a descendant. If so, descend and evaluate each
+		// child individually rather than skipping wholesale.
+		if !antMatcher.MustDescend(relPath) {
+			logger.PrintIfVerbose("Excluded (ant-filter): " + parentDir + file.Name() + "/")
+			return nil
+		}
+		logger.PrintIfVerbose("Descending into ant-excluded dir (negation may re-include): " + parentDir + file.Name() + "/")
+	}
+
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters)
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher, excludeGitFolder)
 }
 
 func isDirFiltered(filename string, filters []string) (bool, error) {
@@ -1900,10 +1985,13 @@ func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (ne
 func filterMatched(filters []string, fileName string) bool {
 	firstMatch := true
 	matched := true
+	// Normalise to lowercase for case-insensitive matching on all platforms.
+	fileNameLower := strings.ToLower(fileName)
 	for _, filter := range filters {
-		if filter[0] == '!' {
+		filterLower := strings.ToLower(filter)
+		if filterLower[0] == '!' {
 			// it just needs to match one exclusion to be excluded.
-			excluded, _ := path.Match(filter[1:], fileName)
+			excluded, _ := path.Match(filterLower[1:], fileNameLower)
 			if excluded {
 				return false
 			}
@@ -1917,7 +2005,7 @@ func filterMatched(filters []string, fileName string) bool {
 			// We can't immediately return as we can still find an exclusion further down the slice
 			// So we store the match result and never try again
 			if !matched {
-				matched, _ = path.Match(filter, fileName)
+				matched, _ = path.Match(filterLower, fileNameLower)
 			}
 		}
 	}
@@ -2089,10 +2177,28 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	containerImagesFlag, _ := cmd.Flags().GetString(commonParams.ContainerImagesFlag)
 	containerResolveLocally, _ := cmd.Flags().GetBool(commonParams.ContainerResolveLocallyFlag)
 	scaResolverPath, _ := cmd.Flags().GetString(commonParams.ScaResolverFlag)
+	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
 
 	scaResolverParams, scaResolver := getScaResolverFlags(cmd)
 	isSbom, _ := cmd.PersistentFlags().GetBool(commonParams.SbomFlag)
 	isGitIgnoreFilter, _ := cmd.Flags().GetBool(commonParams.GitIgnoreFileFilterFlag)
+	if !isGitIgnoreFilter && utils.GetOptionalParam("use-gitignore") == "true" {
+		isGitIgnoreFilter = true
+	}
+	excludeGitFolder, _ := cmd.Flags().GetBool(commonParams.ExcludeGitFolderFlag)
+	if !excludeGitFolder && utils.GetOptionalParam(commonParams.ExcludeGitFolderFlag) == "true" {
+		excludeGitFolder = true
+	}
+
+	// Build the Ant-style matcher from --file-filter-ext patterns.
+	// Construction errors are surfaced immediately so the user gets clear
+	// feedback (e.g. if they accidentally used a "!" negation prefix).
+	antPatterns, _ := cmd.Flags().GetStringSlice(commonParams.AntFilterFlag)
+	antMatcher, antErr := filtering.NewAntMatcher(antPatterns)
+	if antErr != nil {
+		return "", "", errors.Wrapf(antErr, failedCreating)
+	}
+
 	var directoryPath string
 	if isSbom {
 		sbomFile, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -2144,7 +2250,11 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 	var errorUnzippingFile error
 	userProvidedZip := len(zipFilePath) > 0
 
-	unzip := ((len(sourceDirFilter) > 0 || len(userIncludeFilter) > 0) || containerScanTriggered) && userProvidedZip
+	// containerScanTriggered must stay in this condition: without it, a container scan
+	// run with --containers-local-resolution and --skip-default-filter (and no
+	// --file-filter/--file-include) would never unzip the zip source, so local container
+	// resolution would never run. Keeping it here ensures the zip is still unzipped in that case.
+	unzip := ((sourceDirFilter != "" || userIncludeFilter != "" || len(antPatterns) > 0) || containerScanTriggered || !skipDefaultFilter) && userProvidedZip
 	if unzip {
 		directoryPath, errorUnzippingFile = UnzipFile(zipFilePath)
 		if errorUnzippingFile != nil {
@@ -2238,7 +2348,23 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 			}
 		} else {
 			if !isSbom {
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver)
+				// True only if contributors.csv/metadata.json were just generated successfully without error.
+				includeGeneratedCsvJson := false
+				if !userProvidedZip {
+					httpClient := wrappers.GetClient(privacyDetectionTimeout)
+					isPrivate := detectRepositoryPrivacy(directoryPath, httpClient)
+					if genErr := GenerateAndWrite(directoryPath, isPrivate); genErr != nil {
+						logger.PrintIfVerbose("Skipping contributors.csv/metadata.json generation: " + genErr.Error())
+					} else {
+						includeGeneratedCsvJson = true
+					}
+				}
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder)
+
+				// Clean up generated contributors files after successful zip creation
+				if dirPathErr == nil && includeGeneratedCsvJson {
+					cleanGeneratedContributorsFiles(directoryPath)
+				}
 			}
 
 			// Clean up .checkmarx/containers directory after successful mixed scan (including containers) compression
@@ -2320,8 +2446,109 @@ func runContainerResolver(cmd *cobra.Command, directoryPath, containerImageFlag 
 		if containerResolverErr != nil {
 			return containerResolverErr
 		}
+		// Resolve returns nil even when individual images could not be analyzed, so the
+		// resolution file has to be inspected before the scan is allowed to continue.
+		return reportUnresolvedContainerImages(directoryPath)
 	}
 	return nil
+}
+
+// reportUnresolvedContainerImages surfaces the images the resolver could not analyze.
+//
+// The resolver records an unresolvable image as a "Failed" entry and still returns nil, so without
+// this check the CLI uploads a resolution file carrying no package data and the scan completes with
+// 0 findings - byte for byte indistinguishable from a genuinely clean scan, with exit code 0
+// (AST-165915).
+//
+// Images named explicitly through --container-images are treated as an error: the user asked for
+// those by name, so failing to scan one has to fail the pipeline. Images merely discovered inside
+// the scanned sources only warn, which preserves the deliberate warn-rather-than-fail behaviour
+// chosen in AST-146648 for private images the CLI cannot reach.
+func reportUnresolvedContainerImages(directoryPath string) error {
+	resolutionFilePath := filepath.Join(directoryPath, ".checkmarx", "containers", containerResolutionFileName)
+
+	content, err := os.ReadFile(resolutionFilePath)
+	if err != nil {
+		// Nothing was resolved, so there is nothing to report here. Any real failure of the
+		// resolution step itself was already returned by Resolve.
+		logger.PrintIfVerbose(fmt.Sprintf("Could not read container resolution file %s: %s", resolutionFilePath, err.Error()))
+		return nil
+	}
+
+	// Decoded with the producer's own type, so the CLI cannot drift from the format the
+	// resolver writes.
+	var entries []syftExtractor.ContainerResolution
+	if unmarshalErr := json.Unmarshal(content, &entries); unmarshalErr != nil {
+		logger.PrintIfVerbose(fmt.Sprintf("Could not parse container resolution file %s: %s", resolutionFilePath, unmarshalErr.Error()))
+		return nil
+	}
+
+	var requested, discovered []string
+	for i := range entries {
+		image := entries[i].ContainerImage
+		if !strings.EqualFold(image.Status, containerResolutionStatusFailed) {
+			continue
+		}
+
+		description := fmt.Sprintf("  %s - %s", containerImageDisplayName(image.ImageName, image.ImageTag), containerImageFailureReason(image.ScanError))
+		if isUserRequestedContainerImage(&entries[i]) {
+			requested = append(requested, description)
+		} else {
+			discovered = append(discovered, description)
+		}
+	}
+
+	if len(discovered) > 0 {
+		logger.Print(fmt.Sprintf("WARNING: %s discovered in the scanned sources could not be resolved and %s NOT scanned:\n%s",
+			containerImageCount(len(discovered)), wasOrWere(len(discovered)), strings.Join(discovered, "\n")))
+	}
+
+	if len(requested) > 0 {
+		return errors.Errorf("%s could not be resolved and %s NOT scanned:\n%s",
+			containerImageCount(len(requested)), wasOrWere(len(requested)), strings.Join(requested, "\n"))
+	}
+
+	return nil
+}
+
+// isUserRequestedContainerImage reports whether the image was named explicitly through
+// --container-images. An image can be reached from several locations at once, so a single
+// UserInput origin is enough to treat it as explicitly requested.
+func isUserRequestedContainerImage(entry *syftExtractor.ContainerResolution) bool {
+	for _, location := range entry.ContainerImage.ImageLocations {
+		if strings.EqualFold(location.Origin, types.UserInput) {
+			return true
+		}
+	}
+	return false
+}
+
+func containerImageDisplayName(name, tag string) string {
+	if tag == "" {
+		return name
+	}
+	return name + ":" + tag
+}
+
+func containerImageFailureReason(scanError string) string {
+	if scanError == "" {
+		return "the image could not be resolved"
+	}
+	return scanError
+}
+
+func containerImageCount(count int) string {
+	if count == 1 {
+		return "1 container image"
+	}
+	return fmt.Sprintf("%d container images", count)
+}
+
+func wasOrWere(count int) string {
+	if count == 1 {
+		return "was"
+	}
+	return "were"
 }
 
 func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip, userProvidedZip bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
@@ -2608,6 +2835,23 @@ func runCreateScanCommand(
 		if err != nil {
 			return err
 		}
+
+		// For --no-scan (with --sbom-first), only the local SBOM generation is required.
+		// Build the scan handler directly instead of calling createScanModel so that no
+		// empty project is created on the server before we skip the scan submission.
+		// This is handled before the policy/timeout/threshold checks below, since none of
+		// those apply when the scan is not submitted (and it avoids an unnecessary policy
+		// permission API call for the no-scan case).
+		if noScan {
+			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+			defer cleanUpTempZip(zipFilePath)
+			if handlerErr != nil {
+				return errors.Errorf("%s", handlerErr)
+			}
+			logger.Print("--no-scan set: skipping scan submission.")
+			return nil
+		}
+
 		ignorePolicy, _ := cmd.Flags().GetBool(commonParams.IgnorePolicyFlag)
 
 		// Check if the user has permission to override policy management if --ignore-policy is set
@@ -2648,10 +2892,6 @@ func runCreateScanCommand(
 		defer cleanUpTempZip(zipFilePath)
 		if err != nil {
 			return errors.Errorf("%s", err)
-		}
-		if noScan {
-			logger.Print("--no-scan set: skipping scan submission.")
-			return nil
 		}
 
 		scanResponseModel, errorModel, err := scansWrapper.Create(scanModel)
@@ -3296,7 +3536,7 @@ func runListScansCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper
 	}
 }
 
-func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.Command, args []string) error {
+func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper wrappers.SastMetadataWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var scanResponseModel *wrappers.ScanResponseModel
 		var errorModel *wrappers.ErrorModel
@@ -3313,6 +3553,12 @@ func runGetScanByIDCommand(scansWrapper wrappers.ScansWrapper) func(cmd *cobra.C
 		if errorModel != nil {
 			return errors.Errorf("%s: CODE: %d, %s", failedGetting, errorModel.Code, errorModel.Message)
 		} else if scanResponseModel != nil {
+			sastMetadata, err := services.GetSastMetadataByIDs(sastMetadataWrapper, []string{scanID})
+			if err != nil {
+				logger.Printf("error getting sast metadata: %v", err)
+			} else if sastMetadata != nil && len(sastMetadata.Scans) > 0 {
+				scanResponseModel.SastIncremental = strconv.FormatBool(sastMetadata.Scans[0].IsIncremental)
+			}
 			err = printByFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				return err
@@ -3777,6 +4023,16 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 			return fmt.Errorf("invalid value for --%s flag, must be a valid UUID", commonParams.IacsPresetIDFlag)
 		}
 	}
+
+	sastBaseBranch, _ := cmd.Flags().GetString(commonParams.BaseBranch)
+	sastIncremental, _ := cmd.Flags().GetBool(commonParams.IncrementalSast)
+	if cmd.Flags().Changed(commonParams.BaseBranch) && strings.TrimSpace(sastBaseBranch) == "" {
+		return fmt.Errorf("--%s flag cannot be empty. Please provide a valid branch name", commonParams.BaseBranch)
+	}
+	if strings.TrimSpace(sastBaseBranch) != "" && !sastIncremental {
+		return fmt.Errorf("--%s flag requires --%s to be set to true", commonParams.BaseBranch, commonParams.IncrementalSast)
+	}
+
 	// check if flag was passed as arg
 	isBranchChanged := cmd.Flags().Changed(commonParams.BranchPrimaryFlag)
 	if isBranchChanged {
@@ -4194,7 +4450,7 @@ func hasGitRepository(source string) bool {
 	}
 
 	// Check if .git exists in the root directory
-	gitPath := filepath.Join(sourceTrimmed, ".git")
+	gitPath := filepath.Join(sourceTrimmed, gitFolderName)
 	if _, err := os.Stat(gitPath); err == nil {
 		return true
 	}
@@ -4210,7 +4466,7 @@ func searchGitInSubdirectories(sourcePath string) bool {
 		if err != nil || found {
 			return nil
 		}
-		if info.IsDir() && info.Name() == ".git" {
+		if info.IsDir() && info.Name() == gitFolderName {
 			found = true
 			return filepath.SkipAll
 		}
@@ -4371,4 +4627,84 @@ func readGitIgnoreFromZip(zipPath string) ([]byte, error) {
 		return data, nil
 	}
 	return []byte(""), fmt.Errorf(".gitignore not found in zip: %s", zipPath)
+}
+
+// isGeneratedContributorsFile checks if file is contributors.csv or metadata.json to skip in zip walk.
+func isGeneratedContributorsFile(relPath string) bool {
+	return relPath == CheckmarxFolderName+"/"+ContributorsFileName ||
+		relPath == CheckmarxFolderName+"/"+MetadataFileName
+}
+
+// addGeneratedContributorsFiles reads and writes contributors.csv/metadata.json to zip; missing files OK.
+func addGeneratedContributorsFiles(zipWriter *zip.Writer, sourceDir string) error {
+	for _, fileName := range []string{ContributorsFileName, MetadataFileName} {
+		filePath := filepath.Join(sourceDir, CheckmarxFolderName, fileName)
+		dat, err := os.ReadFile(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logger.PrintIfVerbose("Skipping " + fileName + ": not found under " + CheckmarxFolderName + "/")
+				continue
+			}
+			return err
+		}
+
+		zipEntryName := CheckmarxFolderName + "/" + fileName
+		f, err := zipWriter.Create(zipEntryName)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(dat); err != nil {
+			return err
+		}
+		logger.PrintIfVerbose("Included: " + zipEntryName)
+	}
+	return nil
+}
+
+// cleanGeneratedContributorsFiles removes contributors.csv and metadata.json after zip creation.
+// Removes both files if present (either or both may exist). Preserves .checkmarx folder if other files remain.
+// Only deletes .checkmarx folder if it becomes completely empty after both files are removed.
+func cleanGeneratedContributorsFiles(directoryPath string) {
+	checkmarxDir := filepath.Join(directoryPath, ".checkmarx")
+	if _, err := os.Stat(checkmarxDir); os.IsNotExist(err) {
+		return
+	}
+
+	csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+	jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+	fileRemoved := false
+
+	// Attempt to remove contributors.csv if it exists
+	if _, err := os.Stat(csvPath); err == nil {
+		if rmErr := os.Remove(csvPath); rmErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove contributors.csv: %s", rmErr.Error()))
+		} else {
+			logger.PrintIfVerbose("Removed contributors.csv after zip creation")
+			fileRemoved = true
+		}
+	}
+
+	// Attempt to remove metadata.json if it exists
+	if _, err := os.Stat(jsonPath); err == nil {
+		if rmErr := os.Remove(jsonPath); rmErr != nil {
+			logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove metadata.json: %s", rmErr.Error()))
+		} else {
+			logger.PrintIfVerbose("Removed metadata.json after zip creation")
+			fileRemoved = true
+		}
+	}
+
+	// Only remove .checkmarx folder if it's empty after both contributor files removed (either or both may have existed)
+	if fileRemoved {
+		entries, err := os.ReadDir(checkmarxDir)
+		if err == nil && len(entries) == 0 {
+			if rmErr := os.Remove(checkmarxDir); rmErr != nil {
+				logger.PrintIfVerbose(fmt.Sprintf("Warning: Failed to remove empty .checkmarx directory: %s", rmErr.Error()))
+				return
+			}
+			logger.PrintIfVerbose("Removed empty .checkmarx directory (empty after removing contributor files)")
+		} else if err == nil && len(entries) > 0 {
+			logger.PrintIfVerbose(fmt.Sprintf("Kept .checkmarx directory (contains %d other file(s) e.g., containers/)", len(entries)))
+		}
+	}
 }

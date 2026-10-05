@@ -7,7 +7,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ExportMockWrapper struct{}
+// ExportMockWrapper is a mock implementation of ExportWrapper for testing.
+type ExportMockWrapper struct {
+	CustomGetExportReportStatus         func(exportID string) (*wrappers.ExportPollingResponse, error)
+	CustomGetScaPackageCollectionExport func(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error)
+}
 
 // GenerateSbomReport mock for tests
 func (*ExportMockWrapper) InitiateExportRequest(payload *wrappers.ExportRequestPayload) (*wrappers.ExportResponse, error) {
@@ -20,7 +24,10 @@ func (*ExportMockWrapper) InitiateExportRequest(payload *wrappers.ExportRequestP
 }
 
 // GetSbomReportStatus mock for tests
-func (*ExportMockWrapper) GetExportReportStatus(_ string) (*wrappers.ExportPollingResponse, error) {
+func (e *ExportMockWrapper) GetExportReportStatus(exportID string) (*wrappers.ExportPollingResponse, error) {
+	if e.CustomGetExportReportStatus != nil {
+		return e.CustomGetExportReportStatus(exportID)
+	}
 	return &wrappers.ExportPollingResponse{
 		ExportID:     "id1234",
 		ExportStatus: "Completed",
@@ -44,5 +51,8 @@ func (*ExportMockWrapper) DownloadExportReport(_, targetFile string) error {
 }
 
 func (e *ExportMockWrapper) GetScaPackageCollectionExport(fileURL string, auth bool) (*wrappers.ScaPackageCollectionExport, error) {
+	if e.CustomGetScaPackageCollectionExport != nil {
+		return e.CustomGetScaPackageCollectionExport(fileURL, auth)
+	}
 	return &wrappers.ScaPackageCollectionExport{}, nil
 }

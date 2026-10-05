@@ -1,0 +1,917 @@
+//go:build !integration
+
+package guardrails
+
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+	"testing"
+)
+
+// sampleJWT is a well-known test JWT (no real value) used to give 2ms a
+// concrete secret to detect when we want to assert a block.
+const sampleJWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+	"eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ." +
+	"SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+const (
+	testOSWindows      = "windows"
+	testJiraConfigFile = "application-jira.yml"
+)
+
+// resolveReferencedFile is the resolver behind ScanReferencedFiles. We exercise
+// it directly because the scanner integration is unchanged — only the resolver
+// logic shifted from "literal stat" to "literal stat + glob fallback".
+
+func TestResolveReferencedFile_LiteralAbsoluteHit(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "config.yml")
+	mustWrite(t, target, "k: v")
+
+	got := resolveReferencedFile(target, nil)
+	if len(got) != 1 || got[0] != target {
+		t.Fatalf("expected [%q], got %v", target, got)
+	}
+}
+
+func TestResolveReferencedFile_GlobFallbackFindsSibling(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
+
+	typed := filepath.Join(dir, "application-jira") // no extension
+	got := resolveReferencedFile(typed, nil)
+
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
+		t.Fatalf("expected glob fallback to find application-jira.yml, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_GlobFallbackNoSibling(t *testing.T) {
+	dir := t.TempDir()
+	// parent exists but nothing matches the prefix
+	typed := filepath.Join(dir, "application-jira")
+	if got := resolveReferencedFile(typed, nil); got != nil {
+		t.Fatalf("expected nil when nothing matches, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_GlobFallbackBailsOnTooManyMatches(t *testing.T) {
+	dir := t.TempDir()
+	for i := 0; i <= maxGlobFallbackMatches; i++ {
+		mustWrite(t, filepath.Join(dir, "common-prefix-"+itoa(i)+".log"), "x")
+	}
+
+	typed := filepath.Join(dir, "common-prefix")
+	if got := resolveReferencedFile(typed, nil); got != nil {
+		t.Fatalf("expected nil when match count exceeds cap, got %d entries", len(got))
+	}
+}
+
+func TestResolveReferencedFile_TypedPathIsDirectory(t *testing.T) {
+	dir := t.TempDir()
+	subdir := filepath.Join(dir, "secrets")
+	if err := os.Mkdir(subdir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	mustWrite(t, filepath.Join(subdir, "creds.yml"), "k: v")
+
+	if got := resolveReferencedFile(subdir, nil); got != nil {
+		t.Fatalf("expected nil for directory reference, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_RelativePathResolvesAgainstWorkspaceRoot(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
+
+	got := resolveReferencedFile("application-jira", []string{dir})
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
+		t.Fatalf("expected glob fallback under workspace root to find application-jira.yml, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_RelativeStopsAtFirstMatchingRoot(t *testing.T) {
+	rootA := t.TempDir()
+	rootB := t.TempDir()
+	mustWrite(t, filepath.Join(rootA, "config.yml"), "a")
+	mustWrite(t, filepath.Join(rootB, "config.yml"), "b")
+
+	got := resolveReferencedFile("config.yml", []string{rootA, rootB})
+	if len(got) != 1 || filepath.Dir(got[0]) != rootA {
+		t.Fatalf("expected resolution to stop at rootA, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_CursorStyleWindowsRootNormalised(t *testing.T) {
+	if runtime.GOOS != testOSWindows {
+		t.Skip("Cursor /c:/ root form is Windows-specific")
+	}
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, testJiraConfigFile), "k: v")
+
+	// Cursor reports Windows roots as "/c:/foo"; NormalizeWorkspaceRoot strips
+	// the leading slash. Confirm the resolver still finds the file via glob.
+	cursorRoot := "/" + filepath.ToSlash(dir)
+	got := resolveReferencedFile("application-jira", []string{cursorRoot})
+	if len(got) != 1 || filepath.Base(got[0]) != testJiraConfigFile {
+		t.Fatalf("expected glob fallback under Cursor-style root, got %v", got)
+	}
+}
+
+func TestResolveReferencedFile_GlobMatchesMixedRegularAndDir(t *testing.T) {
+	// A directory whose name shares the prefix must not be returned as a file.
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "app.yml"), "k: v")
+	if err := os.Mkdir(filepath.Join(dir, "app-data"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	typed := filepath.Join(dir, "app")
+	got := resolveReferencedFile(typed, nil)
+	sort.Strings(got)
+	if len(got) != 1 || filepath.Base(got[0]) != "app.yml" {
+		t.Fatalf("expected only the regular file, got %v", got)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanForSecrets — 2ms scan over raw prompt text
+// --------------------------------------------------------------------------
+
+func TestScanForSecrets_BlocksOnJWT(t *testing.T) {
+	reason := ScanForSecrets("token = " + sampleJWT)
+	if reason == "" {
+		t.Fatal("expected block: text contains a JWT")
+	}
+	if !strings.Contains(reason, "secret(s)") {
+		t.Fatalf("expected secret count in reason, got %q", reason)
+	}
+}
+
+func TestScanForSecrets_CleanText_NoBlock(t *testing.T) {
+	if reason := ScanForSecrets("please refactor this function"); reason != "" {
+		t.Fatalf("expected no block for clean text, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanReferencedFiles — resolves + scans files mentioned in prompt text
+// --------------------------------------------------------------------------
+
+func TestScanReferencedFiles_NoPathsInText_ReturnsEmpty(t *testing.T) {
+	if reason := ScanReferencedFiles("please refactor this function", nil); reason != "" {
+		t.Fatalf("expected no-op with no file references, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_ReferencedFileHasSecret_Blocks(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "creds.env")
+	mustWrite(t, target, "token = "+sampleJWT)
+
+	reason := ScanReferencedFiles("please check @"+target, nil)
+	if reason == "" {
+		t.Fatal("expected block: referenced file contains a JWT")
+	}
+	if !strings.Contains(reason, "creds.env") {
+		t.Fatalf("reason should cite the file path, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_ReferencedFileClean_NoBlock(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "notes.txt")
+	mustWrite(t, target, "just some plain notes")
+
+	if reason := ScanReferencedFiles("please check @"+target, nil); reason != "" {
+		t.Fatalf("expected no block for clean referenced file, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_MissingFile_FailOpen(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "does-not-exist.env")
+	if reason := ScanReferencedFiles("please check @"+missing, nil); reason != "" {
+		t.Fatalf("expected fail-open for missing referenced file, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanPrompt — orchestrates all prompt guardrails
+// --------------------------------------------------------------------------
+
+func TestScanPrompt_CleanText_ReturnsEmpty(t *testing.T) {
+	if reason := ScanPrompt("please explain how this function works"); reason != "" {
+		t.Fatalf("expected clean prompt to pass, got %q", reason)
+	}
+}
+
+func TestScanPrompt_SecretInText_Blocks(t *testing.T) {
+	reason := ScanPrompt("here is my token: " + sampleJWT)
+	if reason == "" {
+		t.Fatal("expected block: prompt contains a JWT")
+	}
+	if !strings.Contains(reason, "secret(s)") {
+		t.Fatalf("expected secret-scanner reason, got %q", reason)
+	}
+}
+
+func TestScanPrompt_BlockedExtensionReferenced_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{Enabled: true, Extensions: []string{".env"}}
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("please review @config.env for me")
+	if reason == "" {
+		t.Fatal("expected block: prompt references a blocked extension")
+	}
+	if !strings.Contains(reason, "blocked extensions") {
+		t.Fatalf("expected blocked-extension reason, got %q", reason)
+	}
+}
+
+func TestScanPrompt_TooManyFilesReferenced_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("please review @a.go and @b.go and @c.go")
+	if reason == "" {
+		t.Fatal("expected block: prompt references more files than the policy allows")
+	}
+	if !strings.Contains(reason, "exceeding the policy limit") {
+		t.Fatalf("expected files-limit reason, got %q", reason)
+	}
+}
+
+func mustWrite(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+func itoa(i int) string {
+	if i == 0 {
+		return "0"
+	}
+	var b [20]byte
+	pos := len(b)
+	for i > 0 {
+		pos--
+		b[pos] = byte('0' + i%10)
+		i /= 10
+	}
+	return string(b[pos:])
+}
+
+// --------------------------------------------------------------------------
+// ScanWorkspaceFilesByPromptName — bare-word filename matching (Fix C)
+// --------------------------------------------------------------------------
+
+// writePolicyHelper writes a HooksPolicy to a temp ~/.checkmarx/policyhooks.json
+// and redirects the home dir so LoadPolicy() picks it up. Returns a cleanup
+// function that must be invoked (typically via defer) to restore the env.
+func writePolicyHelper(t *testing.T, policy *HooksPolicy) func() {
+	t.Helper()
+	data, err := json.Marshal(policy)
+	if err != nil {
+		t.Fatalf("marshal policy: %v", err)
+	}
+	dir := t.TempDir()
+	cxDir := filepath.Join(dir, ".checkmarx")
+	if err := os.MkdirAll(cxDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cxDir, "policyhooks.json"), data, 0o644); err != nil {
+		t.Fatalf("write policy: %v", err)
+	}
+	if runtime.GOOS == testOSWindows {
+		orig, had := os.LookupEnv("USERPROFILE")
+		if err := os.Setenv("USERPROFILE", dir); err != nil {
+			t.Fatalf("setenv USERPROFILE: %v", err)
+		}
+		return func() {
+			if had {
+				_ = os.Setenv("USERPROFILE", orig)
+			} else {
+				_ = os.Unsetenv("USERPROFILE")
+			}
+		}
+	}
+	orig, had := os.LookupEnv("HOME")
+	if err := os.Setenv("HOME", dir); err != nil {
+		t.Fatalf("setenv HOME: %v", err)
+	}
+	return func() {
+		if had {
+			_ = os.Setenv("HOME", orig)
+		} else {
+			_ = os.Unsetenv("HOME")
+		}
+	}
+}
+
+// makeWorkspace writes a workspace directory containing the given files
+// (path → contents) and returns the workspace root. Parent directories are
+// created automatically. Use to set up ScanWorkspaceFilesByPromptName tests.
+func makeWorkspace(t *testing.T, files map[string]string) string {
+	t.Helper()
+	ws := filepath.Join(t.TempDir(), "workspace")
+	for rel, content := range files {
+		full := filepath.Join(ws, rel)
+		if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+			t.Fatalf("mkdir %s: %v", full, err)
+		}
+		mustWrite(t, full, content)
+	}
+	return ws
+}
+
+func TestScanWorkspaceFilesByPromptName_BasenameMatch_BlocksOnJWT(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "token = " + sampleJWT,
+	})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block: workspace file Sample contains a JWT and the prompt names it")
+	}
+	if !strings.Contains(strings.ToLower(reason), "sample") {
+		t.Fatalf("reason should cite the offending file path, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_CaseInsensitive(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "secret = " + sampleJWT,
+	})
+	for _, prompt := range []string{
+		"check sample file",
+		"Check Sample File",
+		"please review the SAMPLE doc",
+	} {
+		if reason := ScanWorkspaceFilesByPromptName(prompt, []string{ws}); reason == "" {
+			t.Fatalf("expected block for prompt %q (case-insensitive match)", prompt)
+		}
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_NoAtSymbolRequired(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"sample.json": `{"jwt":"` + sampleJWT + `"}`,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("explain sample to me", []string{ws}); reason == "" {
+		t.Fatal("expected block on a plain word `sample` matching sample.json by stem")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_StemMatchWithExtension(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"sample.yaml": "token: " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("check sample configs", []string{ws}); reason == "" {
+		t.Fatal("expected block: prompt `sample` should match `sample.yaml` via stem")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_CleanFile_DoesNotBlock(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "just notes, nothing sensitive here",
+	})
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason != "" {
+		t.Fatalf("expected no block when matched file has no secrets, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_NoMatch_DoesNotBlock(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "token = " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("show me the latest tests", []string{ws}); reason != "" {
+		t.Fatalf("expected no block when prompt does not name any workspace file, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_SubstringInsideWord_NotMatched(t *testing.T) {
+	// File "mvn" inside a basename like "foo-mvn-bar" must not be matched
+	// when the prompt contains those joined word characters.
+	ws := makeWorkspace(t, map[string]string{
+		"foo-mvn-bar/secret.txt": "token = " + sampleJWT,
+	})
+	// The prompt mentions "mvn" but the only file with secrets is named
+	// "secret.txt"; "mvn" appears only inside a parent dir name and is not a
+	// basename token, so no scan should match.
+	if reason := ScanWorkspaceFilesByPromptName("run mvn build", []string{ws}); reason != "" {
+		t.Fatalf("expected no block: `mvn` is inside a directory name, not a basename, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_ShortFilenameStillScanned(t *testing.T) {
+	// A 1-char filename should still be detected when it appears as a standalone
+	// token in the prompt — the token-boundary check is what prevents over-block.
+	ws := makeWorkspace(t, map[string]string{
+		"a": "token = " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("review file a please", []string{ws}); reason == "" {
+		t.Fatal("expected block: 1-char filename `a` appears as a standalone token in the prompt")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_ShortFilenameInsideWord_NotMatched(t *testing.T) {
+	// File "a" must NOT match `a` inside "apple", "have", etc. — token boundary protects.
+	ws := makeWorkspace(t, map[string]string{
+		"a": "token = " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("there are apples here, have one", []string{ws}); reason != "" {
+		t.Fatalf("expected no block: `a` only appears inside word characters, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_BothBasenameAndStem_BothBlock(t *testing.T) {
+	// Workspace has BOTH `sample` (no extension) and `Sample.json`. The prompt
+	// names `sample`; both files match (one by basename, one by stem) and both
+	// contain secrets — the rejection must cite both.
+	ws := makeWorkspace(t, map[string]string{
+		"sample":      "token1 = " + sampleJWT,
+		"Sample.json": `{"jwt":"` + sampleJWT + `"}`,
+	})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block: both `sample` and `Sample.json` should be detected")
+	}
+	if !strings.Contains(reason, "sample") || !strings.Contains(reason, "Sample.json") {
+		t.Fatalf("rejection should cite BOTH files, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_SizePolicyViolation_BlocksWithoutSecrets(t *testing.T) {
+	// Policy max_file_size_kb=3. A 5 KB file with no secrets should be blocked
+	// purely on the size violation: policy says it cannot enter AI context.
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
+	defer writePolicyHelper(t, &policy)()
+
+	ws := makeWorkspace(t, map[string]string{
+		"Sample.txt": strings.Repeat("a", 5*1024), // 5 KB, no secrets
+	})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block: 5 KB file exceeds 3 KB policy cap")
+	}
+	if !strings.Contains(reason, "exceeds policy limit") {
+		t.Fatalf("reason should cite size policy violation, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_SizePolicyAtCap_NotBlocked(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
+	defer writePolicyHelper(t, &policy)()
+
+	ws := makeWorkspace(t, map[string]string{
+		"Sample.txt": strings.Repeat("a", 3*1024), // exactly at cap
+	})
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason != "" {
+		t.Fatalf("expected no block at exactly the policy cap, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_SkipsIgnoredDirs(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"node_modules/sample.json": `{"jwt":"` + sampleJWT + `"}`,
+		".git/sample":              "token = " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("look at sample", []string{ws}); reason != "" {
+		t.Fatalf("expected no block: files only inside node_modules/.git should be pruned, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_NoWorkspaceRoots_NoOp(t *testing.T) {
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", nil); reason != "" {
+		t.Fatalf("expected no-op with empty workspace roots, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_CursorStyleWindowsRoot(t *testing.T) {
+	if runtime.GOOS != testOSWindows {
+		t.Skip("Cursor /c:/foo root form is Windows-specific")
+	}
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "token = " + sampleJWT,
+	})
+	// Convert "C:\path\workspace" -> "/c:/path/workspace" (Cursor's form).
+	slashy := filepath.ToSlash(ws)
+	cursorRoot := "/" + strings.ToLower(slashy[:2]) + slashy[2:]
+	if reason := ScanWorkspaceFilesByPromptName("check sample", []string{cursorRoot}); reason == "" {
+		t.Fatalf("expected block: Cursor-style root %q should normalize", cursorRoot)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_RecursiveSubdirMatch(t *testing.T) {
+	// File is nested several levels deep under the workspace root and not in
+	// any skipped directory. The recursive walk should still find it.
+	ws := makeWorkspace(t, map[string]string{
+		"src/auth/internal/Sample.txt": "token = " + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws}); reason == "" {
+		t.Fatal("expected block: nested file should be found by recursive walk")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_MultiDotFilename(t *testing.T) {
+	// "config.local.json": name parts ["config","local"], either token
+	// in the prompt is enough to flag the file.
+	ws := makeWorkspace(t, map[string]string{
+		"config.local.json": `{"jwt":"` + sampleJWT + `"}`,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("show me the local override", []string{ws}); reason == "" {
+		t.Fatal("expected block: `local` is a name part of config.local.json")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_DotfileLeadingDotStripped(t *testing.T) {
+	// ".env" → name part "env"; prompt mentioning "env" as a token matches.
+	ws := makeWorkspace(t, map[string]string{
+		".env": "TOKEN=" + sampleJWT,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("review env settings", []string{ws}); reason == "" {
+		t.Fatal("expected block: leading dot in .env should not prevent matching `env`")
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_ExtensionAloneNotMatched(t *testing.T) {
+	// Generic extensions like "json" must not flag every json file in the repo
+	// — the trailing extension piece is dropped from filenameNameParts.
+	ws := makeWorkspace(t, map[string]string{
+		"sample.json": `{"jwt":"` + sampleJWT + `"}`,
+	})
+	if reason := ScanWorkspaceFilesByPromptName("what is a json document", []string{ws}); reason != "" {
+		t.Fatalf("expected no block: extension `json` should not match by itself, got %q", reason)
+	}
+}
+
+func TestExtractPromptTokens(t *testing.T) {
+	got := extractPromptTokens("check Sample.json and id_rsa, also @secret-config!")
+	want := []string{"check", "sample", "json", "and", "id_rsa", "also", "secret-config"}
+	for _, w := range want {
+		if _, ok := got[w]; !ok {
+			t.Errorf("missing token %q in %v", w, got)
+		}
+	}
+}
+
+func TestFilenameNameParts(t *testing.T) {
+	cases := map[string][]string{
+		"Sample":            {"sample"},
+		"sample.json":       {"sample"},
+		".env":              {"env"},
+		".env.local":        {"env"},
+		"config.local.json": {"config", "local"},
+		"Makefile":          {"makefile"},
+		"id_rsa":            {"id_rsa"},
+		"":                  nil,
+		".":                 nil,
+	}
+	for in, want := range cases {
+		got := filenameNameParts(in)
+		if len(got) != len(want) {
+			t.Errorf("filenameNameParts(%q) = %v; want %v", in, got, want)
+			continue
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("filenameNameParts(%q)[%d] = %q; want %q", in, i, got[i], want[i])
+			}
+		}
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanFileForSecrets — Cursor beforeReadFile content gate (Fix D)
+// --------------------------------------------------------------------------
+
+func TestScanFileForSecrets_BlocksOnJWT(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "Sample.txt")
+	mustWrite(t, path, "token = "+sampleJWT)
+
+	reason := ScanFileForSecrets(path)
+	if reason == "" {
+		t.Fatal("expected block: file contains a JWT")
+	}
+	if !strings.Contains(reason, "Sample.txt") {
+		t.Fatalf("reason should cite the file path, got %q", reason)
+	}
+	if !strings.Contains(reason, "Do NOT attempt alternative commands") {
+		t.Fatalf("reason should include DenyMessage, got %q", reason)
+	}
+}
+
+func TestScanFileForSecrets_CleanFile_NoBlock(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "notes.txt")
+	mustWrite(t, path, "no secrets here, just notes")
+
+	if reason := ScanFileForSecrets(path); reason != "" {
+		t.Fatalf("expected no block for clean file, got %q", reason)
+	}
+}
+
+func TestScanFileForSecrets_MissingFile_FailOpen(t *testing.T) {
+	if reason := ScanFileForSecrets(filepath.Join(t.TempDir(), "does-not-exist")); reason != "" {
+		t.Fatalf("expected fail-open for missing file, got %q", reason)
+	}
+}
+
+func TestScanFileForSecrets_EmptyPath_NoOp(t *testing.T) {
+	if reason := ScanFileForSecrets(""); reason != "" {
+		t.Fatalf("expected no-op on empty path, got %q", reason)
+	}
+}
+
+func TestScanFileForSecrets_OverPolicyCap_BlocksOnSize(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
+	defer writePolicyHelper(t, &policy)()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "big.txt")
+	mustWrite(t, path, strings.Repeat("a", 5*1024)) // 5 KB, no secrets
+
+	reason := ScanFileForSecrets(path)
+	if reason == "" {
+		t.Fatal("expected block: 5 KB file exceeds 3 KB policy cap")
+	}
+	if !strings.Contains(reason, "exceeds the policy size limit") {
+		t.Fatalf("reason should cite size violation, got %q", reason)
+	}
+}
+
+func TestScanFileForSecrets_AtPolicyCap_Allowed(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 3}
+	defer writePolicyHelper(t, &policy)()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "exact.txt")
+	mustWrite(t, path, strings.Repeat("a", 3*1024)) // exactly at cap, no secrets
+
+	if reason := ScanFileForSecrets(path); reason != "" {
+		t.Fatalf("expected no block at exactly the policy cap, got %q", reason)
+	}
+}
+
+func TestScanWorkspaceFilesByPromptName_DenyMessageAppended(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{
+		"Sample": "token = " + sampleJWT,
+	})
+	reason := ScanWorkspaceFilesByPromptName("check sample file", []string{ws})
+	if !strings.Contains(reason, "Do NOT attempt alternative commands") {
+		t.Fatalf("expected DenyMessage no-workaround text in reason, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// severityFromValidation / extractLiteralAnchors / stripGlobMeta
+// --------------------------------------------------------------------------
+
+func TestSeverityFromValidation(t *testing.T) {
+	cases := map[string]string{
+		"Valid":   "Critical",
+		"Invalid": "Medium",
+		"Unknown": "High",
+		"":        "High",
+		"other":   "High",
+	}
+	for in, want := range cases {
+		if got := severityFromValidation(in); got != want {
+			t.Errorf("severityFromValidation(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestExtractLiteralAnchors(t *testing.T) {
+	got := extractLiteralAnchors([]string{
+		"kubeconfig",
+		"/etc/id_rsa",
+		"**/*.pem",
+		"**/secrets/**",
+		"*",
+		"",
+		"kubeconfig", // duplicate
+	})
+	want := map[string]bool{"kubeconfig": true, "id_rsa": true, ".pem": true, "secrets": true}
+	for _, a := range got {
+		if !want[a] {
+			t.Errorf("unexpected anchor %q in %v", a, got)
+		}
+		delete(want, a)
+	}
+	for missing := range want {
+		t.Errorf("missing anchor %q", missing)
+	}
+}
+
+func TestStripGlobMeta(t *testing.T) {
+	if got := stripGlobMeta("modify *.env and id_rsa?"); got != "modify  .env and id_rsa " {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestExtractFilePaths_Scenarios(t *testing.T) {
+	paths := extractFilePaths(`please open @.env and /etc/passwd plus C:\Windows\win.ini and ./rel/config.yml and credentials.json`)
+	joined := strings.Join(paths, "|")
+	for _, want := range []string{".env", "/etc/passwd", "credentials.json"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("expected %q in extracted paths %v", want, paths)
+		}
+	}
+	// Glob meta stripped so "*.env" still surfaces ".env"
+	globPaths := extractFilePaths("edit *.env please")
+	found := false
+	for _, p := range globPaths {
+		if p == ".env" {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("expected .env from globbed prompt, got %v", globPaths)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanForSecrets
+// --------------------------------------------------------------------------
+
+func TestScanForSecrets_Clean_Allows(t *testing.T) {
+	if reason := ScanForSecrets("please refactor the helper module"); reason != "" {
+		t.Fatalf("clean prompt should allow, got %q", reason)
+	}
+}
+
+func TestScanForSecrets_Empty_Allows(t *testing.T) {
+	if reason := ScanForSecrets(""); reason != "" {
+		t.Fatalf("empty text should allow, got %q", reason)
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanReferencedFiles
+// --------------------------------------------------------------------------
+
+func TestScanReferencedFiles_NoPaths_Allows(t *testing.T) {
+	if reason := ScanReferencedFiles("hello world", []string{t.TempDir()}); reason != "" {
+		t.Fatalf("got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_CleanFile_Allows(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{"notes.txt": "just notes"})
+	if reason := ScanReferencedFiles("read notes.txt", []string{ws}); reason != "" {
+		t.Fatalf("clean referenced file should allow, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_SecretFile_Blocks(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{"secret.env": "TOKEN=" + sampleJWT})
+	reason := ScanReferencedFiles("please open secret.env", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block for referenced secret file")
+	}
+	if !strings.Contains(reason, "secret") {
+		t.Errorf("reason = %q", reason)
+	}
+	if !strings.Contains(reason, DenyMessage) {
+		t.Errorf("expected DenyMessage in reason, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_AbsolutePath_Blocks(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "creds.txt")
+	mustWrite(t, path, "jwt="+sampleJWT)
+	reason := ScanReferencedFiles("open "+path, nil)
+	if reason == "" {
+		t.Fatal("expected block for absolute referenced secret file")
+	}
+}
+
+func TestScanReferencedFiles_OversizePolicy_Blocks(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileSizeKB: 1}
+	defer writePolicyHelper(t, &policy)()
+
+	ws := makeWorkspace(t, map[string]string{
+		"big.txt": strings.Repeat("a", 3*1024),
+	})
+	reason := ScanReferencedFiles("read big.txt", []string{ws})
+	if reason == "" {
+		t.Fatal("expected oversize block")
+	}
+	if !strings.Contains(reason, "size limit") {
+		t.Errorf("reason should cite size limit, got %q", reason)
+	}
+}
+
+func TestScanReferencedFiles_AtMention(t *testing.T) {
+	ws := makeWorkspace(t, map[string]string{".env": "KEY=" + sampleJWT})
+	reason := ScanReferencedFiles("look at @.env please", []string{ws})
+	if reason == "" {
+		t.Fatal("expected block for @-mentioned secret file")
+	}
+}
+
+// --------------------------------------------------------------------------
+// ScanPrompt — ordered guardrail chain
+// --------------------------------------------------------------------------
+
+func TestScanPrompt_Clean_Allows(t *testing.T) {
+	defer writePolicyHelper(t, &HooksPolicy{})()
+	if reason := ScanPrompt("please explain this function"); reason != "" {
+		t.Fatalf("clean prompt should allow, got %q", reason)
+	}
+}
+
+func TestScanPrompt_SecretFirst(t *testing.T) {
+	reason := ScanPrompt("token " + sampleJWT)
+	if reason == "" || !strings.Contains(reason, "secret") {
+		t.Fatalf("expected secrets rejection, got %q", reason)
+	}
+}
+
+func TestScanPrompt_PolicyPattern(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.ContentScanning = ContentScanning{
+		Enabled: true,
+		Patterns: []ContentScanPattern{{
+			ID: "ssn", Pattern: `\b\d{3}-\d{2}-\d{4}\b`, Description: "SSN-like",
+		}},
+	}
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("my number is 123-45-6789")
+	if reason == "" || !strings.Contains(reason, "sensitive content") {
+		t.Fatalf("expected policy pattern block, got %q", reason)
+	}
+}
+
+func TestScanPrompt_RestrictedPath(t *testing.T) {
+	policy := HooksPolicy{}
+	setOSPathsPrompt(&policy.DefaultPolicy.RestrictedFiles, []string{"**/*.pem"})
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("open /tmp/certs/server.pem")
+	if reason == "" {
+		t.Fatal("expected restricted path block")
+	}
+}
+
+func TestScanPrompt_BlockedExtension(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.BlockedExtensions = BlockedExtensions{
+		Enabled: true, Extensions: []string{".pem", ".key"},
+	}
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("please read foo.pem")
+	if reason == "" {
+		t.Fatal("expected blocked extension rejection")
+	}
+}
+
+func TestScanPrompt_FilesLimits(t *testing.T) {
+	policy := HooksPolicy{}
+	policy.DefaultPolicy.ContextPolicy.Enabled = true
+	policy.DefaultPolicy.ContextPolicy.FilesLimits = FilesLimits{Enabled: true, MaxFileCount: 1}
+	defer writePolicyHelper(t, &policy)()
+
+	reason := ScanPrompt("compare a.txt and b.txt")
+	if reason == "" {
+		t.Fatal("expected files-limits rejection")
+	}
+}
+
+// setOSPathsPrompt mirrors setOSPaths from shell_test for prompt package tests.
+func setOSPathsPrompt(pp *PathPolicy, paths []string) {
+	pp.Enabled = true
+	switch runtime.GOOS {
+	case "darwin":
+		pp.Mac = paths
+	case "windows":
+		pp.Windows = paths
+	default:
+		pp.Linux = paths
+	}
+}

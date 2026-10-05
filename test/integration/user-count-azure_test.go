@@ -172,6 +172,7 @@ func TestAzureCountMultipleWorkspaceFailed(t *testing.T) {
 }
 
 func TestAzureUserCountWrongToken(t *testing.T) {
+	t.Skip("Skipping - waiting for a secret token")
 	_ = viper.BindEnv(pat)
 	err, _ := executeCommand(
 		t,

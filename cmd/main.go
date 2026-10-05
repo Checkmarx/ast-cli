@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
 	"github.com/checkmarx/ast-cli/internal/commands"
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -27,6 +29,7 @@ const (
 func main() {
 	var err error
 	bindProxy()
+	disableKeyringMode()
 	bindKeysToEnvAndDefault()
 	err = configuration.LoadConfiguration()
 	exitIfError(err)
@@ -181,6 +184,12 @@ func bindProxy() {
 	err = os.Setenv(params.ProxyEnv, viper.GetString(params.ProxyKey))
 	if err != nil {
 		exitIfError(err)
+	}
+}
+
+func disableKeyringMode() {
+	if runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
+		_ = os.Setenv(credentialstore.KeyringModeEnvVar, "disabled")
 	}
 }
 

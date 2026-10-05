@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/viper"
@@ -48,6 +49,11 @@ var rootProjectName string
 func TestMain(m *testing.M) {
 	log.Println("CLI integration tests started")
 	viper.SetDefault(resolverEnvVar, resolverEnvVarDefault)
+	// CI runners have no user keyring; credentials arrive via environment
+	// variables, which the resolver serves in every policy mode.
+	if os.Getenv(credentialstore.KeyringModeEnvVar) == "" {
+		_ = os.Setenv(credentialstore.KeyringModeEnvVar, "disabled")
+	}
 	exitVal := m.Run()
 	//deleteScanAndProject()
 	log.Println("CLI integration tests done")

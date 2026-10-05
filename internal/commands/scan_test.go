@@ -11,13 +11,15 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
-	"time"
 
+	syftExtractor "github.com/Checkmarx/containers-syft-packages-extractor/pkg/syftPackagesExtractor"
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	errorConstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	exitCodes "github.com/checkmarx/ast-cli/internal/constants/exit-codes"
+	"github.com/checkmarx/ast-cli/internal/filtering"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -705,6 +707,44 @@ func TestCreateScanWithPrimaryBranchFlagStringValue_Should_Fail(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid argument \"string\"", err.Error())
 }
 
+func TestCreateScanWithSastBaseBranchWithoutIncremental_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "main")
+	assert.ErrorContains(t, err, "--base-branch flag requires --sast-incremental to be set to true", err.Error())
+}
+
+func TestCreateScanWithSastBaseBranchAndIncremental_Passed(t *testing.T) {
+	execCmdNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--sast-incremental", "--base-branch", "main")
+}
+
+func TestCreateScanWithEmptyBaseBranch_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "")
+	assert.ErrorContains(t, err, "--base-branch flag cannot be empty. Please provide a valid branch name", err.Error())
+}
+
+func TestCreateScanWithWhitespaceBaseBranch_Failed(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "scan", "create", "--project-name", "MOCK", "-s", dummyRepo, "-b", "dummy_branch", "--debug", "--base-branch", "   ")
+	assert.ErrorContains(t, err, "--base-branch flag cannot be empty. Please provide a valid branch name", err.Error())
+}
+
+func TestGetScanByIDWithMetadataFetched_EnrichesWithIncrementalStatus(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", "MOCK_SCAN_ID", "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Incremental"), "expected output to contain 'Incremental', got: %s", buffer.String())
+}
+
+func TestGetScanByIDWithMetadataFetchFails_PreservesOriginalValue(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", mock.FakeMetadataErrorID, "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Full"), "expected output to contain 'Full', got: %s", buffer.String())
+	assert.Assert(t, !strings.Contains(buffer.String(), "Incremental"), "expected output NOT to contain 'Incremental', got: %s", buffer.String())
+}
+
+func TestGetScanByIDWithEmptyMetadata_UsesOriginalValue(t *testing.T) {
+	buffer, err := executeRedirectedTestCommand("scan", "show", "--scan-id", mock.FakeMetadataEmptyID, "--format", "table")
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(buffer.String(), "Incremental"), "expected output to contain 'Incremental', got: %s", buffer.String())
+}
+
 func Test_parseThresholdSuccess(t *testing.T) {
 	want := make(map[string]int)
 	want["iac-security-low"] = 1
@@ -836,7 +876,7 @@ func TestAddAiscScan_WhenAiscEnabledAndFeatureFlagEnabled_ShouldReturnConfig(t *
 	var resubmitConfig []wrappers.Config
 
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -862,7 +902,7 @@ func TestAddAiscScan_WhenAiscDisabled_ShouldReturnNil(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -878,7 +918,7 @@ func TestAddAiscScan_WhenFeatureFlagDisabled_ShouldReturnNil(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: false,
 	}
 	defer clearFlags()
@@ -900,7 +940,7 @@ func TestAddAiscScan_WithResubmitConfig_ShouldHandleCorrectly(t *testing.T) {
 		},
 	}
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -919,7 +959,7 @@ func TestAddAiscScan_ConfigStructure_ShouldHaveCorrectFormat(t *testing.T) {
 	wrappers.ClearCache()
 	var resubmitConfig []wrappers.Config
 	mock.Flag = wrappers.FeatureFlagResponseModel{
-		Name:   wrappers.AISupplyChainEnabled,
+		Name:   wrappers.AISupplyChainGAEnabled,
 		Status: true,
 	}
 	defer clearFlags()
@@ -3540,11 +3580,13 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 	tests := []struct {
 		name                             string
 		requiredIncrementalSet           bool
+		requiredBaseBranchSet            bool
 		requiredFastScanSet              bool
 		requiredLightQueriesSet          bool
 		requiredRecommendedExclusionsSet bool
 		fastScanFlag                     string
 		incrementalFlag                  string
+		baseBranchFlag                   string
 		lightQueriesFlag                 string
 		recommendedExclusionsFlag        string
 		expectedConfig                   wrappers.SastConfig
@@ -3715,6 +3757,22 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 				LightQueries: "true",
 			},
 		},
+		{
+			name:                   "Incremental is true and BaseBranch is set",
+			requiredIncrementalSet: true,
+			requiredBaseBranchSet:  true,
+			incrementalFlag:        "true",
+			baseBranchFlag:         "main",
+			expectedConfig: wrappers.SastConfig{
+				Incremental: "true",
+				BaseBranch:  "main",
+			},
+		},
+		{
+			name:                  "BaseBranch is not set",
+			requiredBaseBranchSet: false,
+			expectedConfig:        wrappers.SastConfig{},
+		},
 	}
 
 	oldActualScanTypes := actualScanTypes
@@ -3733,6 +3791,7 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			cmdCommand.PersistentFlags().Bool(commonParams.SastFastScanFlag, false, "Fast scan flag")
 			cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+			cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastLightQueriesFlag, false, "Enable SAST Light Queries")
 			cmdCommand.PersistentFlags().Bool(commonParams.SastRecommendedExclusionsFlags, false, "Enable SAST Recommended Exclusions")
 
@@ -3743,6 +3802,9 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 			if tt.requiredIncrementalSet {
 				_ = cmdCommand.PersistentFlags().Set(commonParams.IncrementalSast, tt.incrementalFlag)
+			}
+			if tt.requiredBaseBranchSet {
+				_ = cmdCommand.PersistentFlags().Set(commonParams.BaseBranch, tt.baseBranchFlag)
 			}
 
 			if tt.requiredLightQueriesSet {
@@ -3769,6 +3831,70 @@ func TestAddSastScan_ScanFlags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAddSastScan_BaseBranchInheritedFromResubmit(t *testing.T) {
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.SastType
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.SastType,
+			Value: map[string]interface{}{
+				configIncremental: "true",
+				configBaseBranch:  "main",
+			},
+		},
+	}
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+	cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	actualSastConfig := *result[resultsMapValue].(*wrappers.SastConfig)
+	assert.Equal(t, "main", actualSastConfig.BaseBranch)
+	assert.Equal(t, "true", actualSastConfig.Incremental)
+}
+
+func TestAddSastScan_BaseBranchFlagOverridesResubmit(t *testing.T) {
+	originalScanTypes := actualScanTypes
+	actualScanTypes = commonParams.SastType
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	resubmitConfig := []wrappers.Config{
+		{
+			Type: commonParams.SastType,
+			Value: map[string]interface{}{
+				configIncremental: "true",
+				configBaseBranch:  "main",
+			},
+		},
+	}
+
+	cmdCommand := &cobra.Command{
+		Use:   "scan",
+		Short: "Scan a project",
+		Long:  `Scan a project`,
+	}
+	cmdCommand.PersistentFlags().Bool(commonParams.IncrementalSast, false, "Incremental scan flag")
+	cmdCommand.PersistentFlags().String(commonParams.BaseBranch, "", "Base branch for incremental SAST scan")
+
+	_ = cmdCommand.Execute()
+	_ = cmdCommand.Flags().Set(commonParams.BaseBranch, "develop")
+
+	result := addSastScan(cmdCommand, resubmitConfig)
+
+	actualSastConfig := *result[resultsMapValue].(*wrappers.SastConfig)
+	assert.Equal(t, "develop", actualSastConfig.BaseBranch)
 }
 
 func TestValidateScanTypes(t *testing.T) {
@@ -5344,7 +5470,9 @@ func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "", sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5373,7 +5501,9 @@ func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5404,7 +5534,9 @@ func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, "./out", sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5441,7 +5573,9 @@ func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
 	sbomAbsoluteExcludes = computeSbomExclusions(projectDir, sbomOutputPath, sbomOutputName)
 	defer func() { sbomAbsoluteExcludes = nil }()
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "")
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5486,16 +5620,836 @@ func TestCreateScanNoScanWithSbomFirst(t *testing.T) {
 }
 
 func setupMockAccessToken() {
-	wrappers.CachedAccessToken = "mock-token-for-testing"
-	wrappers.CachedAccessTime = time.Now()
+	wrappers.SetCachedAccessTokenForTest("mock-token-for-testing")
 	viper.Set(commonParams.TokenExpirySecondsKey, 300)
 }
 
 func cleanupMockAccessToken() {
-	wrappers.CachedAccessToken = ""
-	wrappers.CachedAccessTime = time.Time{}
+	wrappers.SetCachedAccessTokenForTest("")
 
 	wrappers.ClearCache()
 	// Reset to default value (300 seconds as per params/binds.go)
 	viper.Set(commonParams.TokenExpirySecondsKey, 300)
+}
+
+// --skip-default-filter tests
+
+func TestGetFilters_SkipDefaultFilter(t *testing.T) {
+	assert.DeepEqual(t, getIncludeFilters("*.foo", true), []string{"*.foo"})
+	assert.DeepEqual(t, getExcludeFilters("!bar", true), []string{"!bar"})
+
+	includeDefault := getIncludeFilters("*.foo", false)
+	assert.Assert(t, slices.Contains(includeDefault, "*.go"))
+	assert.Assert(t, slices.Contains(includeDefault, "*.foo"))
+
+	excludeDefault := getExcludeFilters("!bar", false)
+	assert.Assert(t, slices.Contains(excludeDefault, "!node_modules"))
+	assert.Assert(t, slices.Contains(excludeDefault, "!bar"))
+}
+
+func TestCompressFolder_DefaultBehaviorUnchanged(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-off-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.bin"), []byte("binary"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "asset.bin"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "lib.js"))
+}
+
+func TestCompressFolder_SkipDefaultFilter(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-on-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.bin"), []byte("binary"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.bin"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "lib.js"))
+}
+
+func TestCreateScanSkipDefaultFilter_Wiring(t *testing.T) {
+	execCmdNilAssertion(t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch",
+		"--skip-default-filter",
+	)
+}
+
+// skip-default-filter bypasses base filters, ant exclude pattern still applies.
+func TestCompressFolder_SkipDefaultFilter_WithAntFilterExclude(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-ant-exclude-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+	excludedDir := filepath.Join(projectDir, "excluded_by_ant")
+	assert.NilError(t, os.MkdirAll(excludedDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(excludedDir, "marker.go"), []byte("package excluded"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!excluded_by_ant/**"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "marker.go"))
+}
+
+// skip-default-filter with an ant include-only pattern drops non-matching files too.
+func TestCompressFolder_SkipDefaultFilter_WithAntFilterIncludeOnly(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "skip-default-filter-ant-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"**/*.customext"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "main.go"))
+}
+
+// file-filter-ext without skip-default-filter: base filters and the ant filter both apply.
+func TestCompressFolder_DefaultFilters_WithAntFilter(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "default-filter-with-ant-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0600))
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "asset.customext"), []byte("data"), 0600))
+	nodeModulesDir := filepath.Join(projectDir, "node_modules")
+	assert.NilError(t, os.MkdirAll(nodeModulesDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(nodeModulesDir, "lib.js"), []byte("//lib"), 0600))
+	keepDir := filepath.Join(projectDir, "keep_dir")
+	assert.NilError(t, os.MkdirAll(keepDir, 0700))
+	assert.NilError(t, os.WriteFile(filepath.Join(keepDir, "marker.go"), []byte("package keep"), 0600))
+
+	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!keep_dir/**"})
+	assert.NilError(t, matcherErr)
+
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "asset.customext"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "lib.js"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "marker.go"))
+}
+
+// Regression tests for --container-images with --containers-local-resolution: a resolution
+// failure used to be swallowed, so the scan completed with 0 findings and exit 0 instead of
+// failing. The payloads below were captured from real containers-resolver runs, not hand-written.
+
+// resolvedArm64Payload: captured verbatim (packages truncated) from a live arm64 resolver run.
+const resolvedArm64Payload = `[{
+  "ContainerImage": {
+   "ImageName": "docker:local-arm64-image",
+   "ImageTag": "arm64",
+   "Distribution": "alpine:3.20.10",
+   "ImageLocations": [{"Origin": "UserInput", "Path": "Custom Images", "FinalStage": false}],
+   "status": "Resolved"
+  },
+  "ContainerPackages": [{"Name": "musl", "Version": "1.2.5-r1"}]
+ }]`
+
+// platformMismatchPayload: an arm64 image resolved against the wrong platform.
+const platformMismatchPayload = `[{
+  "ContainerImage": {
+   "ImageName": "docker:vrif/migration",
+   "ImageTag": "0.0.1-32fa28e8",
+   "ImageLocations": [{"Origin": "UserInput", "Path": "Custom Images", "FinalStage": false}],
+   "status": "Failed",
+   "ScanError": "The image architecture does not match the requested platform. Registry: index.docker.io"
+  },
+  "ContainerPackages": []
+ }]`
+
+// badTagPayload: a public image with a non-existent tag, captured verbatim from a live run.
+const badTagPayload = `[{
+  "ContainerImage": {
+   "ImageName": "debian",
+   "ImageTag": "non-existent-tag-999",
+   "Distribution": "NONE",
+   "ImageId": "debian:non-existent-tag-999",
+   "ImageLocations": [{"Origin": "UserInput", "Path": "Custom Images", "FinalStage": false}],
+   "status": "Failed",
+   "ScanError": "The requested image is not found or is unavailable. Registry: index.docker.io"
+  },
+  "ContainerPackages": []
+ }]`
+
+// fakeContainerResolver writes a resolution file that may contain Failed entries and still
+// returns nil, matching the real resolver's behaviour.
+type fakeContainerResolver struct {
+	payload    string
+	gotImages  []string
+	gotInvoked bool
+}
+
+func (f *fakeContainerResolver) Resolve(scanPath, resolutionFolderPath string, images []string, isDebug bool) error {
+	f.gotInvoked = true
+	f.gotImages = images
+
+	dir := filepath.Join(resolutionFolderPath, ".checkmarx", "containers")
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, containerResolutionFileName), []byte(f.payload), 0o600); err != nil {
+		return err
+	}
+	// Per-image failures are reported only inside the file, never through this return value.
+	return nil
+}
+
+func runTicketScenario(t *testing.T, payload, containerImages string) (*fakeContainerResolver, error) {
+	t.Helper()
+
+	fake := &fakeContainerResolver{payload: payload}
+	original := containerResolver
+	containerResolver = fake
+	t.Cleanup(func() { containerResolver = original })
+
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool("debug", false, "")
+
+	return fake, runContainerResolver(cmd, t.TempDir(), containerImages, true)
+}
+
+func TestLocallyBuiltArm64ImageLetsTheScanProceed(t *testing.T) {
+	fake, err := runTicketScenario(t, resolvedArm64Payload, "docker:local-arm64-image:arm64")
+
+	assert.NilError(t, err, "a resolved arm64 image must not block the scan")
+	assert.Assert(t, fake.gotInvoked, "the resolver must actually be invoked")
+	assert.Equal(t, len(fake.gotImages), 1)
+	assert.Equal(t, fake.gotImages[0], "docker:local-arm64-image:arm64", "the image must reach the resolver unmangled, prefix included")
+}
+
+func TestPlatformMismatchStopsTheScan(t *testing.T) {
+	_, err := runTicketScenario(t, platformMismatchPayload, "docker:vrif/migration:0.0.1-32fa28e8")
+
+	assert.Assert(t, err != nil, "an unresolved image must fail the scan, not complete silently")
+	assert.ErrorContains(t, err, "docker:vrif/migration:0.0.1-32fa28e8")
+	assert.ErrorContains(t, err, "NOT scanned")
+	assert.ErrorContains(t, err, "The image architecture does not match the requested platform")
+}
+
+// Not arm64-specific: any resolution failure, not just a platform mismatch, must fail the scan.
+func TestAnyResolutionFailureStopsTheScan(t *testing.T) {
+	_, err := runTicketScenario(t, badTagPayload, "debian:non-existent-tag-999")
+
+	assert.Assert(t, err != nil, "a generic resolution failure must fail the scan too")
+	assert.ErrorContains(t, err, "debian:non-existent-tag-999")
+	assert.ErrorContains(t, err, "The requested image is not found or is unavailable")
+}
+
+// A Failed entry must never coexist with a nil error - that combination made the scan
+// indistinguishable from a clean one.
+func TestFailedEntryNeverReportsSuccess(t *testing.T) {
+	for name, payload := range map[string]string{
+		"platform mismatch": platformMismatchPayload,
+		"image not found":   badTagPayload,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := runTicketScenario(t, payload, "some-image:tag")
+			assert.Assert(t, err != nil, "a Failed resolution entry must never be reported as success")
+		})
+	}
+}
+
+// An image only discovered in the sources, not named explicitly, must still just warn.
+func TestDiscoveredImageStillOnlyWarns(t *testing.T) {
+	_, err := runTicketScenario(t, discoveredOnlyPayload, "")
+	assert.NilError(t, err, "an image only discovered in the sources must not fail the scan")
+}
+
+// Compile-time proof the fake honours the interface the CLI actually injects.
+var _ wrappers.ContainerResolverWrapper = &fakeContainerResolver{}
+
+// realFailedResolution: captured verbatim from a live run (note the lower-case "status" key).
+const realFailedResolution = `[
+ {
+  "ContainerImage": {
+   "ImageName": "debian",
+   "ImageTag": "non-existent-tag-999",
+   "Distribution": "NONE",
+   "ImageHash": "",
+   "ImageId": "debian:non-existent-tag-999",
+   "ImageLocations": [
+    {"Origin": "UserInput", "Path": "Custom Images", "FinalStage": false}
+   ],
+   "Layers": [],
+   "History": [],
+   "status": "Failed",
+   "ScanError": "The requested image is not found or is unavailable. Registry: index.docker.io"
+  },
+  "ContainerPackages": []
+ }
+]`
+
+// discoveredOnlyPayload: a Failed entry reached only through Dockerfile discovery.
+const discoveredOnlyPayload = `[{"ContainerImage":{"ImageName":"internal/app","ImageTag":"1.0",
+		"ImageLocations":[{"Origin":"Dockerfile","Path":"/src/Dockerfile"}],
+		"status":"Failed","ScanError":"The requested image is not found or is unavailable."},
+		"ContainerPackages":[]}]`
+
+func writeResolution(t *testing.T, content string) string {
+	t.Helper()
+	dir := t.TempDir()
+	resolutionDir := filepath.Join(dir, ".checkmarx", "containers")
+	assert.NilError(t, os.MkdirAll(resolutionDir, 0o750))
+	assert.NilError(t, os.WriteFile(filepath.Join(resolutionDir, containerResolutionFileName), []byte(content), 0o600))
+	return dir
+}
+
+func TestReportUnresolvedContainerImages_UserRequestedImageFails(t *testing.T) {
+	err := reportUnresolvedContainerImages(writeResolution(t, realFailedResolution))
+
+	assert.Assert(t, err != nil, "a user-requested image that failed to resolve must return an error")
+	assert.ErrorContains(t, err, "debian:non-existent-tag-999")
+	assert.ErrorContains(t, err, "NOT scanned")
+	assert.ErrorContains(t, err, "The requested image is not found or is unavailable")
+}
+
+func TestReportUnresolvedContainerImages_DiscoveredImageOnlyWarns(t *testing.T) {
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, discoveredOnlyPayload)))
+}
+
+func TestReportUnresolvedContainerImages_MixedOriginCountsAsRequested(t *testing.T) {
+	mixed := `[{"ContainerImage":{"ImageName":"internal/app","ImageTag":"1.0",
+		"ImageLocations":[{"Origin":"Dockerfile","Path":"/src/Dockerfile"},{"Origin":"UserInput","Path":"Custom Images"}],
+		"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, mixed))
+	assert.Assert(t, err != nil, "an image also named by the user must fail the scan")
+	assert.ErrorContains(t, err, "internal/app:1.0")
+}
+
+func TestReportUnresolvedContainerImages_ResolvedImageIsSilent(t *testing.T) {
+	resolved := `[{"ContainerImage":{"ImageName":"docker:local-arm64-image","ImageTag":"arm64",
+		"ImageLocations":[{"Origin":"UserInput","Path":"Custom Images"}],"status":"Resolved"},
+		"ContainerPackages":[{"Name":"musl"}]}]`
+
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, resolved)))
+}
+
+// Resolve already reports any failure of the resolution step itself through its return value.
+func TestReportUnresolvedContainerImages_MissingFileIsNotAnError(t *testing.T) {
+	assert.NilError(t, reportUnresolvedContainerImages(t.TempDir()))
+}
+
+func TestReportUnresolvedContainerImages_UnparsableFileIsNotAnError(t *testing.T) {
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, "not json at all")))
+}
+
+func TestReportUnresolvedContainerImages_AggregatesMultipleFailures(t *testing.T) {
+	multiple := `[
+		{"ContainerImage":{"ImageName":"a","ImageTag":"1","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"first"},"ContainerPackages":[]},
+		{"ContainerImage":{"ImageName":"b","ImageTag":"2","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"second"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, multiple))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "2 container images")
+	assert.ErrorContains(t, err, "a:1")
+	assert.ErrorContains(t, err, "b:2")
+}
+
+func TestReportUnresolvedContainerImages_FailureWithoutScanErrorStillReported(t *testing.T) {
+	noReason := `[{"ContainerImage":{"ImageName":"c","ImageTag":"3","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, noReason))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "c:3")
+	assert.ErrorContains(t, err, "the image could not be resolved")
+}
+
+func TestReportUnresolvedContainerImages_EmptyEntriesListIsNotAnError(t *testing.T) {
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, "[]")))
+}
+
+func TestReportUnresolvedContainerImages_ResolvedEntriesAreSkippedAmongFailures(t *testing.T) {
+	mixedStatuses := `[
+		{"ContainerImage":{"ImageName":"good","ImageTag":"1","ImageLocations":[{"Origin":"UserInput"}],"status":"Resolved"},"ContainerPackages":[{"Name":"x"}]},
+		{"ContainerImage":{"ImageName":"bad","ImageTag":"2","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, mixedStatuses))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "bad:2")
+	assert.Assert(t, !strings.Contains(err.Error(), "good:1"), "a Resolved entry must never appear in the failure report")
+}
+
+func TestReportUnresolvedContainerImages_NoLocationsIsTreatedAsDiscovered(t *testing.T) {
+	noLocations := `[{"ContainerImage":{"ImageName":"orphan","ImageTag":"1","ImageLocations":[],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	assert.NilError(t, reportUnresolvedContainerImages(writeResolution(t, noLocations)),
+		"an entry with no locations at all must not be treated as user-requested")
+}
+
+func TestReportUnresolvedContainerImages_StatusAndOriginAreCaseInsensitive(t *testing.T) {
+	upperCase := `[{"ContainerImage":{"ImageName":"case-test","ImageTag":"1","ImageLocations":[{"Origin":"USERINPUT"}],"status":"FAILED","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, upperCase))
+	assert.Assert(t, err != nil, "case differences in status/origin must not hide a requested failure")
+	assert.ErrorContains(t, err, "case-test:1")
+}
+
+// Asserts the warning's exact wording, not just the nil-error contract.
+func TestReportUnresolvedContainerImages_DiscoveredWarningIsLogged(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, discoveredOnlyPayload))
+
+	assert.NilError(t, err)
+	loggedMsg := logBuffer.String()
+	assert.Assert(t, strings.Contains(loggedMsg, "WARNING"))
+	assert.Assert(t, strings.Contains(loggedMsg, "1 container image"))
+	assert.Assert(t, strings.Contains(loggedMsg, "was NOT scanned"))
+	assert.Assert(t, strings.Contains(loggedMsg, "internal/app:1.0"))
+}
+
+func TestReportUnresolvedContainerImages_DiscoveredWarningPluralWording(t *testing.T) {
+	twoDiscovered := `[
+		{"ContainerImage":{"ImageName":"a","ImageTag":"1","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"x"},"ContainerPackages":[]},
+		{"ContainerImage":{"ImageName":"b","ImageTag":"2","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"y"},"ContainerPackages":[]}]`
+
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, twoDiscovered))
+
+	assert.NilError(t, err, "discovered-only failures must never fail the scan, however many there are")
+	loggedMsg := logBuffer.String()
+	assert.Assert(t, strings.Contains(loggedMsg, "2 container images"))
+	assert.Assert(t, strings.Contains(loggedMsg, "were NOT scanned"))
+}
+
+func TestReportUnresolvedContainerImages_RequestedAndDiscoveredTogether(t *testing.T) {
+	mixed := `[
+		{"ContainerImage":{"ImageName":"requested-img","ImageTag":"1","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]},
+		{"ContainerImage":{"ImageName":"discovered-img","ImageTag":"2","ImageLocations":[{"Origin":"Dockerfile"}],"status":"Failed","ScanError":"boom2"},"ContainerPackages":[]}]`
+
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	defer log.SetOutput(os.Stderr)
+
+	err := reportUnresolvedContainerImages(writeResolution(t, mixed))
+
+	assert.Assert(t, err != nil, "a requested failure must fail the scan even alongside a merely-discovered one")
+	assert.ErrorContains(t, err, "requested-img:1")
+	assert.Assert(t, !strings.Contains(err.Error(), "discovered-img"), "the discovered image must not appear in the fatal error")
+	assert.Assert(t, strings.Contains(logBuffer.String(), "discovered-img:2"), "the discovered image must still be warned about")
+}
+
+func TestReportUnresolvedContainerImages_EmptyTagDisplaysNameOnly(t *testing.T) {
+	noTag := `[{"ContainerImage":{"ImageName":"registry.example.com/no-tag-image","ImageTag":"","ImageLocations":[{"Origin":"UserInput"}],"status":"Failed","ScanError":"boom"},"ContainerPackages":[]}]`
+
+	err := reportUnresolvedContainerImages(writeResolution(t, noTag))
+	assert.Assert(t, err != nil)
+	assert.ErrorContains(t, err, "registry.example.com/no-tag-image -")
+	assert.Assert(t, !strings.Contains(err.Error(), "registry.example.com/no-tag-image:"),
+		"an empty tag must not produce a trailing colon")
+}
+
+func TestIsUserRequestedContainerImage(t *testing.T) {
+	tests := []struct {
+		name  string
+		entry syftExtractor.ContainerResolution
+		want  bool
+	}{
+		{
+			name:  "no locations at all",
+			entry: syftExtractor.ContainerResolution{},
+			want:  false,
+		},
+		{
+			name: "single UserInput location",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "UserInput"}},
+			}},
+			want: true,
+		},
+		{
+			name: "single Dockerfile location",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "Dockerfile"}},
+			}},
+			want: false,
+		},
+		{
+			name: "origin match is case-insensitive",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "userinput"}},
+			}},
+			want: true,
+		},
+		{
+			name: "UserInput among several locations",
+			entry: syftExtractor.ContainerResolution{ContainerImage: syftExtractor.ContainerImage{
+				ImageLocations: []syftExtractor.ImageLocation{{Origin: "Dockerfile"}, {Origin: "UserInput"}},
+			}},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, isUserRequestedContainerImage(&tt.entry), tt.want)
+		})
+	}
+}
+
+func TestContainerImageDisplayName(t *testing.T) {
+	assert.Equal(t, containerImageDisplayName("nginx", "alpine"), "nginx:alpine")
+	assert.Equal(t, containerImageDisplayName("nginx", ""), "nginx")
+}
+
+func TestContainerImageFailureReason(t *testing.T) {
+	assert.Equal(t, containerImageFailureReason(""), "the image could not be resolved")
+	assert.Equal(t, containerImageFailureReason("custom reason"), "custom reason")
+}
+
+func TestContainerImageCount(t *testing.T) {
+	assert.Equal(t, containerImageCount(1), "1 container image")
+	assert.Equal(t, containerImageCount(2), "2 container images")
+	assert.Equal(t, containerImageCount(0), "0 container images")
+}
+
+func TestWasOrWere(t *testing.T) {
+	assert.Equal(t, wasOrWere(1), "was")
+	assert.Equal(t, wasOrWere(2), "were")
+	assert.Equal(t, wasOrWere(0), "were")
+}
+
+// zipFileCount returns count of entries in zip with given filename to guard against duplicates.
+func zipFileCount(t *testing.T, zipPath, filename string) int {
+	t.Helper()
+	r, err := zip.OpenReader(zipPath)
+	assert.NilError(t, err)
+	defer func() { _ = r.Close() }()
+	count := 0
+	for _, f := range r.File {
+		if filepath.Base(f.Name) == filename || f.Name == filename {
+			count++
+		}
+	}
+	return count
+}
+
+func TestCompressFolder_GitExcluded_WhenContributorsCsvEnabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-git-exclude-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "HEAD"),
+		".git contents should be excluded when --exclude-git-folder flag is passed")
+}
+
+func TestCompressFolder_GitIncluded_WhenContributorsCsvDisabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-git-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "HEAD"),
+		".git contents must still be force-included when --exclude-git-folder flag is not passed")
+}
+
+func TestCompressFolder_ContributorsFilesForceIncluded_WhenEnabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-force-include-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"),
+		[]byte(`{"repositoryUrl":"https://example.com/repo.git"}`), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, 1, zipFileCount(t, zipPath, "contributors.csv"),
+		"contributors.csv must be present exactly once, despite *.csv not being in the default include-filter allowlist")
+	assert.Equal(t, 1, zipFileCount(t, zipPath, "metadata.json"),
+		"metadata.json must be present exactly once (not duplicated by both the normal walk and the explicit add-back step)")
+}
+
+func TestCompressFolder_ContributorsFilesNotIncluded_WhenDisabled(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-disabled-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "contributors.csv"),
+		"without the feature flag, contributors.csv should be dropped by the default include-filter allowlist, same as before this feature existed")
+}
+
+func TestCompressFolder_StaleFilesNotIncluded_WhenGenerationFailedThisRun(t *testing.T) {
+	projectDir, err := os.MkdirTemp("", "contributors-csv-stale-*")
+	assert.NilError(t, err)
+	defer func() { _ = os.RemoveAll(projectDir) }()
+
+	assert.NilError(t, os.WriteFile(filepath.Join(projectDir, "main.go"), []byte("package main"), 0o600))
+	gitDir := filepath.Join(projectDir, ".git")
+	assert.NilError(t, os.MkdirAll(gitDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main"), 0o600))
+
+	checkmarxDir := filepath.Join(projectDir, ".checkmarx")
+	assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"),
+		[]byte("2025-09-30T10:35:05+03:00,abc123,alice@example.com,Alice\n"), 0o600))
+	assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"),
+		[]byte(`{"repositoryUrl":"https://example.com/repo.git"}`), 0o600))
+
+	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
+	assert.NilError(t, matcherErr)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, true)
+	assert.NilError(t, err)
+	defer func() { _ = os.Remove(zipPath) }()
+
+	assert.Equal(t, true, zipContainsFile(t, zipPath, "main.go"))
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "HEAD"),
+		".git should still be excluded - that decision is tied to the flag alone, not generation success")
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "contributors.csv"),
+		"stale contributors.csv from a previous run must not be picked up when this run's generation failed")
+	assert.Equal(t, false, zipContainsFile(t, zipPath, "metadata.json"),
+		"stale metadata.json from a previous run must not be picked up when this run's generation failed")
+}
+
+func TestIsGeneratedContributorsFile(t *testing.T) {
+	tests := []struct {
+		relPath  string
+		expected bool
+		desc     string
+	}{
+		{".checkmarx/contributors.csv", true, "exact match for CSV file"},
+		{".checkmarx/metadata.json", true, "exact match for JSON file"},
+		{".checkmarx/other.txt", false, "non-generated file in .checkmarx"},
+		{"contributors.csv", false, "CSV file not in .checkmarx"},
+		{"metadata.json", false, "JSON file not in .checkmarx"},
+		{".checkmarx/", false, "directory path"},
+		{"", false, "empty path"},
+		{".checkmarx/contributors.csv/", false, "trailing slash"},
+		{"nested/.checkmarx/contributors.csv", false, "nested .checkmarx path"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			result := isGeneratedContributorsFile(tt.relPath)
+			assert.Equal(t, tt.expected, result, "path: %s", tt.relPath)
+		})
+	}
+}
+
+func TestAddGeneratedContributorsFiles(t *testing.T) {
+	t.Run("both files exist and are added to zip", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvContent := []byte("2025-09-30T10:35:05Z,abc123,alice@example.com,Alice\n")
+		jsonContent := []byte(`{"repositoryUrl":"https://example.com/repo.git","commitsCount":5}`)
+
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"), csvContent, 0o600))
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "metadata.json"), jsonContent, 0o600))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err)
+		assert.NilError(t, zipWriter.Close())
+
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/contributors.csv"))
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/metadata.json"))
+	})
+
+	t.Run("only CSV file exists", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvContent := []byte("2025-09-30T10:35:05Z,abc123,alice@example.com,Alice\n")
+		assert.NilError(t, os.WriteFile(filepath.Join(checkmarxDir, "contributors.csv"), csvContent, 0o600))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err)
+		assert.NilError(t, zipWriter.Close())
+
+		assert.Equal(t, true, zipContainsFile(t, zipPath, ".checkmarx/contributors.csv"))
+		assert.Equal(t, false, zipContainsFile(t, zipPath, ".checkmarx/metadata.json"))
+	})
+
+	t.Run("no files exist should not error", func(t *testing.T) {
+		sourceDir := t.TempDir()
+		checkmarxDir := filepath.Join(sourceDir, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		zipPath := filepath.Join(t.TempDir(), "test.zip")
+		zipFile, err := os.Create(zipPath)
+		assert.NilError(t, err)
+		defer func() { _ = zipFile.Close() }()
+
+		zipWriter := zip.NewWriter(zipFile)
+		defer func() { _ = zipWriter.Close() }()
+
+		err = addGeneratedContributorsFiles(zipWriter, sourceDir)
+		assert.NilError(t, err, "should not error when files don't exist")
+	})
+}
+
+func TestCleanGeneratedContributorsFiles(t *testing.T) {
+	t.Run("removes both files and empty .checkmarx folder", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
+		assert.Equal(t, false, fileExists(checkmarxDir), ".checkmarx should be removed when empty")
+	})
+
+	t.Run("preserves .checkmarx folder if other files exist", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		jsonPath := filepath.Join(checkmarxDir, "metadata.json")
+		otherPath := filepath.Join(checkmarxDir, "other.txt")
+
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(jsonPath, []byte("data"), 0o600))
+		assert.NilError(t, os.WriteFile(otherPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(jsonPath), "JSON should be removed")
+		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should be preserved")
+		assert.Equal(t, true, fileExists(otherPath), "other files should be preserved")
+	})
+
+	t.Run("handles only CSV file existing", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		csvPath := filepath.Join(checkmarxDir, "contributors.csv")
+		assert.NilError(t, os.WriteFile(csvPath, []byte("data"), 0o600))
+
+		cleanGeneratedContributorsFiles(dirPath)
+
+		assert.Equal(t, false, fileExists(csvPath), "CSV should be removed")
+		assert.Equal(t, false, fileExists(checkmarxDir), ".checkmarx should be removed when empty")
+	})
+
+	t.Run("handles no .checkmarx folder gracefully", func(t *testing.T) {
+		dirPath := t.TempDir()
+		cleanGeneratedContributorsFiles(dirPath)
+	})
+
+	t.Run("handles missing files gracefully", func(t *testing.T) {
+		dirPath := t.TempDir()
+		checkmarxDir := filepath.Join(dirPath, ".checkmarx")
+		assert.NilError(t, os.MkdirAll(checkmarxDir, 0o700))
+
+		cleanGeneratedContributorsFiles(dirPath)
+		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
+	})
 }

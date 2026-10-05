@@ -1,10 +1,12 @@
 package iacrealtime
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/kicsshutdown"
@@ -108,6 +110,21 @@ func createCommandWithEnhancedPath(enginePath string, args ...string) *exec.Cmd 
 	return cmd
 }
 
+// daemonResponds reports whether the engine at enginePath has a live daemon.
+// `--version` answers from the binary alone, so it stays true while Docker
+// Desktop or the Podman machine is stopped; `info` needs the daemon. Goes
+// through createCommandWithEnhancedPath so a GUI-launched macOS IDE, which does
+// not inherit the shell PATH, resolves credential helpers the same way every
+// other engine call in this package does.
+func daemonResponds(enginePath string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), engineVerifyTimeout*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, enginePath, "info")
+	cmd.Env = createCommandWithEnhancedPath(enginePath, "info").Env
+	return cmd.Run() == nil
+}
+
 // EnsureImageAvailable checks if the KICS image exists locally and pulls it if not available.
 // Returns the resolved engine path on success.
 func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) {
@@ -139,6 +156,14 @@ func (dm *ContainerManager) EnsureImageAvailable(engine string) (string, error) 
 	if pullErr != nil {
 		outputStr := strings.TrimSpace(string(output))
 		logger.PrintIfVerbose("Failed to pull KICS image. Output: " + outputStr)
+
+		// Without this the message below blames the network, sending the user to
+		// check connectivity when the real fix is to start the engine. Probing
+		// here costs nothing: the pull has already failed.
+		if !daemonResponds(resolvedEngine) {
+			return "", errors.Errorf("container engine '%s' is installed but not running. "+
+				"Start Docker Desktop or the Podman machine and retry.", engine)
+		}
 
 		if outputStr != "" {
 			return "", errors.Errorf("Failed to pull KICS image '%s': %s. Please check your network connectivity or pull the image manually using: %s pull %s",

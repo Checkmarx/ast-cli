@@ -22,8 +22,8 @@ const maxRetries = 3
 const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
 
-// AISupplyChainEnabled is the feature flag for AI Supply Chain Engine.
-const AISupplyChainEnabled = "AI_SUPPLY_CHAIN_ENGINE_ENABLED"
+// RepostoreCustomerContributorsCsvEnabled is the feature flag for generating contributors.csv and metadata.json.
+const RepostoreCustomerContributorsCsvEnabled = "REPOSTORE_CUSTOMER_CONTRIBUTORS_CSV_ENABLED"
 
 // AISupplyChainGAEnabled is the feature flag for AI Supply Chain Engine GA.
 const AISupplyChainGAEnabled = "AI_SUPPLY_CHAIN_ENGINE_GA_ENABLED"
@@ -113,8 +113,10 @@ func GetSpecificFeatureFlag(featureFlagsWrapper FeatureFlagsWrapper, flagName st
 		if len(featureFlags) == 0 || DefaultFFLoad {
 			_ = HandleFeatureFlags(featureFlagsWrapper)
 		}
-		// Take the value from FeatureFlags
-		return &FeatureFlagResponseModel{Name: flagName, Status: featureFlags[flagName]}, nil
+		defaultValue := featureFlags[flagName]
+		featureFlagsCache[flagName] = defaultValue // prevent re-fetch on next call
+		return &FeatureFlagResponseModel{Name: flagName, Status: defaultValue}, nil
+
 	}
 
 	UpdateSpecificFeatureFlagMap(flagName, *specificFlag)

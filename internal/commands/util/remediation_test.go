@@ -1,9 +1,11 @@
 package util
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"gotest.tools/assert"
 )
 
@@ -101,6 +103,31 @@ func TestRemediationKicsCommandInvalidEngine(t *testing.T) {
 	abs, _ := filepath.Abs(kicsFileValue)
 	err := executeTestCommand(cmd, resultsFileFlag, resultFileValue, kicsFileFlag, abs, engineFlag, invalidEngineValue)
 	assert.Assert(t, err != nil, InvalidEngineMessage)
+}
+
+func TestBuildRemediationSummary_ParsesAvailableAndAppliedCounts(t *testing.T) {
+	kicsOutput := "Some log line\n" +
+		"Another log line\n" +
+		"Available fixes: 5\n" +
+		"Applied fixes: 3\n"
+
+	summary := buildRemediationSummary(kicsOutput)
+
+	var model wrappers.KicsRemediationSummary
+	assert.NilError(t, json.Unmarshal([]byte(summary), &model))
+	assert.Equal(t, model.AvailableRemediation, 5)
+	assert.Equal(t, model.AppliedRemediation, 3)
+}
+
+func TestBuildRemediationSummary_ZeroCounts(t *testing.T) {
+	kicsOutput := "line1\nline2\nAvailable fixes: 0\nApplied fixes: 0\n"
+
+	summary := buildRemediationSummary(kicsOutput)
+
+	var model wrappers.KicsRemediationSummary
+	assert.NilError(t, json.Unmarshal([]byte(summary), &model))
+	assert.Equal(t, model.AvailableRemediation, 0)
+	assert.Equal(t, model.AppliedRemediation, 0)
 }
 
 func TestRemediationKicsCommandSimilarityFilter(t *testing.T) {
