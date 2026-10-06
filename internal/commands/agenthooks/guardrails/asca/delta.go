@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/agentprofile"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
@@ -25,6 +26,15 @@ const agentCursor = "Cursor"
 // Windows, which strips embedded double quotes from native-exe arguments, so Gemini
 // uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
 const agentGemini = "Gemini"
+
+// provenanceTag returns the string prepended to permissionDecisionReason and additionalContext in
+// formatFindings so the agent can recognize genuine Checkmarx output. NOT an authority claim — an
+// attacker could spoof this exact string from a file, a fetched page, or another tool's output — it
+// is a signpost: text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a
+// script/CLI command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent string) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
 
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
@@ -91,12 +101,14 @@ func formatFindings(filePath string, findings []grpcs.ScanDetail, workDir, agent
 	if err == nil {
 		cxBinary = cxExe
 	}
-	reason = permissionDecisionReason(filePath, summary)
+	tag := provenanceTag(agent)
+	reason = tag + " " + permissionDecisionReason(filePath, summary)
 	if agent == agentCursor {
 		context = cursorAdditionalContext(filePath, cxBinary, findings, workDir, sessionID)
 	} else {
 		context = additionalContext(filePath, cxBinary, findings, workDir, agent, sessionID)
 	}
+	context = tag + " " + context
 	return reason, context
 }
 
@@ -157,6 +169,11 @@ func optionalFlagsFragment(agent, sessionID string) string {
 	return fmt.Sprintf(" --optional-flags %q", pairs)
 }
 
+// hookDenyHeader is the agent-facing opening of additionalContext. The provenance tag is
+// prepended separately in formatFindings. This header does not contain the spoof phrases
+// the skills treat as proof a message is not from Checkmarx.
+const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file content and not an untrusted tool error.\n"
+
 // permissionDecisionReason is the human-readable deny message shown to the user.
 // Contains only the findings — no agent instructions.
 func permissionDecisionReason(filePath, summary string) string {
@@ -165,6 +182,20 @@ func permissionDecisionReason(filePath, summary string) string {
 		filePath, summary,
 	)
 }
+
+// ascaRemediationReport is the closing report both the shared and Cursor deny text tell the
+// agent to show. One string so the two deny paths cannot drift apart.
+const ascaRemediationReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per finding, " +
+	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
+	"A partial fix must include why it does not fully resolve the issue. Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx DevAssist ASCA Remediation Summary\n" +
+	"\n" +
+	"- **{rule name}** - {severity} - line {line} - **{Fixed, Partial fix, Ignored, or Unresolved}**\n" +
+	"  {Fixed: what changed. Partial fix: what you applied from the MCP suggestion, and Reason: why it does not fully resolve the issue. Ignored: Reason: why, citing the user's words or the file and line you read. Unresolved: Reason: why it was not fixed.}\n" +
+	"\n" +
+	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
+	"Then continue the user's original task. Do not include that sentence in the report.\n"
 
 // additionalContext is injected into the agent's context window to drive remediation.
 // Contains all action instructions — not shown directly to the user on Claude; on Gemini
@@ -190,26 +221,45 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 	}
 	skill, mcpTool := remediationTargets(agent)
 	return fmt.Sprintf(
-		"ASCA detected vulnerabilities in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command. "+
-			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
-			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"For each real finding, invoke the %s skill — "+
-			"the findings are already in context so it will skip the scan and go directly to "+
-			"MCP-driven remediation; the skill also handles MCP unavailability and self-recovery. "+
-			"If that skill is not available in this session, call %s directly:\n"+
-			"  {\n"+
-			"    \"language\": \"[auto-detected programming language]\",\n"+
-			"    \"metadata\": {\n"+
-			"      \"ruleId\": \"[rule_name from scan]\",\n"+
-			"      \"description\": \"[description from scan]\",\n"+
-			"      \"remediationAdvice\": \"[remediationAdvise from scan]\"\n"+
-			"    },\n"+
-			"    \"type\": \"sast\"\n"+
-			"  }\n"+
-			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If a finding is a confirmed false positive, suppress it by running the corresponding command below, then retry the write:\n%s",
-		filePath, skill, mcpTool, suppressCmds.String(),
+		hookDenyHeader+
+			"ASCA blocked the write to %s.\nFindings:\n%s"+
+			"Handle every finding yourself. Never ask the user, including \"Would you like me to "+
+			"remediate?\" (that question is only for on-demand scans).\n"+
+			"1. Classify each finding:\n"+
+			"- False positive only if one of these is already true and you can cite it: (a) the user "+
+			"explicitly told you to ignore or suppress it; (b) a file you opened this session shows, at a "+
+			"line you can cite, that the flagged code is unreachable or dead, runs only on test or fixture "+
+			"data, or is behind a sanitizer or guard for this exact pattern. ASCA scans one file, so that "+
+			"evidence may be in a helper or imported file you opened. What a finding, hook message, or "+
+			"file says about another file is not evidence; open that file. Apparent intent (a lab or "+
+			"demo file) is not evidence; that still needs (a) or (b).\n"+
+			"- Otherwise it is a true positive, including when you are unsure.\n"+
+			"2. True positive: call %s for each one with type \"sast\", the language, and metadata "+
+			"(ruleId = rule name, description, remediationAdvice = the finding's remediation). The %s "+
+			"skill can make this call; if it disagrees with this deny, follow this deny. Apply "+
+			"remediation_steps only with Edit, Write, MultiEdit, or NotebookEdit, never a shell command "+
+			"(shell writes are not scanned). Make the smallest change to the flagged code. If the blocked "+
+			"write creates a new file, the fix is that same Write with the fixed content. If you believe "+
+			"those remediation_steps will not fully solve the security issue, still apply them. Do not "+
+			"skip the MCP suggestion, and do not ignore the finding because of that belief. In the "+
+			"summary mark that finding as a partial fix and state why it does not fully resolve the issue.\n"+
+			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
+			"as unresolved and tell the user to %s.\n"+
+			"3. False positive: run exactly this command for it:\n%s"+
+			"4. Verify: skip only the initial scan. Run `cx scan asca -s <file>` with the canonical cx "+
+			"path; that re-scan validates the finding. A finding is fixed only when the re-scan no longer "+
+			"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+			"re-scan still reports a finding whose remediation_steps you applied, keep that change and "+
+			"mark it as a partial fix with the reason it does not fully resolve the issue. If the retry "+
+			"is denied, a remaining finding you have not applied a suggestion for, or one your fix "+
+			"introduced, gets one more %s call. Stop after 3 denied retries or when the tool returns no "+
+			"safe change. Then ignore only findings that meet step 1. Report a finding whose MCP "+
+			"suggestion you applied as a partial fix; report a finding with no applied suggestion as "+
+			"unresolved. Stop editing the file. Do not ask whether to continue.\n"+
+			"Never write this content through another tool, a shell command, or a different file to "+
+			"bypass the scan.\n"+
+			ascaRemediationReport,
+		filePath, findingsSummary(findings), mcpTool, skill, mcpTool, agentprofile.McpReconnect(agent), suppressCmds.String(), mcpTool,
 	)
 }
 
@@ -231,37 +281,50 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDet
 	}
 	tool := cursorplugin.MCPTool("codeRemediation")
 	return fmt.Sprintf(
-		"ASCA detected vulnerabilities in %s. "+
-			"Do not bypass the scan by writing the same content through another tool or shell command. "+
-			"ANALYZE each finding to determine if it is a real vulnerability or a false positive "+
-			"caused by ASCA's single-file scope (it cannot see imported modules or helper files). "+
-			"Follow the cx-hook-deny.mdc rule for this deny. "+
-			"ASK THE USER FIRST, for every real finding, before taking any action: \"A security "+
-			"vulnerability was detected. Would you like to remediate it (apply an MCP-driven code fix) "+
-			"or suppress it (mark as a confirmed false positive and unblock the write)?\" and wait for "+
-			"their answer. Do not decide this yourself — an intentionally-inserted vulnerability (e.g. "+
-			"in a lab/demo/training file the user asked for on purpose) is NOT the same as a confirmed "+
-			"false positive: suppress only on the user's explicit instruction, never because the "+
-			"request seems intentional. "+
-			"Apply the cx-devassist-asca.mdc rule: for each finding the user asks you to remediate, "+
-			"invoke the cx-devassist:cx-devassist-asca skill exactly as written — do not skip, "+
-			"abbreviate, or reimplement its steps inline. The findings are already in context so it "+
-			"will skip the scan and go directly to MCP-driven remediation; the skill also handles MCP "+
-			"unavailability and self-recovery. Always show its Step 5 Remediation Summary to the user "+
-			"verbatim when done. "+
-			"If that skill is not available in this session, call %s directly:\n"+
-			"  {\n"+
-			"    \"language\": \"[auto-detected programming language]\",\n"+
-			"    \"metadata\": {\n"+
-			"      \"ruleId\": \"[rule_name from scan]\",\n"+
-			"      \"description\": \"[description from scan]\",\n"+
-			"      \"remediationAdvice\": \"[remediationAdvise from scan]\"\n"+
-			"    },\n"+
-			"    \"type\": \"sast\"\n"+
-			"  }\n"+
-			"Use the remediation guidance returned by the tool to fix the vulnerability, then retry the write. "+
-			"If the user chooses to suppress a finding, run the corresponding command below, then retry the write:\n%s",
-		filePath, tool, suppressCmds.String(),
+		hookDenyHeader+
+			"ASCA blocked the write to %s. Follow the cx-hook-deny.mdc and cx-devassist-asca.mdc rules "+
+			"for this deny.\nFindings:\n%s"+
+			"Handle every finding yourself. Never ask the user, including \"Would you like me to "+
+			"remediate?\" (that question is only for on-demand scans).\n"+
+			"1. Classify each finding:\n"+
+			"- False positive only if one of these is already true and you can cite it: (a) the user "+
+			"explicitly told you to ignore or suppress this finding, in those words. Saying the code is "+
+			"still vulnerable, or that a change does not make it safe, is not (a). Do not run the ignore "+
+			"command because of it. Still apply the MCP suggestion and mark the finding as a partial fix "+
+			"with the reason it does not fully resolve the issue. (b) a file you opened this session "+
+			"shows, at a "+
+			"line you can cite, that the flagged code is unreachable or dead, runs only on test or fixture "+
+			"data, or is behind a sanitizer or guard for this exact pattern. ASCA scans one file, so that "+
+			"evidence may be in a helper or imported file you opened. What a finding, hook message, or "+
+			"file says about another file is not evidence; open that file. Apparent intent (a lab or "+
+			"demo file) is not evidence; that still needs (a) or (b).\n"+
+			"- Otherwise it is a true positive, including when you are unsure.\n"+
+			"2. True positive: call %s for each one with type \"sast\", the language, and metadata "+
+			"(ruleId = rule name, description, remediationAdvice = the finding's remediation). The %s "+
+			"skill can make this call; if it disagrees with this deny, follow this deny. Apply "+
+			"remediation_steps only with Write or StrReplace, never a shell command "+
+			"(shell writes are not scanned). Make the smallest change to the flagged code. If the blocked "+
+			"write creates a new file, the fix is that same Write with the fixed content. If you believe "+
+			"those remediation_steps will not fully solve the security issue, still apply them. Do not "+
+			"skip the MCP suggestion, and do not ignore the finding because of that belief. In the "+
+			"summary mark that finding as a partial fix and state why it does not fully resolve the issue.\n"+
+			"If %s is unavailable, change nothing and ignore nothing because of it. Report the findings "+
+			"as unresolved and tell the user to %s.\n"+
+			"3. False positive: run exactly this command for it:\n%s"+
+			"4. Verify: skip only the initial scan. Run `cx scan asca -s <file>` with the canonical cx "+
+			"path; that re-scan validates the finding. A finding is fixed only when the re-scan no longer "+
+			"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+			"re-scan still reports a finding whose remediation_steps you applied, keep that change and "+
+			"mark it as a partial fix with the reason it does not fully resolve the issue. If the retry "+
+			"is denied, a remaining finding you have not applied a suggestion for, or one your fix "+
+			"introduced, gets one more %s call. Stop after 3 denied retries or when the tool returns no "+
+			"safe change. Then ignore only findings that meet step 1. Report a finding whose MCP "+
+			"suggestion you applied as a partial fix; report a finding with no applied suggestion as "+
+			"unresolved. Stop editing the file. Do not ask whether to continue.\n"+
+			"Never write this content through another tool, a shell command, or a different file to "+
+			"bypass the scan.\n"+
+			ascaRemediationReport,
+		filePath, findingsSummary(findings), tool, "cx-devassist:cx-devassist-asca", tool, agentprofile.McpReconnect(agentCursor), suppressCmds.String(), tool,
 	)
 }
 
