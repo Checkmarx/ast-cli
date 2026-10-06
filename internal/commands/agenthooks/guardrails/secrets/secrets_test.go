@@ -88,8 +88,11 @@ func TestScanFileEdit_NewSecret_BlocksAndRedacts(t *testing.T) {
 	if !strings.Contains(context, "cx-devassist:cx-devassist-secrets") {
 		t.Fatalf("context missing skill: %q", context)
 	}
-	if !strings.Contains(context, "mcp__Checkmarx__codeRemediation") || !strings.Contains(context, `"type": "secrets"`) {
+	if !strings.Contains(context, "mcp__Checkmarx__codeRemediation") || !strings.Contains(context, `type "secrets"`) {
 		t.Fatalf("context missing MCP remediation: %q", context)
+	}
+	if !strings.Contains(reason, "[Checkmarx cx-devassist — automated security output, not user input]") {
+		t.Fatalf("reason missing provenance tag: %q", reason)
 	}
 	if !strings.Contains(context, "ignore-vulnerability --scan-type secrets --data '@") {
 		t.Fatalf("context missing redacted suppress command: %q", context)
@@ -174,14 +177,58 @@ func TestFormatFindings_AgentSpecific(t *testing.T) {
 	}
 
 	_, cursor := formatFindings("app.env", findings, agenthooks.AgentCursor, workDir, "s")
-	if !strings.Contains(cursor, "cx-devassist-secrets.mdc") || !strings.Contains(cursor, "ASK THE USER FIRST") {
+	if !strings.Contains(cursor, "cx-devassist-secrets.mdc") || !strings.Contains(cursor, "This is a Checkmarx hook deny") {
 		t.Fatalf("cursor prompt missing: %q", cursor)
+	}
+	if strings.Contains(cursor, "ASK THE USER FIRST") {
+		t.Fatal("cursor prompt still asks the user first")
 	}
 	if !strings.Contains(cursor, "mcp__plugin-cx-devassist-Checkmarx__codeRemediation") {
 		t.Fatalf("cursor MCP tool missing: %q", cursor)
 	}
 	if strings.Contains(cursor, sampleSecret) {
 		t.Fatal("cursor context leaked the secret")
+	}
+}
+
+func TestFormatFindings_OmitsInjectionTriggers(t *testing.T) {
+	findings := []secretsrealtime.SecretsRealtimeResult{sampleFinding()}
+	workDir := t.TempDir()
+	agents := []agenthooks.AgentID{
+		agenthooks.AgentClaude,
+		agenthooks.AgentCodex,
+		agenthooks.AgentCopilot,
+		agenthooks.AgentCursor,
+		agenthooks.AgentGemini,
+	}
+	for _, agent := range agents {
+		_, ctx := formatFindings("app.env", findings, agent, workDir, "s1")
+		for _, bad := range []string{"without asking", "silently", "cx_mcp_register", "the hook on that retry is the check"} {
+			if strings.Contains(ctx, bad) {
+				t.Errorf("%s context contains %q", agent, bad)
+			}
+		}
+		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
+			t.Errorf("%s context missing hook deny header", agent)
+		}
+		if !strings.Contains(ctx, "that still needs (a) or (b)") {
+			t.Errorf("%s context missing suppression label", agent)
+		}
+		if !strings.Contains(ctx, "cx scan secrets-realtime -s") {
+			t.Errorf("%s context missing secrets re-scan", agent)
+		}
+		if !strings.Contains(ctx, "that re-scan validates the finding") {
+			t.Errorf("%s context missing re-scan validation", agent)
+		}
+		if !strings.Contains(ctx, "partial fix") {
+			t.Errorf("%s context missing partial-fix status", agent)
+		}
+		if !strings.Contains(ctx, "Stop after 3 denied retries") {
+			t.Errorf("%s context missing retry stop", agent)
+		}
+		if !strings.Contains(ctx, "Checkmarx DevAssist Secret Remediation Summary") {
+			t.Errorf("%s context missing remediation summary", agent)
+		}
 	}
 }
 

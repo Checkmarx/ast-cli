@@ -42,17 +42,25 @@ func NewFindings(originalScan, newScan []secretsrealtime.SecretsRealtimeResult) 
 	return out
 }
 
+// provenanceTag is prepended to the deny reason and context so the agent can recognize
+// genuine Checkmarx output.
+func provenanceTag() string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
+
 // formatFindings builds the deny reason and the remediation context delivered to the agent.
 // The secret value is written only to a mode-0600 finding file referenced by the suppress
 // command, so it does not appear in the verdict text.
 func formatFindings(filePath string, findings []secretsrealtime.SecretsRealtimeResult, agent agenthooks.AgentID, workDir, sessionID string) (reason, context string) {
 	summary := findingsSummary(filePath, findings)
-	reason = permissionDecisionReason(filePath, summary)
+	tag := provenanceTag()
+	reason = tag + " " + permissionDecisionReason(filePath, summary)
 	if agent == agenthooks.AgentCursor {
 		context = cursorAdditionalContext(filePath, cxExecutable(), findings, workDir, sessionID)
 	} else {
 		context = additionalContext(filePath, cxExecutable(), findings, workDir, agent, sessionID)
 	}
+	context = tag + " " + context
 	return reason, context
 }
 
