@@ -10,11 +10,20 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
+const (
+	unresolvedEditReason = "Checkmarx secret detection could not verify this edit: the text being " +
+		"replaced was not found uniquely in the file, so the result cannot be scanned reliably."
+	unresolvedEditContext = "Retry with an edit whose Before/old_string text matches exactly one " +
+		"location in the file (add more surrounding context if the target text repeats), then the " +
+		"edit can be scanned and applied."
+)
+
 // ScanFileEdit runs secret detection on the proposed post-edit content.
 // Returns blocked=true with a formatted reason, remediation context, and highest severity when the
 // edit introduces a secret (delta-detection for edits; any secret for new writes). Findings the
 // user already suppressed via `cx ignore-vulnerability` are filtered by the scanner. Fail-open on
-// infrastructure errors. The user-visible reason never contains the secret value.
+// infrastructure errors. Fail closed when the post-edit content cannot be reconstructed.
+// The user-visible reason never contains the secret value.
 func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, severity string) {
 	if svc == nil || svc.scan == nil || ev == nil {
 		return false, "", "", ""
@@ -32,7 +41,11 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		logSecretsTelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
 	}()
 
-	newContent, originalContent := proposedContent(ev.FilePath, ev.Changes)
+	newContent, originalContent, ok := proposedContent(ev.FilePath, ev.Changes)
+	if !ok {
+		findingCount = 1
+		return true, provenanceTag() + " " + unresolvedEditReason, provenanceTag() + " " + unresolvedEditContext, ""
+	}
 	if newContent == "" {
 		return false, "", "", ""
 	}

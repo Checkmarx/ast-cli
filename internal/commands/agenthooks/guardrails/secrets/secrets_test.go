@@ -79,9 +79,7 @@ func TestScanFileEdit_NewSecret_BlocksAndRedacts(t *testing.T) {
 	if severity != "Critical" {
 		t.Fatalf("severity = %q, want Critical", severity)
 	}
-	if strings.Contains(reason, secret) || strings.Contains(context, secret) {
-		t.Fatal("verdict leaked the secret value")
-	}
+	assertVerdictOmitsSecret(t, reason, context)
 	if !strings.Contains(reason, "github-pat") || !strings.Contains(reason, "line 4") {
 		t.Fatalf("reason missing finding summary: %q", reason)
 	}
@@ -125,6 +123,61 @@ func TestScanFileEdit_PreExistingSecret_Allows(t *testing.T) {
 	blocked, _, _, _ := ScanFileEdit(ev, svc, nil, "Claude")
 	if blocked {
 		t.Fatal("an edit that does not introduce a new secret should be allowed")
+	}
+}
+
+func TestScanFileEdit_DuplicateBeforeText_BlocksInsteadOfGuessing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, testConfigEnv)
+	body := placeholderKey + "\n" + debugTrue + "\n" + placeholderKey
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	scanCalled := false
+	svc := NewScannerWithFunc(func(_, _, _ string) ([]secretsrealtime.SecretsRealtimeResult, error) {
+		scanCalled = true
+		return nil, nil
+	})
+	ev := &agenthooks.FileEditEvent{
+		Agent:    agenthooks.AgentClaude,
+		FilePath: path,
+		WorkDir:  dir,
+		Changes:  []agenthooks.FileDiff{{Before: placeholderKey, After: "API_KEY=" + sampleSecret}},
+	}
+	blocked, reason, context, _ := ScanFileEdit(ev, svc, nil, "Claude")
+	if !blocked {
+		t.Fatal("an edit whose Before text is ambiguous should be blocked, not silently allowed")
+	}
+	if scanCalled {
+		t.Fatal("should not scan a guessed reconstruction when the edit location is ambiguous")
+	}
+	assertVerdictOmitsSecret(t, reason, context)
+}
+
+func TestScanFileEdit_BeforeTextNotFound_BlocksInsteadOfSkipping(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, testConfigEnv)
+	if err := os.WriteFile(path, []byte(debugTrue), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	scanCalled := false
+	svc := NewScannerWithFunc(func(_, _, _ string) ([]secretsrealtime.SecretsRealtimeResult, error) {
+		scanCalled = true
+		return nil, nil
+	})
+	ev := &agenthooks.FileEditEvent{
+		Agent:    agenthooks.AgentClaude,
+		FilePath: path,
+		WorkDir:  dir,
+		Changes:  []agenthooks.FileDiff{{Before: "STALE_TEXT_NOT_ON_DISK", After: "TOKEN=" + sampleSecret}},
+	}
+	blocked, reason, context, _ := ScanFileEdit(ev, svc, nil, "Claude")
+	if !blocked {
+		t.Fatal("an edit whose Before text cannot be located should be blocked, not silently dropped and allowed")
+	}
+	assertVerdictOmitsSecret(t, reason, context)
+	if scanCalled {
+		t.Fatal("should not scan content that silently omits the unresolved edit")
 	}
 }
 
@@ -237,6 +290,13 @@ func TestSafeDescription_RedactsEmbeddedSecret(t *testing.T) {
 	f.Description = "token " + sampleSecret + " found"
 	if safeDescription(f) != "hardcoded secret" {
 		t.Fatal("description that embeds the secret should be redacted")
+	}
+}
+
+func assertVerdictOmitsSecret(t *testing.T, reason, context string) {
+	t.Helper()
+	if strings.Contains(reason, sampleSecret) || strings.Contains(context, sampleSecret) {
+		t.Fatal("verdict leaked the secret value")
 	}
 }
 

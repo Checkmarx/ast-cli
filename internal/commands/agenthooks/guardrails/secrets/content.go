@@ -14,26 +14,27 @@ func normLF(s string) string {
 
 // proposedContent returns the file content that would exist after changes are applied,
 // plus the content currently on disk (empty when the file does not exist yet).
-func proposedContent(filePath string, changes []agenthooks.FileDiff) (newContent, originalContent string) {
+// ok is false when Before text is missing or matches more than once.
+func proposedContent(filePath string, changes []agenthooks.FileDiff) (newContent, originalContent string, ok bool) {
 	diskBytes, readErr := os.ReadFile(filePath)
 	if readErr == nil {
 		originalContent = string(diskBytes)
 	}
 
 	if len(changes) == 1 && changes[0].Before == "" {
-		return changes[0].After, originalContent
+		return changes[0].After, originalContent, true
 	}
 
 	current := normLF(originalContent)
 	for _, diff := range changes {
 		before := normLF(diff.Before)
 		after := normLF(diff.After)
-		idx := strings.Index(current, before)
-		if idx < 0 {
-			continue
+		if strings.Count(current, before) != 1 {
+			return "", normLF(originalContent), false
 		}
+		idx := strings.Index(current, before)
 		current = current[:idx] + after + current[idx+len(before):]
 	}
 
-	return current, normLF(originalContent)
+	return current, normLF(originalContent), true
 }
