@@ -80,13 +80,8 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
 	}
 
-	if enabled, err := realtimeengine.IsFeatureFlagEnabled(s.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
-	}
-
-	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
-		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()
+	if err := s.ensureReady(); err != nil {
+		return nil, err
 	}
 
 	if err := realtimeengine.ValidateFilePath(filePath); err != nil {
@@ -100,7 +95,35 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 		return nil, errorconstants.NewRealtimeEngineError("failed to read file").Error()
 	}
 
-	report, err := runScan(filePath, content)
+	return finishScan(filePath, content, ignoredFilePath)
+}
+
+// ScanContent runs the secrets scanner on content that is not yet on disk.
+// sourcePath is reported as the finding file path (the agent's target file).
+// ignoredFilePath filters findings the user suppressed via cx ignore-vulnerability.
+func (s *SecretsRealtimeService) ScanContent(sourcePath, content, ignoredFilePath string) ([]SecretsRealtimeResult, error) {
+	if sourcePath == "" {
+		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineFilePathRequired).Error()
+	}
+	if err := s.ensureReady(); err != nil {
+		return nil, err
+	}
+	return finishScan(sourcePath, content, ignoredFilePath)
+}
+
+func (s *SecretsRealtimeService) ensureReady() error {
+	if enabled, err := realtimeengine.IsFeatureFlagEnabled(s.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
+		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
+		return errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
+	}
+	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
+		return errorconstants.NewRealtimeEngineError(err.Error()).Error()
+	}
+	return nil
+}
+
+func finishScan(sourcePath, content, ignoredFilePath string) ([]SecretsRealtimeResult, error) {
+	report, err := runScan(sourcePath, content)
 	if err != nil {
 		logger.PrintfIfVerbose("Failed to run scan: %v", err)
 		return nil, errorconstants.NewRealtimeEngineError("failed to run secrets scan").Error()
@@ -109,6 +132,9 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 	results := convertToSecretsRealtimeResult(report)
 	resultsPerLineMap := createResultsPerLocationMap(results)
 	results = filterGenericAPIKeyVulIfNeeded(results, resultsPerLineMap)
+	for i := range results {
+		results[i].FilePath = sourcePath
+	}
 
 	if ignoredFilePath == "" {
 		return results, nil
@@ -118,9 +144,7 @@ func (s *SecretsRealtimeService) RunSecretsRealtimeScan(filePath, ignoredFilePat
 		logger.PrintfIfVerbose("secrets-realtime: failed to load ignore file %s: %v; continuing without ignore filtering", ignoredFilePath, err)
 		return results, nil
 	}
-	ignoreMap := buildIgnoreMap(ignoredSecrets)
-	results = filterIgnoredSecrets(results, ignoreMap)
-	return results, nil
+	return filterIgnoredSecrets(results, buildIgnoreMap(ignoredSecrets)), nil
 }
 
 func readFile(filePath string) (string, error) {

@@ -19,10 +19,12 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/secretsrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 
 	"github.com/Checkmarx/ast-cx-hooks/cursor"
@@ -53,16 +55,18 @@ func (r *recordingTelemetry) SendAIDataToLog(data *wrappers.DataForAITelemetry) 
 
 func resetHookGlobals(t *testing.T) {
 	t.Helper()
-	prevSCA, prevKICS, prevTel := scaScanner, kicsScanner, telemetryWrapper
+	prevSCA, prevKICS, prevSecrets, prevTel := scaScanner, kicsScanner, secretsScanner, telemetryWrapper
 	t.Cleanup(func() {
 		scaScanner = prevSCA
 		kicsScanner = prevKICS
+		secretsScanner = prevSecrets
 		telemetryWrapper = prevTel
 		guardrails.ResetBlastRadiusCount()
 		guardrails.ResetTotalFileSizeCount()
 	})
 	scaScanner = nil
 	kicsScanner = nil
+	secretsScanner = nil
 	telemetryWrapper = nil
 	guardrails.ResetBlastRadiusCount()
 	guardrails.ResetTotalFileSizeCount()
@@ -415,6 +419,51 @@ func TestCxBeforeFileEdit_SCAManifest_RejectsWithContext(t *testing.T) {
 	}
 }
 
+func TestCxBeforeFileEdit_SecretsFinding_RejectsWithContext(t *testing.T) {
+	resetHookGlobals(t)
+	const secret = "ghp_hook_test_secret_value"
+	tel := &recordingTelemetry{}
+	telemetryWrapper = tel
+	secretsScanner = secrets.NewScannerWithFunc(func(_, content, _ string) ([]secretsrealtime.SecretsRealtimeResult, error) {
+		if strings.Contains(content, secret) {
+			return []secretsrealtime.SecretsRealtimeResult{{
+				Title:       "github-pat",
+				Description: "GitHub personal access token",
+				SecretValue: secret,
+				Severity:    "Critical",
+				Locations:   []realtimeengine.Location{{Line: 1}},
+			}}, nil
+		}
+		return nil, nil
+	})
+
+	v := cxBeforeFileEdit(agenthooks.FileEditEvent{
+		Agent:     agenthooks.AgentGemini,
+		SessionID: "sec-sess",
+		FilePath:  "config.env",
+		WorkDir:   t.TempDir(),
+		Changes:   []agenthooks.FileDiff{{Before: "", After: "TOKEN=" + secret}},
+	})
+	if v.Permit {
+		t.Fatal("secret finding should RejectEdit")
+	}
+	if strings.Contains(v.Message, secret) || strings.Contains(v.Context, secret) {
+		t.Fatal("verdict leaked the secret value")
+	}
+	if !strings.Contains(v.Context, "/cx-devassist-secrets") {
+		t.Errorf("expected Gemini skill in context, got %q", v.Context)
+	}
+	if len(tel.calls) != 2 {
+		t.Fatalf("expected 2 telemetry calls (detect + remediate), got %d", len(tel.calls))
+	}
+	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != "Secrets" {
+		t.Errorf("detect telemetry = Type %q Engine %q", tel.calls[0].Type, tel.calls[0].Engine)
+	}
+	if tel.calls[1].Type != telemetryTypeHooksRemediate || tel.calls[1].Engine != "Secrets" {
+		t.Errorf("remediate telemetry = Type %q Engine %q", tel.calls[1].Type, tel.calls[1].Engine)
+	}
+}
+
 func TestCxBeforeFileEdit_CleanEdit_Accepts(t *testing.T) {
 	resetHookGlobals(t)
 	v := cxBeforeFileEdit(agenthooks.FileEditEvent{
@@ -555,6 +604,9 @@ func TestRegisterGuardrails_AndPassThrough(t *testing.T) {
 	if kicsScanner == nil {
 		t.Fatal("RegisterGuardrails should set kicsScanner")
 	}
+	if secretsScanner == nil {
+		t.Fatal("RegisterGuardrails should set secretsScanner")
+	}
 	if telemetryWrapper == nil {
 		t.Fatal("RegisterGuardrails should set telemetryWrapper")
 	}
@@ -565,6 +617,9 @@ func TestRegisterGuardrails_AndPassThrough(t *testing.T) {
 	}
 	if kicsScanner != nil {
 		t.Fatal("RegisterPassThrough should clear kicsScanner")
+	}
+	if secretsScanner != nil {
+		t.Fatal("RegisterPassThrough should clear secretsScanner")
 	}
 }
 
@@ -746,10 +801,11 @@ func TestCxBeforeFileEdit_CursorRead_NoSecrets_Accepts(t *testing.T) {
 
 func TestCxBeforeFileEdit_UnsupportedFileType_Accepts(t *testing.T) {
 	setEmptyHomeDir(t)
-	prevSca, prevKics := scaScanner, kicsScanner
-	defer func() { scaScanner, kicsScanner = prevSca, prevKics }()
+	prevSca, prevKics, prevSecrets := scaScanner, kicsScanner, secretsScanner
+	defer func() { scaScanner, kicsScanner, secretsScanner = prevSca, prevKics, prevSecrets }()
 	scaScanner = nil
 	kicsScanner = nil
+	secretsScanner = nil
 
 	path := filepath.Join(t.TempDir(), "notes.txt")
 	ev := agenthooks.FileEditEvent{
@@ -769,20 +825,23 @@ func TestCxBeforePrompt_Benign_Accepts(t *testing.T) {
 }
 
 func TestRegisterGuardrails_SetsScanners(t *testing.T) {
-	prevSca, prevKics, prevTelemetry := scaScanner, kicsScanner, telemetryWrapper
-	defer func() { scaScanner, kicsScanner, telemetryWrapper = prevSca, prevKics, prevTelemetry }()
+	prevSca, prevKics, prevSecrets, prevTelemetry := scaScanner, kicsScanner, secretsScanner, telemetryWrapper
+	defer func() {
+		scaScanner, kicsScanner, secretsScanner, telemetryWrapper = prevSca, prevKics, prevSecrets, prevTelemetry
+	}()
 
 	telemetry := mock.TelemetryMockWrapper{}
 	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, telemetry)
 
 	assert.NotNil(t, scaScanner)
 	assert.NotNil(t, kicsScanner)
+	assert.NotNil(t, secretsScanner)
 	assert.Equal(t, telemetry, telemetryWrapper)
 }
 
 func TestRegisterPassThrough_ClearsScanners(t *testing.T) {
-	prevSca, prevKics := scaScanner, kicsScanner
-	defer func() { scaScanner, kicsScanner = prevSca, prevKics }()
+	prevSca, prevKics, prevSecrets := scaScanner, kicsScanner, secretsScanner
+	defer func() { scaScanner, kicsScanner, secretsScanner = prevSca, prevKics, prevSecrets }()
 
 	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
 	assert.NotNil(t, scaScanner)
@@ -790,6 +849,7 @@ func TestRegisterPassThrough_ClearsScanners(t *testing.T) {
 	RegisterPassThrough()
 	assert.Nil(t, scaScanner)
 	assert.Nil(t, kicsScanner)
+	assert.Nil(t, secretsScanner)
 }
 
 func TestLogRemediationTelemetry_NilWrapper_NoOp(t *testing.T) {
@@ -873,6 +933,7 @@ func TestCodexApplyPatch_KICSFinding_DeniesEndToEnd(t *testing.T) {
 		}}, nil
 	})
 	scaScanner = nil
+	secretsScanner = nil
 
 	patch := "*** Begin Patch\n" +
 		"*** Add File: main.tf\n" +
