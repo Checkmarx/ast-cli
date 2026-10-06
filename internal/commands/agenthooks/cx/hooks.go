@@ -11,6 +11,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -19,9 +20,10 @@ import (
 // canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
 // the per-event remediation telemetry; ASCA already uses "Asca").
 const (
-	engineAsca = "Asca"
-	engineSca  = "Sca"
-	engineKics = "Kics"
+	engineAsca    = "Asca"
+	engineSca     = "Sca"
+	engineKics    = "Kics"
+	engineSecrets = "Secrets"
 )
 
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
@@ -32,6 +34,10 @@ var scaScanner *sca.Scanner
 // kicsScanner is the package-level KICS scanner used by the file-edit guardrail.
 // It is set by RegisterGuardrails and cleared by RegisterPassThrough.
 var kicsScanner *kics.Scanner
+
+// secretsScanner is the package-level secret-detection scanner used by the file-edit guardrail.
+// It is set by RegisterGuardrails and cleared by RegisterPassThrough.
+var secretsScanner *secrets.Scanner
 
 var telemetryWrapper wrappers.TelemetryWrapper
 
@@ -81,10 +87,11 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //  1. File EDITS (Claude / Windsurf / Droid / Gemini) — ev.Changes is populated.
 //     Enforce blast_radius_limit, files_limits.max_total_file_size_kb, the ASCA
 //     guardrail (AI-introduced code vulnerabilities), the KICS guardrail
-//     (IaC security vulnerabilities), and the SCA guardrail
-//     (malicious / vulnerable manifest additions) before any bytes are written
-//     to disk. MultiEdit and multi-file edits are handled uniformly by iterating
-//     ev.Changes.
+//     (IaC security vulnerabilities), the SCA guardrail
+//     (malicious / vulnerable manifest additions), and the secret-detection
+//     guardrail (hardcoded credentials introduced by the edit) before any bytes
+//     are written to disk. MultiEdit and multi-file edits are handled uniformly
+//     by iterating ev.Changes.
 //
 //  2. Cursor file READS (beforeReadFile) — ev.Changes is empty and ev.FilePath
 //     points to a file the agent is about to ingest into the LLM context.
@@ -133,6 +140,13 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
+		}
+	}
+	if secretsScanner != nil {
+		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked {
+			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
+			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
+			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
 	// A note on an ALLOW, deliberately: blocking every IaC edit because a
@@ -223,10 +237,11 @@ func promptWorkspaceRoots(raw any) []string {
 }
 
 // RegisterGuardrails wires the four guardrail handlers and instantiates the
-// SCA and KICS scanners used by the Bash and FileEdit handlers.
+// SCA, KICS, and secret-detection scanners used by the Bash and FileEdit handlers.
 func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
 	scaScanner = sca.NewScanner(jwt, ff, rt)
 	kicsScanner = kics.NewScanner(jwt, ff)
+	secretsScanner = secrets.NewScanner(jwt, ff)
 	telemetryWrapper = tel
 	agenthooks.WhenAgentIdle(cxWhenAgentIdle)
 	agenthooks.BeforeToolCall(cxBeforeToolCall)
@@ -239,6 +254,7 @@ func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper
 func RegisterPassThrough() {
 	scaScanner = nil
 	kicsScanner = nil
+	secretsScanner = nil
 	agenthooks.WhenAgentIdle(func(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict { return agenthooks.Resume() })
 	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
 	agenthooks.BeforeFileEdit(func(_ agenthooks.FileEditEvent) agenthooks.FileEditVerdict { return agenthooks.AcceptEdit() })
