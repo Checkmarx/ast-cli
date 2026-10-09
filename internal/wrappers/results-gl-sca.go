@@ -50,7 +50,7 @@ type GlScaDepVulnerabilities struct {
 	Description string                        `json:"description"`
 	Severity    string                        `json:"severity"`
 	Solution    interface{}                   `json:"solution"`
-	Identifiers []IdentifierDep               `json:"identifiers,omitempty"`
+	Identifiers []IdentifierDep               `json:"identifiers"`
 	Links       []LinkDep                     `json:"links"`
 	TrackingDep TrackingDep                   `json:"tracking"`
 	Flags       []string                      `json:"flags"`
