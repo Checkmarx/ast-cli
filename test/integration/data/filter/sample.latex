@@ -1,0 +1,8 @@
+\documentclass{article}
+\usepackage{listings}
+\begin{document}
+\begin{lstlisting}[language=Python]
+import sqlite3
+query = "SELECT * FROM users WHERE id='" + user_id + "'"
+\end{lstlisting}
+\end{document}
