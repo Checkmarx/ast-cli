@@ -204,6 +204,7 @@ func NewScanCommand(
 	containerResolverWrapper wrappers.ContainerResolverWrapper,
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	tenantWrapper wrappers.TenantConfigurationWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) *cobra.Command {
 	scanCmd := &cobra.Command{
 		Use:   "scan",
@@ -243,7 +244,7 @@ func NewScanCommand(
 
 	showScanCmd := scanShowSubCommand(scansWrapper, sastMetadataWrapper)
 
-	scanASCACmd := scanASCASubCommand(jwtWrapper, featureFlagsWrapper)
+	scanASCACmd := scanASCASubCommand(jwtWrapper, telemetryWrapper)
 
 	workflowScanCmd := scanWorkflowSubCommand(scansWrapper)
 
@@ -255,17 +256,17 @@ func NewScanCommand(
 
 	logsCmd := scanLogsSubCommand(logsWrapper)
 
-	kicsRealtimeCmd := scanRealtimeSubCommand()
+	kicsRealtimeCmd := scanRealtimeSubCommand(telemetryWrapper)
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
-	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper, telemetryWrapper)
 
 	containersRealtimeCmd := scanContainersRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
 
 	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
 
-	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper, telemetryWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -294,7 +295,7 @@ func NewScanCommand(
 	return scanCmd
 }
 
-func scanRealtimeSubCommand() *cobra.Command {
+func scanRealtimeSubCommand(telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	kicsContainerID := uuid.New()
 	kicsName := kicsContainerPrefixName + kicsContainerID.String()
 	viper.Set(commonParams.KicsContainerNameKey, kicsName)
@@ -315,7 +316,7 @@ func scanRealtimeSubCommand() *cobra.Command {
 			`,
 			),
 		},
-		RunE: runKicksRealtime(),
+		RunE: runKicksRealtime(telemetryWrapper),
 	}
 	realtimeScanCmd.PersistentFlags().
 		StringSliceVar(
@@ -470,7 +471,7 @@ func scanShowSubCommand(scansWrapper wrappers.ScansWrapper, sastMetadataWrapper 
 	return showScanCmd
 }
 
-func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	scanASCACmd := &cobra.Command{
 		Hidden: true,
 		Use:    "asca",
@@ -489,7 +490,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 			`,
 			),
 		},
-		RunE: asca.RunScanASCACommand(jwtWrapper),
+		RunE: asca.RunScanASCACommand(jwtWrapper, telemetryWrapper),
 	}
 
 	scanASCACmd.PersistentFlags().Bool(commonParams.ASCALatestVersion, false,
@@ -513,6 +514,7 @@ func scanOssRealtimeSubCommand(
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) *cobra.Command {
 	scanOssRealtimeCmd := &cobra.Command{
 		Hidden: true,
@@ -531,7 +533,7 @@ func scanOssRealtimeSubCommand(
 				`,
 			),
 		},
-		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper, telemetryWrapper),
 	}
 
 	scanOssRealtimeCmd.PersistentFlags().StringP(
@@ -553,6 +555,7 @@ func scanOssRealtimeSubCommand(
 func scanIacRealtimeSubCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) *cobra.Command {
 	scanIacRealtimeCmd := &cobra.Command{
 		Hidden: true,
@@ -571,7 +574,7 @@ func scanIacRealtimeSubCommand(
 				`,
 			),
 		},
-		RunE: RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: runScanIacRealtime(jwtWrapper, featureFlagsWrapper, telemetryWrapper),
 	}
 
 	scanIacRealtimeCmd.PersistentFlags().StringP(
@@ -3675,7 +3678,7 @@ func runDownloadLogs(logsWrapper wrappers.LogsWrapper) func(*cobra.Command, []st
 	}
 }
 
-func runKicksRealtime() func(*cobra.Command, []string) error {
+func runKicksRealtime(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		// Create temp location and add it to container volumes
 		volumeMap, tempDir, err := createKicsScanEnv(cmd)
@@ -3685,6 +3688,10 @@ func runKicksRealtime() func(*cobra.Command, []string) error {
 
 		// Run kics container
 		err = runKicsScan(cmd, volumeMap, tempDir, aditionalParameters)
+		if err == nil {
+			fileSource, _ := cmd.Flags().GetString(commonParams.KicsRealtimeFile)
+			util.SendRealtimeScanTelemetry(telemetryWrapper, "IaC", "iac", fileSource, 0)
+		}
 		// Removing temporary dir
 		logger.PrintIfVerbose(containerFolderRemoving)
 		removeErr := os.RemoveAll(tempDir)

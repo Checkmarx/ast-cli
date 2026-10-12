@@ -3,6 +3,7 @@ package asca
 import (
 	"strings"
 
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -18,7 +19,7 @@ const (
 	ascaLocationParam = "asca-location"
 )
 
-func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
+func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper, telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		var vorpalLocation string
 		ASCALatestVersion, _ := cmd.Flags().GetBool(commonParams.ASCALatestVersion)
@@ -55,6 +56,11 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 		if err != nil {
 			return err
 		}
+		totalCount := 0
+		if scanResult != nil {
+			totalCount = len(scanResult.ScanDetails)
+		}
+		util.SendRealtimeScanTelemetry(telemetryWrapper, "Asca", "asca", fileSourceFlag, totalCount)
 		err = printer.Print(cmd.OutOrStdout(), scanResult, printer.FormatJSON)
 		if err != nil {
 			return err

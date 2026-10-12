@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -13,6 +14,7 @@ func RunScanOssRealtimeCommand(
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -28,6 +30,12 @@ func RunScanOssRealtimeCommand(
 		if err != nil {
 			return err
 		}
+
+		totalCount := 0
+		if packages != nil {
+			totalCount = len(packages.Packages)
+		}
+		util.SendRealtimeScanTelemetry(telemetryWrapper, "Oss", "oss", fileSourceFlag, totalCount)
 
 		err = printer.Print(cmd.OutOrStdout(), packages, printer.FormatJSON)
 		if err != nil {

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/checkmarx/ast-cli/internal/commands/util"
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
@@ -12,6 +13,14 @@ import (
 func RunScanIacRealtimeCommand(
 	jwtWrapper wrappers.JWTWrapper,
 	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+) func(cmd *cobra.Command, args []string) error {
+	return runScanIacRealtime(jwtWrapper, featureFlagWrapper, nil)
+}
+
+func runScanIacRealtime(
+	jwtWrapper wrappers.JWTWrapper,
+	featureFlagWrapper wrappers.FeatureFlagsWrapper,
+	telemetryWrapper wrappers.TelemetryWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -28,6 +37,8 @@ func RunScanIacRealtimeCommand(
 		if err != nil {
 			return err
 		}
+
+		util.SendRealtimeScanTelemetry(telemetryWrapper, "IaC", "iac", fileSourceFlag, len(results))
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {

@@ -204,6 +204,7 @@ func NewAstCLI(
 		containerResolverWrapper,
 		realTimeWrapper,
 		tenantWrapper,
+		telemetryWrapper,
 	)
 	projectCmd := NewProjectCommand(applicationsWrapper, projectsWrapper, groupsWrapper, accessManagementWrapper, featureFlagsWrapper)
 	dastEnvironmentsCmd := dast.NewDastEnvironmentsCommand(dastEnvironmentsWrapper)

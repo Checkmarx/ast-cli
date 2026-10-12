@@ -4,6 +4,7 @@ package asca
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -536,7 +537,7 @@ func TestShouldUpdateVersion_DisabledReturnsFalse(t *testing.T) {
 
 func TestLogASCATelemetry_NilWrapper_NoOp(t *testing.T) {
 	assert.NotPanics(t, func() {
-		logASCATelemetry(nil, "Claude", "", 3)
+		logASCATelemetry(nil, "Claude", "", 3, "")
 	})
 }
 
@@ -548,7 +549,7 @@ func TestLogASCATelemetry_ZeroCount_DoesNotSend(t *testing.T) {
 			return nil
 		},
 	}
-	logASCATelemetry(telemetry, "Claude", "", 0)
+	logASCATelemetry(telemetry, "Claude", "", 0, "")
 	assert.False(t, sent)
 }
 
@@ -560,11 +561,38 @@ func TestLogASCATelemetry_WithFindings_Sends(t *testing.T) {
 			return nil
 		},
 	}
-	logASCATelemetry(telemetry, "Claude", "", 2)
+	logASCATelemetry(telemetry, "Claude", "", 2, "")
 	assert.NotNil(t, captured)
 	assert.Equal(t, "Asca", captured.Engine)
 	assert.Equal(t, 2, captured.TotalCount)
 	assert.Equal(t, "Claude", captured.AIProvider)
+}
+
+func TestLogASCATelemetry_IncludesGitHubURL(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	dir := t.TempDir()
+	gitIn := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, string(out))
+	}
+	gitIn("init")
+	gitIn("remote", "add", "origin", "ssh://git@github.com/acme/widgets.git")
+
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logASCATelemetry(telemetry, "Claude", "sess", 1, dir)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "https://github.com/acme/widgets", captured.GithubURL)
 }
 
 // ── findingsSummary / formatFindings ─────────────────────────────────────────

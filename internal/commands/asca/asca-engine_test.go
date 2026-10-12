@@ -129,7 +129,7 @@ func Test_runScanASCACommand(t *testing.T) {
 			cmd.Flags().String(commonParams.SourcesFlag, ttt.sourceFlag, "")
 			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
-			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{}, nil)
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)
@@ -185,7 +185,7 @@ func Test_runScanASCAWithAscaLocationFlagCommand(t *testing.T) {
 			cmd.Flags().Bool(commonParams.ASCALatestVersion, ttt.engineFlag, "")
 			cmd.Flags().String(commonParams.FormatFlag, printer.FormatJSON, "")
 			cmd.Flags().String(commonParams.ASCALocationFlag, ttt.ascaLocation, "")
-			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{})
+			runFunc := RunScanASCACommand(&mock.JWTMockWrapper{}, nil)
 			err := runFunc(cmd, []string{})
 			if (err != nil) != ttt.wantErr {
 				t.Errorf("RunScanASCACommand() error = %v, wantErr %v", err, ttt.wantErr)

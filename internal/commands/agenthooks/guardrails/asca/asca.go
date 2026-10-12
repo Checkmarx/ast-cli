@@ -11,6 +11,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/spf13/viper"
 )
 
@@ -43,7 +44,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 			reason = ""
 			context = ""
 		}
-		logASCATelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
+		logASCATelemetry(telemetryWrapper, agent, ev.SessionID, findingCount, ev.WorkDir)
 	}()
 
 	if !isSupportedByASCA(ev.FilePath) {
@@ -165,7 +166,7 @@ func shouldUpdateVersion() bool {
 
 // logASCATelemetry sends a telemetry event for ASCA scan results.
 // Called once after ASCA scan is performed with the actual finding count.
-func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
+func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int, workDir string) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
@@ -180,6 +181,7 @@ func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		SubType:          "scan",
 		ScanType:         "asca",
 		AiAgentSessionId: sessionID,
+		GithubURL:        utils.GitHubRemoteURL(workDir),
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {

@@ -12,6 +12,7 @@ type DataForAITelemetry struct {
 	TotalCount       int    `json:"totalCount"`
 	UniqueID         string `json:"uniqueId"`
 	AiAgentSessionId string `json:"aiAgentSessionId,omitempty"`
+	GithubURL        string `json:"githubUrl,omitempty"`
 }
 
 type TelemetryWrapper interface {
