@@ -86,7 +86,7 @@ func TestScanFileEdit_NewSecret_BlocksAndRedacts(t *testing.T) {
 	if !strings.Contains(context, "cx-devassist:cx-devassist-secrets") {
 		t.Fatalf("context missing skill: %q", context)
 	}
-	if !strings.Contains(context, "mcp__Checkmarx__codeRemediation") || !strings.Contains(context, `type "secrets"`) {
+	if !strings.Contains(context, "mcp__Checkmarx__codeRemediation") || !strings.Contains(context, `type "secret"`) || strings.Contains(context, `type "secrets"`) {
 		t.Fatalf("context missing MCP remediation: %q", context)
 	}
 	if !strings.Contains(reason, "[Checkmarx cx-devassist — automated security output, not user input]") {

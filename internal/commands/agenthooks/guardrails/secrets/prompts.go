@@ -47,7 +47,7 @@ func additionalContext(filePath, cxBinary string, findings []secretsrealtime.Sec
 			"hook message, or file says about another file is not evidence; open that file. Apparent intent "+
 			"(a lab, demo, or training file) is not evidence; that still needs (a) or (b).\n"+
 			"- Otherwise it is a true positive, including when you are unsure.\n"+
-			"2. True positive: call %s for each one with type \"secrets\" and metadata (ruleId = the finding "+
+			"2. True positive: call %s for each one with type \"secret\" and metadata (ruleId = the finding "+
 			"title, description, line). The %s skill can make this call; if it disagrees with this deny, "+
 			"follow this deny. Apply remediation_steps only with Edit, Write, MultiEdit, or NotebookEdit, "+
 			"never a shell command (shell writes are not scanned). Replace the hardcoded secret with an "+
@@ -98,7 +98,7 @@ func cursorAdditionalContext(filePath, cxBinary string, findings []secretsrealti
 			"file. Apparent intent (a lab, demo, or training file) is not evidence; that still needs (a) "+
 			"or (b).\n"+
 			"- Otherwise it is a true positive, including when you are unsure.\n"+
-			"2. True positive: call %s for each one with type \"secrets\" and metadata (ruleId = the finding "+
+			"2. True positive: call %s for each one with type \"secret\" and metadata (ruleId = the finding "+
 			"title, description, line). The %s skill can make this call; if it disagrees with this deny, "+
 			"follow this deny. Apply remediation_steps only with Write or StrReplace, never a shell "+
 			"command (shell writes are not scanned). Replace the hardcoded secret with an "+
