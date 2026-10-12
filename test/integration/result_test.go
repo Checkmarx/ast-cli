@@ -204,7 +204,7 @@ func TestCodeBashingList(t *testing.T) {
 		"results",
 		"codebashing",
 		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.VulnerabilityTypeFlag), "Reflected_XSS",
 		flag(params.CweIDFlag), "79")
 
 	codebashing := []wrappers.CodeBashingCollection{}
@@ -221,7 +221,7 @@ func TestCodeBashingListJson(t *testing.T) {
 		"results",
 		"codebashing",
 		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.VulnerabilityTypeFlag), "Reflected_XSS",
 		flag(params.CweIDFlag), "79",
 		flag(params.FormatFlag), "json")
 
@@ -239,7 +239,7 @@ func TestCodeBashingListTable(t *testing.T) {
 		"results",
 		"codebashing",
 		flag(params.LanguageFlag), "PHP",
-		flag(params.VulnerabilityTypeFlag), "Reflected XSS All Clients",
+		flag(params.VulnerabilityTypeFlag), "Reflected_XSS",
 		flag(params.CweIDFlag), "79",
 		flag(params.FormatFlag), "table")
 
