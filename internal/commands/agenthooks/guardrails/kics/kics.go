@@ -12,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 )
 
 // isSupportedByKICS returns true when the file matches a KICS-supported extension or basename.
@@ -59,7 +60,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 			note = skippedNote(ev.FilePath, fmt.Errorf("internal error: %v", r))
 			severity = ""
 		}
-		logKicsTelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
+		logKicsTelemetry(telemetryWrapper, agent, ev.SessionID, findingCount, ev.WorkDir)
 	}()
 
 	if !isSupportedByKICS(ev.FilePath) {
@@ -141,7 +142,7 @@ func highestSeverity(findings []iacrealtime.IacRealtimeResult) string {
 
 // logKicsTelemetry sends a telemetry event for KICS scan results.
 // Called once after KICS scan is performed with the actual finding count.
-func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
+func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int, workDir string) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
@@ -156,6 +157,7 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		SubType:          "scan",
 		ScanType:         "iac",
 		AiAgentSessionId: sessionID,
+		GithubURL:        utils.GitHubRemoteURL(workDir),
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {

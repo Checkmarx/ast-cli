@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +30,7 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 		Long:  "Collects telemetry data for user interactions related to AI features.",
 		Example: heredoc.Doc(
 			`
-			$ cx telemetry ai --ai-provider <AI Provider> --problem-severity <Problem Severity> --type<Event Type> --sub-type<Event Name> --agent <Agent> --engine <Engine>
+			$ cx telemetry ai --ai-provider <AI Provider> --problem-severity <Problem Severity> --type<Event Type> --sub-type<Event Name> --agent <Agent> --engine <Engine> --github-url <GitHub URL>
 		`,
 		),
 
@@ -43,6 +46,7 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 	telemetryAICmd.PersistentFlags().String(params.StatusFlag, "", "Status")
 	telemetryAICmd.PersistentFlags().Int(params.TotalCountFlag, 0, "Total Count")
+	telemetryAICmd.PersistentFlags().String(params.GithubURLFlag, "", "GitHub repository URL. When omitted, the working directory's GitHub origin is used")
 
 	return telemetryAICmd
 }
@@ -58,6 +62,8 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		scanType, _ := cmd.Flags().GetString("scan-type")
 		status, _ := cmd.Flags().GetString("status")
 		totalCount, _ := cmd.Flags().GetInt("total-count")
+		githubURL, _ := cmd.Flags().GetString(params.GithubURLFlag)
+		workDir, _ := os.Getwd()
 		uniqueID := wrappers.GetUniqueID()
 		err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
@@ -70,6 +76,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			Status:          status,
 			TotalCount:      totalCount,
 			UniqueID:        uniqueID,
+			GithubURL:       utils.ResolveGitHubURL(githubURL, workDir),
 		})
 
 		if err != nil {

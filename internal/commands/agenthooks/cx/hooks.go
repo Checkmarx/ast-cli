@@ -14,6 +14,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
+	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
 )
 
 // canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
@@ -68,7 +69,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		sid := sessionIDFromToolCall(&ev)
 		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" {
 			sessiontally.Add(sid, engineSca, 1, 1)
-			logRemediationTelemetry(agent, "SCA", severity, sid)
+			logRemediationTelemetry(agent, "SCA", severity, sid, ev.WorkDir)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -113,7 +114,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	agent := agentToString(ev.Agent)
 	if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked {
 		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
+		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID, ev.WorkDir)
 		return agenthooks.RejectEditWithContext(reason, context)
 	}
 	var kicsNote string
@@ -121,7 +122,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		blocked, reason, context, note, severity := kics.ScanFileEdit(&ev, kicsScanner, telemetryWrapper, agent)
 		if blocked {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
-			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID)
+			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID, ev.WorkDir)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 		kicsNote = note
@@ -130,7 +131,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		for _, diff := range ev.Changes {
 			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
-				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
+				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID, ev.WorkDir)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -246,7 +247,7 @@ func RegisterPassThrough() {
 }
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
-func logRemediationTelemetry(agent, engine, severity, sessionID string) {
+func logRemediationTelemetry(agent, engine, severity, sessionID, workDir string) {
 	if telemetryWrapper == nil {
 		return
 	}
@@ -261,6 +262,7 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 		SubType:          "fixWithAIAssist",
 		ProblemSeverity:  severity,
 		AiAgentSessionId: sessionID,
+		GithubURL:        utils.GitHubRemoteURL(workDir),
 	}
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {

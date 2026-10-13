@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/checkmarx/ast-cli/internal/logger"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -22,6 +23,11 @@ func NewHTTPTelemetryAIWrapper(path string) *TelemetryHTTPWrapper {
 }
 
 func (r *TelemetryHTTPWrapper) SendAIDataToLog(data *DataForAITelemetry) error {
+	if data == nil {
+		return errors.New("telemetry data is nil")
+	}
+	logger.PrintfIfVerbose("Telemetry githubUrl=%q engine=%s scanType=%s type=%s subType=%s totalCount=%d",
+		data.GithubURL, data.Engine, data.ScanType, data.Type, data.SubType, data.TotalCount)
 	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
 	jsonBytes, err := json.Marshal(data)
 	if err != nil {

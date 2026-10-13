@@ -18,6 +18,7 @@ const (
 	StatusFlag                     = "status"
 	scanTypeFlag                   = "scan-type"
 	TotalCountFlag                 = "total-count"
+	GithubURLFlag                  = "github-url"
 	OriginFlag                     = "origin"
 	AgentFlagUsage                 = "Scan origin name"
 	ApplicationName                = "application-name"

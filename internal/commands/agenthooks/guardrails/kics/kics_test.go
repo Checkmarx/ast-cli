@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -239,7 +240,7 @@ func TestScanFileEdit_EngineDownProducesNote(t *testing.T) {
 
 func TestLogKicsTelemetry_NilWrapper_NoOp(t *testing.T) {
 	assert.NotPanics(t, func() {
-		logKicsTelemetry(nil, "Claude", "", 3)
+		logKicsTelemetry(nil, "Claude", "", 3, "")
 	})
 }
 
@@ -251,7 +252,7 @@ func TestLogKicsTelemetry_ZeroCount_DoesNotSend(t *testing.T) {
 			return nil
 		},
 	}
-	logKicsTelemetry(telemetry, "Claude", "", 0)
+	logKicsTelemetry(telemetry, "Claude", "", 0, "")
 	assert.False(t, sent)
 }
 
@@ -263,7 +264,7 @@ func TestLogKicsTelemetry_WithFindings_Sends(t *testing.T) {
 			return nil
 		},
 	}
-	logKicsTelemetry(telemetry, "Claude", "sess-1", 2)
+	logKicsTelemetry(telemetry, "Claude", "sess-1", 2, "")
 	assert.NotNil(t, captured)
 	assert.Equal(t, "IaC", captured.Engine)
 	assert.Equal(t, 2, captured.TotalCount)
@@ -272,4 +273,31 @@ func TestLogKicsTelemetry_WithFindings_Sends(t *testing.T) {
 	assert.Equal(t, "scan", captured.SubType)
 	assert.Equal(t, "iac", captured.ScanType)
 	assert.Equal(t, "sess-1", captured.AiAgentSessionId)
+}
+
+func TestLogKicsTelemetry_IncludesGitHubURL(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	dir := t.TempDir()
+	gitIn := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		assert.NoError(t, err, string(out))
+	}
+	gitIn("init")
+	gitIn("remote", "add", "origin", "https://github.com/acme/widgets.git")
+
+	var captured *wrappers.DataForAITelemetry
+	telemetry := mock.TelemetryMockWrapper{
+		CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+			captured = data
+			return nil
+		},
+	}
+	logKicsTelemetry(telemetry, "Claude", "sess-1", 2, dir)
+	assert.NotNil(t, captured)
+	assert.Equal(t, "https://github.com/acme/widgets", captured.GithubURL)
 }
