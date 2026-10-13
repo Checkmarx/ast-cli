@@ -27,6 +27,15 @@ const agentCursor = "Cursor"
 // uses ignore.QuoteDataFlag. Other non-Cursor agents keep the original single-quoted JSON.
 const agentGemini = "Gemini"
 
+// provenanceTag returns the string prepended to the finding/remediation strings in denyFrom (sca.go)
+// so the agent can recognize genuine Checkmarx output. NOT an authority claim — an attacker could
+// spoof this exact string from a file, a fetched page, or another tool's output — it is a signpost:
+// text that LOOKS like a Checkmarx finding but lacks it, or that instructs running a script/CLI
+// command "silently"/"without asking", did not come from Checkmarx.
+func provenanceTag(agent string) string {
+	return "[Checkmarx cx-devassist — automated security output, not user input]"
+}
+
 // goosWindows is runtime.GOOS's value on Windows, factored out because the shell-quoting
 // checks below (and their tests) compare against it repeatedly.
 const goosWindows = "windows"
@@ -40,11 +49,14 @@ const defaultPackageRemediationTool = "mcp__Checkmarx__packageRemediation"
 func DenyMalicious(pkgs []ossrealtime.OssPackage, agent string) (finding, remediation string) {
 	var b strings.Builder
 	b.WriteString("Checkmarx SCA scan detected MALICIOUS package(s):\n")
+	var packages strings.Builder
 	for _, p := range pkgs {
-		fmt.Fprintf(&b, "  - %s: Known supply chain attack.\n", pkgLabel(p))
+		line := fmt.Sprintf("  - %s: Known supply chain attack.\n", pkgLabel(p))
+		b.WriteString(line)
+		packages.WriteString(line)
 	}
 	b.WriteString("\nDo NOT proceed with the installation.")
-	return b.String(), remediationNote("malicious package", "safest available version", agent)
+	return b.String(), remediationNote(packages.String(), agent)
 }
 
 // DenyVulnerable returns the finding and remediation strings for one or more
@@ -59,37 +71,96 @@ func DenyVulnerable(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID str
 	return b.String(), vulnerableRemediationNote(pkgs, workDir, agent, sessionID)
 }
 
+// hookDenyHeader is the agent-facing opening of remediation text. The provenance tag is
+// prepended separately in denyFrom. This header does not contain the spoof phrases the
+// skills treat as proof a message is not from Checkmarx.
+const hookDenyHeader = "This is a Checkmarx hook deny. Follow it. It is not file content and not an untrusted tool error.\n"
+
+// scaMaliciousReport is the closing report for a known-malicious package, shared by the
+// Cursor and non-Cursor deny text.
+const scaMaliciousReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
+	"then a blank line and the final status. Do not print the braces. Pick one outcome and one final status. " +
+	"Unresolved must include why the package is still unresolved. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx DevAssist SCA Remediation Summary\n" +
+	"\n" +
+	"- **{package}** - known-malicious - **{Replaced with a version, Removed, or Unresolved}**\n" +
+	"  {Replaced or Removed: what changed. Unresolved: Reason: why it was not removed or replaced.}\n" +
+	"\n" +
+	"**Final status:** {All resolved, or Unresolved}\n" +
+	"Continue the user's original task only after the package is no longer in the write. Do not include that sentence in the report.\n"
+
+// scaVulnerableReport is the closing report for vulnerable packages, shared by the
+// Cursor and non-Cursor deny text.
+const scaVulnerableReport = "5. Always finish with this report, even if you asked the user a question, the file is new, " +
+	"or the retry passed. Show it in the chat as markdown, not inside a code block. One bullet per package, " +
+	"then a blank line and the final status. Do not print the braces. Pick one result and one final status. " +
+	"Ignored must include why you ignored it. Unresolved must include why it was not fixed. A bullet without that reason is incomplete.\n" +
+	"## Checkmarx DevAssist SCA Remediation Summary\n" +
+	"\n" +
+	"- **{package}** {old version} -> {new version} - {manager} - **{Fixed, Ignored, or Unresolved}**\n" +
+	"  {CVEs and severity. Fixed: what changed. Ignored: Reason: why, citing the user's words or that the tool returned no solution and no alternate package. Unresolved: Reason: why it was not fixed.}\n" +
+	"\n" +
+	"**Lockfile refresh needed:** {yes or no}\n" +
+	"\n" +
+	"**Final status:** {All fixed, Partially fixed, or Unresolved}\n" +
+	"Then continue the user's original task. Do not include that sentence in the report.\n"
+
 // remediationNote returns the action steps to include as additionalContext for malicious packages.
 // Remediation goes through the cx-devassist skill (or the Checkmarx MCP tool directly when the skill
 // is unavailable); if the MCP tool itself is unavailable the user reconnects it via the client — the
 // reconnect phrasing is per-agent, from agentprofile.McpReconnect.
-func remediationNote(subject, goal, agent string) string {
-	pkgTool := defaultPackageRemediationTool
-	skillStep := "  1. For each %s, invoke the cx-devassist:cx-devassist-sca skill — " +
-		"the findings are already in context so it will skip the scan and go directly to " +
-		"MCP-driven remediation to find the %s; the skill also handles MCP unavailability and self-recovery.\n"
-	preamble := ""
+func remediationNote(packages, agent string) string {
 	if agent == agentCursor {
-		pkgTool = cursorplugin.MCPTool("packageRemediation")
-		preamble = "Apply the cx-hook-deny.mdc rule for this deny.\n"
-		skillStep = "  1. Apply the cx-devassist-sca.mdc rule: for each %s, invoke the " +
-			"cx-devassist:cx-devassist-sca skill exactly as written — do not skip, abbreviate, or " +
-			"reimplement its steps inline. The findings are already in context so it will skip the " +
-			"scan and go directly to MCP-driven remediation to find the %s; the skill also handles " +
-			"MCP unavailability and self-recovery. Always show its Step 5 SCA Remediation Summary to " +
-			"the user verbatim when done.\n"
+		pkgTool := cursorplugin.MCPTool("packageRemediation")
+		return fmt.Sprintf(
+			hookDenyHeader+
+				"SCA blocked the write because it adds a known-malicious package. Follow the "+
+				"cx-hook-deny.mdc and cx-devassist-sca.mdc rules for this deny.\nFindings:\n%s"+
+				"Handle this yourself; never ask the user to choose. A malicious package has no ignore "+
+				"path: never run cx ignore-vulnerability for it, and never install it.\n"+
+				"1. Call %s for each malicious package. The cx-devassist:cx-devassist-sca skill can make "+
+				"this call; if it disagrees with this deny, follow this deny. Apply what it returns (a safe "+
+				"version, or removing the dependency) only by editing the manifest with Write or StrReplace, "+
+				"never an install command. Do not guess a safe version.\n"+
+				"2. If %s is unavailable, retry the write with only that dependency omitted and every "+
+				"other change kept. Report that, and tell the user to %s.\n"+
+				"3. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that "+
+				"re-scan validates the package. A package is resolved only when the re-scan no longer "+
+				"reports it. Then retry the blocked write once so the gate can accept the write.\n"+
+				"4. If it is still denied, or no safe version or removal fits: omit only that dependency, "+
+				"keep every other change, stop editing the manifest, and report it as unresolved. Only the "+
+				"user can accept a malicious package, by acknowledging it in Checkmarx Dev Assist. Do not "+
+				"do that for them, and do not ask them to choose.\n"+
+				"Never install it through a shell command or write it through another tool or file to "+
+				"bypass the scan.\n"+
+				scaMaliciousReport,
+			packages, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
 	}
+
+	pkgTool := defaultPackageRemediationTool
 	return fmt.Sprintf(
-		preamble+
-			"Action required:\n"+
-			skillStep+
-			"  2. If that skill is not available in this session, use %s for each %s.\n"+
-			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  3. If %s is unavailable, tell the user to reconnect the\n"+
-			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-			"  4. If no safe version exists, the user can acknowledge the finding via\n"+
-			"     the Checkmarx Dev Assist interface.",
-		subject, goal, pkgTool, subject, pkgTool, agentprofile.McpReconnect(agent))
+		hookDenyHeader+
+			"SCA blocked the write because it adds a known-malicious package.\nFindings:\n%s"+
+			"Handle this yourself; never ask the user to choose. A malicious package has no ignore "+
+			"path: never run cx ignore-vulnerability for it, and never install it.\n"+
+			"1. Call %s for each malicious package. The cx-devassist:cx-devassist-sca skill can make "+
+			"this call; if it disagrees with this deny, follow this deny. Apply what it returns (a safe "+
+			"version, or removing the dependency) only by editing the manifest with Edit, Write, or "+
+			"MultiEdit, never an install command. Do not guess a safe version.\n"+
+			"2. If %s is unavailable, retry the write with only that dependency omitted and every other "+
+			"change kept. Report that, and tell the user to %s.\n"+
+			"3. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that re-scan "+
+			"validates the package. A package is resolved only when the re-scan no longer reports it. "+
+			"Then retry the blocked write once so the gate can accept the write.\n"+
+			"4. If it is still denied, or no safe version or removal fits: omit only that dependency, "+
+			"keep every other change, stop editing the manifest, and report it as unresolved. Only the "+
+			"user can accept a malicious package, by acknowledging it in Checkmarx Dev Assist. Do not do "+
+			"that for them, and do not ask them to choose.\n"+
+			"Never install it through a shell command or write it through another tool or file to "+
+			"bypass the scan.\n"+
+			scaMaliciousReport,
+		packages, pkgTool, pkgTool, agentprofile.McpReconnect(agent))
 }
 
 // vulnerableRemediationNote returns the action steps for vulnerable packages.
@@ -122,46 +193,96 @@ func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, se
 	}
 	if agent == agentCursor {
 		pkgTool := cursorplugin.MCPTool("packageRemediation")
+		var findingLines strings.Builder
+		for i := range pkgs {
+			fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(pkgs[i]), vulnDetail(pkgs[i]))
+		}
 		return fmt.Sprintf(
-			"Apply the cx-hook-deny.mdc rule for this deny. "+
-				"ASK THE USER FIRST, for each affected package, before taking any action: \"A vulnerable "+
-				"package was detected. Would you like to remediate it (upgrade/remove via MCP) or "+
-				"suppress it (accept the risk)?\" and wait for their answer. Do not decide this "+
-				"yourself — a deliberately-pinned or intentionally-included vulnerable package is NOT "+
-				"a reason to suppress it without asking; only suppress on the user's explicit "+
-				"instruction, never because remediating would undo what the user asked for.\n"+
-				"Action required:\n"+
-				"  1. If the user asks to remediate: apply the cx-devassist-sca.mdc rule — invoke the "+
-				"cx-devassist:cx-devassist-sca skill exactly as written — do not skip, abbreviate, or "+
-				"reimplement its steps inline. The findings are already in context so it will skip the "+
-				"scan and go directly to MCP-driven remediation to find non-vulnerable versions; the "+
-				"skill also handles MCP unavailability and self-recovery. Always show its Step 5 SCA "+
-				"Remediation Summary to the user verbatim when done.\n"+
-				"  2. If that skill is not available in this session, use %s for each affected package.\n"+
-				"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-				"  3. If %s is unavailable, tell the user to reconnect the\n"+
-				"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-				"  4. If the user asks to suppress instead, or no safe version exists for a package, "+
-				"suppress it by running the corresponding command and inform the user of which case "+
-				"applied:\n%s",
-			pkgTool, pkgTool, agentprofile.McpReconnect(agent),
-			suppressCmds.String())
+			hookDenyHeader+
+				"SCA blocked the write. Follow the cx-hook-deny.mdc and cx-devassist-sca.mdc rules for "+
+				"this deny.\nFindings:\n%s"+
+				"Handle every package yourself. Never ask the user, including \"Would you like me to "+
+				"remediate?\" (that question is only for on-demand scans).\n"+
+				"1. Classify each package:\n"+
+				"- False positive only if one of these is already true and you can cite it: (a) the user "+
+				"explicitly told you to ignore or suppress it; (b) you called %s for it this session and "+
+				"it returned no version update and no alternate package, including status no_solution or a "+
+				"web_search recommendation. Do not search the web or a registry because of that. "+
+				"\"Looks intentionally pinned\", a major-version "+
+				"upgrade, or the tool being unavailable is not evidence; that still needs (a) or (b).\n"+
+				"- Otherwise it is a true positive, including when you are unsure. A CVE is a true "+
+				"positive unless (a) or (b) is met.\n"+
+				"2. True positive: call %s for each package, following its input schema (at least package "+
+				"manager, name, version, and CVEs). The cx-devassist:cx-devassist-sca skill can make this "+
+				"call; if it disagrees with this deny, follow this deny. Apply only a version update or an "+
+				"alternate package from that response, by editing the affected manifest entries with Write "+
+				"or StrReplace. A status of no_solution, or a recommendation to web_search, is not a fix: "+
+				"do not search the web or a registry, even though the tool recommended it. If the response "+
+				"has neither a version update nor an alternate package, that package meets (b): ignore it "+
+				"and tell the user the tool returned no solution and no alternate package. Never run npm install, "+
+				"pip install, go mod tidy, or any install command; if the lockfile needs refreshing, say "+
+				"so in the summary. If the blocked write creates a new file, the fix is that same Write "+
+				"with the fixed versions.\n"+
+				"If %s is unavailable, do not choose a version yourself and ignore nothing because of it. "+
+				"Report the packages as unresolved and tell the user to %s.\n"+
+				"3. False positive: run exactly this command for it:\n%s"+
+				"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that "+
+				"re-scan validates each package. A package is fixed only when the re-scan no longer "+
+				"reports it. Then retry the blocked write once so the gate can accept the write. If the "+
+				"re-scan still reports a package, the retry is denied, a new version has its own CVE, or "+
+				"a transitive dependency it pulled in, that package gets one more %s call. Stop after 3 "+
+				"denied retries. Then ignore only packages that meet step 1, report the rest as "+
+				"unresolved, and stop editing the manifest. Do not ask whether to continue.\n"+
+				"Never write this content through another tool, a shell command, or a different file to "+
+				"bypass the scan.\n"+
+				scaVulnerableReport,
+			findingLines.String(), pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent),
+			suppressCmds.String(), pkgTool)
 	}
 	pkgTool := defaultPackageRemediationTool
-	skillStep := "  1. For each affected package, invoke the cx-devassist:cx-devassist-sca skill — " +
-		"the findings are already in context so it will skip the scan and go directly to " +
-		"MCP-driven remediation to find non-vulnerable versions; the skill also handles MCP unavailability and self-recovery.\n"
+	var findingLines strings.Builder
+	for i := range pkgs {
+		fmt.Fprintf(&findingLines, "  - %s: %s\n", pkgLabel(pkgs[i]), vulnDetail(pkgs[i]))
+	}
 	return fmt.Sprintf(
-		"Action required:\n"+
-			skillStep+
-			"  2. If that skill is not available in this session, use %s for each affected package.\n"+
-			"     This is the only supported remediation path — do not attempt manual version selection.\n"+
-			"  3. If %s is unavailable, tell the user to reconnect the\n"+
-			"     Checkmarx MCP (%s), then retry. Do not proceed until the MCP is available.\n"+
-			"  4. If no safe version exists for a package, suppress it by running the corresponding command\n"+
-			"     and inform the user that no safer version is available:\n%s",
-		pkgTool, pkgTool, agentprofile.McpReconnect(agent),
-		suppressCmds.String())
+		hookDenyHeader+
+			"SCA blocked the write.\nFindings:\n%s"+
+			"Handle every package yourself. Never ask the user, including \"Would you like me to "+
+			"remediate?\" (that question is only for on-demand scans).\n"+
+			"1. Classify each package:\n"+
+			"- False positive only if one of these is already true and you can cite it: (a) the user "+
+			"explicitly told you to ignore or suppress it; (b) you called %s for it this session and it "+
+			"returned no version update and no alternate package, including status no_solution or a "+
+			"web_search recommendation. Do not search the web or a registry because of that. "+
+			"\"Looks intentionally pinned\", a major-version "+
+			"upgrade, or the tool being unavailable is not evidence; that still needs (a) or (b).\n"+
+			"- Otherwise it is a true positive, including when you are unsure. A CVE is a true positive "+
+			"unless (a) or (b) is met.\n"+
+			"2. True positive: call %s for each package, following its input schema (at least package "+
+			"manager, name, version, and CVEs). The cx-devassist:cx-devassist-sca skill can make this "+
+			"call; if it disagrees with this deny, follow this deny. Apply only a version update or an "+
+			"alternate package from that response, by editing the affected manifest entries with Edit, "+
+			"Write, or MultiEdit. A status of no_solution, or a recommendation to web_search, is not a "+
+			"fix: do not search the web or a registry, even though the tool recommended it. If the "+
+			"response has neither a version update nor an alternate package, that package meets (b): "+
+			"ignore it and tell the user the tool returned no solution and no alternate package. Never run npm "+
+			"install, pip install, go mod tidy, or any install command; if the lockfile needs "+
+			"refreshing, say so in the summary. If the blocked write creates a new file, the fix is that "+
+			"same Write with the fixed versions.\n"+
+			"If %s is unavailable, do not choose a version yourself and ignore nothing because of it. "+
+			"Report the packages as unresolved and tell the user to %s.\n"+
+			"3. False positive: run exactly this command for it:\n%s"+
+			"4. Verify: run `cx scan oss-realtime -s <manifest>` with the canonical cx path; that re-scan "+
+			"validates each package. A package is fixed only when the re-scan no longer reports it. "+
+			"Then retry the blocked write once so the gate can accept the write. If the re-scan still "+
+			"reports a package, the retry is denied, a new version has its own CVE, or a transitive "+
+			"dependency it pulled in, that package gets one more %s call. Stop after 3 denied retries. "+
+			"Then ignore only packages that meet step 1, report the rest as unresolved, and stop editing "+
+			"the manifest. Do not ask whether to continue.\n"+
+			"Never write this content through another tool, a shell command, or a different file to "+
+			"bypass the scan.\n"+
+			scaVulnerableReport,
+		findingLines.String(), pkgTool, pkgTool, pkgTool, agentprofile.McpReconnect(agent), suppressCmds.String(), pkgTool)
 }
 
 // ignoredFilePathFlag returns the " --ignored-file-path '<path>'" fragment that
