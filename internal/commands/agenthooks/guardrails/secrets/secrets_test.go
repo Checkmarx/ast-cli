@@ -37,13 +37,15 @@ func (r *recordingTelemetry) SendAIDataToLog(data *wrappers.DataForAITelemetry) 
 	return nil
 }
 
+const awsKeyTitle = "aws-access-key"
+
 func TestNewFindings_DropsPreExisting(t *testing.T) {
 	old := sampleFinding()
 	fresh := sampleFinding()
 	fresh.SecretValue = "AKIA_NEW_SECRET_VALUE"
-	fresh.Title = "aws-access-key"
+	fresh.Title = awsKeyTitle
 	got := NewFindings([]secretsrealtime.SecretsRealtimeResult{old}, []secretsrealtime.SecretsRealtimeResult{old, fresh})
-	if len(got) != 1 || got[0].Title != "aws-access-key" {
+	if len(got) != 1 || got[0].Title != awsKeyTitle {
 		t.Fatalf("got %+v, want only the new aws-access-key finding", got)
 	}
 }
@@ -120,9 +122,9 @@ func TestScanFileEdit_PreExistingSecret_Allows(t *testing.T) {
 		WorkDir:  dir,
 		Changes:  []agenthooks.FileDiff{{Before: "note=hello", After: "note=world"}},
 	}
-	blocked, _, _, _ := ScanFileEdit(ev, svc, nil, "Claude")
+	blocked, reason, _, _ := ScanFileEdit(ev, svc, nil, "Claude")
 	if blocked {
-		t.Fatal("an edit that does not introduce a new secret should be allowed")
+		t.Fatalf("an edit that does not introduce a new secret should be allowed, got: %s", reason)
 	}
 }
 
@@ -190,9 +192,9 @@ func TestScanFileEdit_ScanError_FailOpen(t *testing.T) {
 		FilePath: "a.txt",
 		Changes:  []agenthooks.FileDiff{{Before: "", After: "TOKEN=" + sampleSecret}},
 	}
-	blocked, _, _, _ := ScanFileEdit(ev, svc, nil, "Codex")
+	blocked, reason, _, _ := ScanFileEdit(ev, svc, nil, "Codex")
 	if blocked {
-		t.Fatal("scanner error should fail open")
+		t.Fatalf("scanner error should fail open, got: %s", reason)
 	}
 }
 
@@ -288,7 +290,7 @@ func TestFormatFindings_OmitsInjectionTriggers(t *testing.T) {
 func TestSafeDescription_RedactsEmbeddedSecret(t *testing.T) {
 	f := sampleFinding()
 	f.Description = "token " + sampleSecret + " found"
-	if safeDescription(f) != "hardcoded secret" {
+	if safeDescription(&f) != genericSecretDescription {
 		t.Fatal("description that embeds the secret should be redacted")
 	}
 }

@@ -456,7 +456,7 @@ func TestCxBeforeFileEdit_SecretsFinding_RejectsWithContext(t *testing.T) {
 	if len(tel.calls) != 2 {
 		t.Fatalf("expected 2 telemetry calls (detect + remediate), got %d", len(tel.calls))
 	}
-	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != "Secrets" {
+	if tel.calls[0].Type != "hooks-detect" || tel.calls[0].Engine != engineSecrets {
 		t.Errorf("detect telemetry = Type %q Engine %q", tel.calls[0].Type, tel.calls[0].Engine)
 	}
 	if tel.calls[1].Type != telemetryTypeHooksRemediate || tel.calls[1].Engine != "Secrets" {

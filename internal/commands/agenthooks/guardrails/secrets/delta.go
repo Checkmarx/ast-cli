@@ -13,13 +13,16 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/secretsrealtime"
 )
 
+// genericSecretDescription replaces finding descriptions that would leak the secret value.
+const genericSecretDescription = "hardcoded secret"
+
 // findingKey matches the ignore-file key used by secrets-realtime: Title + SecretValue.
 type findingKey struct {
 	title string
 	value string
 }
 
-func keyOf(r secretsrealtime.SecretsRealtimeResult) findingKey {
+func keyOf(r *secretsrealtime.SecretsRealtimeResult) findingKey {
 	return findingKey{title: r.Title, value: r.SecretValue}
 }
 
@@ -30,13 +33,13 @@ func NewFindings(originalScan, newScan []secretsrealtime.SecretsRealtimeResult) 
 		return newScan
 	}
 	baseline := make(map[findingKey]struct{}, len(originalScan))
-	for _, r := range originalScan {
-		baseline[keyOf(r)] = struct{}{}
+	for i := range originalScan {
+		baseline[keyOf(&originalScan[i])] = struct{}{}
 	}
 	var out []secretsrealtime.SecretsRealtimeResult
-	for _, r := range newScan {
-		if _, exists := baseline[keyOf(r)]; !exists {
-			out = append(out, r)
+	for i := range newScan {
+		if _, exists := baseline[keyOf(&newScan[i])]; !exists {
+			out = append(out, newScan[i])
 		}
 	}
 	return out
@@ -66,7 +69,8 @@ func formatFindings(filePath string, findings []secretsrealtime.SecretsRealtimeR
 
 func findingsSummary(filePath string, findings []secretsrealtime.SecretsRealtimeResult) string {
 	var sb strings.Builder
-	for _, f := range findings {
+	for i := range findings {
+		f := &findings[i]
 		line := 0
 		if len(f.Locations) > 0 {
 			line = f.Locations[0].Line
@@ -77,9 +81,9 @@ func findingsSummary(filePath string, findings []secretsrealtime.SecretsRealtime
 	return sb.String()
 }
 
-func safeDescription(f secretsrealtime.SecretsRealtimeResult) string {
+func safeDescription(f *secretsrealtime.SecretsRealtimeResult) string {
 	if f.Description == "" || (f.SecretValue != "" && strings.Contains(f.Description, f.SecretValue)) {
-		return "hardcoded secret"
+		return genericSecretDescription
 	}
 	return f.Description
 }
@@ -151,7 +155,7 @@ func secretsSuppressCommands(cxBinary string, findings []secretsrealtime.Secrets
 	var suppressCmds strings.Builder
 	for i := range findings {
 		f := &findings[i]
-		path, err := writeSuppressPayload(*f)
+		path, err := writeSuppressPayload(f)
 		if err != nil {
 			fmt.Fprintf(&suppressCmds, "  # suppress unavailable for %s\n", f.Title)
 			continue
@@ -173,7 +177,7 @@ func secretsSuppressCommands(cxBinary string, findings []secretsrealtime.Secrets
 	return suppressCmds.String()
 }
 
-func writeSuppressPayload(f secretsrealtime.SecretsRealtimeResult) (string, error) {
+func writeSuppressPayload(f *secretsrealtime.SecretsRealtimeResult) (string, error) {
 	if f.Title == "" || f.SecretValue == "" {
 		return "", fmt.Errorf("finding missing ignore key")
 	}
