@@ -2307,9 +2307,15 @@ func collectScaPackageData(result *wrappers.ScanResult) []wrappers.IdentifierDep
 			Name:  packageInfo.URL,
 		})
 	}
+	if len(allIdentifierDep) == 0 {
+		allIdentifierDep = append(allIdentifierDep, wrappers.IdentifierDep{
+			Type:  "cve",
+			Name:  result.ID,
+			Value: result.ID,
+		})
+	}
 	return allIdentifierDep
 }
-
 func convertCxResultsToSonar(results *wrappers.ScanResultsCollection) *wrappers.ScanResultsSonar {
 	var sonar = new(wrappers.ScanResultsSonar)
 	sonar.Issues, sonar.Rules = parseSonar(results)
