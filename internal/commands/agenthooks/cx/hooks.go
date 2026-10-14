@@ -13,6 +13,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -69,10 +70,10 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		}
 		return agenthooks.Deny(reason)
 	}
-	if scaScanner != nil {
+	if scaScanner != nil && scannerOn(ev.Agent, scannerconfig.SCA) {
 		agent := agentToString(ev.Agent)
 		sid := sessionIDFromToolCall(&ev)
-		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" {
+		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(sid, engineSca, 1, 1)
 			logRemediationTelemetry(agent, "SCA", severity, sid)
 			return agenthooks.DenyWithContext(finding, remediation)
@@ -118,31 +119,38 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		return agenthooks.RejectEdit(reason)
 	}
 	agent := agentToString(ev.Agent)
-	if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked {
-		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
-		return agenthooks.RejectEditWithContext(reason, context)
+	// Each engine below is skipped (not just its verdict ignored) when the developer switched it off in
+	// ~/.checkmarx/cx-onboarding.properties; an unreadable config leaves every engine on.
+	// cx_severity_threshold (same file): a deny whose highest severity is below the threshold is let
+	// through for ASCA, KICS and SCA. Secrets always block; malicious packages and an unknown severity
+	// are never relaxed. A blank or invalid threshold means low (nothing filtered).
+	if scannerOn(ev.Agent, scannerconfig.ASCA) {
+		if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
+			sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
+			logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
+			return agenthooks.RejectEditWithContext(reason, context)
+		}
 	}
 	var kicsNote string
-	if kicsScanner != nil {
+	if kicsScanner != nil && scannerOn(ev.Agent, scannerconfig.KICS) {
 		blocked, reason, context, note, severity := kics.ScanFileEdit(&ev, kicsScanner, telemetryWrapper, agent)
-		if blocked {
+		if blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
 			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 		kicsNote = note
 	}
-	if scaScanner != nil {
+	if scaScanner != nil && scannerOn(ev.Agent, scannerconfig.SCA) {
 		for _, diff := range ev.Changes {
-			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" {
+			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" && !belowThreshold(ev.Agent, severity) {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
 				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
 	}
-	if secretsScanner != nil {
+	if secretsScanner != nil && secretsApply(ev.Agent) && scannerOn(ev.Agent, scannerconfig.Secrets) {
 		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked {
 			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
 			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
@@ -282,6 +290,36 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		// fail-open
 	}
+}
+
+// switchesApply reports whether the ~/.checkmarx/cx-onboarding.properties scanner switches and severity
+// threshold are honoured for this agent. Claude, Cursor, Gemini and Codex are excluded for now: they keep
+// scanning with ASCA / KICS / SCA and blocking at any severity even when the shared file exists on the
+// machine. Every other agent (GitHub Copilot, Droid, Windsurf, ...) honours it. Add an agent to
+// the case list below to hold it back, or remove one to roll the feature out to it.
+func switchesApply(agent agenthooks.AgentID) bool {
+	switch agent {
+	case agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex:
+		return false
+	}
+	return true
+}
+
+// secretsApply reports whether the secret-detection guardrail runs for this agent. Claude, Cursor, Gemini
+// and Codex skip it entirely and keep the ASCA / KICS / SCA guardrails; every other agent runs it. It
+// shares switchesApply's agent list so the two cannot drift apart.
+func secretsApply(agent agenthooks.AgentID) bool {
+	return switchesApply(agent)
+}
+
+// scannerOn is scannerconfig.Enabled, limited to the agents the switches apply to.
+func scannerOn(agent agenthooks.AgentID, s scannerconfig.Scanner) bool {
+	return !switchesApply(agent) || scannerconfig.Enabled(s)
+}
+
+// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to.
+func belowThreshold(agent agenthooks.AgentID, severity string) bool {
+	return switchesApply(agent) && scannerconfig.BelowThreshold(severity)
 }
 
 // agentToString converts agenthooks.AgentID enum to string representation for telemetry.
