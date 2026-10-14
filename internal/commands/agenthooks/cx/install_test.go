@@ -5,9 +5,9 @@ package cx
 import "testing"
 
 // TestFindAgentCopilot pins the GitHub Copilot CLI agent entry: its config path
-// and the curated route set the installer mirrors. The route Use names must match
-// the copilot-cli-* routes ast-cx-hooks registers, or `cx hooks agenthooks install
-// copilot` would write commands that don't resolve.
+// and the dispatch routes. InstallCopilotCLI writes only the catalog's
+// copilot-cli-* routes. copilot-pre-file-write and copilot-stop are dispatch-only
+// for the VS Code plugin and must still be invocable as `cx hooks <route>`.
 func TestFindAgentCopilot(t *testing.T) {
 	agent := FindAgent("copilot")
 	if agent == nil {
@@ -28,6 +28,8 @@ func TestFindAgentCopilot(t *testing.T) {
 		"copilot-cli-pre-tool-use",
 		"copilot-cli-pre-file-write",
 		"copilot-cli-user-prompt-submit",
+		"copilot-pre-file-write",
+		"copilot-stop",
 	}
 	if len(agent.Routes) != len(wantRoutes) {
 		t.Fatalf("got %d routes, want %d: %+v", len(agent.Routes), len(wantRoutes), agent.Routes)

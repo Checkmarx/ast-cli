@@ -102,6 +102,10 @@ var Agents = []Agent{
 			{"copilot-cli-pre-tool-use", "Gate GitHub Copilot CLI tool use"},
 			{"copilot-cli-pre-file-write", "Gate GitHub Copilot CLI file write"},
 			{"copilot-cli-user-prompt-submit", "Gate GitHub Copilot CLI prompt"},
+			// Dispatch-only. The VS Code plugin calls these directly. InstallCopilotCLI
+			// writes the catalog's copilot-cli-* routes, not these.
+			{"copilot-pre-file-write", "Gate VS Code GitHub Copilot file write"},
+			{"copilot-stop", "VS Code GitHub Copilot agent finished"},
 		},
 	},
 	{
