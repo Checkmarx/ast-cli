@@ -3,6 +3,7 @@
 package cx
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,21 +130,54 @@ func TestCxBeforeFileEdit_SeverityThreshold(t *testing.T) {
 	}
 }
 
-func TestCxBeforeFileEdit_SeverityThreshold_SecretsAlwaysBlock(t *testing.T) {
+func TestCxBeforeFileEdit_SeverityThreshold_Secrets(t *testing.T) {
 	const secret = "ghp_threshold_test_secret_value"
+	cases := []struct {
+		name      string
+		config    string
+		severity  string
+		wantBlock bool
+	}{
+		{"no config blocks low", "", "Low", true},
+		{"high threshold lets medium through", "cx_severity_threshold=high\n", "Medium", false},
+		{"high threshold blocks high", "cx_severity_threshold=high\n", "High", true},
+		{"critical threshold lets low through", "cx_severity_threshold=critical\n", "Low", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resetHookGlobals(t)
+			useScannerConfig(t, tc.config)
+			secretsScanner = secrets.NewScannerWithFunc(func(_, content, _ string) ([]secretsrealtime.SecretsRealtimeResult, error) {
+				if strings.Contains(content, secret) {
+					return []secretsrealtime.SecretsRealtimeResult{{
+						Title: "generic-key", Description: "key", SecretValue: secret, Severity: tc.severity,
+						Locations: []realtimeengine.Location{{Line: 1}},
+					}}, nil
+				}
+				return nil, nil
+			})
+			if v := cxBeforeFileEdit(secretsEdit(secret, agenthooks.AgentCopilotCLI)); v.Permit == tc.wantBlock {
+				t.Fatalf("Permit=%v, wantBlock=%v", v.Permit, tc.wantBlock)
+			}
+		})
+	}
+}
+
+func TestCxBeforeFileEdit_SeverityThreshold_SecretsMixed(t *testing.T) {
 	resetHookGlobals(t)
-	useScannerConfig(t, "cx_severity_threshold=critical\n")
+	useScannerConfig(t, "cx_severity_threshold=high\n")
 	secretsScanner = secrets.NewScannerWithFunc(func(_, content, _ string) ([]secretsrealtime.SecretsRealtimeResult, error) {
-		if strings.Contains(content, secret) {
-			return []secretsrealtime.SecretsRealtimeResult{{
-				Title: "generic-key", Description: "key", SecretValue: secret, Severity: "Low",
-				Locations: []realtimeengine.Location{{Line: 1}},
-			}}, nil
-		}
-		return nil, nil
+		return []secretsrealtime.SecretsRealtimeResult{
+			{Title: "high-rule", Description: "d", SecretValue: "hv", Severity: "High", Locations: []realtimeengine.Location{{Line: 1}}},
+			{Title: "medium-rule", Description: "d", SecretValue: "mv", Severity: "Medium", Locations: []realtimeengine.Location{{Line: 2}}},
+		}, nil
 	})
-	if v := cxBeforeFileEdit(secretsEdit(secret, agenthooks.AgentCopilotCLI)); v.Permit {
-		t.Fatal("a low-severity secret must still block even with a critical threshold")
+	v := cxBeforeFileEdit(secretsEdit("x", agenthooks.AgentCopilotCLI))
+	if v.Permit {
+		t.Fatal("the high secret must block")
+	}
+	if blob := fmt.Sprintf("%+v", v); !strings.Contains(blob, "high-rule") || strings.Contains(blob, "medium-rule") {
+		t.Fatalf("deny must list the high finding and omit the medium one: %s", blob)
 	}
 }
 

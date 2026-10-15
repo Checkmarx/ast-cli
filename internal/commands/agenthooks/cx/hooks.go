@@ -36,6 +36,17 @@ var scaScanner *sca.Scanner
 // It is set by RegisterGuardrails and cleared by RegisterPassThrough.
 var kicsScanner *kics.Scanner
 
+// bindThreshold points each guardrail's finding filter at the severity threshold for this event's
+// agent, so findings below cx_severity_threshold are left out of a deny and the agent is not told to
+// fix them. Agents the switches do not apply to keep every finding.
+func bindThreshold(agent agenthooks.AgentID) {
+	below := func(severity string) bool { return belowThreshold(agent, severity) }
+	secrets.BelowThreshold = below
+	asca.BelowThreshold = below
+	kics.BelowThreshold = below
+	sca.BelowThreshold = below
+}
+
 // secretsScanner is the package-level secret-detection scanner used by the file-edit guardrail.
 // It is set by RegisterGuardrails and cleared by RegisterPassThrough.
 var secretsScanner *secrets.Scanner
@@ -60,6 +71,7 @@ func sessionIDFromToolCall(ev *agenthooks.ToolCallEvent) string {
 // cxBeforeToolCall gates shell execution against the organization's blacklist,
 // tool rules, and the SCA guardrail (malicious / vulnerable package installs).
 func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
+	bindThreshold(ev.Agent)
 	if !ev.IsShell() {
 		return agenthooks.Allow()
 	}
@@ -101,6 +113,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //     or if the file exceeds the policy size cap. Reads do NOT count toward
 //     the blast-radius budget (that limit is about writes).
 func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
+	bindThreshold(ev.Agent)
 	if ev.Agent == agenthooks.AgentCursor && len(ev.Changes) == 0 {
 		if reason := guardrails.ScanFileForSecrets(ev.FilePath); reason != "" {
 			return agenthooks.RejectEdit(reason)
@@ -122,7 +135,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	// Each engine below is skipped (not just its verdict ignored) when the developer switched it off in
 	// ~/.checkmarx/cx-onboarding.properties; an unreadable config leaves every engine on.
 	// cx_severity_threshold (same file): a deny whose highest severity is below the threshold is let
-	// through for ASCA, KICS and SCA. Secrets always block; malicious packages and an unknown severity
+	// through for ASCA, KICS, SCA and secrets. Malicious packages and an unknown severity
 	// are never relaxed. A blank or invalid threshold means low (nothing filtered).
 	if scannerOn(ev.Agent, scannerconfig.ASCA) {
 		if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
@@ -151,7 +164,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		}
 	}
 	if secretsScanner != nil && secretsApply(ev.Agent) && scannerOn(ev.Agent, scannerconfig.Secrets) {
-		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked {
+		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
 			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
 			return agenthooks.RejectEditWithContext(reason, context)

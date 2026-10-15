@@ -18,6 +18,11 @@ const (
 		"edit can be scanned and applied."
 )
 
+// BelowThreshold, when set by the hook dispatcher, reports whether a finding's severity is under the
+// developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
+// told to remediate them. Nil (the default) keeps every finding.
+var BelowThreshold func(severity string) bool
+
 // ScanFileEdit runs secret detection on the proposed post-edit content.
 // Returns blocked=true with a formatted reason, remediation context, and highest severity when the
 // edit introduces a secret (delta-detection for edits; any secret for new writes). Findings the
@@ -71,6 +76,19 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		if len(findings) == 0 {
 			return false, "", "", ""
 		}
+	}
+
+	if BelowThreshold != nil {
+		kept := make([]secretsrealtime.SecretsRealtimeResult, 0, len(findings))
+		for i := range findings {
+			if !BelowThreshold(findings[i].Severity) {
+				kept = append(kept, findings[i])
+			}
+		}
+		if len(kept) == 0 {
+			return false, "", "", ""
+		}
+		findings = kept
 	}
 
 	r, c := formatFindings(ev.FilePath, findings, ev.Agent, ev.WorkDir, ev.SessionID)
