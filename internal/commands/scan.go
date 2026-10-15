@@ -2906,14 +2906,11 @@ func runCreateScanCommand(
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
 				scanInfoFormat, _ := cmd.Flags().GetString(commonParams.ScanInfoFormatFlag)
-				scanBranch := scanResponseModel.Branch
-				if scanBranch == "" {
-					scanBranch, _ = cmd.Flags().GetString(commonParams.BranchFlag)
-				}
 				return errors.Errorf(
-					"Scan %s was created successfully on branch %s and is still running, but the scan info format %q is not supported. "+
+					"Scan %s was created successfully and is currently running. "+
+						"However, scan info won't be returned bec. the specified format %q is not supported. "+
 						"Supported formats: list, table, json.",
-					scanResponseModel.ID, scanBranch, scanInfoFormat)
+					scanResponseModel.ID, scanInfoFormat)
 			}
 		}
 		// Wait until the scan is done: Queued, Running
