@@ -16,10 +16,13 @@ import (
 type Scanner string
 
 const (
-	// ASCA, SCA, KICS and Secrets are the per-scanner keys in the properties file.
-	ASCA    Scanner = "cx_asca_scanner_enabled"
-	SCA     Scanner = "cx_sca_scanner_enabled"
-	KICS    Scanner = "cx_kics_scanner_enabled"
+	// ASCA is the key for the ASCA (source code) scanner switch.
+	ASCA Scanner = "cx_asca_scanner_enabled"
+	// SCA is the key for the SCA (open source packages) scanner switch.
+	SCA Scanner = "cx_sca_scanner_enabled"
+	// KICS is the key for the KICS (IaC) scanner switch.
+	KICS Scanner = "cx_kics_scanner_enabled"
+	// Secrets is the key for the secrets scanner switch.
 	Secrets Scanner = "cx_secret_scanner_enabled"
 )
 
