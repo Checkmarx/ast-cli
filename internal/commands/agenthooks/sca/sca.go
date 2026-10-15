@@ -6,7 +6,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
 
-// BelowThreshold, when set by the hook dispatcher, reports whether a finding's severity is under the
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
 // developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
 // told to remediate them. Nil (the default) keeps every finding.
 var BelowThreshold func(severity string) bool
@@ -93,7 +93,8 @@ func aboveThreshold(pkgs []ossrealtime.OssPackage) []ossrealtime.OssPackage {
 		return pkgs
 	}
 	kept := make([]ossrealtime.OssPackage, 0, len(pkgs))
-	for _, p := range pkgs {
+	for i := range pkgs {
+		p := pkgs[i]
 		vulns := make([]ossrealtime.Vulnerability, 0, len(p.Vulnerabilities))
 		for _, v := range p.Vulnerabilities {
 			if !BelowThreshold(v.Severity) {

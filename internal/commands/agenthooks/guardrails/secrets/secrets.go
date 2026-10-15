@@ -18,7 +18,7 @@ const (
 		"edit can be scanned and applied."
 )
 
-// BelowThreshold, when set by the hook dispatcher, reports whether a finding's severity is under the
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
 // developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
 // told to remediate them. Nil (the default) keeps every finding.
 var BelowThreshold func(severity string) bool
@@ -78,22 +78,28 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		}
 	}
 
-	if BelowThreshold != nil {
-		kept := make([]secretsrealtime.SecretsRealtimeResult, 0, len(findings))
-		for i := range findings {
-			if !BelowThreshold(findings[i].Severity) {
-				kept = append(kept, findings[i])
-			}
-		}
-		if len(kept) == 0 {
-			return false, "", "", ""
-		}
-		findings = kept
+	findings = aboveThreshold(findings)
+	if len(findings) == 0 {
+		return false, "", "", ""
 	}
 
 	r, c := formatFindings(ev.FilePath, findings, ev.Agent, ev.WorkDir, ev.SessionID)
 	findingCount = len(findings)
 	return true, r, c, highestSeverity(findings)
+}
+
+// aboveThreshold drops findings under the developer's severity threshold.
+func aboveThreshold(findings []secretsrealtime.SecretsRealtimeResult) []secretsrealtime.SecretsRealtimeResult {
+	if BelowThreshold == nil {
+		return findings
+	}
+	kept := make([]secretsrealtime.SecretsRealtimeResult, 0, len(findings))
+	for i := range findings {
+		if !BelowThreshold(findings[i].Severity) {
+			kept = append(kept, findings[i])
+		}
+	}
+	return kept
 }
 
 func highestSeverity(findings []secretsrealtime.SecretsRealtimeResult) string {
