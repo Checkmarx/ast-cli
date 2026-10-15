@@ -16,6 +16,7 @@ import (
 type Scanner string
 
 const (
+	// ASCA, SCA, KICS and Secrets are the per-scanner keys in the properties file.
 	ASCA    Scanner = "cx_asca_scanner_enabled"
 	SCA     Scanner = "cx_sca_scanner_enabled"
 	KICS    Scanner = "cx_kics_scanner_enabled"
@@ -58,7 +59,7 @@ func valueIn(path, key string) (value string, found bool) {
 	if err != nil {
 		return "", false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	raw, err := io.ReadAll(io.LimitReader(f, maxBytes+1))
 	if err != nil || len(raw) > maxBytes {
 		return "", false
