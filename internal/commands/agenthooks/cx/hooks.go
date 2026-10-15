@@ -11,7 +11,9 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -19,9 +21,10 @@ import (
 // canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
 // the per-event remediation telemetry; ASCA already uses "Asca").
 const (
-	engineAsca = "Asca"
-	engineSca  = "Sca"
-	engineKics = "Kics"
+	engineAsca    = "Asca"
+	engineSca     = "Sca"
+	engineKics    = "Kics"
+	engineSecrets = "Secrets"
 )
 
 // scaScanner is the package-level SCA scanner used by the guardrail handlers.
@@ -32,6 +35,21 @@ var scaScanner *sca.Scanner
 // kicsScanner is the package-level KICS scanner used by the file-edit guardrail.
 // It is set by RegisterGuardrails and cleared by RegisterPassThrough.
 var kicsScanner *kics.Scanner
+
+// bindThreshold points each guardrail's finding filter at the severity threshold for this event's
+// agent, so findings below cx_severity_threshold are left out of a deny and the agent is not told to
+// fix them. Agents the switches do not apply to keep every finding.
+func bindThreshold(agent agenthooks.AgentID) {
+	below := func(severity string) bool { return belowThreshold(agent, severity) }
+	secrets.BelowThreshold = below
+	asca.BelowThreshold = below
+	kics.BelowThreshold = below
+	sca.BelowThreshold = below
+}
+
+// secretsScanner is the package-level secret-detection scanner used by the file-edit guardrail.
+// It is set by RegisterGuardrails and cleared by RegisterPassThrough.
+var secretsScanner *secrets.Scanner
 
 var telemetryWrapper wrappers.TelemetryWrapper
 
@@ -53,6 +71,7 @@ func sessionIDFromToolCall(ev *agenthooks.ToolCallEvent) string {
 // cxBeforeToolCall gates shell execution against the organization's blacklist,
 // tool rules, and the SCA guardrail (malicious / vulnerable package installs).
 func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
+	bindThreshold(ev.Agent)
 	if !ev.IsShell() {
 		return agenthooks.Allow()
 	}
@@ -63,10 +82,10 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		}
 		return agenthooks.Deny(reason)
 	}
-	if scaScanner != nil {
+	if scaScanner != nil && scannerOn(ev.Agent, scannerconfig.SCA) {
 		agent := agentToString(ev.Agent)
 		sid := sessionIDFromToolCall(&ev)
-		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" {
+		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(sid, engineSca, 1, 1)
 			logRemediationTelemetry(agent, "SCA", severity, sid)
 			return agenthooks.DenyWithContext(finding, remediation)
@@ -81,10 +100,11 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //  1. File EDITS (Claude / Windsurf / Droid / Gemini) — ev.Changes is populated.
 //     Enforce blast_radius_limit, files_limits.max_total_file_size_kb, the ASCA
 //     guardrail (AI-introduced code vulnerabilities), the KICS guardrail
-//     (IaC security vulnerabilities), and the SCA guardrail
-//     (malicious / vulnerable manifest additions) before any bytes are written
-//     to disk. MultiEdit and multi-file edits are handled uniformly by iterating
-//     ev.Changes.
+//     (IaC security vulnerabilities), the SCA guardrail
+//     (malicious / vulnerable manifest additions), and the secret-detection
+//     guardrail (hardcoded credentials introduced by the edit) before any bytes
+//     are written to disk. MultiEdit and multi-file edits are handled uniformly
+//     by iterating ev.Changes.
 //
 //  2. Cursor file READS (beforeReadFile) — ev.Changes is empty and ev.FilePath
 //     points to a file the agent is about to ingest into the LLM context.
@@ -93,6 +113,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //     or if the file exceeds the policy size cap. Reads do NOT count toward
 //     the blast-radius budget (that limit is about writes).
 func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
+	bindThreshold(ev.Agent)
 	if ev.Agent == agenthooks.AgentCursor && len(ev.Changes) == 0 {
 		if reason := guardrails.ScanFileForSecrets(ev.FilePath); reason != "" {
 			return agenthooks.RejectEdit(reason)
@@ -111,28 +132,42 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		return agenthooks.RejectEdit(reason)
 	}
 	agent := agentToString(ev.Agent)
-	if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked {
-		sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-		logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
-		return agenthooks.RejectEditWithContext(reason, context)
+	// Each engine below is skipped (not just its verdict ignored) when the developer switched it off in
+	// ~/.checkmarx/cx-onboarding.properties; an unreadable config leaves every engine on.
+	// cx_severity_threshold (same file): a deny whose highest severity is below the threshold is let
+	// through for ASCA, KICS, SCA and secrets. Malicious packages and an unknown severity
+	// are never relaxed. A blank or invalid threshold means low (nothing filtered).
+	if scannerOn(ev.Agent, scannerconfig.ASCA) {
+		if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
+			sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
+			logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
+			return agenthooks.RejectEditWithContext(reason, context)
+		}
 	}
 	var kicsNote string
-	if kicsScanner != nil {
+	if kicsScanner != nil && scannerOn(ev.Agent, scannerconfig.KICS) {
 		blocked, reason, context, note, severity := kics.ScanFileEdit(&ev, kicsScanner, telemetryWrapper, agent)
-		if blocked {
+		if blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
 			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 		kicsNote = note
 	}
-	if scaScanner != nil {
+	if scaScanner != nil && scannerOn(ev.Agent, scannerconfig.SCA) {
 		for _, diff := range ev.Changes {
-			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" {
+			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" && !belowThreshold(ev.Agent, severity) {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
 				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
+		}
+	}
+	if secretsScanner != nil && secretsApply(ev.Agent) && scannerOn(ev.Agent, scannerconfig.Secrets) {
+		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
+			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
+			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
+			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
 	// A note on an ALLOW, deliberately: blocking every IaC edit because a
@@ -223,10 +258,11 @@ func promptWorkspaceRoots(raw any) []string {
 }
 
 // RegisterGuardrails wires the four guardrail handlers and instantiates the
-// SCA and KICS scanners used by the Bash and FileEdit handlers.
+// SCA, KICS, and secret-detection scanners used by the Bash and FileEdit handlers.
 func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
 	scaScanner = sca.NewScanner(jwt, ff, rt)
 	kicsScanner = kics.NewScanner(jwt, ff)
+	secretsScanner = secrets.NewScanner(jwt, ff)
 	telemetryWrapper = tel
 	agenthooks.WhenAgentIdle(cxWhenAgentIdle)
 	agenthooks.BeforeToolCall(cxBeforeToolCall)
@@ -239,6 +275,7 @@ func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper
 func RegisterPassThrough() {
 	scaScanner = nil
 	kicsScanner = nil
+	secretsScanner = nil
 	agenthooks.WhenAgentIdle(func(_ agenthooks.AgentIdleEvent) agenthooks.IdleVerdict { return agenthooks.Resume() })
 	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
 	agenthooks.BeforeFileEdit(func(_ agenthooks.FileEditEvent) agenthooks.FileEditVerdict { return agenthooks.AcceptEdit() })
@@ -266,6 +303,36 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		// fail-open
 	}
+}
+
+// switchesApply reports whether the ~/.checkmarx/cx-onboarding.properties scanner switches and severity
+// threshold are honoured for this agent. Claude, Cursor, Gemini and Codex are excluded for now: they keep
+// scanning with ASCA / KICS / SCA and blocking at any severity even when the shared file exists on the
+// machine. Every other agent (GitHub Copilot, Droid, Windsurf, ...) honours it. Add an agent to
+// the case list below to hold it back, or remove one to roll the feature out to it.
+func switchesApply(agent agenthooks.AgentID) bool {
+	switch agent {
+	case agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex:
+		return false
+	}
+	return true
+}
+
+// secretsApply reports whether the secret-detection guardrail runs for this agent. Claude, Cursor, Gemini
+// and Codex skip it entirely and keep the ASCA / KICS / SCA guardrails; every other agent runs it. It
+// shares switchesApply's agent list so the two cannot drift apart.
+func secretsApply(agent agenthooks.AgentID) bool {
+	return switchesApply(agent)
+}
+
+// scannerOn is scannerconfig.Enabled, limited to the agents the switches apply to.
+func scannerOn(agent agenthooks.AgentID, s scannerconfig.Scanner) bool {
+	return !switchesApply(agent) || scannerconfig.Enabled(s)
+}
+
+// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to.
+func belowThreshold(agent agenthooks.AgentID, severity string) bool {
+	return switchesApply(agent) && scannerconfig.BelowThreshold(severity)
 }
 
 // agentToString converts agenthooks.AgentID enum to string representation for telemetry.
