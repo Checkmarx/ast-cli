@@ -28,7 +28,7 @@ func isSupportedByASCA(filePath string) bool {
 	return ok
 }
 
-// BelowThreshold, when set by the hook dispatcher, reports whether a finding's severity is under the
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
 // developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
 // told to remediate them. Nil (the default) keeps every finding.
 var BelowThreshold func(severity string) bool
