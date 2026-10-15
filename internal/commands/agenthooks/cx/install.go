@@ -102,6 +102,10 @@ var Agents = []Agent{
 			{"copilot-cli-pre-tool-use", "Gate GitHub Copilot CLI tool use"},
 			{"copilot-cli-pre-file-write", "Gate GitHub Copilot CLI file write"},
 			{"copilot-cli-user-prompt-submit", "Gate GitHub Copilot CLI prompt"},
+			// Dispatch-only. The shared plugin hooks.json calls these directly.
+			// InstallCopilotCLI writes the catalog's copilot-cli-* routes, not these.
+			{"copilot-pre-file-write", "Gate GitHub Copilot file write"},
+			{"copilot-stop", "GitHub Copilot agent finished"},
 		},
 	},
 	{
