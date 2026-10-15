@@ -438,7 +438,7 @@ func TestCxBeforeFileEdit_SecretsFinding_RejectsWithContext(t *testing.T) {
 	})
 
 	v := cxBeforeFileEdit(agenthooks.FileEditEvent{
-		Agent:     agenthooks.AgentGemini,
+		Agent:     agenthooks.AgentCopilotCLI,
 		SessionID: "sec-sess",
 		FilePath:  "config.env",
 		WorkDir:   t.TempDir(),
@@ -450,8 +450,8 @@ func TestCxBeforeFileEdit_SecretsFinding_RejectsWithContext(t *testing.T) {
 	if strings.Contains(v.Message, secret) || strings.Contains(v.Context, secret) {
 		t.Fatal("verdict leaked the secret value")
 	}
-	if !strings.Contains(v.Context, "/cx-devassist-secrets") {
-		t.Errorf("expected Gemini skill in context, got %q", v.Context)
+	if !strings.Contains(v.Context, "cx-devassist:cx-devassist-secrets") {
+		t.Errorf("expected Copilot skill in context, got %q", v.Context)
 	}
 	if len(tel.calls) != 2 {
 		t.Fatalf("expected 2 telemetry calls (detect + remediate), got %d", len(tel.calls))
