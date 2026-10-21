@@ -297,6 +297,38 @@ func TestNewFindings_EmptyNewScanReturnsEmpty(t *testing.T) {
 
 // ── additionalContext ────────────────────────────────────────────────────────
 
+func TestAdditionalContext_OmitsInjectionTriggers(t *testing.T) {
+	findings := []grpcs.ScanDetail{{FileName: "a.py", Line: 1, RuleID: 1}}
+	for _, agent := range []string{"Claude", "Codex", "Copilot", "Cursor", "Gemini"} {
+		var ctx string
+		if agent == agentCursor {
+			ctx = cursorAdditionalContext("a.py", "cx", findings, "/work", "s1")
+		} else {
+			ctx = additionalContext("a.py", "cx", findings, "/work", agent, "s1")
+		}
+		for _, bad := range []string{"without asking", "silently", "cx_mcp_register"} {
+			if strings.Contains(ctx, bad) {
+				t.Errorf("%s context contains %q", agent, bad)
+			}
+		}
+		if !strings.Contains(ctx, "This is a Checkmarx hook deny") {
+			t.Errorf("%s context missing hook deny header", agent)
+		}
+		if !strings.Contains(ctx, "that still needs (a) or (b)") {
+			t.Errorf("%s context missing suppression label", agent)
+		}
+		if strings.Contains(ctx, "the hook on that retry is the check") {
+			t.Errorf("%s context still treats the hook retry as the check", agent)
+		}
+		if !strings.Contains(ctx, "that re-scan validates the finding") {
+			t.Errorf("%s context missing re-scan validation", agent)
+		}
+		if !strings.Contains(ctx, "partial fix") {
+			t.Errorf("%s context missing partial-fix status", agent)
+		}
+	}
+}
+
 func TestAdditionalContext_SingleFinding_PreFilledCommand(t *testing.T) {
 	findings := []grpcs.ScanDetail{
 		{FileName: "billing.py", Line: 5, RuleID: 4059},
@@ -592,7 +624,7 @@ func TestFormatFindings_ReturnsReasonAndContext(t *testing.T) {
 	reason, context := formatFindings("a.py", findings, "", "Claude", "")
 	assert.Contains(t, reason, "ASCA security scan detected vulnerabilities in a.py")
 	assert.Contains(t, reason, "sql-injection")
-	assert.Contains(t, context, "ASCA detected vulnerabilities in a.py")
+	assert.Contains(t, context, "ASCA blocked the write to a.py")
 	assert.Contains(t, context, "ignore-vulnerability")
 }
 

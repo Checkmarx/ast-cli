@@ -344,3 +344,27 @@ func TestGetSeverity_EmptyStatus_ReturnsHigh(t *testing.T) {
 
 	assert.Equal(t, highSeverity, severity)
 }
+
+func TestScanContent_ReportsSourcePathAndHonorsIgnoreFile(t *testing.T) {
+	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
+
+	service := &SecretsRealtimeService{
+		JwtWrapper:         &mock.JWTMockWrapper{},
+		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+	}
+	content := "token = \"ghp_1234567890abcdef1234567890abcdef12345678\""
+	results, err := service.ScanContent("app.env", content, "")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, results)
+	assert.Equal(t, "app.env", results[0].FilePath)
+	assert.Equal(t, "github-pat", results[0].Title)
+
+	raw, err := json.Marshal([]IgnoredSecret{{Title: results[0].Title, SecretValue: results[0].SecretValue}})
+	assert.NoError(t, err)
+	ignoreFile := filepath.Join(t.TempDir(), "ignore.json")
+	assert.NoError(t, os.WriteFile(ignoreFile, raw, 0600))
+
+	filtered, err := service.ScanContent("app.env", content, ignoreFile)
+	assert.NoError(t, err)
+	assert.Empty(t, filtered)
+}
