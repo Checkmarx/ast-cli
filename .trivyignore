@@ -40,6 +40,13 @@ CVE-2026-95818
 # Reason: Base image vulnerability - awaiting Wolfi update to 1.3.2.1_rc20260601-r0
 CVE-2026-85091
 
+# CVE-2026-111943: ca-certificates-bundle crypto/x509 certificate handling
+# Severity: HIGH
+# Component: ca-certificates-bundle 20260909-r2 (in checkmarx/bash base image)
+# Reason: Base image vulnerability - fix is ca-certificates-bundle 20260909-r3, but the latest
+#         checkmarx/bash tag (5.3-r14) on Docker Hub still ships -r2. Remove once a rebuilt image is published.
+CVE-2026-111943
+
 # ============================================================================
 # BINARY VULNERABILITIES - Compatibility Issues (Not Updated)
 # ============================================================================
