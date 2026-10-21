@@ -28,6 +28,11 @@ func isSupportedByASCA(filePath string) bool {
 	return ok
 }
 
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
+// developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
+// told to remediate them. Nil (the default) keeps every finding.
+var BelowThreshold func(severity string) bool
+
 // ScanFileEdit runs ASCA on the proposed post-edit content.
 // Returns blocked=true with a formatted reason, remediation context, and highest severity when ASCA
 // finds *new* vulnerabilities introduced by ev.Changes (delta-detection for edits;
@@ -90,14 +95,16 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 	}
 
 	// For new files (no original content), every finding is new
-	if originalContent == "" {
-		r, c := formatFindings(ev.FilePath, newResult.ScanDetails, ev.WorkDir, agent, ev.SessionID)
-		findingCount = len(newResult.ScanDetails)
-		return true, r, c, highestSeverity(newResult.ScanDetails)
+	newFindings := newResult.ScanDetails
+	if originalContent != "" {
+		var err error
+		newFindings, err = deltaFindings(ev, originalContent, ascaParams, wrapperParams, newResult.ScanDetails)
+		if err != nil {
+			newFindings = nil
+		}
 	}
-
-	newFindings, err := deltaFindings(ev, originalContent, ascaParams, wrapperParams, newResult.ScanDetails)
-	if err != nil || len(newFindings) == 0 {
+	newFindings = aboveThreshold(newFindings)
+	if len(newFindings) == 0 {
 		findingCount = 0
 		return false, "", "", ""
 	}
@@ -128,6 +135,20 @@ func deltaFindings(ev *agenthooks.FileEditEvent, originalContent string, ascaPar
 	}
 
 	return NewFindings(origDetails, newDetails), nil
+}
+
+// aboveThreshold drops findings below the developer's severity threshold.
+func aboveThreshold(findings []grpcs.ScanDetail) []grpcs.ScanDetail {
+	if BelowThreshold == nil {
+		return findings
+	}
+	kept := make([]grpcs.ScanDetail, 0, len(findings))
+	for i := range findings {
+		if !BelowThreshold(findings[i].Severity) {
+			kept = append(kept, findings[i])
+		}
+	}
+	return kept
 }
 
 // highestSeverity returns the highest severity level across the given ASCA findings.

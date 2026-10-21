@@ -6,6 +6,11 @@ import (
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
 
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
+// developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
+// told to remediate them. Nil (the default) keeps every finding.
+var BelowThreshold func(severity string) bool
+
 // CheckBashInstall is the entry point for the pre-Bash-tool guardrail. It
 // returns ("", "", "") to allow the command, or (finding, remediation, severity) to block.
 // Errors fail open — we never block on infrastructure failures.
@@ -73,11 +78,35 @@ func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, se
 		f, r := DenyMalicious(malicious, agent)
 		return tag + " " + f, tag + " " + r, statusMalicious
 	}
+	vulnerable = aboveThreshold(vulnerable)
 	if len(vulnerable) > 0 {
 		f, r := DenyVulnerable(vulnerable, workDir, agent, sessionID)
 		return tag + " " + f, tag + " " + r, highestVulnSeverity(vulnerable)
 	}
 	return "", "", ""
+}
+
+// aboveThreshold drops CVEs below the developer's severity threshold, and any package left with
+// none. Malicious packages never go through here. A CVE with an unknown severity is kept.
+func aboveThreshold(pkgs []ossrealtime.OssPackage) []ossrealtime.OssPackage {
+	if BelowThreshold == nil {
+		return pkgs
+	}
+	kept := make([]ossrealtime.OssPackage, 0, len(pkgs))
+	for i := range pkgs {
+		p := pkgs[i]
+		vulns := make([]ossrealtime.Vulnerability, 0, len(p.Vulnerabilities))
+		for _, v := range p.Vulnerabilities {
+			if !BelowThreshold(v.Severity) {
+				vulns = append(vulns, v)
+			}
+		}
+		if len(vulns) > 0 {
+			p.Vulnerabilities = vulns
+			kept = append(kept, p)
+		}
+	}
+	return kept
 }
 
 // highestVulnSeverity returns the highest CVE severity across all vulnerable packages.

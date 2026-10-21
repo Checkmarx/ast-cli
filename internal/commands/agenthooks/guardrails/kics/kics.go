@@ -40,6 +40,11 @@ func isSupportedByKICS(filePath string) bool {
 	return false
 }
 
+// BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
+// developer's cx_severity_threshold. Such findings are dropped from the deny, so the agent is never
+// told to remediate them. Nil (the default) keeps every finding.
+var BelowThreshold func(severity string) bool
+
 // ScanFileEdit runs KICS on the proposed post-edit content.
 // Returns blocked=true with a formatted reason, remediation context, and highest severity when KICS
 // finds *new* vulnerabilities introduced by ev.Changes (delta-detection for edits;
@@ -94,6 +99,10 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
+		newResults = aboveThreshold(newResults)
+		if len(newResults) == 0 {
+			return false, "", "", "", ""
+		}
 		r, c := formatFindings(ev.FilePath, newResults, ev.Agent, ev.WorkDir, ev.SessionID)
 		findingCount = len(newResults)
 		return true, r, c, "", highestSeverity(newResults)
@@ -113,7 +122,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		return false, "", "", skippedNote(ev.FilePath, err), ""
 	}
 
-	newFindings := NewFindings(origResults, newResults)
+	newFindings := aboveThreshold(NewFindings(origResults, newResults))
 	if len(newFindings) == 0 {
 		return false, "", "", "", ""
 	}
@@ -121,6 +130,20 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent, ev.WorkDir, ev.SessionID)
 	findingCount = len(newFindings)
 	return true, r, c, "", highestSeverity(newFindings)
+}
+
+// aboveThreshold drops findings below the developer's severity threshold.
+func aboveThreshold(findings []iacrealtime.IacRealtimeResult) []iacrealtime.IacRealtimeResult {
+	if BelowThreshold == nil {
+		return findings
+	}
+	kept := make([]iacrealtime.IacRealtimeResult, 0, len(findings))
+	for i := range findings {
+		if !BelowThreshold(findings[i].Severity) {
+			kept = append(kept, findings[i])
+		}
+	}
+	return kept
 }
 
 // highestSeverity returns the highest severity level across the given KICS findings.
