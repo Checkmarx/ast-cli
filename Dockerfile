@@ -1,4 +1,4 @@
-FROM checkmarx/bash:5.3-r14-ca00804d797fe8@sha256:ca00804d797fe8c0846a2f1ec4fc159bd08fdf66a6c8621031c954d1bee61193
+FROM checkmarx.jfrog.io/docker/echo/bash:5.3.20@sha256:24d85520a82edf5d09ab3277123690ddd7e84220e51510529af1e6691880ac49
 USER nonroot
 
 COPY cx /app/bin/cx
