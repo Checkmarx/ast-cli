@@ -2905,7 +2905,12 @@ func runCreateScanCommand(
 			scanResponseModel = enrichScanResponseModel(cmd, scanResponseModel)
 			err = printByScanInfoFormat(cmd, toScanView(scanResponseModel))
 			if err != nil {
-				return errors.Wrapf(err, "%s\n", failedCreating)
+				scanInfoFormat, _ := cmd.Flags().GetString(commonParams.ScanInfoFormatFlag)
+				return errors.Errorf(
+					"Scan %s was created successfully and is currently running. "+
+						"However, scan info won't be returned because the specified format %q is not supported. "+
+						"Supported formats: list, table, json.",
+					scanResponseModel.ID, scanInfoFormat)
 			}
 		}
 		// Wait until the scan is done: Queued, Running
