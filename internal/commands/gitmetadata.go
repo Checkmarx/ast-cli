@@ -90,7 +90,7 @@ func GenerateAndWrite(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Always generate metadata.json (all repos)
-	metadataData, err := buildMetadataJSON(remoteURL(repo), headCommit, len(commits))
+	metadataData, err := buildMetadataJSON(sanitizeRepoURL(remoteURL(repo)), headCommit, len(commits))
 	if err != nil {
 		return errors.Wrap(err, "could not build metadata.json")
 	}
@@ -193,6 +193,51 @@ func remoteURL(repo *gogit.Repository) string {
 	return urls[0]
 }
 
+const urlSchemeSeparator = "://"
+
+// sanitizeRepoURL strips credentials from git remote URLs for metadata.json. Removes userinfo from http(s)/git/ftp,
+// preserves ssh usernames while dropping passwords, leaves SCP-style and local paths unchanged, and removes query/fragments.
+func sanitizeRepoURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	schemeEnd := strings.Index(raw, urlSchemeSeparator)
+	if schemeEnd < 0 {
+		// No scheme found (e.g., SCP-style git@host:path or local paths)
+		return raw
+	}
+	scheme := strings.ToLower(raw[:schemeEnd])
+	rest := raw[schemeEnd+len(urlSchemeSeparator):]
+
+	// Authority ends at the first "/" - query strings and fragments come after
+	authEnd := strings.IndexByte(rest, '/')
+	if authEnd < 0 {
+		authEnd = len(rest)
+	}
+	authority, tail := rest[:authEnd], rest[authEnd:]
+
+	// Strip credentials from authority
+	if at := strings.LastIndexByte(authority, '@'); at >= 0 {
+		userinfo, host := authority[:at], authority[at+1:]
+		if strings.Contains(scheme, "ssh") {
+			// For SSH, keep the username but drop the password
+			// userinfo might be "git" or "git:password"
+			if colon := strings.IndexByte(userinfo, ':'); colon >= 0 {
+				userinfo = userinfo[:colon]
+			}
+			authority = userinfo + "@" + host
+		} else {
+			// For HTTP(S), remove all userinfo
+			authority = host
+		}
+	}
+
+	// Drop query strings and fragments
+	if i := strings.IndexAny(tail, "?#"); i >= 0 {
+		tail = tail[:i]
+	}
+
+	return raw[:schemeEnd+len(urlSchemeSeparator)] + authority + tail
+}
+
 // generateViaSystemGit extracts repo info via system git when go-git fails (e.g., unsupported extensions).
 func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 	remoteURL, err := gitCommand(repoPath, "config", "--get", "remote.origin.url")
@@ -243,7 +288,7 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Always generate metadata.json
-	metadataData, err := buildMetadataJSONFromSystem(remoteURL, headHash, len(commits), lastCommitDateStr)
+	metadataData, err := buildMetadataJSONFromSystem(sanitizeRepoURL(remoteURL), headHash, len(commits), lastCommitDateStr)
 	if err != nil {
 		return errors.Wrap(err, "could not build metadata.json")
 	}
