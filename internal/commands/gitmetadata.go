@@ -90,7 +90,7 @@ func GenerateAndWrite(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Always generate metadata.json (all repos)
-	metadataData, err := buildMetadataJSON(sanitizeRepoURL(remoteURL(repo)), headCommit, len(commits))
+	metadataData, err := buildMetadataJSON(remoteURL(repo), headCommit, len(commits))
 	if err != nil {
 		return errors.Wrap(err, "could not build metadata.json")
 	}
@@ -171,6 +171,7 @@ func buildContributorsCSV(commits []*object.Commit) ([]byte, error) {
 }
 
 func buildMetadataJSON(repositoryURL string, headCommit *object.Commit, commitsCount int) ([]byte, error) {
+	repositoryURL = sanitizeRepoURL(repositoryURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  repositoryURL,
 		LastCommitHash: headCommit.Hash.String(),
@@ -288,7 +289,7 @@ func generateViaSystemGit(repoPath string, isPrivateRepo bool) error {
 	}
 
 	// Always generate metadata.json
-	metadataData, err := buildMetadataJSONFromSystem(sanitizeRepoURL(remoteURL), headHash, len(commits), lastCommitDateStr)
+	metadataData, err := buildMetadataJSONFromSystem(remoteURL, headHash, len(commits), lastCommitDateStr)
 	if err != nil {
 		return errors.Wrap(err, "could not build metadata.json")
 	}
@@ -371,6 +372,7 @@ func convertToCoreCommits(commits []map[string]string) []*object.Commit {
 
 // buildMetadataJSONFromSystem builds metadata.json using data from system git.
 func buildMetadataJSONFromSystem(remoteURL, headHash string, commitCount int, lastCommitDate string) ([]byte, error) {
+	remoteURL = sanitizeRepoURL(remoteURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  remoteURL,
 		LastCommitHash: headHash,
