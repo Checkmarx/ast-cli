@@ -1871,13 +1871,6 @@ func handleFile(
 ) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
-
-	// Exclude .git/config to prevent credential exposure (AST-188620)
-	if strings.HasSuffix(filepath.ToSlash(absFilePath), ".git/config") {
-		logger.PrintIfVerbose("Excluded (.git/config contains credentials): " + absFilePath)
-		return nil
-	}
-
 	for _, exclude := range sbomAbsoluteExcludes {
 		if strings.EqualFold(absFilePath, exclude) {
 			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
