@@ -903,3 +903,20 @@ func TestCodexApplyPatch_KICSFinding_DeniesEndToEnd(t *testing.T) {
 	assert.Contains(t, out, `"permissionDecision":"deny"`)
 	assert.Contains(t, out, "KICS")
 }
+
+func TestPluginHostLabel(t *testing.T) {
+	cases := []struct {
+		root string
+		want string
+	}{
+		{`C:\Users\Sumitm\.copilot\installed-plugins\cx-devassist-marketplace\cx-devassist`, "COPILOT CLI"},
+		{`C:\Users\Sumitm\AppData\Roaming\Code\agentPlugins\file-c-3A-Users-Sumitm-copilot-installed-plugins-cx-devassist-marketplace-cx-devassist\1a15407167c`, "VSCODE GITHUB COPILOT CHAT"},
+		{`C:\Users\Sumitm\AppData\Roaming\Code\agentPlugins\file-c-3A-Users-Sumitm-vscode-agent-plugins-marketplace-repositories-github-com-Checkmarx-cx-agentic-ai-ref-feature-252FAST-1868\1a1542d091b`, "VSCODE GITHUB COPILOT CHAT"},
+		{`D:\other\plugin`, "UNKNOWN"},
+	}
+	for _, tc := range cases {
+		if got := pluginHostLabel(tc.root); got != tc.want {
+			t.Errorf("pluginHostLabel(%q) = %q, want %q", tc.root, got, tc.want)
+		}
+	}
+}

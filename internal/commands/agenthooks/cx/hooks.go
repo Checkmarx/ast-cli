@@ -3,6 +3,7 @@ package cx
 import (
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
@@ -93,6 +94,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //     or if the file exceeds the policy size cap. Reads do NOT count toward
 //     the blast-radius budget (that limit is about writes).
 func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
+	notePluginRoot()
 	if ev.Agent == agenthooks.AgentCursor && len(ev.Changes) == 0 {
 		if reason := guardrails.ScanFileForSecrets(ev.FilePath); reason != "" {
 			return agenthooks.RejectEdit(reason)
@@ -243,6 +245,45 @@ func RegisterPassThrough() {
 	agenthooks.BeforeToolCall(func(_ agenthooks.ToolCallEvent) agenthooks.ToolVerdict { return agenthooks.Allow() })
 	agenthooks.BeforeFileEdit(func(_ agenthooks.FileEditEvent) agenthooks.FileEditVerdict { return agenthooks.AcceptEdit() })
 	agenthooks.BeforePrompt(func(_ agenthooks.PromptEvent) agenthooks.PromptVerdict { return agenthooks.AcceptPrompt() })
+}
+
+// notePluginRoot records the PLUGIN_ROOT Copilot injected into this cx process.
+// The hook does not pass it: exec keeps the hook environment, so os.Getenv sees it.
+// Three general locations are labeled. A hash or username in the path is ignored.
+func notePluginRoot() {
+	pluginRoot := os.Getenv("PLUGIN_ROOT")
+	if pluginRoot == "" {
+		return
+	}
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return
+	}
+	dir := filepath.Join(home, ".checkmarx", "agent-logs", "copilot-cli")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return
+	}
+	f, err := os.OpenFile(filepath.Join(dir, "plugin_root_from_cli.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	_, _ = f.WriteString("PLUGIN_ROOT=" + pluginRoot + "\n" + "PLUGIN_HOST_AGENT=" + pluginHostLabel(pluginRoot) + "\n")
+}
+
+// pluginHostLabel maps a plugin install path to the host that launched the scan.
+func pluginHostLabel(root string) string {
+	n := strings.ToLower(strings.ReplaceAll(root, "/", `\`))
+	switch {
+	case strings.Contains(n, `\code\agentplugins\`) && strings.Contains(n, `copilot-installed-plugins`):
+		return "VSCODE GITHUB COPILOT CHAT"
+	case strings.Contains(n, `\code\agentplugins\`) && strings.Contains(n, `vscode-agent-plugins`):
+		return "VSCODE GITHUB COPILOT CHAT"
+	case strings.Contains(n, `\.copilot\installed-plugins\`):
+		return "COPILOT CLI"
+	default:
+		return "UNKNOWN"
+	}
 }
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
