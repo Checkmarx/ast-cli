@@ -1872,19 +1872,21 @@ func handleFile(
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
 
-	if strings.HasSuffix(filepath.ToSlash(absFilePath), ".git/config") {
-		logger.PrintIfVerbose("Excluded .git/config contains credentials: " + absFilePath)
-		return nil
-	}
-
 	for _, exclude := range sbomAbsoluteExcludes {
 		if strings.EqualFold(absFilePath, exclude) {
 			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
 			return nil
 		}
 	}
-	// relPath is forward-slash path from source root, used by antMatcher.
+	// relPath is forward-slash path from source root, used by antMatcher and exclusions.
 	relPath := filepath.ToSlash(baseDir + file.Name())
+
+	// Exclude .git/config to prevent credential exposure (AST-188620)
+	if strings.HasSuffix(relPath, ".git/config") {
+		logger.PrintIfVerbose("Excluded (.git/config contains credentials): " + absFilePath)
+		return nil
+	}
+
 	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
 	if isGeneratedContributorsFile(relPath) {
 		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
