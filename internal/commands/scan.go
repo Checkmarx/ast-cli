@@ -1821,6 +1821,13 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
+			relPath := filepath.ToSlash(baseDir + file.Name())
+
+			if strings.HasSuffix(relPath, ".git/config") {
+				logger.PrintIfVerbose("Excluded .git/config contains credentials: " + fileName)
+				continue
+			}
+
 			logger.PrintIfVerbose("Included: " + fileName)
 			dat, _ := ioutil.ReadFile(fileName)
 
@@ -1871,14 +1878,16 @@ func handleFile(
 ) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
+
 	for _, exclude := range sbomAbsoluteExcludes {
 		if strings.EqualFold(absFilePath, exclude) {
 			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
 			return nil
 		}
 	}
-	// relPath is forward-slash path from source root, used by antMatcher.
+	// relPath is forward-slash path from source root, used by antMatcher and exclusions.
 	relPath := filepath.ToSlash(baseDir + file.Name())
+
 	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
 	if isGeneratedContributorsFile(relPath) {
 		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
