@@ -1878,14 +1878,13 @@ func handleFile(
 ) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
-
 	for _, exclude := range sbomAbsoluteExcludes {
 		if strings.EqualFold(absFilePath, exclude) {
 			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
 			return nil
 		}
 	}
-	// relPath is forward-slash path from source root, used by antMatcher and exclusions.
+	// relPath is forward-slash path from source root, used by antMatcher.
 	relPath := filepath.ToSlash(baseDir + file.Name())
 
 	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
