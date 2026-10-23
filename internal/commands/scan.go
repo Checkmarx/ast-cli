@@ -1886,7 +1886,6 @@ func handleFile(
 	}
 	// relPath is forward-slash path from source root, used by antMatcher.
 	relPath := filepath.ToSlash(baseDir + file.Name())
-
 	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
 	if isGeneratedContributorsFile(relPath) {
 		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
