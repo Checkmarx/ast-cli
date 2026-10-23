@@ -171,6 +171,7 @@ func buildContributorsCSV(commits []*object.Commit) ([]byte, error) {
 }
 
 func buildMetadataJSON(repositoryURL string, headCommit *object.Commit, commitsCount int) ([]byte, error) {
+	repositoryURL = sanitizeRepoURL(repositoryURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  repositoryURL,
 		LastCommitHash: headCommit.Hash.String(),
@@ -191,6 +192,51 @@ func remoteURL(repo *gogit.Repository) string {
 		return ""
 	}
 	return urls[0]
+}
+
+const urlSchemeSeparator = "://"
+
+// sanitizeRepoURL strips credentials from git remote URLs for metadata.json. Removes userinfo from http(s)/git/ftp,
+// preserves ssh usernames while dropping passwords, leaves SCP-style and local paths unchanged, and removes query/fragments.
+func sanitizeRepoURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	schemeEnd := strings.Index(raw, urlSchemeSeparator)
+	if schemeEnd < 0 {
+		// No scheme found (e.g., SCP-style git@host:path or local paths)
+		return raw
+	}
+	scheme := strings.ToLower(raw[:schemeEnd])
+	rest := raw[schemeEnd+len(urlSchemeSeparator):]
+
+	// Authority ends at the first "/" - query strings and fragments come after
+	authEnd := strings.IndexByte(rest, '/')
+	if authEnd < 0 {
+		authEnd = len(rest)
+	}
+	authority, tail := rest[:authEnd], rest[authEnd:]
+
+	// Strip credentials from authority
+	if at := strings.LastIndexByte(authority, '@'); at >= 0 {
+		userinfo, host := authority[:at], authority[at+1:]
+		if strings.Contains(scheme, "ssh") {
+			// For SSH, keep the username but drop the password
+			// userinfo might be "git" or "git:password"
+			if colon := strings.IndexByte(userinfo, ':'); colon >= 0 {
+				userinfo = userinfo[:colon]
+			}
+			authority = userinfo + "@" + host
+		} else {
+			// For HTTP(S), remove all userinfo
+			authority = host
+		}
+	}
+
+	// Drop query strings and fragments
+	if i := strings.IndexAny(tail, "?#"); i >= 0 {
+		tail = tail[:i]
+	}
+
+	return raw[:schemeEnd+len(urlSchemeSeparator)] + authority + tail
 }
 
 // generateViaSystemGit extracts repo info via system git when go-git fails (e.g., unsupported extensions).
@@ -326,6 +372,7 @@ func convertToCoreCommits(commits []map[string]string) []*object.Commit {
 
 // buildMetadataJSONFromSystem builds metadata.json using data from system git.
 func buildMetadataJSONFromSystem(remoteURL, headHash string, commitCount int, lastCommitDate string) ([]byte, error) {
+	remoteURL = sanitizeRepoURL(remoteURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  remoteURL,
 		LastCommitHash: headHash,

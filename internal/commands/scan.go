@@ -1821,6 +1821,13 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
+			relPath := filepath.ToSlash(baseDir + file.Name())
+
+			if strings.HasSuffix(relPath, ".git/config") {
+				logger.PrintIfVerbose("Excluded .git/config contains credentials: " + fileName)
+				continue
+			}
+
 			logger.PrintIfVerbose("Included: " + fileName)
 			dat, _ := ioutil.ReadFile(fileName)
 
