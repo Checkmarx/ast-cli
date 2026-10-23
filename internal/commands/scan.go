@@ -1881,7 +1881,6 @@ func handleFile(
 	// relPath is forward-slash path from source root, used by antMatcher and exclusions.
 	relPath := filepath.ToSlash(baseDir + file.Name())
 
-	// Exclude .git/config to prevent credential exposure (AST-188620)
 	if strings.HasSuffix(relPath, ".git/config") {
 		logger.PrintIfVerbose("Excluded (.git/config contains credentials): " + absFilePath)
 		return nil
