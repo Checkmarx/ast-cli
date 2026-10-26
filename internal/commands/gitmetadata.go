@@ -208,35 +208,45 @@ func sanitizeRepoURL(raw string) string {
 	scheme := strings.ToLower(raw[:schemeEnd])
 	rest := raw[schemeEnd+len(urlSchemeSeparator):]
 
-	// Authority ends at the first "/" - query strings and fragments come after
-	authEnd := strings.IndexByte(rest, '/')
-	if authEnd < 0 {
-		authEnd = len(rest)
-	}
-	authority, tail := rest[:authEnd], rest[authEnd:]
-
-	// Strip credentials from authority
-	if at := strings.LastIndexByte(authority, '@'); at >= 0 {
-		userinfo, host := authority[:at], authority[at+1:]
-		if strings.Contains(scheme, "ssh") {
-			// For SSH, keep the username but drop the password
-			// userinfo might be "git" or "git:password"
-			if colon := strings.IndexByte(userinfo, ':'); colon >= 0 {
-				userinfo = userinfo[:colon]
-			}
-			authority = userinfo + "@" + host
-		} else {
-			// For HTTP(S), remove all userinfo
-			authority = host
+	// Find @ (userinfo separator). If present, split userinfo from host+path.
+	atIndex := strings.LastIndexByte(rest, '@')
+	if atIndex < 0 {
+		// No credentials, return as-is after removing query/fragment
+		if i := strings.IndexAny(rest, "?#"); i >= 0 {
+			rest = rest[:i]
 		}
+		return raw[:schemeEnd+len(urlSchemeSeparator)] + rest
 	}
 
-	// Drop query strings and fragments
-	if i := strings.IndexAny(tail, "?#"); i >= 0 {
-		tail = tail[:i]
+	// Split: userinfo@host+path
+	userinfo := rest[:atIndex]
+	hostPath := rest[atIndex+1:]
+
+	// Find path separator in host+path
+	slashIndex := strings.IndexByte(hostPath, '/')
+	var host, path string
+	if slashIndex < 0 {
+		host = hostPath
+		path = ""
+	} else {
+		host = hostPath[:slashIndex]
+		path = hostPath[slashIndex:]
 	}
 
-	return raw[:schemeEnd+len(urlSchemeSeparator)] + authority + tail
+	// For SSH, keep username but drop password; for HTTP(S), remove all userinfo
+	if strings.Contains(scheme, "ssh") {
+		if colon := strings.IndexByte(userinfo, ':'); colon >= 0 {
+			userinfo = userinfo[:colon]
+		}
+		host = userinfo + "@" + host
+	}
+
+	// Drop query strings and fragments from path
+	if i := strings.IndexAny(path, "?#"); i >= 0 {
+		path = path[:i]
+	}
+
+	return raw[:schemeEnd+len(urlSchemeSeparator)] + host + path
 }
 
 // generateViaSystemGit extracts repo info via system git when go-git fails (e.g., unsupported extensions).
@@ -418,13 +428,14 @@ func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) (isPrivat
 	// Method 1: Try go-git
 	repo, err := gogit.PlainOpen(repoPath)
 	if err == nil {
-		return isPrivateByURL(remoteURL(repo), httpClient)
+		rawURL := remoteURL(repo)
+		return isPrivateByURL(sanitizeRepoURL(rawURL), httpClient)
 	}
 
 	// Method 2: Try system git
 	remoteURL, err := gitCommand(repoPath, "config", "--get", "remote.origin.url")
 	if err == nil && remoteURL != "" {
-		return isPrivateByURL(remoteURL, httpClient)
+		return isPrivateByURL(sanitizeRepoURL(remoteURL), httpClient)
 	}
 
 	// Default: Conservative (treat as private)
