@@ -136,3 +136,98 @@ func TestBelowThreshold(t *testing.T) {
 		t.Error("blank threshold must filter nothing")
 	}
 }
+
+func writeIDE(t *testing.T, body string) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), ideFileName)
+	if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestSelfHealingIn(t *testing.T) {
+	cases := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{"key missing is on", "cx_schema_version=1\n", true},
+		{"explicit true is on", "cx_self_healing_enabled=true\n", true},
+		{"garbage is on", "cx_self_healing_enabled=flase\n", true},
+		{"empty value is on", "cx_self_healing_enabled=\n", true},
+		{"false is off", "cx_schema_version=1\ncx_self_healing_enabled=false\n", false},
+		{"no schema key, off", "cx_self_healing_enabled=false\n", false},
+		{"caps / spaces / CRLF / BOM, off", "\xef\xbb\xbfcx_schema_version= 1 \r\ncx_self_healing_enabled= Disabled \r\n", false},
+		{"0 / no / off are off", "cx_self_healing_enabled=0\ncx_self_healing_enabled=no\ncx_self_healing_enabled=off\n", false},
+		{"last occurrence wins", "cx_self_healing_enabled=false\ncx_self_healing_enabled=true\n", true},
+		{"commented key ignored", "# cx_self_healing_enabled=false\n", true},
+		{"unknown schema is on", "cx_schema_version=2\ncx_self_healing_enabled=false\n", true},
+		{"blank schema is on", "cx_schema_version=\ncx_self_healing_enabled=false\n", true},
+		{"oversized is on", strings.Repeat("# pad\n", 5000) + "cx_self_healing_enabled=false\n", true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := selfHealingIn(writeIDE(t, tc.body)); got != tc.want {
+				t.Fatalf("selfHealingIn(%q) = %v, want %v", tc.body, got, tc.want)
+			}
+		})
+	}
+	if !selfHealingIn(filepath.Join(t.TempDir(), "missing")) || !selfHealingIn("") {
+		t.Error("missing file / path must mean on")
+	}
+	if !selfHealingIn(t.TempDir()) {
+		t.Error("unreadable (directory) must mean on")
+	}
+}
+
+func TestIDEEnabledIn(t *testing.T) {
+	cli := write(t, "cx_asca_scanner_enabled=false\n") // terminal: ASCA off, others on
+	cases := []struct {
+		name string
+		ide  string // "" = no IDE file
+		s    Scanner
+		want bool
+	}{
+		{"no IDE file falls back to CLI (off)", "", ASCA, false},
+		{"no IDE file falls back to CLI (on)", "", KICS, true},
+		{"valid IDE file, key missing is on despite CLI off", "cx_schema_version=1\n", ASCA, true},
+		{"valid IDE file, key off", "cx_kics_scanner_enabled=false\n", KICS, false},
+		{"valid IDE file, key on", "cx_asca_scanner_enabled=true\n", ASCA, true},
+		{"valid IDE file, garbage is on", "cx_sca_scanner_enabled=banana\n", SCA, true},
+		{"valid IDE file, secrets off", "cx_secret_scanner_enabled=OFF\n", Secrets, false},
+		{"unknown schema falls back to CLI", "cx_schema_version=9\ncx_asca_scanner_enabled=true\n", ASCA, false},
+		{"oversized IDE file falls back to CLI", strings.Repeat("# pad\n", 5000), ASCA, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ide := filepath.Join(t.TempDir(), "missing")
+			if tc.ide != "" {
+				ide = writeIDE(t, tc.ide)
+			}
+			if got := ideEnabledIn(ide, cli, tc.s); got != tc.want {
+				t.Fatalf("ideEnabledIn(%s) = %v, want %v", tc.s, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIDEPathUsesHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	if got := IDEPath(); got != filepath.Join(dir, ".checkmarx", "cx-onboarding-ide.properties") {
+		t.Errorf("unexpected path %q", got)
+	}
+	if !SelfHealingEnabled() || !IDEEnabled(ASCA) {
+		t.Error("no files under home must mean on")
+	}
+	_ = os.MkdirAll(filepath.Join(dir, ".checkmarx"), 0o755)
+	_ = os.WriteFile(IDEPath(), []byte("cx_self_healing_enabled=false\ncx_kics_scanner_enabled=false\n"), 0o600)
+	if SelfHealingEnabled() || IDEEnabled(KICS) || !IDEEnabled(ASCA) {
+		t.Error("SelfHealingEnabled / IDEEnabled should read the IDE file under the user's home")
+	}
+	if !Enabled(KICS) {
+		t.Error("Enabled (terminal) must never read the IDE file")
+	}
+}
