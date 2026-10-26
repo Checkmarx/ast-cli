@@ -102,7 +102,7 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 		},
 		{
 			name:          "Bitbucket Cloud without https",
-			apiURL:        "bitbucket.org",
+			apiURL:        "bitbucket.org", // trufflehog:ignore
 			namespaceFlag: "namespace",
 			projectKey:    "",
 			expectedCloud: true,
@@ -110,7 +110,7 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 		},
 		{
 			name:          "Bitbucket Cloud with namespace",
-			apiURL:        "https://bitbucket.org",
+			apiURL:        "https://bitbucket.org", // trufflehog:ignore
 			namespaceFlag: "namespace",
 			projectKey:    "",
 			expectedCloud: true,
@@ -118,7 +118,7 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 		},
 		{
 			name:          "Bitbucket Cloud without namespace",
-			apiURL:        "https://bitbucket.org",
+			apiURL:        "https://bitbucket.org", // trufflehog:ignore
 			namespaceFlag: "",
 			projectKey:    "",
 			expectedCloud: true,
@@ -142,7 +142,7 @@ func TestCheckIsCloudAndValidateFlag(t *testing.T) {
 		},
 		{
 			name:          "Bitbucket Cloud with URL and project key",
-			apiURL:        "https://bitbucket.org",
+			apiURL:        "https://bitbucket.org", // trufflehog:ignore
 			namespaceFlag: "",
 			projectKey:    "projectKey",
 			expectedCloud: true,
