@@ -195,19 +195,45 @@ func Threshold() int {
 }
 
 func thresholdIn(path string) int {
-	value, found := valueIn(path, thresholdKey)
-	if !found {
-		return 1
-	}
+	value, _ := valueIn(path, thresholdKey)
+	return thresholdRank(value)
+}
+
+// thresholdRank is the rank of a cx_severity_threshold value; blank or invalid means low (1).
+func thresholdRank(value string) int {
 	if rank, ok := severityRank[strings.ToLower(strings.TrimSpace(value))]; ok {
 		return rank
 	}
 	return 1
 }
 
+// IDEThreshold is Threshold for events from VS Code. The VS Code extension has no threshold setting,
+// so only a cx_severity_threshold in a valid VS Code state file counts; otherwise it is low (nothing
+// filtered). The terminal's ~/.checkmarx/cx-onboarding.properties threshold never applies to VS Code.
+func IDEThreshold() int {
+	return ideThresholdIn(IDEPath())
+}
+
+func ideThresholdIn(path string) int {
+	props, ok := ideProps(path)
+	if !ok {
+		return 1
+	}
+	return thresholdRank(props[thresholdKey])
+}
+
 // BelowThreshold reports whether a deny whose highest severity is `severity` should be let through
 // because it is under cx_severity_threshold. An unranked severity returns false (keep blocking).
 func BelowThreshold(severity string) bool {
+	return belowRank(severity, Threshold())
+}
+
+// IDEBelowThreshold is BelowThreshold for events from VS Code, against IDEThreshold.
+func IDEBelowThreshold(severity string) bool {
+	return belowRank(severity, IDEThreshold())
+}
+
+func belowRank(severity string, threshold int) bool {
 	rank, ok := severityRank[strings.ToLower(strings.TrimSpace(severity))]
-	return ok && rank < Threshold()
+	return ok && rank < threshold
 }

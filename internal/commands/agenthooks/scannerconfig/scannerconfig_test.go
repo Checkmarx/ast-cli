@@ -231,3 +231,36 @@ func TestIDEPathUsesHome(t *testing.T) {
 		t.Error("Enabled (terminal) must never read the IDE file")
 	}
 }
+
+func TestIDEThresholdIn(t *testing.T) {
+	cases := map[string]int{
+		"cx_schema_version=1\n":                             1, // VS Code writes no threshold: low
+		"cx_severity_threshold=high\n":                      3,
+		"cx_schema_version=1\ncx_severity_threshold=\n":     1, // blank
+		"cx_severity_threshold=hihg\n":                      1, // invalid
+		"cx_schema_version=2\ncx_severity_threshold=high\n": 1, // unknown schema: file ignored
+	}
+	for body, want := range cases {
+		if got := ideThresholdIn(writeIDE(t, body)); got != want {
+			t.Errorf("%q: got %d, want %d", body, got, want)
+		}
+	}
+	if ideThresholdIn(filepath.Join(t.TempDir(), "missing")) != 1 || ideThresholdIn("") != 1 {
+		t.Error("missing IDE file / path must mean low")
+	}
+}
+
+func TestIDEBelowThresholdIgnoresTerminalThreshold(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	_ = os.MkdirAll(filepath.Join(dir, ".checkmarx"), 0o755)
+	_ = os.WriteFile(Path(), []byte("cx_severity_threshold=critical\n"), 0o600)
+	_ = os.WriteFile(IDEPath(), []byte("cx_schema_version=1\ncx_self_healing_enabled=true\n"), 0o600)
+	if !BelowThreshold("High") {
+		t.Error("terminal: a critical threshold must relax High")
+	}
+	if IDEBelowThreshold("Low") || IDEBelowThreshold("High") {
+		t.Error("VS Code without a threshold must block at every severity (low)")
+	}
+}
