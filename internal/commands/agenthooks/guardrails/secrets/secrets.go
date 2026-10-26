@@ -4,6 +4,7 @@ import (
 	"os"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/secretsrealtime"
@@ -121,7 +122,7 @@ func logSecretsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sess
 	}
 
 	telemetryData := &wrappers.DataForAITelemetry{
-		Agent:            agent + "-cli",
+		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
 		Engine:           "Secrets",
 		TotalCount:       totalCount,

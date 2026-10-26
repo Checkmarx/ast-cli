@@ -12,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
@@ -294,7 +295,7 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 
 	telemetryData := &wrappers.DataForAITelemetry{
 		AIProvider:       agent,
-		Agent:            agent + "-cli",
+		Agent:            hostenv.TelemetryAgent(agent),
 		Engine:           engine,
 		ScanType:         strings.ToLower(engine),
 		UniqueID:         wrappers.GetUniqueID(),
@@ -335,45 +336,10 @@ func scannerOn(agent agenthooks.AgentID, s scannerconfig.Scanner) bool {
 	if !switchesApply(agent) {
 		return true
 	}
-	if agent == agenthooks.AgentCopilotCLI && pluginHost() == hostVSCode {
+	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
 		return scannerconfig.IDEEnabled(s)
 	}
 	return scannerconfig.Enabled(s)
-}
-
-// Where a Copilot hook runs: the terminal Copilot CLI or GitHub Copilot inside VS Code.
-const (
-	hostUnknown = ""
-	hostCLI     = "cli"
-	hostVSCode  = "vscode"
-)
-
-// vscodeIntegrationID is the GITHUB_COPILOT_INTEGRATION_ID VS Code sets on the Copilot CLI engine it bundles.
-const vscodeIntegrationID = "vscode-chat"
-
-// pluginHost reports where this hook runs, from the PLUGIN_ROOT the host injected into the hook's
-// environment (cx inherits it from the plugin's hook script). VS Code always runs its own copy of the
-// plugin under <VS Code user data>/agentPlugins/ (Windows %APPDATA%\Code\agentPlugins, macOS
-// ~/Library/Application Support/Code/agentPlugins, Linux ~/.config/Code/agentPlugins, Insiders
-// likewise), whether the plugin was installed by the Copilot CLI or from VS Code's marketplace; the
-// terminal Copilot CLI (also when started in VS Code's integrated terminal) runs it from
-// ~/.copilot/installed-plugins/. Hashes and user names in the path are ignored. When PLUGIN_ROOT says
-// neither, GITHUB_COPILOT_INTEGRATION_ID=vscode-chat still marks VS Code. Mirrors the plugin's
-// _in_vscode / cx_in_vscode.
-func pluginHost() string {
-	root := strings.ToLower(strings.ReplaceAll(os.Getenv("PLUGIN_ROOT"), `\`, "/"))
-	// The terminal marker is checked first: VS Code's folder names encode the source path with dashes
-	// (…-copilot-installed-plugins-…), so they never contain it, while a terminal path could contain
-	// "agentPlugins" by chance (a user or folder name).
-	switch {
-	case strings.Contains(root, "/.copilot/installed-plugins/"):
-		return hostCLI
-	case strings.Contains(root, "/agentplugins/"):
-		return hostVSCode
-	case strings.TrimSpace(os.Getenv("GITHUB_COPILOT_INTEGRATION_ID")) == vscodeIntegrationID:
-		return hostVSCode
-	}
-	return hostUnknown
 }
 
 // selfHealingOff reports whether this GitHub Copilot hook runs inside VS Code with the VS Code extension's
@@ -382,7 +348,7 @@ func pluginHost() string {
 // The plugin's own hook scripts already stop before running cx in that case; this covers hooks that
 // call cx directly. A missing or invalid IDE file means on, and the terminal Copilot CLI never reads it.
 func selfHealingOff(agent agenthooks.AgentID, hook string) bool {
-	if agent != agenthooks.AgentCopilotCLI || pluginHost() != hostVSCode || scannerconfig.SelfHealingEnabled() {
+	if agent != agenthooks.AgentCopilotCLI || !hostenv.InVSCode() || scannerconfig.SelfHealingEnabled() {
 		return false
 	}
 	logger.PrintfIfVerbose("hooks: copilot-cli %s allowed without scanning host=vscode skip_reason=self_healing_disabled", hook)

@@ -159,6 +159,21 @@ func ideEnabledIn(idePath, cliPath string, s Scanner) bool {
 	return !set || !isFalse(v)
 }
 
+// IDEExtension returns the id of the VS Code extension that wrote the VS Code state file
+// (cx_ide_extension: "ast-results" for Checkmarx One, "cx-dev-assist" for Developer Assist), or "" when
+// the file is not valid or carries no id.
+func IDEExtension() string {
+	return ideExtensionIn(IDEPath())
+}
+
+func ideExtensionIn(path string) string {
+	props, ok := ideProps(path)
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(props["cx_ide_extension"])
+}
+
 func isFalse(v string) bool {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case "false", "0", "no", "off", "disabled":

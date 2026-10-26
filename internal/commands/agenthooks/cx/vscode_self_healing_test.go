@@ -46,33 +46,6 @@ func useIDEConfig(t *testing.T, ideBody, cliBody string) {
 	}
 }
 
-func TestPluginHost(t *testing.T) {
-	cases := []struct {
-		name, root, integrationID, want string
-	}{
-		{"VS Code copy of a Copilot CLI install", rootVSCodeFromCLIInstall, "", hostVSCode},
-		{"VS Code marketplace install", rootVSCodeFromMarketplace, "", hostVSCode},
-		{"Linux VS Code", "/home/u/.config/Code/agentPlugins/x/1a", "", hostVSCode},
-		{"macOS VS Code Insiders", "/Users/u/Library/Application Support/Code - Insiders/agentPlugins/x/1a", "", hostVSCode},
-		{"terminal Copilot CLI", rootCLI, "", hostCLI},
-		{"terminal path wins over the integration id", rootCLI, vscodeIntegrationID, hostCLI},
-		{"terminal path containing agentPlugins by chance", `C:\Users\agentPlugins\.copilot\installed-plugins\m\cx-devassist`, "", hostCLI},
-		{"terminal path under an agentPlugins folder", `/home/u/agentPlugins/.copilot/installed-plugins/m/cx-devassist`, "", hostCLI},
-		{"unrecognised root + integration id", `D:\other\plugin`, vscodeIntegrationID, hostVSCode},
-		{"no root + integration id", "", vscodeIntegrationID, hostVSCode},
-		{"nothing set", "", "", hostUnknown},
-		{"other integration id", "", "copilot-developer-cli", hostUnknown},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			useHost(t, tc.root, tc.integrationID)
-			if got := pluginHost(); got != tc.want {
-				t.Fatalf("pluginHost() = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestCxBeforeFileEdit_SelfHealingOff(t *testing.T) {
 	const secret = "ghp_self_healing_test_secret_value"
 	const off = "cx_schema_version=1\ncx_self_healing_enabled=false\n"
