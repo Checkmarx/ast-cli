@@ -101,3 +101,27 @@ func TestScannerOn_VSCodeUsesIDEFile(t *testing.T) {
 		})
 	}
 }
+
+func TestBelowThreshold_VSCodeDefaultsToLow(t *testing.T) {
+	const cliHigh = "cx_severity_threshold=high\n"
+	cases := []struct {
+		name     string
+		root     string
+		ide, cli string
+		want     bool
+	}{
+		{"VS Code without a threshold blocks Medium (low)", rootVSCodeFromCLIInstall, "cx_schema_version=1\n", cliHigh, false},
+		{"VS Code without an IDE file blocks Medium (low)", rootVSCodeFromMarketplace, "", cliHigh, false},
+		{"VS Code honours a threshold in the IDE file", rootVSCodeFromCLIInstall, "cx_schema_version=1\n" + cliHigh, "", true},
+		{"terminal keeps the terminal threshold", rootCLI, "cx_schema_version=1\n", cliHigh, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			useIDEConfig(t, tc.ide, tc.cli)
+			useHost(t, tc.root, "")
+			if got := belowThreshold(agenthooks.AgentCopilotCLI, "Medium"); got != tc.want {
+				t.Fatalf("belowThreshold = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

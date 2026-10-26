@@ -355,9 +355,16 @@ func selfHealingOff(agent agenthooks.AgentID, hook string) bool {
 	return true
 }
 
-// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to.
+// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to. GitHub
+// Copilot inside VS Code has no threshold setting, so it uses the IDE file's threshold, low when unset.
 func belowThreshold(agent agenthooks.AgentID, severity string) bool {
-	return switchesApply(agent) && scannerconfig.BelowThreshold(severity)
+	if !switchesApply(agent) {
+		return false
+	}
+	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
+		return scannerconfig.IDEBelowThreshold(severity)
+	}
+	return scannerconfig.BelowThreshold(severity)
 }
 
 // agentToString converts agenthooks.AgentID enum to string representation for telemetry.
