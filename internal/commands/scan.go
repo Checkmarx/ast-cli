@@ -1821,6 +1821,20 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
+			relPath := filepath.ToSlash(baseDir + file.Name())
+
+			excluded := false
+			for _, pattern := range commonParams.BaseExcludedFiles {
+				if relPath == pattern || strings.HasSuffix(relPath, pattern) {
+					excluded = true
+					logger.PrintIfVerbose("Excluded: " + fileName)
+					break
+				}
+			}
+			if excluded {
+				continue
+			}
+
 			logger.PrintIfVerbose("Included: " + fileName)
 			dat, _ := ioutil.ReadFile(fileName)
 

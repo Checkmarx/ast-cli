@@ -171,6 +171,7 @@ func buildContributorsCSV(commits []*object.Commit) ([]byte, error) {
 }
 
 func buildMetadataJSON(repositoryURL string, headCommit *object.Commit, commitsCount int) ([]byte, error) {
+	repositoryURL = sanitizeRepoURL(repositoryURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  repositoryURL,
 		LastCommitHash: headCommit.Hash.String(),
@@ -191,6 +192,61 @@ func remoteURL(repo *gogit.Repository) string {
 		return ""
 	}
 	return urls[0]
+}
+
+const urlSchemeSeparator = "://"
+
+// sanitizeRepoURL strips credentials from git remote URLs for metadata.json. Removes userinfo from http(s)/git/ftp,
+// preserves ssh usernames while dropping passwords, leaves SCP-style and local paths unchanged, and removes query/fragments.
+func sanitizeRepoURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	schemeEnd := strings.Index(raw, urlSchemeSeparator)
+	if schemeEnd < 0 {
+		// No scheme found (e.g., SCP-style git@host:path or local paths)
+		return raw
+	}
+	scheme := strings.ToLower(raw[:schemeEnd])
+	rest := raw[schemeEnd+len(urlSchemeSeparator):]
+
+	// Find @ (userinfo separator). If present, split userinfo from host+path.
+	atIndex := strings.LastIndexByte(rest, '@')
+	if atIndex < 0 {
+		// No credentials, return as-is after removing query/fragment
+		if i := strings.IndexAny(rest, "?#"); i >= 0 {
+			rest = rest[:i]
+		}
+		return raw[:schemeEnd+len(urlSchemeSeparator)] + rest
+	}
+
+	// Split: userinfo@host+path
+	userinfo := rest[:atIndex]
+	hostPath := rest[atIndex+1:]
+
+	// Find path separator in host+path
+	slashIndex := strings.IndexByte(hostPath, '/')
+	var host, path string
+	if slashIndex < 0 {
+		host = hostPath
+		path = ""
+	} else {
+		host = hostPath[:slashIndex]
+		path = hostPath[slashIndex:]
+	}
+
+	// For SSH, keep username but drop password; for HTTP(S), remove all userinfo
+	if strings.Contains(scheme, "ssh") {
+		if colon := strings.IndexByte(userinfo, ':'); colon >= 0 {
+			userinfo = userinfo[:colon]
+		}
+		host = userinfo + "@" + host
+	}
+
+	// Drop query strings and fragments from path
+	if i := strings.IndexAny(path, "?#"); i >= 0 {
+		path = path[:i]
+	}
+
+	return raw[:schemeEnd+len(urlSchemeSeparator)] + host + path
 }
 
 // generateViaSystemGit extracts repo info via system git when go-git fails (e.g., unsupported extensions).
@@ -326,6 +382,7 @@ func convertToCoreCommits(commits []map[string]string) []*object.Commit {
 
 // buildMetadataJSONFromSystem builds metadata.json using data from system git.
 func buildMetadataJSONFromSystem(remoteURL, headHash string, commitCount int, lastCommitDate string) ([]byte, error) {
+	remoteURL = sanitizeRepoURL(remoteURL)
 	metadata := contributorsMetadata{
 		RepositoryURL:  remoteURL,
 		LastCommitHash: headHash,
@@ -371,13 +428,14 @@ func detectRepositoryPrivacy(repoPath string, httpClient *http.Client) (isPrivat
 	// Method 1: Try go-git
 	repo, err := gogit.PlainOpen(repoPath)
 	if err == nil {
-		return isPrivateByURL(remoteURL(repo), httpClient)
+		rawURL := remoteURL(repo)
+		return isPrivateByURL(sanitizeRepoURL(rawURL), httpClient)
 	}
 
 	// Method 2: Try system git
 	remoteURL, err := gitCommand(repoPath, "config", "--get", "remote.origin.url")
 	if err == nil && remoteURL != "" {
-		return isPrivateByURL(remoteURL, httpClient)
+		return isPrivateByURL(sanitizeRepoURL(remoteURL), httpClient)
 	}
 
 	// Default: Conservative (treat as private)
