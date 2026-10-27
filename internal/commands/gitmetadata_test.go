@@ -769,19 +769,19 @@ func TestExtractBitbucketWorkspaceRepo(t *testing.T) {
 	}{
 		{
 			name:          "HTTPS Bitbucket URL",
-			url:           "https://bitbucket.org/checkmarx/ast-cli", // trufflehog:ignore
+			url:           "https://bitbucket.org/checkmarx/ast-cli",
 			wantWorkspace: "checkmarx",
 			wantRepo:      "ast-cli",
 		},
 		{
 			name:          "HTTPS Bitbucket URL with .git suffix",
-			url:           "https://bitbucket.org/checkmarx/ast-cli.git", // trufflehog:ignore
+			url:           "https://bitbucket.org/checkmarx/ast-cli.git",
 			wantWorkspace: "checkmarx",
 			wantRepo:      "ast-cli",
 		},
 		{
 			name:          "SSH Bitbucket URL",
-			url:           "git@bitbucket.org:checkmarx/ast-cli.git", // trufflehog:ignore
+			url:           "git@bitbucket.org:checkmarx/ast-cli.git",
 			wantWorkspace: "checkmarx",
 			wantRepo:      "ast-cli",
 		},
@@ -805,19 +805,19 @@ func TestExtractAzureDevOpsOrgRepo(t *testing.T) {
 	}{
 		{
 			name:     "HTTPS Azure DevOps URL with _git",
-			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli", // trufflehog:ignore
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli",
 			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
 		},
 		{
 			name:     "HTTPS Azure DevOps URL with .git suffix",
-			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli.git", // trufflehog:ignore
+			url:      "https://dev.azure.com/checkmarx/project/_git/ast-cli.git",
 			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
 		},
 		{
 			name:     "SSH Azure DevOps URL",
-			url:      "git@ssh.dev.azure.com:v3/checkmarx/project/ast-cli.git", // trufflehog:ignore
+			url:      "git@ssh.dev.azure.com:v3/checkmarx/project/ast-cli.git",
 			wantOrg:  "checkmarx",
 			wantRepo: "ast-cli",
 		},
