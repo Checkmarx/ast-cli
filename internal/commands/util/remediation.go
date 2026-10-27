@@ -28,7 +28,7 @@ const (
 	resultsContainerLocation  = "/kics/"
 	containerRemove           = "--rm"
 	// ContainerImage is the KICS container image with pinned SHA256 digest.
-	ContainerImage            = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
+	ContainerImage            = "checkmarx/kics@sha256:ef29dbac14b046b1ef65f3280646112e927a61781c5f01bca1aeb723e0b96003" // v2.2.0
 	containerNameFlag         = "--name"
 	remediateCommand          = "remediate"
 	resultsFlag               = "--results"
