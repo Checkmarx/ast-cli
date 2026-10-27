@@ -203,6 +203,10 @@ var BaseExcludeFilters = []string{
 	"!node_modules",
 }
 
+var BaseExcludedFiles = []string{
+	".git/config",
+}
+
 var KicsBaseFilters = []string{
 	".tf",
 	".yaml",
