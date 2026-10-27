@@ -43,6 +43,8 @@ on:
         required: true
       SIGNING_REMOTE_SSH_USER:
         required: true
+      ECHO_LIBRARIES_ACCESS_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       tag:
@@ -66,6 +68,8 @@ jobs:
     name: Build, Sign & Publish Release
     runs-on: cx-public-macos-15-x64
     environment: release
+    env:
+      GOPROXY: https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@golang.echohq.com
     permissions:
       id-token: write # required for AWS OIDC federation via configure-aws-credentials (HSM signing + Secrets Manager)
       contents: write # required for `gh release create`/`gh release delete` to manage GitHub Releases
