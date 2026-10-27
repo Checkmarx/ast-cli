@@ -17,9 +17,6 @@ const (
 	HostOther   = "other" // a VS Code fork (Cursor, Windsurf, Kiro, Devin, ...): never treated as VS Code
 )
 
-// VSCodeIntegrationID is the GITHUB_COPILOT_INTEGRATION_ID VS Code sets on the Copilot CLI engine it bundles.
-const VSCodeIntegrationID = "vscode-chat"
-
 // copilotAgent is the agent name the hook handlers use for GitHub Copilot (see cx.agentToString).
 const copilotAgent = "Copilot"
 
@@ -33,8 +30,7 @@ const agentVSCode = "Copilot-VSCode"
 // likewise), whether the plugin was installed by the Copilot CLI or from VS Code's marketplace; the
 // terminal Copilot CLI (also when started in VS Code's integrated terminal) runs it from
 // ~/.copilot/installed-plugins/. Hashes and user names in the path are ignored. Any other PLUGIN_ROOT
-// (a VS Code fork, JetBrains, Visual Studio, ...) is HostOther. Only when PLUGIN_ROOT is not set at all
-// does GITHUB_COPILOT_INTEGRATION_ID=vscode-chat mark VS Code.
+// (a VS Code fork, JetBrains, Visual Studio, ...) is HostOther; no PLUGIN_ROOT is HostUnknown.
 func PluginHost() string {
 	root := strings.ToLower(strings.ReplaceAll(os.Getenv("PLUGIN_ROOT"), `\`, "/"))
 	// The terminal marker is checked first: VS Code's folder names encode the source path with dashes
@@ -47,11 +43,8 @@ func PluginHost() string {
 	case strings.Contains(root, "/code/agentplugins/"), strings.Contains(root, "/code - insiders/agentplugins/"):
 		return HostVSCode
 	case strings.TrimSpace(root) != "":
-		// Any other plugin folder (a VS Code fork's agentPlugins, JetBrains, Visual Studio, ...) is not
-		// VS Code, and the fallback below must not override that.
+		// Any other plugin folder (a VS Code fork's agentPlugins, JetBrains, Visual Studio, ...) is not VS Code.
 		return HostOther
-	case strings.TrimSpace(os.Getenv("GITHUB_COPILOT_INTEGRATION_ID")) == VSCodeIntegrationID:
-		return HostVSCode
 	}
 	return HostUnknown
 }
