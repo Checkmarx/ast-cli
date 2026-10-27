@@ -7,8 +7,6 @@ package hostenv
 import (
 	"os"
 	"strings"
-
-	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
 )
 
 // Where a Copilot hook runs.
@@ -25,13 +23,8 @@ const VSCodeIntegrationID = "vscode-chat"
 // copilotAgent is the agent name the hook handlers use for GitHub Copilot (see cx.agentToString).
 const copilotAgent = "Copilot"
 
-// Telemetry agent labels for GitHub Copilot inside VS Code, by the VS Code extension that wrote the
-// IDE state file (cx_ide_extension). The terminal keeps "<agent>-cli".
-const (
-	agentVSCode          = "Copilot-VSCode"
-	agentVSCodeOneAssist = "Copilot-VSCode-OneAssist" // Checkmarx One extension (ast-results)
-	agentVSCodeDevAssist = "Copilot-VSCode-DevAssist" // Checkmarx Developer Assist extension (cx-dev-assist)
-)
+// agentVSCode is the telemetry agent label for GitHub Copilot inside VS Code. The terminal keeps "<agent>-cli".
+const agentVSCode = "Copilot-VSCode"
 
 // PluginHost reports where this hook runs, from the PLUGIN_ROOT the host injected into the hook's
 // environment (cx inherits it from the plugin's hook script). VS Code always runs its own copy of the
@@ -69,17 +62,10 @@ func InVSCode() bool {
 }
 
 // TelemetryAgent is the telemetry `agent` value for an event from the given agent name: GitHub Copilot
-// inside VS Code is "Copilot-VSCode-OneAssist" / "Copilot-VSCode-DevAssist" by the extension that wrote
-// the IDE state file, or "Copilot-VSCode" without a valid one; everything else keeps "<agent>-cli".
+// inside VS Code is "Copilot-VSCode"; everything else keeps "<agent>-cli".
 func TelemetryAgent(agent string) string {
 	if agent != copilotAgent || !InVSCode() {
 		return agent + "-cli"
-	}
-	switch scannerconfig.IDEExtension() {
-	case "ast-results":
-		return agentVSCodeOneAssist
-	case "cx-dev-assist":
-		return agentVSCodeDevAssist
 	}
 	return agentVSCode
 }

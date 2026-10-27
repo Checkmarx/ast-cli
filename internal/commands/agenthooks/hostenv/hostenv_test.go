@@ -3,8 +3,6 @@
 package hostenv
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -19,25 +17,6 @@ func useHost(t *testing.T, pluginRoot, integrationID string) {
 	t.Helper()
 	t.Setenv("PLUGIN_ROOT", pluginRoot)
 	t.Setenv("GITHUB_COPILOT_INTEGRATION_ID", integrationID)
-}
-
-// useIDEFile points the user's home at a temp dir holding ~/.checkmarx/cx-onboarding-ide.properties
-// with the given body (no file when empty).
-func useIDEFile(t *testing.T, body string) {
-	t.Helper()
-	dir := t.TempDir()
-	t.Setenv("HOME", dir)
-	t.Setenv("USERPROFILE", dir)
-	if body == "" {
-		return
-	}
-	cxDir := filepath.Join(dir, ".checkmarx")
-	if err := os.MkdirAll(cxDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(cxDir, "cx-onboarding-ide.properties"), []byte(body), 0o600); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestPluginHost(t *testing.T) {
@@ -71,25 +50,19 @@ func TestPluginHost(t *testing.T) {
 }
 
 func TestTelemetryAgent(t *testing.T) {
-	const oneAssist = "cx_schema_version=1\ncx_ide_extension=ast-results\n"
-	const devAssist = "cx_schema_version=1\ncx_ide_extension=cx-dev-assist\n"
 	cases := []struct {
-		name, agent, root, ide, want string
+		name, agent, root, want string
 	}{
-		{"terminal Copilot", "Copilot", rootCLI, oneAssist, "Copilot-cli"},
-		{"VS Code + Checkmarx One", "Copilot", rootVSCodeFromCLIInstall, oneAssist, "Copilot-VSCode-OneAssist"},
-		{"VS Code + Developer Assist", "Copilot", rootVSCodeFromMarketplace, devAssist, "Copilot-VSCode-DevAssist"},
-		{"VS Code, no IDE file", "Copilot", rootVSCodeFromCLIInstall, "", "Copilot-VSCode"},
-		{"VS Code, unknown extension id", "Copilot", rootVSCodeFromCLIInstall, "cx_ide_extension=other\n", "Copilot-VSCode"},
-		{"VS Code, invalid IDE file", "Copilot", rootVSCodeFromCLIInstall, "cx_schema_version=2\ncx_ide_extension=ast-results\n", "Copilot-VSCode"},
-		{"VS Code fork stays -cli", "Copilot", `C:\Users\u\AppData\Roaming\Windsurf\agentPlugins\x\1a`, oneAssist, "Copilot-cli"},
-		{"no host signal stays -cli", "Copilot", "", oneAssist, "Copilot-cli"},
-		{"other agents unchanged in VS Code", "Claude", rootVSCodeFromCLIInstall, oneAssist, "Claude-cli"},
-		{"other agents unchanged", "Cursor", "", "", "Cursor-cli"},
+		{"terminal Copilot", "Copilot", rootCLI, "Copilot-cli"},
+		{"VS Code copy of a Copilot CLI install", "Copilot", rootVSCodeFromCLIInstall, "Copilot-VSCode"},
+		{"VS Code marketplace install", "Copilot", rootVSCodeFromMarketplace, "Copilot-VSCode"},
+		{"VS Code fork stays -cli", "Copilot", `C:\Users\u\AppData\Roaming\Windsurf\agentPlugins\x\1a`, "Copilot-cli"},
+		{"no host signal stays -cli", "Copilot", "", "Copilot-cli"},
+		{"other agents unchanged in VS Code", "Claude", rootVSCodeFromCLIInstall, "Claude-cli"},
+		{"other agents unchanged", "Cursor", "", "Cursor-cli"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			useIDEFile(t, tc.ide)
 			useHost(t, tc.root, "")
 			if got := TelemetryAgent(tc.agent); got != tc.want {
 				t.Fatalf("TelemetryAgent(%q) = %q, want %q", tc.agent, got, tc.want)
