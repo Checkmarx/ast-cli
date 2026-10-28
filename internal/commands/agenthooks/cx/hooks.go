@@ -12,9 +12,11 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sessiontally"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
@@ -113,6 +115,9 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 //     or if the file exceeds the policy size cap. Reads do NOT count toward
 //     the blast-radius budget (that limit is about writes).
 func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
+	if selfHealingOff(ev.Agent, "pre-file-write") {
+		return agenthooks.AcceptEdit()
+	}
 	bindThreshold(ev.Agent)
 	if ev.Agent == agenthooks.AgentCursor && len(ev.Changes) == 0 {
 		if reason := guardrails.ScanFileForSecrets(ev.FilePath); reason != "" {
@@ -290,7 +295,7 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 
 	telemetryData := &wrappers.DataForAITelemetry{
 		AIProvider:       agent,
-		Agent:            agent + "-cli",
+		Agent:            hostenv.TelemetryAgent(agent),
 		Engine:           engine,
 		ScanType:         strings.ToLower(engine),
 		UniqueID:         wrappers.GetUniqueID(),
@@ -325,14 +330,41 @@ func secretsApply(agent agenthooks.AgentID) bool {
 	return switchesApply(agent)
 }
 
-// scannerOn is scannerconfig.Enabled, limited to the agents the switches apply to.
+// scannerOn is scannerconfig.Enabled, limited to the agents the switches apply to. GitHub Copilot inside
+// VS Code takes the switches from the VS Code extension's IDE file instead, while that file is valid.
 func scannerOn(agent agenthooks.AgentID, s scannerconfig.Scanner) bool {
-	return !switchesApply(agent) || scannerconfig.Enabled(s)
+	if !switchesApply(agent) {
+		return true
+	}
+	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
+		return scannerconfig.IDEEnabled(s)
+	}
+	return scannerconfig.Enabled(s)
 }
 
-// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to.
+// selfHealingOff reports whether this GitHub Copilot hook runs inside VS Code with the VS Code extension's
+// "Checkmarx Self-Healing" setting unticked (a valid IDE file saying cx_self_healing_enabled=false). The
+// file-write scans then stand down without telemetry; shell commands and prompts are handled as before.
+// The plugin's own hook scripts already stop before running cx in that case; this covers hooks that
+// call cx directly. A missing or invalid IDE file means on, and the terminal Copilot CLI never reads it.
+func selfHealingOff(agent agenthooks.AgentID, hook string) bool {
+	if agent != agenthooks.AgentCopilotCLI || !hostenv.InVSCode() || scannerconfig.SelfHealingEnabled() {
+		return false
+	}
+	logger.PrintfIfVerbose("hooks: copilot-cli %s allowed without scanning host=vscode skip_reason=self_healing_disabled", hook)
+	return true
+}
+
+// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to. GitHub
+// Copilot inside VS Code has no threshold setting, so it uses the IDE file's threshold, low when unset.
 func belowThreshold(agent agenthooks.AgentID, severity string) bool {
-	return switchesApply(agent) && scannerconfig.BelowThreshold(severity)
+	if !switchesApply(agent) {
+		return false
+	}
+	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
+		return scannerconfig.IDEBelowThreshold(severity)
+	}
+	return scannerconfig.BelowThreshold(severity)
 }
 
 // agentToString converts agenthooks.AgentID enum to string representation for telemetry.
