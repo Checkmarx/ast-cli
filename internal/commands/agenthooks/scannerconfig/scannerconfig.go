@@ -192,9 +192,9 @@ func thresholdRank(value string) int {
 	return 1
 }
 
-// IDEThreshold is Threshold for events from VS Code. The VS Code extension has no threshold setting,
-// so only a cx_severity_threshold in a valid VS Code state file counts; otherwise it is low (nothing
-// filtered). The terminal's ~/.checkmarx/cx-onboarding.properties threshold never applies to VS Code.
+// IDEThreshold is Threshold for events from VS Code. The VS Code extension writes cx_severity_threshold=low
+// to the VS Code state file, so only that file's cx_severity_threshold counts; a missing file, key or invalid
+// value is low (nothing filtered). The terminal's ~/.checkmarx/cx-onboarding.properties threshold never applies to VS Code.
 func IDEThreshold() int {
 	return ideThresholdIn(IDEPath())
 }
