@@ -14,7 +14,7 @@ import (
 
 // PLUGIN_ROOT values as the hosts set them (AST-186850 PoC; Windows paths, any user name).
 const (
-	rootVSCodeFromCLIInstall = `C:\Users\u\AppData\Roaming\Code\agentPlugins\file-c-3A-Users-u-copilot-installed-plugins-cx-devassist-marketplace-cx-devassist\1a15407167c`
+	rootVSCodeFromCLIInstall  = `C:\Users\u\AppData\Roaming\Code\agentPlugins\file-c-3A-Users-u-copilot-installed-plugins-cx-devassist-marketplace-cx-devassist\1a15407167c`
 	rootVSCodeFromMarketplace = `C:\Users\u\AppData\Roaming\Code\agentPlugins\file-c-3A-Users-u-vscode-agent-plugins-marketplace-repositories-github-com-Checkmarx-cx-agentic-ai\1a1542d091b`
 	rootCLI                   = `C:\Users\u\.copilot\installed-plugins\cx-devassist-marketplace\cx-devassist`
 )
