@@ -70,7 +70,7 @@ const (
 	containerVolumeFlag                     = "-v"
 	containerNameFlag                       = "--name"
 	containerRemove                         = "--rm"
-	containerImage                          = "checkmarx/kics@sha256:643071cf0c1657eaea695a48b49d2d61b7e625bb87c51505530e624e0c0a1ad1" // v2.1.20
+	containerImage                          = "checkmarx/kics@sha256:ef29dbac14b046b1ef65f3280646112e927a61781c5f01bca1aeb723e0b96003" // v2.2.0
 	containerScan                           = "scan"
 	containerScanPathFlag                   = "-p"
 	containerScanPath                       = "/path"
@@ -1821,6 +1821,20 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
+			relPath := filepath.ToSlash(baseDir + file.Name())
+
+			excluded := false
+			for _, pattern := range commonParams.BaseExcludedFiles {
+				if relPath == pattern || strings.HasSuffix(relPath, pattern) {
+					excluded = true
+					logger.PrintIfVerbose("Excluded: " + fileName)
+					break
+				}
+			}
+			if excluded {
+				continue
+			}
+
 			logger.PrintIfVerbose("Included: " + fileName)
 			dat, _ := ioutil.ReadFile(fileName)
 

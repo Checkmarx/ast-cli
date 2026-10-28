@@ -17,6 +17,8 @@ jobs:
       pull-requests: read  # for golangci/golangci-lint-action to fetch pull requests
     name: Lint (golangci-lint)
     runs-on: cx-public-ubuntu-x64
+    env:
+      GOPROXY: https://:${{ secrets.ECHO_LIBRARIES_ACCESS_KEY }}@golang.echohq.com
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6

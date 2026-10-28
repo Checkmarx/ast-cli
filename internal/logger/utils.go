@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -88,13 +89,23 @@ func sanitizeLogs(msg string) string {
 	for _, flag := range sanitizeFlags {
 		value := viper.GetString(flag)
 		if value != "" {
-			msg = strings.ReplaceAll(msg, value, "***")
+			msg = maskValue(msg, value)
 		}
 	}
 	sensitiveValuesMu.RLock()
 	defer sensitiveValuesMu.RUnlock()
 	for value := range sensitiveValues {
-		msg = strings.ReplaceAll(msg, value, "***")
+		msg = maskValue(msg, value)
+	}
+	return msg
+}
+
+// maskValue masks both the raw value and its JSON-escaped form, since request
+// bodies are logged JSON-encoded (e.g. SSH key newlines appear as \n).
+func maskValue(msg, value string) string {
+	msg = strings.ReplaceAll(msg, value, "***")
+	if escaped, err := json.Marshal(value); err == nil {
+		msg = strings.ReplaceAll(msg, string(escaped[1:len(escaped)-1]), "***")
 	}
 	return msg
 }
