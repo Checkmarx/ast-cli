@@ -26,7 +26,7 @@ func TestExitIfError_NilError_DoesNotExit(t *testing.T) {
 		// If we reach here, the function didn't call os.Exit
 		os.Exit(successfulExitCode)
 	}
-
+//Test comment to check whether I'm able to push
 	cmd := exec.Command(os.Args[0], "-test.run=TestExitIfError_NilError_DoesNotExit")
 	cmd.Env = append(os.Environ(), "TEST_EXIT_NIL=1")
 	err := cmd.Run()
