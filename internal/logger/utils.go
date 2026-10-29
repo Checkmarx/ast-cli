@@ -55,8 +55,13 @@ func Printf(msg string, args ...interface{}) {
 	Print(fmt.Sprintf(msg, args...))
 }
 
+// IsVerbose reports whether verbose output is enabled (--debug, --log-file or --log-file-console).
+func IsVerbose() bool {
+	return viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileConsoleFlag) != ""
+}
+
 func PrintIfVerbose(msg string) {
-	if viper.GetBool(params.DebugFlag) || viper.GetString(params.LogFileFlag) != "" || viper.GetString(params.LogFileConsoleFlag) != "" {
+	if IsVerbose() {
 		Print(msg)
 	}
 }

@@ -1677,9 +1677,10 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 
 	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
 	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+	walker := newZipWalker(zipWriter, excludeFilters, includeFilters, antMatcher, excludeGitFolder, logger.IsVerbose())
 
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, walker)
 	if err != nil {
 		return "", err
 	}
@@ -1697,7 +1698,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, antMatcher, excludeGitFolder)
+		err = addDirFiles(walker, "", sourceDir)
 		if err != nil {
 			return "", err
 		}
@@ -1736,7 +1737,7 @@ func isSingleContainerScanTriggered() bool {
 }
 
 // isDirEmpty checks if a directory is empty or if all files are filtered out
-func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher filtering.Matcher) (bool, error) {
+func isDirEmpty(dir string, walker *zipWalker) (bool, error) {
 	empty := true
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -1758,23 +1759,21 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 
 		// Prune excluded directories rather than descending into them.
 		if info.IsDir() {
-			legacyFiltered, fErr := isDirFiltered(info.Name(), excludeFilters)
+			legacyFiltered, fErr := isDirFiltered(info.Name(), walker.excludeFilters)
 			if fErr != nil {
 				return fErr
 			}
 			if legacyFiltered {
 				return filepath.SkipDir
 			}
-			if antMatcher.Excluded(relPathSlash, true) && !antMatcher.MustDescend(relPathSlash) {
+			if walker.antMatcher.Excluded(relPathSlash, true) && !walker.antMatcher.MustDescend(relPathSlash) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
 		// Check if file passes filters
-		filename := filepath.Base(relPath)
-		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) &&
-			!antMatcher.Excluded(relPathSlash, false) {
+		if walker.fileIncluded(filepath.Base(relPath), relPathSlash) {
 			empty = false
 			return filepath.SkipAll // We found at least one file that will be included
 		}
@@ -1808,17 +1807,17 @@ func buildFilters(base []string, extra string) []string {
 	return base
 }
 
-func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) error {
+func addDirFilesIgnoreFilter(walker *zipWalker, baseDir, parentDir string) error {
 	files, err := ioutil.ReadDir(parentDir)
 	if err != nil {
 		return err
 	}
 	for _, file := range files {
 		if file.IsDir() {
-			logger.PrintIfVerbose("Directory: " + file.Name())
+			walker.printIfVerbose("Directory: " + file.Name())
 			newParent := parentDir + file.Name() + "/"
 			newBase := baseDir + file.Name() + "/"
-			err = addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
+			err = addDirFilesIgnoreFilter(walker, newBase, newParent)
 		} else {
 			fileName := parentDir + file.Name()
 			relPath := filepath.ToSlash(baseDir + file.Name())
@@ -1827,7 +1826,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 			for _, pattern := range commonParams.BaseExcludedFiles {
 				if relPath == pattern || strings.HasSuffix(relPath, pattern) {
 					excluded = true
-					logger.PrintIfVerbose("Excluded: " + fileName)
+					walker.printIfVerbose("Excluded: " + fileName)
 					break
 				}
 			}
@@ -1835,12 +1834,14 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 				continue
 			}
 
-			logger.PrintIfVerbose("Included: " + fileName)
-			dat, _ := ioutil.ReadFile(fileName)
-
-			f, _ := zipWriter.Create(baseDir + file.Name())
-
-			_, err = f.Write(dat)
+			walker.printIfVerbose("Included: " + fileName)
+			err = copyFileToZip(walker.zipWriter, baseDir+file.Name(), fileName, walker.buf)
+			var pathErr *fs.PathError
+			if errors.As(err, &pathErr) && pathErr.Op == "open" {
+				// Unreadable files were never fatal here; skip them as before.
+				walker.printIfVerbose("Skipped unreadable file: " + fileName)
+				err = nil
+			}
 		}
 		if err != nil {
 			return err
@@ -1849,7 +1850,7 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	return nil
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher, excludeGitFolder bool) error {
+func addDirFiles(walker *zipWalker, baseDir, parentDir string) error {
 	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -1862,9 +1863,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		}
 
 		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher, excludeGitFolder)
+			err = handleDir(walker, baseDir, parentDir, fileInfo)
 		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
+			err = handleFile(walker, baseDir, parentDir, fileInfo)
 		}
 
 		if err != nil {
@@ -1874,20 +1875,12 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 	return nil
 }
 
-func handleFile(
-	zipWriter *zip.Writer,
-	baseDir,
-	parentDir string,
-	filters,
-	includeFilters []string,
-	file fs.FileInfo,
-	antMatcher filtering.Matcher,
-) error {
+func handleFile(walker *zipWalker, baseDir, parentDir string, file fs.FileInfo) error {
 	fileName := parentDir + file.Name()
 	absFilePath := filepath.Clean(fileName)
 	for _, exclude := range sbomAbsoluteExcludes {
 		if strings.EqualFold(absFilePath, exclude) {
-			logger.PrintIfVerbose("Excluded SBOM file from zip: " + absFilePath)
+			walker.printIfVerbose("Excluded SBOM file from zip: " + absFilePath)
 			return nil
 		}
 	}
@@ -1895,81 +1888,61 @@ func handleFile(
 	relPath := filepath.ToSlash(baseDir + file.Name())
 	// Exclude .checkmarx files from normal walk; re-add only if successfully generated in compressFolder
 	if isGeneratedContributorsFile(relPath) {
-		logger.PrintIfVerbose("Excluded (added separately): " + fileName)
+		walker.printIfVerbose("Excluded (added separately): " + fileName)
 		return nil
 	}
-	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) && !antMatcher.Excluded(relPath, false) {
-		logger.PrintIfVerbose("Included: " + fileName)
-		dat, err := ioutil.ReadFile(parentDir + file.Name())
-		if err != nil {
-			if os.IsNotExist(err) {
-				logger.PrintfIfVerbose("%s: %s: %v", DanglingSymlinkError, fileName, err)
-				return nil
-			}
-			return err
-		}
-		f, err := zipWriter.Create(baseDir + file.Name())
-		if err != nil {
-			return err
-		}
-		_, err = f.Write(dat)
-		if err != nil {
-			return err
-		}
-	} else {
-		logger.PrintIfVerbose("Excluded: " + fileName)
+	if !walker.fileIncluded(file.Name(), relPath) {
+		walker.printIfVerbose("Excluded: " + fileName)
+		return nil
 	}
-	return nil
+	walker.printIfVerbose("Included: " + fileName)
+	err := copyFileToZip(walker.zipWriter, baseDir+file.Name(), fileName, walker.buf)
+	if os.IsNotExist(err) {
+		logger.PrintfIfVerbose("%s: %s: %v", DanglingSymlinkError, fileName, err)
+		return nil
+	}
+	return err
 }
 
-func handleDir(
-	zipWriter *zip.Writer,
-	baseDir,
-	parentDir string,
-	filters,
-	includeFilters []string,
-	file fs.FileInfo,
-	antMatcher filtering.Matcher,
-	excludeGitFolder bool,
-) error {
+func handleDir(walker *zipWalker, baseDir, parentDir string, file fs.FileInfo) error {
 	// Check if folder belongs to the disabled exclusions
 	if commonParams.DisabledExclusions[file.Name()] {
 		// Exclude .git folder when --exclude-git-folder flag is passed
-		if excludeGitFolder && file.Name() == gitFolderName {
-			logger.PrintIfVerbose("The folder " + file.Name() + " is being excluded (--exclude-git-folder flag passed)")
+		if walker.excludeGitDir && file.Name() == gitFolderName {
+			walker.printIfVerbose("The folder " + file.Name() + " is being excluded (--exclude-git-folder flag passed)")
 			return nil
 		}
-		logger.PrintIfVerbose("The folder " + file.Name() + " is being included")
+		walker.printIfVerbose("The folder " + file.Name() + " is being included")
 		newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-		return addDirFilesIgnoreFilter(zipWriter, newBase, newParent)
+		return addDirFilesIgnoreFilter(walker, newBase, newParent)
 	}
 
 	// Legacy exclude filter (e.g. !node_modules from BaseExcludeFilters).
-	isFiltered, err := isDirFiltered(file.Name(), filters)
+	isFiltered, err := isDirFiltered(file.Name(), walker.excludeFilters)
 	if err != nil {
 		return err
 	}
 	if isFiltered {
-		logger.PrintIfVerbose("Excluded: " + parentDir + file.Name() + "/")
+		walker.printIfVerbose("Excluded: " + parentDir + file.Name() + "/")
 		return nil
 	}
 
 	// Ant-style pattern exclusion with negation support.
 	// relPath is the forward-slash path from the source root.
 	relPath := filepath.ToSlash(baseDir + file.Name())
-	if antMatcher.Excluded(relPath, true) {
+	if walker.antMatcher.Excluded(relPath, true) {
 		// Before pruning the entire sub-tree, check whether a later negation
 		// rule may re-include a descendant. If so, descend and evaluate each
 		// child individually rather than skipping wholesale.
-		if !antMatcher.MustDescend(relPath) {
-			logger.PrintIfVerbose("Excluded (ant-filter): " + parentDir + file.Name() + "/")
+		if !walker.antMatcher.MustDescend(relPath) {
+			walker.printIfVerbose("Excluded (ant-filter): " + parentDir + file.Name() + "/")
 			return nil
 		}
-		logger.PrintIfVerbose("Descending into ant-excluded dir (negation may re-include): " + parentDir + file.Name() + "/")
+		walker.printIfVerbose("Descending into ant-excluded dir (negation may re-include): " + parentDir + file.Name() + "/")
 	}
 
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher, excludeGitFolder)
+	return addDirFiles(walker, newBase, newParent)
 }
 
 func isDirFiltered(filename string, filters []string) (bool, error) {
@@ -1996,34 +1969,10 @@ func GetNewParentAndBase(parentDir string, file fs.FileInfo, baseDir string) (ne
 	return newParent, newBase
 }
 
+// filterMatched reports whether fileName passes filters (case-insensitive). It builds a matcher
+// per call; the zip walk builds one per scan through newZipWalker instead.
 func filterMatched(filters []string, fileName string) bool {
-	firstMatch := true
-	matched := true
-	// Normalise to lowercase for case-insensitive matching on all platforms.
-	fileNameLower := strings.ToLower(fileName)
-	for _, filter := range filters {
-		filterLower := strings.ToLower(filter)
-		if filterLower[0] == '!' {
-			// it just needs to match one exclusion to be excluded.
-			excluded, _ := path.Match(filterLower[1:], fileNameLower)
-			if excluded {
-				return false
-			}
-		} else {
-			// If there are no inclusions everything is considered included
-			if firstMatch {
-				// Inclusion filter found so reset the match flag and search for a match
-				firstMatch = false
-				matched = false
-			}
-			// We can't immediately return as we can still find an exclusion further down the slice
-			// So we store the match result and never try again
-			if !matched {
-				matched, _ = path.Match(filterLower, fileNameLower)
-			}
-		}
-	}
-	return matched
+	return newFileMatcher(filters).Matched(fileName)
 }
 
 // parseSbomResolverArgs extracts --sbom-first, --sbom-output-path, and --sbom-output-name

@@ -1,6 +1,10 @@
 package params
 
-var BaseIncludeFilters = []string{
+import "slices"
+
+var BaseIncludeFilters = slices.Clip(slices.Concat(sastIncludeFilters, linguistExtensionFilters, linguistFilenameFilters))
+
+var sastIncludeFilters = []string{
 	"*.javasln",
 	"*.project",
 	"*.java",
