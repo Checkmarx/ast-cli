@@ -35,7 +35,7 @@ func NewSecretsRealtimeService(
 	jwtWrapper wrappers.JWTWrapper,
 ) *SecretsRealtimeService {
 	return &SecretsRealtimeService{
-		JwtWrapper:         jwtWrapper,
+		JwtWrapper: jwtWrapper,
 	}
 }
 

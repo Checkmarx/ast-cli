@@ -15,6 +15,7 @@ const (
 	SuccessFullSecretsLicenceValidation = "License for pre-receive secret detection has been validated successfully"
 )
 
+// PreReceiveCommand creates the pre-receive subcommand
 func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preReceiveCmd := &cobra.Command{
 		Use:   "pre-receive",

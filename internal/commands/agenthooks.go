@@ -160,6 +160,7 @@ func NewHookCheckAuthCommand(jwt wrappers.JWTWrapper) *cobra.Command {
 // Routes are declared per-agent in cxhooks.Agents (cx package).
 // =============================================================================
 
+// HookDispatchCommands returns the hidden dispatch subcommands, one per agent hook route.
 func HookDispatchCommands(jwt wrappers.JWTWrapper, realtimeScanner wrappers.RealtimeScannerWrapper, telemetryWrapper wrappers.TelemetryWrapper) []*cobra.Command {
 	var cmds []*cobra.Command
 	for _, agent := range cxhooks.Agents {

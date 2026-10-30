@@ -23,21 +23,22 @@ const (
 )
 
 type IacRealtimeService struct {
-	JwtWrapper         wrappers.JWTWrapper
-	fileHandler        *FileHandler
-	containerManager   IContainerManager
-	scanner            *Scanner
+	JwtWrapper       wrappers.JWTWrapper
+	fileHandler      *FileHandler
+	containerManager IContainerManager
+	scanner          *Scanner
 }
 
+// NewIacRealtimeService creates a new IacRealtimeService.
 func NewIacRealtimeService(jwt wrappers.JWTWrapper, containerManager IContainerManager) *IacRealtimeService {
 	fileHandler := NewFileHandler()
 	scanner := NewScanner(containerManager)
 
 	return &IacRealtimeService{
-		JwtWrapper:         jwt,
-		fileHandler:        fileHandler,
-		containerManager:   containerManager,
-		scanner:            scanner,
+		JwtWrapper:       jwt,
+		fileHandler:      fileHandler,
+		containerManager: containerManager,
+		scanner:          scanner,
 	}
 }
 

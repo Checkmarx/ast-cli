@@ -337,3 +337,41 @@ func TestScanContent_ReportsSourcePathAndHonorsIgnoreFile(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, filtered)
 }
+
+func TestRunSecretsRealtimeScan_NoLicense_ReturnsLicenseError(t *testing.T) {
+	service := &SecretsRealtimeService{
+		JwtWrapper: &mock.JWTMockWrapper{
+			CustomIsAllowedEngine: func(engine string) (bool, error) { return false, nil },
+		},
+	}
+
+	results, err := service.RunSecretsRealtimeScan("test.txt", "")
+
+	assert.Nil(t, results)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "required license")
+}
+
+func TestScanContent_EmptySourcePath_ReturnsError(t *testing.T) {
+	service := &SecretsRealtimeService{JwtWrapper: &mock.JWTMockWrapper{}}
+
+	results, err := service.ScanContent("", "content", "")
+
+	assert.Nil(t, results)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "file path is required")
+}
+
+func TestScanContent_NoLicense_ReturnsLicenseError(t *testing.T) {
+	service := &SecretsRealtimeService{
+		JwtWrapper: &mock.JWTMockWrapper{
+			CustomIsAllowedEngine: func(engine string) (bool, error) { return false, nil },
+		},
+	}
+
+	results, err := service.ScanContent("test.txt", "content", "")
+
+	assert.Nil(t, results)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "required license")
+}

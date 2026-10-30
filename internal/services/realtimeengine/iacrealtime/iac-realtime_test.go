@@ -1074,3 +1074,35 @@ func TestIsEngineRunning_UnresolvableEngine(t *testing.T) {
 		t.Error("IsEngineRunning should be false for an engine that is not installed")
 	}
 }
+
+func TestIacRealtimeService_ensureLicense_NoLicense_ReturnsError(t *testing.T) {
+	mockJWT := &mock.JWTMockWrapper{
+		CustomIsAllowedEngine: func(engine string) (bool, error) { return false, nil },
+	}
+	service := NewIacRealtimeService(mockJWT, NewMockContainerManager())
+
+	err := service.ensureLicense()
+
+	if err == nil {
+		t.Fatal("ensureLicense() expected an error when no license is allowed")
+	}
+	if !strings.Contains(err.Error(), "failed to ensure license") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestIacRealtimeService_RunIacRealtimeScan_NoLicense_ReturnsError(t *testing.T) {
+	mockJWT := &mock.JWTMockWrapper{
+		CustomIsAllowedEngine: func(engine string) (bool, error) { return false, nil },
+	}
+	service := NewIacRealtimeService(mockJWT, NewMockContainerManager())
+
+	results, err := service.RunIacRealtimeScan("test.yaml", "docker", "")
+
+	if err == nil {
+		t.Fatal("RunIacRealtimeScan() expected an error when no license is allowed")
+	}
+	if results != nil {
+		t.Errorf("expected nil results, got %v", results)
+	}
+}
