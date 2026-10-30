@@ -35,7 +35,8 @@ func TestPluginHost(t *testing.T) {
 		{"terminal path containing agentPlugins by chance", `C:\Users\agentPlugins\.copilot\installed-plugins\m\cx-devassist`, "", HostCLI},
 		{"terminal path under an agentPlugins folder", `/home/u/agentPlugins/.copilot/installed-plugins/m/cx-devassist`, "", HostCLI},
 		{"other plugin folder (JetBrains, Visual Studio, ...) is not VS Code", `D:\other\plugin`, "vscode-chat", HostOther},
-		{"integration id alone is not VS Code", "", "vscode-chat", HostUnknown},
+		{"VS Code Copilot CLI session (integration id, no PLUGIN_ROOT)", "", "vscode-chat", HostVSCode},
+		{"integration id with surrounding spaces", "", " vscode-chat ", HostVSCode},
 		{"nothing set", "", "", HostUnknown},
 		{"other integration id", "", "copilot-developer-cli", HostUnknown},
 	}
