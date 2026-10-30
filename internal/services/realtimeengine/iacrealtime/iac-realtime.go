@@ -23,23 +23,22 @@ const (
 )
 
 type IacRealtimeService struct {
-	JwtWrapper         wrappers.JWTWrapper
-	FeatureFlagWrapper wrappers.FeatureFlagsWrapper
-	fileHandler        *FileHandler
-	containerManager   IContainerManager
-	scanner            *Scanner
+	JwtWrapper       wrappers.JWTWrapper
+	fileHandler      *FileHandler
+	containerManager IContainerManager
+	scanner          *Scanner
 }
 
-func NewIacRealtimeService(jwt wrappers.JWTWrapper, flags wrappers.FeatureFlagsWrapper, containerManager IContainerManager) *IacRealtimeService {
+// NewIacRealtimeService creates a new IacRealtimeService.
+func NewIacRealtimeService(jwt wrappers.JWTWrapper, containerManager IContainerManager) *IacRealtimeService {
 	fileHandler := NewFileHandler()
 	scanner := NewScanner(containerManager)
 
 	return &IacRealtimeService{
-		JwtWrapper:         jwt,
-		FeatureFlagWrapper: flags,
-		fileHandler:        fileHandler,
-		containerManager:   containerManager,
-		scanner:            scanner,
+		JwtWrapper:       jwt,
+		fileHandler:      fileHandler,
+		containerManager: containerManager,
+		scanner:          scanner,
 	}
 }
 
@@ -114,24 +113,12 @@ func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFileP
 }
 
 func (svc *IacRealtimeService) runValidations(filePath string) error {
-	if err := svc.checkFeatureFlag(); err != nil {
-		return err
-	}
-
 	if err := svc.ensureLicense(); err != nil {
 		return err
 	}
 
 	if err := svc.validateFilePath(filePath); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (svc *IacRealtimeService) checkFeatureFlag() error {
-	enabled, err := realtimeengine.IsFeatureFlagEnabled(svc.FeatureFlagWrapper, wrappers.OssRealtimeEnabled)
-	if err != nil || !enabled {
-		return errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 	return nil
 }

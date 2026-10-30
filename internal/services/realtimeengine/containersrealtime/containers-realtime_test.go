@@ -13,10 +13,8 @@ import (
 const testImageName = "nginx"
 
 func TestRunContainersRealtimeScan_ValidLicenseAndFile_Success(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
 			CustomScanImages: func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error) {
 				return &wrappers.ContainerImageResponse{
@@ -41,10 +39,8 @@ func TestRunContainersRealtimeScan_ValidLicenseAndFile_Success(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_EmptyFilePath_Fails(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 	result, err := service.RunContainersRealtimeScan("", "")
@@ -54,10 +50,8 @@ func TestRunContainersRealtimeScan_EmptyFilePath_Fails(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_InvalidLicense_Fails(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		nil, // Invalid JWT wrapper
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
@@ -66,24 +60,9 @@ func TestRunContainersRealtimeScan_InvalidLicense_Fails(t *testing.T) {
 	assert.Contains(t, err.Error(), "JWT wrapper is not initialized, cannot ensure license")
 }
 
-func TestRunContainersRealtimeScan_FeatureFlagDisabled_Fails(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: false}
-	service := NewContainersRealtimeService(
-		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
-		&mock.RealtimeScannerMockWrapper{},
-	)
-	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/testdata/Dockerfile", "")
-	assert.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "realtime engine error: Realtime engine is not available for this tenant")
-}
-
 func TestRunContainersRealtimeScan_InvalidFilePath_Fails(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 	result, err := service.RunContainersRealtimeScan("/non/existent/Dockerfile", "")
@@ -93,10 +72,8 @@ func TestRunContainersRealtimeScan_InvalidFilePath_Fails(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_NoImagesFound_ReturnsEmpty(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 	result, err := service.RunContainersRealtimeScan("../../../commands/data/containers/emptytestdata/Dockerfile", "")
@@ -106,10 +83,8 @@ func TestRunContainersRealtimeScan_NoImagesFound_ReturnsEmpty(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_ScanError_ReturnsError(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
 			CustomScanImages: func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error) {
 				return nil, errors.New("mock scan error")
@@ -123,10 +98,8 @@ func TestRunContainersRealtimeScan_ScanError_ReturnsError(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_ImageVulnerabilityMapping(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
 			CustomScanImages: func(images *wrappers.ContainerImageRequest) (*wrappers.ContainerImageResponse, error) {
 				return &wrappers.ContainerImageResponse{
@@ -217,13 +190,11 @@ func TestSplitLocationsToSeparateResults_NoLocations(t *testing.T) {
 }
 
 func TestRunContainersRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	ignoreFile := "../../../commands/data/containers/testdata/ignoredContainers.json"
 
 	service := NewContainersRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 

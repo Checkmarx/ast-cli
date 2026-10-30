@@ -325,12 +325,12 @@ func TestScanCreate_FolderWithSymbolicLinkWithAbsolutePath_CreateScanSuccessfull
 func TestScanCreate_IaCWithPresetID_CreateScanSuccessfully(t *testing.T) {
 	bindKeysToEnvAndDefault(t)
 
-	// The createPreset(...) function requires these feature flags to be ON.
-	// If ast-cli runs with these flags OFF, the KICS engine in CxOne will ignore
+	// The createPreset(...) function requires this feature flag to be ON.
+	// If ast-cli runs with this flag OFF, the KICS engine in CxOne will ignore
 	// the submitted preset and perform a full scan instead.
-	// Since this test is only meaningful when the flags are ON, it is skipped otherwise.
-	if !isFFEnabled(t, "NEW_PRESET_MANAGEMENT_ENABLED") || !isFFEnabled(t, "KICS_PRESETS_MANAGER_ENABLED") {
-		t.Skip("Preset FFs are not enabled... Skipping test")
+	// Since this test is only meaningful when the flag is ON, it is skipped otherwise.
+	if !isFFEnabled(t, "NEW_PRESET_MANAGEMENT_ENABLED") {
+		t.Skip("Preset FF is not enabled... Skipping test")
 	}
 
 	requestData := CreatePresetRequest{

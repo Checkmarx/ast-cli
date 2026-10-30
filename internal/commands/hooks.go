@@ -10,7 +10,7 @@ import (
 )
 
 // NewHooksCommand creates the hooks command with pre-commit subcommand
-func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper, realtimeScannerWrapper wrappers.RealtimeScannerWrapper, telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
+func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, realtimeScannerWrapper wrappers.RealtimeScannerWrapper, telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hooks",
 		Short: "Manage Git hooks and AI coding agent hooks",
@@ -33,8 +33,8 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	}
 
 	// Add pre-commit, pre-receive, and agenthooks management subcommands
-	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper, featureFlagsWrapper))
-	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper, featureFlagsWrapper))
+	hooksCmd.AddCommand(PreCommitCommand(jwtWrapper))
+	hooksCmd.AddCommand(PreReceiveCommand(jwtWrapper))
 	hooksCmd.AddCommand(NewAgentHooksCommand())
 
 	// Hidden machine-readable readiness probe: cx hooks check-auth
@@ -45,21 +45,15 @@ func NewHooksCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapper
 	// Register all hidden hook dispatch subcommands so that cx itself acts as
 	// the hook binary. Agents invoke: cx hooks <route-name>
 	// e.g. cx hooks claude-pre-tool-use
-	for _, dispatchCmd := range HookDispatchCommands(jwtWrapper, featureFlagsWrapper, realtimeScannerWrapper, telemetryWrapper) {
+	for _, dispatchCmd := range HookDispatchCommands(jwtWrapper, realtimeScannerWrapper, telemetryWrapper) {
 		hooksCmd.AddCommand(dispatchCmd)
 	}
 
 	return hooksCmd
 }
 
-func validateLicense(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	var licenseName string
-	if scsLicensingV2Flag.Status {
-		licenseName = params.SecretDetectionLabel
-	} else {
-		licenseName = params.EnterpriseSecretsLabel
-	}
+func validateLicense(jwtWrapper wrappers.JWTWrapper) error {
+	licenseName := params.SecretDetectionLabel
 
 	logger.PrintIfVerbose("hooks: checking license for " + licenseName)
 

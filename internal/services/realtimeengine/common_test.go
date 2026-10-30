@@ -11,34 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsFeatureFlagEnabled_Success(t *testing.T) {
-	// nolint:gocritic // resetting shared mock package state between tests
-	mock.FFErr = nil
-	defer func() {
-		// nolint:gocritic // resetting shared mock package state between tests
-		mock.FFErr = nil
-	}()
-	mock.Flag.Name = "SOME_FLAG"
-	mock.Flag.Status = true
-
-	enabled, err := IsFeatureFlagEnabled(&mock.FeatureFlagsMockWrapper{}, "SOME_FLAG")
-	assert.NoError(t, err)
-	assert.True(t, enabled)
-}
-
-func TestIsFeatureFlagEnabled_WrapperError_ReturnsWrappedError(t *testing.T) {
-	mock.FFErr = errors.New("feature flag lookup failed") //nolint:gocritic // resetting shared mock package state between tests
-	defer func() {
-		// nolint:gocritic // resetting shared mock package state between tests
-		mock.FFErr = nil
-	}()
-
-	enabled, err := IsFeatureFlagEnabled(&mock.FeatureFlagsMockWrapper{}, "SOME_FLAG")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to get feature flag")
-	assert.False(t, enabled)
-}
-
 func TestEnsureLicense_NilWrapper_ReturnsError(t *testing.T) {
 	err := EnsureLicense(nil)
 	assert.Error(t, err)
