@@ -344,8 +344,6 @@ const (
 	SCSSecretDetectionType         = "sscs-secret-detection"
 	SecretDetectionType            = "secret-detection"
 	SecretDetectionLabel           = "Secret Detection"
-	EnterpriseSecretsLabel         = "Enterprise Secrets"
-	EnterpriseSecretsType          = "enterprise-secrets"
 	RepositoryHealthType           = "repository-health"
 	RepositoryHealthLabel          = "Repository Health"
 	SCSScorecardOverviewType       = "Scorecard"

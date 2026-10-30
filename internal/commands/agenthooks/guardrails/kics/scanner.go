@@ -17,7 +17,6 @@ import (
 // substitute scan via NewScannerWithFunc.
 type Scanner struct {
 	jwt  wrappers.JWTWrapper
-	ff   wrappers.FeatureFlagsWrapper
 	scan func(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error)
 
 	// engine that last completed a scan. A delta edit scans twice (proposed and
@@ -30,8 +29,8 @@ type Scanner struct {
 }
 
 // NewScanner returns a Scanner backed by the given wrappers.
-func NewScanner(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper) *Scanner {
-	s := &Scanner{jwt: jwt, ff: ff}
+func NewScanner(jwt wrappers.JWTWrapper) *Scanner {
+	s := &Scanner{jwt: jwt}
 	s.scan = s.runRealScan
 	return s
 }
@@ -143,7 +142,7 @@ func scanErrorAfterNoFallback(err error) error {
 }
 
 func (s *Scanner) runRealScan(path, ignoreFilePath string) ([]iacrealtime.IacRealtimeResult, error) {
-	svc := iacrealtime.NewIacRealtimeService(s.jwt, s.ff, iacrealtime.NewContainerManager())
+	svc := iacrealtime.NewIacRealtimeService(s.jwt, iacrealtime.NewContainerManager())
 
 	engine := s.engine
 	if engine == "" {

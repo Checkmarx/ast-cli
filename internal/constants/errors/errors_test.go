@@ -56,7 +56,6 @@ func TestErrorConstants_NonEmpty(t *testing.T) {
 		ApplicationNotFound,
 		ErrMissingAIFeatureLicense,
 		FileExtensionIsRequired,
-		RealtimeEngineNotAvailable,
 		RealtimeEngineFilePathRequired,
 	}
 	for _, c := range consts {

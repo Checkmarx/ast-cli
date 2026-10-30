@@ -12,7 +12,6 @@ import (
 func RunScanContainersRealtimeCommand(
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -22,7 +21,7 @@ func RunScanContainersRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		containersRealtimeService := containersrealtime.NewContainersRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
+		containersRealtimeService := containersrealtime.NewContainersRealtimeService(jwtWrapper, realtimeScannerWrapper)
 
 		images, err := containersRealtimeService.RunContainersRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {

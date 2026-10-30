@@ -28,17 +28,14 @@ const (
 
 type SecretsRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
-	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
 	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
 }
 
 func NewSecretsRealtimeService(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) *SecretsRealtimeService {
 	return &SecretsRealtimeService{
 		JwtWrapper:         jwtWrapper,
-		FeatureFlagWrapper: featureFlagWrapper,
 	}
 }
 
@@ -112,10 +109,6 @@ func (s *SecretsRealtimeService) ScanContent(sourcePath, content, ignoredFilePat
 }
 
 func (s *SecretsRealtimeService) ensureReady() error {
-	if enabled, err := realtimeengine.IsFeatureFlagEnabled(s.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
-		logger.PrintfIfVerbose("Failed to print OSS Realtime scan results: %v", err)
-		return errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
-	}
 	if err := realtimeengine.EnsureLicense(s.JwtWrapper); err != nil {
 		return errorconstants.NewRealtimeEngineError(err.Error()).Error()
 	}

@@ -10,7 +10,6 @@ import (
 
 type JWTMockWrapper struct {
 	AIEnabled                 int
-	EnterpriseSecretsEnabled  int
 	SecretDetectionEnabled    int
 	CheckmarxOneAssistEnabled int
 	DastEnabled               bool
@@ -20,10 +19,9 @@ type JWTMockWrapper struct {
 
 const AIProtectionDisabled = 1
 const CheckmarxOneAssistDisabled = 1
-const EnterpriseSecretsDisabled = 1
 const SecretDetectionDisabled = 1
 
-var engines = []string{"sast", "sca", "api-security", "iac-security", "scs", "containers", "enterprise-secrets"}
+var engines = []string{"sast", "sca", "api-security", "iac-security", "containers", "repository-health", "secret-detection"}
 
 const licenseEnabledValue = "true"
 
@@ -52,13 +50,6 @@ func (j *JWTMockWrapper) IsAllowedEngine(engine string) (bool, error) {
 	}
 	if engine == params.AiProviderFlag {
 		if j.AIEnabled == AIProtectionDisabled {
-			return false, nil
-		}
-		return true, nil
-	}
-
-	if engine == params.EnterpriseSecretsLabel {
-		if j.EnterpriseSecretsEnabled == EnterpriseSecretsDisabled {
 			return false, nil
 		}
 		return true, nil

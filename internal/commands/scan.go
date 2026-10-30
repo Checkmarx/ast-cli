@@ -137,7 +137,6 @@ const (
 	ScsScorecardUnsupportedHostWarningMsg = "SCS scan warning: Unable to run Scorecard scanner due to unsupported repo host. Currently, Scorecard can only run on GitHub Cloud repos."
 
 	gitCommitHistoryInvalidValueErrorMsg      = "Invalid value for --git-commit-history. Valid values are: 'true' or 'false'"
-	gitCommitHistoryNotAvailableWarningMsg    = "Secret Detection scan warning: --git-commit-history flag ignored because git commit history scanning is not available."
 	gitCommitHistoryNotSelectedWarningMsg     = "Secret Detection scan warning: --git-commit-history flag ignored because scs was not specified in scan types."
 	gitCommitHistoryNotApplicableWarningMsg   = "Secret Detection scan warning: --git-commit-history flag ignored because secret detection wasn't run on this scan."
 	gitCommitHistoryNoGitRepositoryWarningMsg = "Secret Detection scan warning: No Git history found. Secret Detection will scan the working tree only."
@@ -259,13 +258,13 @@ func NewScanCommand(
 
 	scaRealtimeCmd := scarealtime.NewScaRealtimeCommand(scaRealTimeWrapper)
 
-	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+	ossRealtimeCmd := scanOssRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper)
 
-	containersRealtimeCmd := scanContainersRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper)
+	containersRealtimeCmd := scanContainersRealtimeSubCommand(realtimeScannerWrapper, jwtWrapper)
 
-	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+	secretsRealtimeCmd := scanSecretsRealtimeSubCommand(jwtWrapper)
 
-	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper, featureFlagsWrapper)
+	iacRealtimeCmd := scanIacRealtimeSubCommand(jwtWrapper)
 
 	addFormatFlagToMultipleCommands(
 		[]*cobra.Command{listScansCmd, showScanCmd, workflowScanCmd},
@@ -512,7 +511,6 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 func scanOssRealtimeSubCommand(
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	scanOssRealtimeCmd := &cobra.Command{
 		Hidden: true,
@@ -531,7 +529,7 @@ func scanOssRealtimeSubCommand(
 				`,
 			),
 		},
-		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanOssRealtimeCommand(realtimeScannerWrapper, jwtWrapper),
 	}
 
 	scanOssRealtimeCmd.PersistentFlags().StringP(
@@ -552,7 +550,6 @@ func scanOssRealtimeSubCommand(
 
 func scanIacRealtimeSubCommand(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	scanIacRealtimeCmd := &cobra.Command{
 		Hidden: true,
@@ -571,7 +568,7 @@ func scanIacRealtimeSubCommand(
 				`,
 			),
 		},
-		RunE: RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanIacRealtimeCommand(jwtWrapper),
 	}
 
 	scanIacRealtimeCmd.PersistentFlags().StringP(
@@ -596,7 +593,7 @@ func scanIacRealtimeSubCommand(
 	return scanIacRealtimeCmd
 }
 
-func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeScannerWrapper, jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	scanContainersRealtimeCmd := &cobra.Command{
 		Hidden: true,
 		Use:    "containers-realtime",
@@ -615,7 +612,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 			`,
 			),
 		},
-		RunE: RunScanContainersRealtimeCommand(realtimeScannerWrapper, jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanContainersRealtimeCommand(realtimeScannerWrapper, jwtWrapper),
 	}
 
 	scanContainersRealtimeCmd.PersistentFlags().StringP(
@@ -631,7 +628,6 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 
 func scanSecretsRealtimeSubCommand(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
 ) *cobra.Command {
 	scanSecretsRealtimeCmd := &cobra.Command{
 		Hidden: true,
@@ -647,7 +643,7 @@ func scanSecretsRealtimeSubCommand(
 				https://docs.checkmarx.com/en/34965-68625-checkmarx-one-cli-commands.html
 			`),
 		},
-		RunE: RunScanSecretsRealtimeCommand(jwtWrapper, featureFlagsWrapper),
+		RunE: RunScanSecretsRealtimeCommand(jwtWrapper),
 	}
 
 	scanSecretsRealtimeCmd.Flags().StringP(commonParams.SourcesFlag, "s", "", "Path to the file to scan")
@@ -1060,14 +1056,14 @@ func setupScanTypeProjectAndConfig(
 	}
 
 	var SCSConfig, scsErr = addSCSScan(cmd, resubmitConfig, userAllowedEngines[commonParams.RepositoryHealthType],
-		userAllowedEngines[commonParams.SecretDetectionType], userAllowedEngines[commonParams.EnterpriseSecretsType], featureFlagsWrapper)
+		userAllowedEngines[commonParams.SecretDetectionType])
 	if scsErr != nil {
 		return scsErr
 	} else if SCSConfig != nil {
 		configArr = append(configArr, SCSConfig)
 	}
 
-	var aiscConfig = addAiscScan(featureFlagsWrapper, resubmitConfig)
+	var aiscConfig = addAiscScan(resubmitConfig)
 	if aiscConfig != nil {
 		configArr = append(configArr, aiscConfig)
 	}
@@ -1207,10 +1203,9 @@ func overrideSastConfigValue(sastFastScanChanged, sastIncrementalChanged, sastBa
 	}
 }
 
-func addAiscScan(featureFlagWrapper wrappers.FeatureFlagsWrapper, resubmitConfig []wrappers.Config) map[string]interface{} {
+func addAiscScan(resubmitConfig []wrappers.Config) map[string]interface{} {
 	//  Add the aisc resubmit config, currently no value is passed in config
-	aiSupplyChainGAEnabled, _ := wrappers.GetSpecificFeatureFlag(featureFlagWrapper, wrappers.AISupplyChainGAEnabled)
-	if scanTypeEnabled(commonParams.AiscType) && aiSupplyChainGAEnabled.Status {
+	if scanTypeEnabled(commonParams.AiscType) {
 		aiscMapConfig := make(map[string]interface{})
 		aiscConfig := wrappers.AISCConfig{}
 		aiscMapConfig[resultsMapType] = commonParams.AiscType
@@ -1468,14 +1463,12 @@ func isScorecardRunnable(isScsEnginesFlagSet, scsScorecardSelected bool, scsRepo
 }
 
 func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasRepositoryHealthLicense,
-	hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (map[string]interface{}, error) {
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-	scsEnabled := isScsEnabled(scsLicensingV2Flag.Status)
-	if !scsEnabled {
+	hasSecretDetectionLicense bool) (map[string]interface{}, error) {
+	if !isScsEnabled() {
 		return nil, nil
 	}
-	scsScorecardAllowed := isScsScorecardAllowed(scsLicensingV2Flag.Status, hasRepositoryHealthLicense)
-	scsSecretDetectionAllowed := isScsSecretDetectionAllowed(scsLicensingV2Flag.Status, hasSecretDetectionLicense, hasEnterpriseSecretsLicense)
+	scsScorecardAllowed := hasRepositoryHealthLicense
+	scsSecretDetectionAllowed := hasSecretDetectionLicense
 	if !scsScorecardAllowed && !scsSecretDetectionAllowed {
 		return nil, nil
 	}
@@ -1507,9 +1500,8 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasReposit
 	if scsSecretDetectionSelected && scsSecretDetectionAllowed {
 		scsConfig.Twoms = trueString
 
-		// Set git commit history based on FF and validations
-		commitHistoryFlag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.SscsCommitHistoryEnabled)
-		if gitCommitHistoryValue := getGitCommitHistoryValue(cmd, commitHistoryFlag.Status); gitCommitHistoryValue != "" {
+		// Set git commit history based on validations
+		if gitCommitHistoryValue := getGitCommitHistoryValue(cmd); gitCommitHistoryValue != "" {
 			scsConfig.GitCommitHistory = gitCommitHistoryValue
 		}
 	}
@@ -1537,32 +1529,13 @@ func addSCSScan(cmd *cobra.Command, resubmitConfig []wrappers.Config, hasReposit
 	return scsMapConfig, nil
 }
 
-func isScsEnabled(scsLicensingV2 bool) bool {
-	if scsLicensingV2 {
-		return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
-			scanTypeEnabled(commonParams.RepositoryHealthType)
-	}
-	return scanTypeEnabled(commonParams.ScsType)
-}
-
-func isScsScorecardAllowed(scsLicensingV2, hasRepositoryHealthLicense bool) bool {
-	if scsLicensingV2 {
-		return hasRepositoryHealthLicense
-	}
-	return true
-}
-
-func isScsSecretDetectionAllowed(scsLicensingV2, hasSecretDetectionLicense, hasEnterpriseSecretsLicense bool) bool {
-	if scsLicensingV2 {
-		return hasSecretDetectionLicense
-	}
-	return hasEnterpriseSecretsLicense
+func isScsEnabled() bool {
+	return scanTypeEnabled(commonParams.ScsType) || scanTypeEnabled(commonParams.SecretDetectionType) ||
+		scanTypeEnabled(commonParams.RepositoryHealthType)
 }
 
 func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) error {
 	var scanTypes []string
-
-	scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
 
 	allowedEngines, err := jwtWrapper.GetAllowedEngines(featureFlagsWrapper)
 	logger.PrintIfVerbose(fmt.Sprintf("Allowed scan types: %v", allowedEngines))
@@ -1596,7 +1569,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 		}
 
 		for _, scanType := range scanTypes {
-			if scanType == commonParams.ScsType && scsLicensingV2Flag.Status {
+			if scanType == commonParams.ScsType {
 				// the SCS scan type is a special case because it contains two engines.
 				// Before the new licensing model, the main license was named "scs".
 				// Licenses are now separated for each engine, so this validation no longer makes sense.
@@ -1612,7 +1585,7 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 
 		userSCSScanTypes, _ := cmd.Flags().GetString(commonParams.SCSEnginesFlag)
 		if slices.Contains(scanTypes, commonParams.ScsType) {
-			err = validateSCSEngines(allowedEngines, userSCSScanTypes, scsLicensingV2Flag.Status)
+			err = validateSCSEngines(allowedEngines, userSCSScanTypes)
 			if err != nil {
 				return err
 			}
@@ -1637,21 +1610,17 @@ func validateScanTypes(cmd *cobra.Command, jwtWrapper wrappers.JWTWrapper, featu
 	return nil
 }
 
-func validateSCSEngines(allowedEngines map[string]bool, userSCSScanTypes string, scsLicensingV2 bool) error {
+func validateSCSEngines(allowedEngines map[string]bool, userSCSScanTypes string) error {
 	licensesAvailable := reflect.ValueOf(allowedEngines).MapKeys()
 	scsScanTypes := strings.Split(userSCSScanTypes, ",")
-	if scsLicensingV2 {
-		secretDetectionAllowed := allowedEngines[commonParams.SecretDetectionType]
-		repositoryHeatlhAllowed := allowedEngines[commonParams.RepositoryHealthType]
-		if userSCSScanTypes == "" && !secretDetectionAllowed && !repositoryHeatlhAllowed {
-			return errors.Errorf(engineScsNotAllowed, licensesAvailable)
-		} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !secretDetectionAllowed {
-			return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, licensesAvailable)
-		} else if slices.Contains(scsScanTypes, ScsScoreCardType) && !repositoryHeatlhAllowed {
-			return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, licensesAvailable)
-		}
-	} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !allowedEngines[commonParams.EnterpriseSecretsType] {
-		return errors.Errorf(engineNotAllowed, ScsSecretDetectionType, ScsSecretDetectionType, licensesAvailable)
+	secretDetectionAllowed := allowedEngines[commonParams.SecretDetectionType]
+	repositoryHeatlhAllowed := allowedEngines[commonParams.RepositoryHealthType]
+	if userSCSScanTypes == "" && !secretDetectionAllowed && !repositoryHeatlhAllowed {
+		return errors.Errorf(engineScsNotAllowed, licensesAvailable)
+	} else if slices.Contains(scsScanTypes, ScsSecretDetectionType) && !secretDetectionAllowed {
+		return errors.Errorf(engineNotAllowed, commonParams.SecretDetectionType, commonParams.SecretDetectionType, licensesAvailable)
+	} else if slices.Contains(scsScanTypes, ScsScoreCardType) && !repositoryHeatlhAllowed {
+		return errors.Errorf(engineNotAllowed, commonParams.RepositoryHealthType, commonParams.RepositoryHealthType, licensesAvailable)
 	}
 	return nil
 }
@@ -2579,8 +2548,7 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	}
 	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
 
-	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
-	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
+	if fileInfo.Size() > MaxSizeBytes {
 		logger.PrintIfVerbose("Uploading source code in multiple parts.")
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)
 	} else {
@@ -4410,13 +4378,8 @@ func validateGitCommitHistoryFlag(cmd *cobra.Command) error {
 	return nil
 }
 
-// getGitCommitHistoryValue determines the value for git commit history config based on flag and validations
-func getGitCommitHistoryValue(cmd *cobra.Command, isFeatureFlagEnabled bool) string {
-	if !isFeatureFlagEnabled {
-		fmt.Println(gitCommitHistoryNotAvailableWarningMsg)
-		return ""
-	}
-
+// getGitCommitHistoryValue determines the value for git commit history config based on the flag and validations
+func getGitCommitHistoryValue(cmd *cobra.Command) string {
 	gitCommitHistory, _ := cmd.Flags().GetString(commonParams.GitCommitHistoryFlag)
 	gitCommitHistoryValue := strings.ToLower(gitCommitHistory)
 

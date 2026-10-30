@@ -16,9 +16,8 @@ import (
 
 func TestNewScanner_ReturnsValidScanner(t *testing.T) {
 	jwt := &mock.JWTMockWrapper{}
-	ff := &mock.FeatureFlagsMockWrapper{}
 
-	s := NewScanner(jwt, ff)
+	s := NewScanner(jwt)
 	if s == nil {
 		t.Fatal("expected non-nil scanner")
 	}
@@ -29,9 +28,8 @@ func TestNewScanner_ReturnsValidScanner(t *testing.T) {
 
 func TestNewScanner_HoldsWrappers(t *testing.T) {
 	jwt := &mock.JWTMockWrapper{}
-	ff := &mock.FeatureFlagsMockWrapper{}
 
-	s := NewScanner(jwt, ff)
+	s := NewScanner(jwt)
 	assert.NotNil(t, s)
 	// Verify wrappers are internally stored
 	assert.NotNil(t, s.scan)

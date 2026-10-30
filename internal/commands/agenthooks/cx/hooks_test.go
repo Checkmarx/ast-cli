@@ -594,7 +594,6 @@ func TestRegisterGuardrails_AndPassThrough(t *testing.T) {
 
 	RegisterGuardrails(
 		&mock.JWTMockWrapper{},
-		mock.FeatureFlagsMockWrapper{},
 		mock.NewRealtimeScannerMockWrapper(),
 		mock.TelemetryMockWrapper{},
 	)
@@ -831,7 +830,7 @@ func TestRegisterGuardrails_SetsScanners(t *testing.T) {
 	}()
 
 	telemetry := mock.TelemetryMockWrapper{}
-	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, telemetry)
+	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, telemetry)
 
 	assert.NotNil(t, scaScanner)
 	assert.NotNil(t, kicsScanner)
@@ -843,7 +842,7 @@ func TestRegisterPassThrough_ClearsScanners(t *testing.T) {
 	prevSca, prevKics, prevSecrets := scaScanner, kicsScanner, secretsScanner
 	defer func() { scaScanner, kicsScanner, secretsScanner = prevSca, prevKics, prevSecrets }()
 
-	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
+	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
 	assert.NotNil(t, scaScanner)
 
 	RegisterPassThrough()
@@ -917,7 +916,7 @@ func TestCodexApplyPatch_KICSFinding_DeniesEndToEnd(t *testing.T) {
 	resetHookGlobals(t)
 
 	agenthooks.ClearRoutes()
-	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
+	RegisterGuardrails(&mock.JWTMockWrapper{}, &mock.RealtimeScannerMockWrapper{}, mock.TelemetryMockWrapper{})
 	t.Cleanup(agenthooks.ClearRoutes)
 
 	// RegisterGuardrails wires up real SCA/KICS scanners; swap KICS's underlying

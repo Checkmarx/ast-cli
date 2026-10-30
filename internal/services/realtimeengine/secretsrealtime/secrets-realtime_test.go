@@ -8,26 +8,22 @@ import (
 
 	"github.com/checkmarx/2ms/v3/lib/reporting"
 	"github.com/checkmarx/2ms/v3/lib/secrets"
-	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewSecretsRealtimeService(t *testing.T) {
 	jwtWrapper := &mock.JWTMockWrapper{}
-	featureFlagWrapper := &mock.FeatureFlagsMockWrapper{}
 
-	service := NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
+	service := NewSecretsRealtimeService(jwtWrapper)
 
 	assert.NotNil(t, service)
 	assert.Equal(t, jwtWrapper, service.JwtWrapper)
-	assert.Equal(t, featureFlagWrapper, service.FeatureFlagWrapper)
 }
 
 func TestRunSecretsRealtimeScan_EmptyFilePath_ReturnsError(t *testing.T) {
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan("", "")
@@ -37,27 +33,10 @@ func TestRunSecretsRealtimeScan_EmptyFilePath_ReturnsError(t *testing.T) {
 	assert.Contains(t, err.Error(), "file path is required")
 }
 
-func TestRunSecretsRealtimeScan_FeatureFlagDisabled_ReturnsError(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: false}
-
-	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
-	}
-
-	results, err := service.RunSecretsRealtimeScan("test.txt", "")
-
-	assert.Nil(t, results)
-	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Realtime engine is not available")
-}
-
 func TestRunSecretsRealtimeScan_FileNotFound_ReturnsError(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan("nonexistent-file.txt", "")
@@ -68,7 +47,6 @@ func TestRunSecretsRealtimeScan_FileNotFound_ReturnsError(t *testing.T) {
 }
 
 func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	tempDir := t.TempDir()
 
@@ -84,8 +62,7 @@ func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 	assert.NoError(t, os.WriteFile(ignoreFile, data, 0644))
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan(testFile, ignoreFile)
@@ -98,7 +75,6 @@ func TestRunSecretsRealtimeScan_WithIgnoreFile_FiltersResult(t *testing.T) {
 }
 
 func TestRunSecretsRealtimeScan_PatVulAndGenericVul_ReturnedOnlyPathVul(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	tempDir := t.TempDir()
 
@@ -107,8 +83,7 @@ func TestRunSecretsRealtimeScan_PatVulAndGenericVul_ReturnedOnlyPathVul(t *testi
 	assert.NoError(t, os.WriteFile(testFile, []byte(testContent), 0644))
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan(testFile, "")
@@ -121,7 +96,6 @@ func TestRunSecretsRealtimeScan_PatVulAndGenericVul_ReturnedOnlyPathVul(t *testi
 }
 
 func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	// Create a temporary file for testing
 	tempDir := t.TempDir()
@@ -131,8 +105,7 @@ func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan(tempFile, "")
@@ -142,7 +115,6 @@ func TestRunSecretsRealtimeScan_ValidFile_Success(t *testing.T) {
 }
 
 func TestRunSecretsRealtimeScan_MultiLineResult_Success(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	value := "PRIVATE_KEY = \"\"\"\n-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA7v8wF+SECRETKEYEXAMPLE+QIDAQABAoIBAQC0\n-----END RSA PRIVATE KEY-----\n\"\"\""
 	// Create a temporary file for testing
 	tempDir := t.TempDir()
@@ -152,8 +124,7 @@ func TestRunSecretsRealtimeScan_MultiLineResult_Success(t *testing.T) {
 	assert.NoError(t, err)
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 
 	results, err := service.RunSecretsRealtimeScan(tempFile, "")
@@ -346,11 +317,9 @@ func TestGetSeverity_EmptyStatus_ReturnsHigh(t *testing.T) {
 }
 
 func TestScanContent_ReportsSourcePathAndHonorsIgnoreFile(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 
 	service := &SecretsRealtimeService{
-		JwtWrapper:         &mock.JWTMockWrapper{},
-		FeatureFlagWrapper: &mock.FeatureFlagsMockWrapper{},
+		JwtWrapper: &mock.JWTMockWrapper{},
 	}
 	content := "token = \"ghp_1234567890abcdef1234567890abcdef12345678\""
 	results, err := service.ScanContent("app.env", content, "")

@@ -241,7 +241,7 @@ func NewResultsCommand(
 	codeBashingCmd := resultCodeBashing(codeBashingWrapper)
 	bflResultCmd := resultBflSubCommand(bflWrapper)
 	exitCodeSubcommand := exitCodeSubCommand(scanWrapper)
-	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper, featureFlagsWrapper)
+	riskManagementSubCommand := riskManagementSubCommand(riskManagementWrapper)
 	resultCmd.AddCommand(
 		showResultCmd, bflResultCmd, codeBashingCmd, exitCodeSubcommand, riskManagementSubCommand,
 	)
@@ -266,8 +266,7 @@ func exitCodeSubCommand(scanWrapper wrappers.ScansWrapper) *cobra.Command {
 
 	return exitCodeCmd
 }
-func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) *cobra.Command {
+func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper) *cobra.Command {
 	riskManagementCmd := &cobra.Command{
 		Use:   "risk-management",
 		Short: "Show risk-management results of a project",
@@ -277,7 +276,7 @@ func riskManagementSubCommand(riskManagement wrappers.RiskManagementWrapper, fea
 			$ cx results risk-management --project-id <project Id> --scan-id <scan ID> --limit <limit> (1-50, default: 50)
 		`,
 		),
-		RunE: runRiskManagementCommand(riskManagement, featureFlagsWrapper),
+		RunE: runRiskManagementCommand(riskManagement),
 	}
 
 	riskManagementCmd.PersistentFlags().String(commonParams.ProjectIDFlag, "", "Project ID")
@@ -397,19 +396,13 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 	}
 }
 
-func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper,
-) func(cmd *cobra.Command, args []string) error {
+func runRiskManagementCommand(riskManagement wrappers.RiskManagementWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		projectID, _ := cmd.Flags().GetString(commonParams.ProjectIDFlag)
 		scanID, _ := cmd.Flags().GetString(commonParams.ScanIDFlag)
 
 		limit, _ := cmd.Flags().GetInt(commonParams.LimitFlag)
 
-		flagResponse, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.RiskManagementEnabled)
-		ASPMEnabled := flagResponse.Status
-		if !ASPMEnabled {
-			return errors.Errorf("%s", "Risk management results are currently unavailable for your tenant.")
-		}
 		results, err := getRiskManagementResults(riskManagement, projectID, scanID)
 		if err != nil {
 			return err
