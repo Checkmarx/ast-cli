@@ -17,6 +17,7 @@ func useHost(t *testing.T, pluginRoot, integrationID string) {
 	t.Helper()
 	t.Setenv("PLUGIN_ROOT", pluginRoot)
 	t.Setenv("GITHUB_COPILOT_INTEGRATION_ID", integrationID)
+	t.Setenv(pluginHostEnv, "")
 }
 
 func TestPluginHost(t *testing.T) {
@@ -43,6 +44,30 @@ func TestPluginHost(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			useHost(t, tc.root, tc.integrationID)
+			if got := PluginHost(); got != tc.want {
+				t.Fatalf("PluginHost() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestPluginHostFromPlugin(t *testing.T) {
+	cases := []struct {
+		name, root, pluginHost, want string
+	}{
+		{"VS Code Copilot CLI session from the terminal's folder", rootCLI, "vscode", HostVSCode},
+		{"plugin value is trimmed and case-insensitive", rootCLI, " VSCode ", HostVSCode},
+		{"terminal Copilot CLI (plugin leaves it unset)", rootCLI, "", HostCLI},
+		{"other plugin value is ignored", rootCLI, "cli", HostCLI},
+		{"no PLUGIN_ROOT", "", "vscode", HostVSCode},
+		{"VS Code copy stays VS Code", rootVSCodeFromCLIInstall, "", HostVSCode},
+		{"VS Code fork is never VS Code", `C:\Users\u\AppData\Roaming\Windsurf\agentPlugins\x\1a`, "vscode", HostOther},
+		{"other plugin folder is never VS Code", `D:\other\plugin`, "vscode", HostOther},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			useHost(t, tc.root, "")
+			t.Setenv(pluginHostEnv, tc.pluginHost)
 			if got := PluginHost(); got != tc.want {
 				t.Fatalf("PluginHost() = %q, want %q", got, tc.want)
 			}
