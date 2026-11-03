@@ -70,8 +70,9 @@ func TestBaseIncludeFiltersCombinesAllLists(t *testing.T) {
 }
 
 func TestBaseIncludeFiltersAppendDoesNotAlias(t *testing.T) {
-	a := append(BaseIncludeFilters, "*.first")
-	b := append(BaseIncludeFilters, "*.second")
+	// Appending to the shared slice without reassigning it is what this test checks.
+	a := append(BaseIncludeFilters, "*.first")  //nolint:gocritic
+	b := append(BaseIncludeFilters, "*.second") //nolint:gocritic
 	assert.Equal(t, "*.first", a[len(a)-1])
 	assert.Equal(t, "*.second", b[len(b)-1])
 }

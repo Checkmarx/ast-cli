@@ -2,6 +2,7 @@ package params
 
 import "slices"
 
+// BaseIncludeFilters is the default include filter: the SAST patterns followed by the Linguist extension and filename patterns.
 var BaseIncludeFilters = slices.Clip(slices.Concat(sastIncludeFilters, linguistExtensionFilters, linguistFilenameFilters))
 
 var sastIncludeFilters = []string{
