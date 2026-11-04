@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
@@ -192,7 +193,7 @@ func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 	}
 
 	telemetryData := &wrappers.DataForAITelemetry{
-		Agent:            agent + "-cli",
+		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
 		Engine:           "Asca",
 		TotalCount:       totalCount,
