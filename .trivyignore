@@ -29,3 +29,30 @@ CVE-2026-78661
 # Fixed Version: v0.62.0
 # Reason: Same code path as CVE-2026-78661 (anchore/syft Maven cataloger only).
 CVE-2026-97045
+
+# CVE-2026-33481: Syft improper temporary file cleanup (GHSA-rjcw-vg7j-m9rc)
+# Severity: MEDIUM (CVSS 5.3, availability only)
+# Component: github.com/anchore/syft v1.21.0
+# Fixed Version: v1.42.3 (plus anchore/stereoscope PR 537)
+# Reason: syft v1.42.3 pulls go-getter, AWS/GCS SDKs and containerd v2, growing the
+#         binary from 86 MB to 119 MB (reverted in AST-188320). Checkmarx/containers-resolver
+#         and containers-syft-packages-extractor also pin syft v1.21.0.
+# Impact: Only reachable via container image scanning (--container-images / realtime
+#         containers). Worst case is leaked temp files on the scanning host when a
+#         hostile archive exhausts temp storage; no code execution or data exposure.
+# Status: Risk accepted until the Checkmarx container libraries move to syft >= 1.42.3
+CVE-2026-33481
+
+# CVE-2026-33997: Moby plugin privilege validation bypass (GHSA-pxq6-2prw-chj9)
+# Severity: MEDIUM (CVSS 6.8)
+# Component: github.com/docker/docker v28.0.3+incompatible
+# Fixed Version: 29.3.1 - does not exist on this module path. Moby 29 moved to
+#                github.com/moby/moby/client and github.com/moby/moby/api; the newest
+#                github.com/docker/docker release is v28.5.2.
+# Reason: Vulnerable code is in the Docker daemon's `docker plugin install` flow. The CLI
+#         links only the client SDK and calls ImagePull/ImageInspect/Close; nothing in the
+#         binary calls PluginInstall or PluginUpgrade.
+# Impact: None. The advisory states there is no impact when plugins are not in use.
+# Status: Risk accepted until stereoscope/syft and the Checkmarx container libraries
+#         migrate to the github.com/moby/moby/* modules
+CVE-2026-33997
