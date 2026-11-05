@@ -1,58 +1,35 @@
 # Trivy Ignore Configuration
-# Vulnerabilities reported against Go modules compiled into the cx binary.
+# These vulnerabilities are in Go dependencies that cannot be updated or fixed directly.
+# Review periodically and remove entries once the underlying dependency is upgraded.
 
 # ============================================================================
-# BINARY VULNERABILITIES - Risk accepted
+# BINARY VULNERABILITIES - Compatibility Issues (Not Updated)
 # ============================================================================
+
+# CVE-2026-33481: Syft improper temporary file cleanup
+# Severity: MEDIUM
+# Component: github.com/anchore/syft v1.21.0
+# Current Version: v1.21.0 (not updated to v1.42.3)
+# Reason: Update to v1.42.3 introduces compilation errors with containerd v2
+# Impact: Only affects SBOM generation temp file cleanup, not core CLI functionality
+# Status: Risk accepted - CLI still functions correctly for all scan operations
+CVE-2026-33481
+
+# CVE-2026-33997: Moby privilege validation bypass during plugin installation
+# Severity: MEDIUM
+# Component: github.com/docker/docker v28.0.3+incompatible
+# Current Version: v28.0.3+incompatible (not updated to v29.3.1)
+# Reason: Target version v29.3.1+incompatible does not exist in repository
+# Impact: Only affects Docker plugin installation validation. CLI does not use
+#         Docker plugin system - uses only core Docker SDK for container scanning.
+# Status: Risk accepted - vulnerability not exploitable in CLI usage pattern
+CVE-2026-33997
 
 # GO-2026-5932: golang.org/x/crypto/openpgp is unmaintained and unsafe by design
 # Severity: UNKNOWN
-# Component: golang.org/x/crypto v0.58.0
-# Fixed Version: v0.58.1-0.20261009181718-2f1f834330b2 (removes the openpgp package)
-# Reason: The only importer is helm.sh/helm/v3/pkg/provenance (pulled in via
-#         Checkmarx/containers-images-extractor). Fixing requires bumping helm to
-#         v3.21.4+, which drags k8s.io/* and other transitive updates.
-# Impact: CLI never signs or verifies Helm chart provenance; code path is unreachable.
+# Component: golang.org/x/crypto v0.58.0 (transitive via helm.sh/helm/v3/pkg/provenance)
+# Reason: Not imported by ast-cli directly; the "fixed" version is an untagged pseudo-version.
+#         Awaiting Helm to drop x/crypto/openpgp.
+# Impact: CLI does not perform OpenPGP signing/verification.
+# Status: Risk accepted
 GO-2026-5932
-
-# CVE-2026-78661: golang.org/x/net/html text node coalescing in addText/fosterParent
-# Severity: UNKNOWN
-# Component: golang.org/x/net v0.60.0
-# Fixed Version: v0.62.0
-# Reason: x/net/html is only reached via anchore/syft's Java/Maven cataloger when
-#         parsing POM metadata; not used by CLI code directly.
-CVE-2026-78661
-
-# CVE-2026-97045: golang.org/x/net/html childTextNodesAreLiteral tree walk
-# Severity: UNKNOWN
-# Component: golang.org/x/net v0.60.0
-# Fixed Version: v0.62.0
-# Reason: Same code path as CVE-2026-78661 (anchore/syft Maven cataloger only).
-CVE-2026-97045
-
-# CVE-2026-33481: Syft improper temporary file cleanup (GHSA-rjcw-vg7j-m9rc)
-# Severity: MEDIUM (CVSS 5.3, availability only)
-# Component: github.com/anchore/syft v1.21.0
-# Fixed Version: v1.42.3 (plus anchore/stereoscope PR 537)
-# Reason: syft v1.42.3 pulls go-getter, AWS/GCS SDKs and containerd v2, growing the
-#         binary from 86 MB to 119 MB (reverted in AST-188320). Checkmarx/containers-resolver
-#         and containers-syft-packages-extractor also pin syft v1.21.0.
-# Impact: Only reachable via container image scanning (--container-images / realtime
-#         containers). Worst case is leaked temp files on the scanning host when a
-#         hostile archive exhausts temp storage; no code execution or data exposure.
-# Status: Risk accepted until the Checkmarx container libraries move to syft >= 1.42.3
-CVE-2026-33481
-
-# CVE-2026-33997: Moby plugin privilege validation bypass (GHSA-pxq6-2prw-chj9)
-# Severity: MEDIUM (CVSS 6.8)
-# Component: github.com/docker/docker v28.0.3+incompatible
-# Fixed Version: 29.3.1 - does not exist on this module path. Moby 29 moved to
-#                github.com/moby/moby/client and github.com/moby/moby/api; the newest
-#                github.com/docker/docker release is v28.5.2.
-# Reason: Vulnerable code is in the Docker daemon's `docker plugin install` flow. The CLI
-#         links only the client SDK and calls ImagePull/ImageInspect/Close; nothing in the
-#         binary calls PluginInstall or PluginUpgrade.
-# Impact: None. The advisory states there is no impact when plugins are not in use.
-# Status: Risk accepted until stereoscope/syft and the Checkmarx container libraries
-#         migrate to the github.com/moby/moby/* modules
-CVE-2026-33997
