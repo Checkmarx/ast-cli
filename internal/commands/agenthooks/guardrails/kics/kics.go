@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
@@ -170,7 +171,7 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 	}
 
 	telemetryData := &wrappers.DataForAITelemetry{
-		Agent:            agent + "-cli",
+		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
 		Engine:           "IaC",
 		TotalCount:       totalCount,

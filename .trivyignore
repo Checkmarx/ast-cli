@@ -1,44 +1,6 @@
 # Trivy Ignore Configuration
-# These vulnerabilities are in the Wolfi Linux base image or have compatibility issues
-
-# ============================================================================
-# BASE IMAGE VULNERABILITIES (Wolfi) - Cannot be patched by CLI code
-# ============================================================================
-
-# CVE-2026-8674: glibc DNS stub resolver DoS via long search domain
-# Severity: MEDIUM
-# Component: zlib 1.3.2-r6 (in Wolfi base image)
-# Impact: Local DNS parsing issue - requires malformed DNS configuration
-# Reason: Base image vulnerability - awaiting Wolfi update to zlib 1.3.2.1_rc20260601-r0
-CVE-2026-8674
-
-# CVE-2026-86805: glibc TOCTOU privilege escalation
-# Severity: MEDIUM
-# Component: glibc 2.44-r7 (in base image)
-# Impact: Local attacker with file system access - requires race condition exploit
-# Reason: Base image vulnerability - awaiting Wolfi update to glibc 2.44-r8
-CVE-2026-86805
-
-# CVE-2026-89092: glibc nscd stack overflow
-# Severity: MEDIUM
-# Component: glibc 2.44-r7 (in base image)
-# Impact: Local DoS via nscd service - requires nscd to be running
-# Reason: Base image vulnerability - awaiting Wolfi update to glibc 2.44-r8
-CVE-2026-89092
-
-# CVE-2026-95818: glibc local DoS and information disclosure
-# Severity: MEDIUM
-# Component: glibc 2.44-r7 (in base image)
-# Impact: Local attacker can cause denial of service
-# Reason: Base image vulnerability - awaiting Wolfi update to glibc 2.44-r8
-CVE-2026-95818
-
-# CVE-2026-85091: zlib heap buffer overflow
-# Severity: MEDIUM
-# Component: zlib 1.3.2-r6 (in Wolfi base image)
-# Impact: Heap buffer overflow in compression library
-# Reason: Base image vulnerability - awaiting Wolfi update to 1.3.2.1_rc20260601-r0
-CVE-2026-85091
+# These vulnerabilities are in Go dependencies that cannot be updated or fixed directly.
+# Review periodically and remove entries once the underlying dependency is upgraded.
 
 # ============================================================================
 # BINARY VULNERABILITIES - Compatibility Issues (Not Updated)
@@ -62,3 +24,12 @@ CVE-2026-33481
 #         Docker plugin system - uses only core Docker SDK for container scanning.
 # Status: Risk accepted - vulnerability not exploitable in CLI usage pattern
 CVE-2026-33997
+
+# GO-2026-5932: golang.org/x/crypto/openpgp is unmaintained and unsafe by design
+# Severity: UNKNOWN
+# Component: golang.org/x/crypto v0.58.0 (transitive via helm.sh/helm/v3/pkg/provenance)
+# Reason: Not imported by ast-cli directly; the "fixed" version is an untagged pseudo-version.
+#         Awaiting Helm to drop x/crypto/openpgp.
+# Impact: CLI does not perform OpenPGP signing/verification.
+# Status: Risk accepted
+GO-2026-5932
