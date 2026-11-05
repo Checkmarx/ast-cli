@@ -9,15 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// IsFeatureFlagEnabled checks if a specific feature flag is enabled.
-func IsFeatureFlagEnabled(flagWrapper wrappers.FeatureFlagsWrapper, flagName string) (bool, error) {
-	enabled, err := flagWrapper.GetSpecificFlag(flagName)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get feature flag")
-	}
-	return enabled.Status, nil
-}
-
 // EnsureLicense validates that a valid JWT wrapper is available.
 func EnsureLicense(jwtWrapper wrappers.JWTWrapper) error {
 	if jwtWrapper == nil {

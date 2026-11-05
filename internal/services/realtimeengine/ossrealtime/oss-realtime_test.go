@@ -37,10 +37,8 @@ func cleanCacheFile(t *testing.T) {
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndManifest_ScanSuccess(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -57,7 +55,6 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 	t.Skip() // Skip this test for now, no license check implemented
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{AIEnabled: mock.AIProtectionDisabled},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -70,10 +67,8 @@ func TestRunOssRealtimeScan_InvalidLicenseAndValidManifest_ScanFail(t *testing.T
 }
 
 func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -86,10 +81,8 @@ func TestRunOssRealtimeScan_ValidLicenseAndInvalidManifest_ScanFail(t *testing.T
 }
 
 func TestRunOssRealtimeScan_WithIgnoredPackage_IgnoresPackage(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -107,10 +100,8 @@ func TestRunOssRealtimeScan_WithIgnoredPackage_IgnoresPackage(t *testing.T) {
 }
 
 func TestRunOssRealtimeScan_WithEmptyIgnoreFile_AllPackagesIncluded(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -133,10 +124,8 @@ func TestRunOssRealtimeScan_WithEmptyIgnoreFile_AllPackagesIncluded(t *testing.T
 }
 
 func TestRunOssRealtimeScan_IgnoredPackageWithDifferentVersion_IsNotIgnored(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -162,7 +151,6 @@ func TestRunOssRealtimeScan_IgnoredPackageWithDifferentVersion_IsNotIgnored(t *t
 }
 
 func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequestIsCalledPartially(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
@@ -185,7 +173,6 @@ func TestPrepareScan_CacheExistsAndContainsPartialResults_RealtimeScannerRequest
 }
 
 func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerRequestIsCalledFully(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	allPackages := setupPackages()
 	storedPackages := []osscache.PackageEntry{
@@ -205,7 +192,6 @@ func TestPrepareScan_CacheExpiredAndContainsPartialResults_RealtimeScannerReques
 }
 
 func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	allPackages := setupPackages()
 
@@ -219,7 +205,6 @@ func TestPrepareScan_NoCache_RealtimeScannerRequestIsCalledFully(t *testing.T) {
 }
 
 func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	singlePackage := setupSinglePackage()
 	storedPackages := []osscache.PackageEntry{
@@ -242,11 +227,9 @@ func TestPrepareScan_AllDataInCache_RealtimeScannerRequestIsEmpty(t *testing.T) 
 }
 
 func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{
 			CustomScanPackages: func(packages *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 				var response wrappers.RealtimeScannerPackageResponse
@@ -278,12 +261,10 @@ func TestScanAndCache_NoCacheAndScanSuccess_CacheUpdated(t *testing.T) {
 }
 
 func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	cleanCacheFile(t)
 
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 
@@ -341,10 +322,8 @@ func TestScanAndCache_CacheExistsAndScanSuccess_CacheUpdated(t *testing.T) {
 
 func TestOssRealtimeScan_CsprojFile_ReturnsLocations(t *testing.T) {
 	// Arrange
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	ossRealtimeService := NewOssRealtimeService(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 		&mock.RealtimeScannerMockWrapper{},
 	)
 	response, err := ossRealtimeService.RunOssRealtimeScan("../../../commands/data/manifests/test.csproj", "")

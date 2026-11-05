@@ -15,7 +15,8 @@ const (
 	SuccessFullSecretsLicenceValidation = "License for pre-receive secret detection has been validated successfully"
 )
 
-func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+// PreReceiveCommand creates the pre-receive subcommand
+func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	preReceiveCmd := &cobra.Command{
 		Use:   "pre-receive",
 		Short: "Manage pre-receive hooks and run secret detection scans",
@@ -27,7 +28,7 @@ func PreReceiveCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrapp
 		),
 	}
 	preReceiveCmd.AddCommand(scanSecretsPreReceiveCommand())
-	preReceiveCmd.AddCommand(validateSecretsLicence(jwtWrapper, featureFlagsWrapper))
+	preReceiveCmd.AddCommand(validateSecretsLicence(jwtWrapper))
 
 	return preReceiveCmd
 }
@@ -54,7 +55,7 @@ func scanSecretsPreReceiveCommand() *cobra.Command {
 	return scanPrereceiveCmd
 }
 
-func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) *cobra.Command {
+func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper) *cobra.Command {
 	validateLicence := &cobra.Command{
 		Use:   "validate",
 		Short: "Validates the license for pre-receive secret detection",
@@ -64,20 +65,14 @@ func validateSecretsLicence(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper 
 		    $ cx hooks pre-receive validate
 			`,
 		),
-		RunE: checkLicence(jwtWrapper, featureFlagsWrapper),
+		RunE: checkLicence(jwtWrapper),
 	}
 	return validateLicence
 }
 
-func checkLicence(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) func(cmd *cobra.Command, args []string) error {
+func checkLicence(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		scsLicensingV2Flag, _ := wrappers.GetSpecificFeatureFlag(featureFlagsWrapper, wrappers.ScsLicensingV2Enabled)
-		var licenseName string
-		if scsLicensingV2Flag.Status {
-			licenseName = params.SecretDetectionLabel
-		} else {
-			licenseName = params.EnterpriseSecretsLabel
-		}
+		licenseName := params.SecretDetectionLabel
 
 		isAllowed, err := jwtWrapper.IsAllowedEngine(licenseName)
 		if err != nil {
