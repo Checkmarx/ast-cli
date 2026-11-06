@@ -198,11 +198,6 @@ var BaseExcludeFilters = []string{
 	"!node_modules",
 }
 
-// BaseExcludedFiles defines the base set of files to exclude from ZIP archives during scans.
-var BaseExcludedFiles = []string{
-	".git/config",
-}
-
 var KicsBaseFilters = []string{
 	".tf",
 	".yaml",
