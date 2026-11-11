@@ -2565,8 +2565,7 @@ func uploadZip(uploadsWrapper wrappers.UploadsWrapper, zipFilePath string, unzip
 	}
 	logger.PrintIfVerbose(fmt.Sprintf("Zip size before upload:  %.2fMB\n", float64(fileInfo.Size())/mbBytes))
 
-	flagResponse, _ := featureFlagsWrapper.GetSpecificFlag(wrappers.IncreaseFileUploadLimit)
-	if flagResponse.Status && fileInfo.Size() > MaxSizeBytes {
+	if fileInfo.Size() > MaxSizeBytes {
 		logger.PrintIfVerbose("Uploading source code in multiple parts.")
 		preSignedURL, zipFilePathErr = uploadsWrapper.UploadFileInMultipart(zipFilePath, featureFlagsWrapper)
 	} else {
