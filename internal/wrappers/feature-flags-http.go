@@ -80,17 +80,19 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 	}()
 	switch resp.StatusCode {
 	case http.StatusBadRequest, http.StatusInternalServerError:
-		return nil, errors.New("feature flags service internal error")
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' service error. Returning flag as disabled.", flagName))
+		return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
 	case http.StatusOK:
 		model := FeatureFlagResponseModel{}
 		err = decoder.Decode(&model)
 		if err != nil {
-			return nil, err
+			logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' decode error. Returning flag as disabled.", flagName))
+			return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
 		}
 		return &model, nil
 	case http.StatusNotFound:
-		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' not found. Returning flag as true.", flagName))
-		return &FeatureFlagResponseModel{Name: flagName, Status: true}, nil
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' not found. Returning flag as disabled.", flagName))
+		return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
 	case http.StatusTooManyRequests:
 		waitSeconds := defaultRateLimitWaitSeconds
 		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
@@ -100,9 +102,11 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 		}
 		logger.PrintIfVerbose(fmt.Sprintf("Feature flags rate limited (429). Waiting %d seconds before retry.", waitSeconds))
 		time.Sleep(time.Duration(waitSeconds) * time.Second)
-		return nil, errors.New("failed to load feature flags for tenant")
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' rate limited. Returning flag as disabled.", flagName))
+		return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
 	default:
-		return nil, errors.New("failed to load feature flags for tenant")
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' unexpected error. Returning flag as disabled.", flagName))
+		return &FeatureFlagResponseModel{Name: flagName, Status: false}, nil
 	}
 }
 

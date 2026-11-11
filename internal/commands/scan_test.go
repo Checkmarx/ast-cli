@@ -4913,12 +4913,11 @@ func TestEnforceLocalResolutionForTarFiles_Integration(t *testing.T) {
 	}
 }
 
-func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB(t *testing.T) {
+func TestUploadZip_AsMultipartUpload_when_ZIP_Exceeds_5GB(t *testing.T) {
 	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
 	MaxSizeBytes = 1
 	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
 	uploadWrapper := mock.UploadsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
 	assert.NilError(t, err)
@@ -4926,17 +4925,8 @@ func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB(t *testing.T
 	assert.Equal(t, url, "multiPart/path/to/nowhere")
 }
 
-func TestUploadZip_AsMultipartUpload_when_FF_Disable_ZIP_Exceeds_5GB(t *testing.T) {
-	fileInfo, err := os.Stat("data/sources.zip")
-	if err != nil {
-		t.Fatalf("Failed to close zip file: %v", err)
-	}
-	// Simulate a file size > 5GB by setting MaxSizeBytes to less than actual size
-	MaxSizeBytes = fileInfo.Size() - 1
-	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() // Reset after test
-
+func TestUploadZip_AsSingleUpload_when_ZIP_LessThan_5GB(t *testing.T) {
 	uploadWrapper := mock.UploadsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: false}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
 	assert.NilError(t, err)
@@ -4944,27 +4934,7 @@ func TestUploadZip_AsMultipartUpload_when_FF_Disable_ZIP_Exceeds_5GB(t *testing.
 	assert.Equal(t, url, "singlePart/path/to/nowhere")
 }
 
-func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_LessThan_5GB(t *testing.T) {
-	uploadWrapper := mock.UploadsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
-	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
-	assert.NilError(t, err)
-	assert.Equal(t, zipPath, "")
-	assert.Equal(t, url, "singlePart/path/to/nowhere")
-}
-
-func TestUploadZip_AsMultipartUpload_when_FF_Disable_ZIP_LessThan_5GB(t *testing.T) {
-	uploadWrapper := mock.UploadsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: false}
-	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-	url, zipPath, err := uploadZip(&uploadWrapper, "data/sources.zip", false, true, featureFlagsWrapper)
-	assert.NilError(t, err)
-	assert.Equal(t, zipPath, "")
-	assert.Equal(t, url, "singlePart/path/to/nowhere")
-}
-
-func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB_Error(t *testing.T) {
+func TestUploadZip_AsMultipartUpload_when_ZIP_Exceeds_5GB_Error(t *testing.T) {
 	// Create a temporary zip file
 	dir := t.TempDir()
 	zipPathTemp := filepath.Join(dir, "failureCaseLarge.zip")
@@ -4998,7 +4968,6 @@ func TestUploadZip_AsMultipartUpload_when_FF_Enable_ZIP_Exceeds_5GB_Error(t *tes
 	defer func() { MaxSizeBytes = 5 * 1024 * 1024 * 1024 }() //
 
 	uploadWrapper := mock.UploadsMockWrapper{}
-	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.IncreaseFileUploadLimit, Status: true}
 	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 	_, zipPath, err := uploadZip(&uploadWrapper, zipPathTemp, false, true, featureFlagsWrapper)
 	assert.Assert(t, err != nil)
