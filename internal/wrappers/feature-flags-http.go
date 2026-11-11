@@ -89,12 +89,8 @@ func (f FeatureFlagsHTTPWrapper) GetSpecificFlag(flagName string) (*FeatureFlagR
 		}
 		return &model, nil
 	case http.StatusNotFound:
-		errorModel := WebError{}
-		if decodeErr := decoder.Decode(&errorModel); decodeErr == nil && errorModel.Code == 100 && errorModel.Message == "flag with the given name is not found" {
-			logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' not found. Returning enabled flag.", flagName))
-			return &FeatureFlagResponseModel{Name: flagName, Status: true}, nil
-		}
-		return nil, errors.New("feature flags not found")
+		logger.PrintIfVerbose(fmt.Sprintf("Feature flag '%s' not found. Returning flag as true.", flagName))
+		return &FeatureFlagResponseModel{Name: flagName, Status: true}, nil
 	case http.StatusTooManyRequests:
 		waitSeconds := defaultRateLimitWaitSeconds
 		if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
