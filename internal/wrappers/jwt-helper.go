@@ -40,49 +40,37 @@ func NewJwtWrapper() JWTWrapper {
 	return &JWTStruct{}
 }
 
-func getEnabledEngines(scsLicensingV2 bool) (enabledEngines []string) {
-	enabledEngines = []string{"sast", "sca", "api-security", "iac-security", "containers", "aisc"}
-	if scsLicensingV2 {
-		enabledEngines = append(enabledEngines, commonParams.RepositoryHealthType, commonParams.SecretDetectionType)
-	} else {
-		enabledEngines = append(enabledEngines, commonParams.ScsType, commonParams.EnterpriseSecretsType)
-	}
-	return enabledEngines
+func getEnabledEngines() []string {
+	return []string{"sast", "sca", "api-security", "iac-security", "containers", "aisc",
+		commonParams.RepositoryHealthType, commonParams.SecretDetectionType}
 }
 
-func getDefaultEngines(scsLicensingV2 bool) (defaultEngines map[string]bool) {
-	defaultEngines = map[string]bool{
-		"sast":         true,
-		"sca":          true,
-		"api-security": true,
-		"iac-security": true,
-		"containers":   true,
-		"aisc":         true,
+func getDefaultEngines() map[string]bool {
+	return map[string]bool{
+		"sast":                            true,
+		"sca":                             true,
+		"api-security":                    true,
+		"iac-security":                    true,
+		"containers":                      true,
+		"aisc":                            true,
+		commonParams.RepositoryHealthType: true,
+		commonParams.SecretDetectionType:  true,
 	}
-	if scsLicensingV2 {
-		defaultEngines[commonParams.RepositoryHealthType] = true
-		defaultEngines[commonParams.SecretDetectionType] = true
-	} else {
-		defaultEngines[commonParams.ScsType] = true
-		defaultEngines[commonParams.EnterpriseSecretsType] = true
-	}
-	return defaultEngines
 }
 
 // GetAllowedEngines will return a map with user allowed engines
 func (*JWTStruct) GetAllowedEngines(featureFlagsWrapper FeatureFlagsWrapper) (allowedEngines map[string]bool, err error) {
-	scsLicensingV2Flag, _ := GetSpecificFeatureFlag(featureFlagsWrapper, ScsLicensingV2Enabled)
 	flagResponse, _ := GetSpecificFeatureFlag(featureFlagsWrapper, PackageEnforcementEnabled)
 	if flagResponse.Status {
 		jwtStruct, err := getJwtStruct()
 		if err != nil {
 			return nil, err
 		}
-		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines, scsLicensingV2Flag.Status)
+		allowedEngines = prepareEngines(jwtStruct.AstLicense.LicenseData.AllowedEngines)
 		return allowedEngines, nil
 	}
 
-	return getDefaultEngines(scsLicensingV2Flag.Status), nil
+	return getDefaultEngines(), nil
 }
 
 func (*JWTStruct) GetLicenseDetails() (licenseDetails map[string]string, err error) {
@@ -140,20 +128,16 @@ func (*JWTStruct) IsAllowedEngine(engine string) (bool, error) {
 	return false, nil
 }
 
-func prepareEngines(engines []string, scsLicensingV2 bool) map[string]bool {
+func prepareEngines(engines []string) map[string]bool {
 	m := make(map[string]bool)
 	for _, value := range engines {
 		engine := strings.Replace(strings.ToLower(value), strings.ToLower(commonParams.APISecurityLabel), commonParams.APISecurityType, 1)
 		engine = strings.Replace(strings.ToLower(engine), commonParams.KicsType, commonParams.IacType, 1)
-		if scsLicensingV2 {
-			engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.RepositoryHealthLabel), commonParams.RepositoryHealthType, 1)
-			engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.SecretDetectionLabel), commonParams.SecretDetectionType, 1)
-		} else {
-			engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.EnterpriseSecretsLabel), commonParams.EnterpriseSecretsType, 1)
-		}
+		engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.RepositoryHealthLabel), commonParams.RepositoryHealthType, 1)
+		engine = strings.Replace(strings.ToLower(engine), strings.ToLower(commonParams.SecretDetectionLabel), commonParams.SecretDetectionType, 1)
 
 		// Current limitation, CxOne is including non-engines in the JWT
-		enabledEngines := getEnabledEngines(scsLicensingV2)
+		enabledEngines := getEnabledEngines()
 		if utils.Contains(enabledEngines, strings.ToLower(engine)) {
 			m[strings.ToLower(engine)] = true
 		}

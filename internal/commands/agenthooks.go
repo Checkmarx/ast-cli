@@ -160,7 +160,8 @@ func NewHookCheckAuthCommand(jwt wrappers.JWTWrapper) *cobra.Command {
 // Routes are declared per-agent in cxhooks.Agents (cx package).
 // =============================================================================
 
-func HookDispatchCommands(jwt wrappers.JWTWrapper, featureFlags wrappers.FeatureFlagsWrapper, realtimeScanner wrappers.RealtimeScannerWrapper, telemetryWrapper wrappers.TelemetryWrapper) []*cobra.Command {
+// HookDispatchCommands returns the hidden dispatch subcommands, one per agent hook route.
+func HookDispatchCommands(jwt wrappers.JWTWrapper, realtimeScanner wrappers.RealtimeScannerWrapper, telemetryWrapper wrappers.TelemetryWrapper) []*cobra.Command {
 	var cmds []*cobra.Command
 	for _, agent := range cxhooks.Agents {
 		for _, r := range agent.Routes {
@@ -175,7 +176,7 @@ func HookDispatchCommands(jwt wrappers.JWTWrapper, featureFlags wrappers.Feature
 				Run: func(cmd *cobra.Command, _ []string) {
 					if isLicensed(jwt) {
 						logger.PrintIfVerbose(fmt.Sprintf("hooks: registering security guardrails for %s", cmd.Use))
-						cxhooks.RegisterGuardrails(jwt, featureFlags, realtimeScanner, telemetryWrapper)
+						cxhooks.RegisterGuardrails(jwt, realtimeScanner, telemetryWrapper)
 					} else {
 						logger.PrintIfVerbose(fmt.Sprintf("hooks: registering pass-through for %s", cmd.Use))
 						cxhooks.RegisterPassThrough()

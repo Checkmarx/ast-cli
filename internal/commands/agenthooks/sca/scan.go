@@ -23,7 +23,6 @@ const (
 // substitute scan via NewScannerWithFunc.
 type Scanner struct {
 	JWT  wrappers.JWTWrapper
-	FF   wrappers.FeatureFlagsWrapper
 	RT   wrappers.RealtimeScannerWrapper
 	scan func(path string) (*ossrealtime.OssPackageResults, error)
 	// workDir is the workspace root reported by the hook event (its "cwd"). The
@@ -35,8 +34,8 @@ type Scanner struct {
 
 // NewScanner returns a Scanner backed by the given wrappers. The scan call
 // goes through ossrealtime.NewOssRealtimeService.RunOssRealtimeScan.
-func NewScanner(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper) *Scanner {
-	s := &Scanner{JWT: jwt, FF: ff, RT: rt}
+func NewScanner(jwt wrappers.JWTWrapper, rt wrappers.RealtimeScannerWrapper) *Scanner {
+	s := &Scanner{JWT: jwt, RT: rt}
 	s.scan = s.runRealScan
 	return s
 }
@@ -48,7 +47,7 @@ func NewScannerWithFunc(f func(path string) (*ossrealtime.OssPackageResults, err
 }
 
 func (s *Scanner) runRealScan(path string) (*ossrealtime.OssPackageResults, error) {
-	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.FF, s.RT)
+	svc := ossrealtime.NewOssRealtimeService(s.JWT, s.RT)
 	return svc.RunOssRealtimeScan(path, existingIgnoreFilePath(s.workDir))
 }
 

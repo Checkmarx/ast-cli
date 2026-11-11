@@ -12,21 +12,13 @@ const PackageEnforcementEnabled = "PACKAGE_ENFORCEMENT_ENABLED"
 const CVSSV3Enabled = "CVSS_V3_ENABLED"
 const MinioEnabled = "MINIO_ENABLED"
 const SastCustomStateEnabled = "SAST_CUSTOM_STATES_ENABLED"
-const RiskManagementEnabled = "RISK_MANAGEMENT_IDES_PROJECT_RESULTS_SCORES_API_ENABLED"
-const OssRealtimeEnabled = "OSS_REALTIME_ENABLED"
-const ScsLicensingV2Enabled = "SSCS_NEW_LICENSING_ENABLED"
-const SscsCommitHistoryEnabled = "SSCS_COMMIT_HISTORY_ENABLED"
 const DirectAssociationEnabled = "DIRECT_APP_ASSOCIATION_ENABLED"
 const DaMigrationEnabled = "DA_MIGRATION_ENABLED"
 const maxRetries = 3
-const IncreaseFileUploadLimit = "INCREASE_FILE_UPLOAD_LIMIT"
 const ScaDeltaScanEnabled = "SCA_DELTASCAN_ENABLED"
 
 // RepostoreCustomerContributorsCsvEnabled is the feature flag for generating contributors.csv and metadata.json.
 const RepostoreCustomerContributorsCsvEnabled = "REPOSTORE_CUSTOMER_CONTRIBUTORS_CSV_ENABLED"
-
-// AISupplyChainGAEnabled is the feature flag for AI Supply Chain Engine GA.
-const AISupplyChainGAEnabled = "AI_SUPPLY_CHAIN_ENGINE_GA_ENABLED"
 
 var DefaultFFLoad bool = false
 
@@ -74,15 +66,6 @@ var FeatureFlagsBaseMap = []CommandFlags{
 			},
 			{
 				Name:    SastCustomStateEnabled,
-				Default: false,
-			},
-		},
-	},
-	{
-		CommandName: "cx results risk-management",
-		FeatureFlags: []FlagBase{
-			{
-				Name:    RiskManagementEnabled,
 				Default: false,
 			},
 		},

@@ -9,13 +9,12 @@ import (
 // Tests substitute scan via NewScannerWithFunc.
 type Scanner struct {
 	jwt  wrappers.JWTWrapper
-	ff   wrappers.FeatureFlagsWrapper
 	scan func(sourcePath, content, ignoreFilePath string) ([]secretsrealtime.SecretsRealtimeResult, error)
 }
 
 // NewScanner returns a Scanner backed by the secrets realtime engine.
-func NewScanner(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper) *Scanner {
-	s := &Scanner{jwt: jwt, ff: ff}
+func NewScanner(jwt wrappers.JWTWrapper) *Scanner {
+	s := &Scanner{jwt: jwt}
 	s.scan = s.runRealScan
 	return s
 }
@@ -27,6 +26,6 @@ func NewScannerWithFunc(f func(sourcePath, content, ignoreFilePath string) ([]se
 }
 
 func (s *Scanner) runRealScan(sourcePath, content, ignoreFilePath string) ([]secretsrealtime.SecretsRealtimeResult, error) {
-	svc := secretsrealtime.NewSecretsRealtimeService(s.jwt, s.ff)
+	svc := secretsrealtime.NewSecretsRealtimeService(s.jwt)
 	return svc.ScanContent(sourcePath, content, ignoreFilePath)
 }

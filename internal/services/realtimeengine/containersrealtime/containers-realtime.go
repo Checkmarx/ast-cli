@@ -22,19 +22,16 @@ const defaultTag = "latest"
 // ContainersRealtimeService is the service responsible for performing real-time container scanning.
 type ContainersRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
-	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
 	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
 }
 
 // NewContainersRealtimeService creates a new ContainersRealtimeService.
 func NewContainersRealtimeService(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 ) *ContainersRealtimeService {
 	return &ContainersRealtimeService{
 		JwtWrapper:             jwtWrapper,
-		FeatureFlagWrapper:     featureFlagWrapper,
 		RealtimeScannerWrapper: realtimeScannerWrapper,
 	}
 }
@@ -76,9 +73,6 @@ func filterIgnoredContainers(results []ContainerImage, ignoreMap map[string]bool
 func (c *ContainersRealtimeService) RunContainersRealtimeScan(filePath, ignoredFilePath string) (*ContainerImageResults, error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
-	}
-	if enabled, err := realtimeengine.IsFeatureFlagEnabled(c.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
-		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 	if err := realtimeengine.EnsureLicense(c.JwtWrapper); err != nil {
 		return nil, errorconstants.NewRealtimeEngineError(err.Error()).Error()

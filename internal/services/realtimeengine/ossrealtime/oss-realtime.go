@@ -42,19 +42,16 @@ func convertLocations(locations []models.Location) []realtimeengine.Location {
 // OssRealtimeService is the service responsible for performing real-time OSS scanning.
 type OssRealtimeService struct {
 	JwtWrapper             wrappers.JWTWrapper
-	FeatureFlagWrapper     wrappers.FeatureFlagsWrapper
 	RealtimeScannerWrapper wrappers.RealtimeScannerWrapper
 }
 
 // NewOssRealtimeService creates a new OssRealtimeService.
 func NewOssRealtimeService(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 	realtimeScannerWrapper wrappers.RealtimeScannerWrapper,
 ) *OssRealtimeService {
 	return &OssRealtimeService{
 		JwtWrapper:             jwtWrapper,
-		FeatureFlagWrapper:     featureFlagWrapper,
 		RealtimeScannerWrapper: realtimeScannerWrapper,
 	}
 }
@@ -63,11 +60,6 @@ func NewOssRealtimeService(
 func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string) (results *OssPackageResults, err error) {
 	if filePath == "" {
 		return nil, errorconstants.NewRealtimeEngineError("file path is required").Error()
-	}
-
-	if enabled, err := realtimeengine.IsFeatureFlagEnabled(o.FeatureFlagWrapper, wrappers.OssRealtimeEnabled); err != nil || !enabled {
-		logger.PrintfIfVerbose("Containers Realtime scan is not available (feature flag disabled or error: %v)", err)
-		return nil, errorconstants.NewRealtimeEngineError(errorconstants.RealtimeEngineNotAvailable).Error()
 	}
 
 	if err := realtimeengine.EnsureLicense(o.JwtWrapper); err != nil {

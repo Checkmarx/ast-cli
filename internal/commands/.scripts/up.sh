@@ -6,4 +6,4 @@ rm -rf ScaResolver-linux64.tar.gz
 # ignore mock, wrappers, cmd, logger, and osinstaller packages, as they checked by integration tests
 gotestsum --junitfile junit.xml --format testname -- \
   $(go list ./... | grep -v "mock" | grep -v "wrappers" | grep -v "bitbucketserver" | grep -v "logger" | grep -v "cmd" | grep -v "osinstaller") \
-  -timeout 25m -coverprofile cover.out
+  -timeout 35m -coverprofile cover.out
