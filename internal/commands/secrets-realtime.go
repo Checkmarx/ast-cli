@@ -11,7 +11,6 @@ import (
 
 func RunScanSecretsRealtimeCommand(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -21,7 +20,7 @@ func RunScanSecretsRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
+		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper)
 
 		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {

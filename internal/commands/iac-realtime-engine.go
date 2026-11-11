@@ -11,7 +11,6 @@ import (
 
 func RunScanIacRealtimeCommand(
 	jwtWrapper wrappers.JWTWrapper,
-	featureFlagWrapper wrappers.FeatureFlagsWrapper,
 ) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		fileSourceFlag, _ := cmd.Flags().GetString(commonParams.SourcesFlag)
@@ -22,7 +21,7 @@ func RunScanIacRealtimeCommand(
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
 
-		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper, iacrealtime.NewContainerManager())
+		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, iacrealtime.NewContainerManager())
 
 		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag)
 		if err != nil {

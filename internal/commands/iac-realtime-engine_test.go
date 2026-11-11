@@ -22,7 +22,6 @@ import (
 func TestRunScanIacRealtimeCommand_MissingFileSource_Error(t *testing.T) {
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -40,7 +39,6 @@ func TestRunScanIacRealtimeCommand_MissingFileSource_Error(t *testing.T) {
 func TestRunScanIacRealtimeCommand_EmptyFileSource_Error(t *testing.T) {
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -75,9 +73,8 @@ func TestRunScanIacRealtimeCommand_ValidFileSource_Success(t *testing.T) {
 	}
 
 	jwtMock := &mock.JWTMockWrapper{}
-	flagsMock := &mock.FeatureFlagsMockWrapper{}
 
-	handler := RunScanIacRealtimeCommand(jwtMock, flagsMock)
+	handler := RunScanIacRealtimeCommand(jwtMock)
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(bytes.NewBuffer([]byte{}))
@@ -114,9 +111,8 @@ func TestRunScanIacRealtimeCommand_WithIgnoredFilePath(t *testing.T) {
 	}
 
 	jwtMock := &mock.JWTMockWrapper{}
-	flagsMock := &mock.FeatureFlagsMockWrapper{}
 
-	handler := RunScanIacRealtimeCommand(jwtMock, flagsMock)
+	handler := RunScanIacRealtimeCommand(jwtMock)
 
 	cmd := &cobra.Command{}
 	cmd.SetOut(bytes.NewBuffer([]byte{}))
@@ -151,7 +147,6 @@ func TestRunScanIacRealtimeCommand_WithDocker_Engine(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -180,7 +175,6 @@ func TestRunScanIacRealtimeCommand_WithPodman_Engine(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -209,7 +203,6 @@ func TestRunScanIacRealtimeCommand_WithEmptyEngine_Default(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -241,7 +234,6 @@ func TestRunScanIacRealtimeCommand_OutputBuffer(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	outputBuffer := bytes.NewBuffer([]byte{})
@@ -268,7 +260,6 @@ func TestRunScanIacRealtimeCommand_OutputBuffer(t *testing.T) {
 func TestRunScanIacRealtimeCommand_NoFlagsSet_UsesDefaults(t *testing.T) {
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -300,7 +291,6 @@ func TestRunScanIacRealtimeCommand_PathWithSpaces(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -329,7 +319,6 @@ func TestRunScanIacRealtimeCommand_AbsolutePath(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -361,7 +350,6 @@ func TestRunScanIacRealtimeCommand_FlagRetrieval_FileSourceExtracted(t *testing.
 	// Track if the correct file source is used by checking for error
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	cmd := &cobra.Command{}
@@ -393,7 +381,6 @@ func TestRunScanIacRealtimeCommand_MultipleEngineTypes(t *testing.T) {
 
 			handler := RunScanIacRealtimeCommand(
 				&mock.JWTMockWrapper{},
-				&mock.FeatureFlagsMockWrapper{},
 			)
 
 			cmd := &cobra.Command{}
@@ -422,7 +409,6 @@ func TestRunScanIacRealtimeCommand_MultipleEngineTypes(t *testing.T) {
 func TestRunScanIacRealtimeCommand_ReturnsCobraErrorHandler(t *testing.T) {
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	if handler == nil {
@@ -447,9 +433,8 @@ func TestRunScanIacRealtimeCommand_ReturnsCobraErrorHandler(t *testing.T) {
 
 func TestRunScanIacRealtimeCommand_WithJWTWrapper(t *testing.T) {
 	jwtWrapper := &mock.JWTMockWrapper{}
-	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
 
-	handler := RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper)
+	handler := RunScanIacRealtimeCommand(jwtWrapper)
 
 	if handler == nil {
 		t.Error("handler should be created with wrappers")
@@ -462,17 +447,6 @@ func TestRunScanIacRealtimeCommand_WithJWTWrapper(t *testing.T) {
 	err := handler(cmd, []string{})
 	if err == nil {
 		t.Error("should error for missing file source")
-	}
-}
-
-func TestRunScanIacRealtimeCommand_WithFeatureFlagsWrapper(t *testing.T) {
-	jwtWrapper := &mock.JWTMockWrapper{}
-	featureFlagsWrapper := &mock.FeatureFlagsMockWrapper{}
-
-	handler := RunScanIacRealtimeCommand(jwtWrapper, featureFlagsWrapper)
-
-	if handler == nil {
-		t.Error("handler should be created successfully")
 	}
 }
 
@@ -500,7 +474,6 @@ func TestRunScanIacRealtimeCommand_FullFlow_WithAllFlags(t *testing.T) {
 
 	handler := RunScanIacRealtimeCommand(
 		&mock.JWTMockWrapper{},
-		&mock.FeatureFlagsMockWrapper{},
 	)
 
 	outputBuffer := bytes.NewBuffer([]byte{})
