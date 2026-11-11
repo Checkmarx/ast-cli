@@ -1,8 +1,8 @@
-FROM checkmarx/bash:5.3-r14-e52a196c3a914c@sha256:e52a196c3a914c6496c72465ad4a8f7efd1ff8ad988b328cbb92018652c23c7d
+FROM checkmarx/bash:5.3-r14-fad83378373438@sha256:fad833783734389f27b9d8ab3b5e9dda6eb44fdf1892145c70058cb774da817d
 USER nonroot
 
-COPY cx /app/bin/cx
-
-ENTRYPOINT ["/app/bin/cx"]
+COPY cx /app/bin/cx 
+ 
+ENTRYPOINT ["/app/bin/cx"] 
 
 HEALTHCHECK NONE
