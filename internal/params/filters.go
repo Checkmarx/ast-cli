@@ -1,6 +1,11 @@
 package params
 
-var BaseIncludeFilters = []string{
+import "slices"
+
+// BaseIncludeFilters is the default include filter: the SAST patterns followed by the Linguist extension and filename patterns.
+var BaseIncludeFilters = slices.Clip(slices.Concat(sastIncludeFilters, linguistExtensionFilters, linguistFilenameFilters))
+
+var sastIncludeFilters = []string{
 	"*.javasln",
 	"*.project",
 	"*.java",
@@ -26,7 +31,6 @@ var BaseIncludeFilters = []string{
 	"*.cls",
 	"*.dsr",
 	"*.ctl",
-	"*.vb",
 	"*.cpp",
 	"*.c++",
 	"*.cxx",
@@ -52,7 +56,6 @@ var BaseIncludeFilters = []string{
 	"*.apexp",
 	"*.page",
 	"*.component",
-	"*.cls",
 	"*.trigger",
 	"*.tgr",
 	"*.object",
@@ -76,14 +79,9 @@ var BaseIncludeFilters = []string{
 	"*.pm",
 	"*.plx",
 	"*.psgi",
-	"*.java",
-	"*.kt",
 	"*.m",
-	"*.h",
 	"*.swift",
 	"*.xib",
-	"*.html",
-	"*.htm",
 	"*.pls",
 	"*.sql",
 	"*.pkh",
@@ -112,12 +110,10 @@ var BaseIncludeFilters = []string{
 	"*.cpy",
 	"*.aspx",
 	"*.ascx",
-	"*.config",
 	"*.xml",
 	"*.cgi",
 	"*.inc",
 	"*.jar",
-	"*.js",
 	"*.xsjs",
 	"*.xsjslib",
 	"*.dll",
@@ -154,7 +150,6 @@ var BaseIncludeFilters = []string{
 	"*.mjs",
 	"*.mts",
 	"*.cts",
-	"*.html",
 	"*.xhtml",
 	"*.vm",
 	"*.ac",
