@@ -946,6 +946,7 @@ func scanCreateSubCommand(
 	createScanCmd.PersistentFlags().Bool(commonParams.GitIgnoreFileFilterFlag, false, commonParams.GitIgnoreFileFilterUsage)
 	createScanCmd.PersistentFlags().StringSlice(commonParams.AntFilterFlag, []string{}, commonParams.AntFilterUsage)
 	createScanCmd.PersistentFlags().Bool(commonParams.SkipDefaultFilterFlag, false, commonParams.SkipDefaultFilterFlagUsage)
+	createScanCmd.PersistentFlags().Bool(commonParams.DefaultFilterFlag, false, commonParams.DefaultFilterFlagUsage)
 	createScanCmd.PersistentFlags().Bool(commonParams.ExcludeGitFolderFlag, false, commonParams.ExcludeGitFolderFlagUsage)
 
 	return createScanCmd
@@ -3110,7 +3111,8 @@ func getUploadType(cmd *cobra.Command) string {
 }
 
 // getScanDefaultIncludeFilters resolves the default include filter for a local source; git sources and
-// --skip-default-filter never build a filtered zip, so the settings are not fetched for them.
+// --skip-default-filter never build a filtered zip, so the settings are not fetched for them. --default-filter
+// keeps the SAST patterns only, whatever the LLM-based scanning settings are.
 func getScanDefaultIncludeFilters(
 	cmd *cobra.Command,
 	tenantWrapper wrappers.TenantConfigurationWrapper,
@@ -3120,6 +3122,11 @@ func getScanDefaultIncludeFilters(
 	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
 	if skipDefaultFilter || getUploadType(cmd) == git {
 		return nil
+	}
+	defaultFilterOnly, _ := cmd.Flags().GetBool(commonParams.DefaultFilterFlag)
+	if defaultFilterOnly {
+		logger.PrintIfVerbose("--default-filter set: using the default SAST include filter only, without Linguist patterns.")
+		return commonParams.DefaultIncludeFilters(false)
 	}
 	return resolveDefaultIncludeFilters(tenantWrapper, projectsWrapper, projectID)
 }
@@ -4085,6 +4092,11 @@ func validateCreateScanFlags(cmd *cobra.Command) error {
 	branch := strings.TrimSpace(viper.GetString(commonParams.BranchKey))
 	if branch == "" && !isSbomScan {
 		return errors.Errorf("%s: Please provide a branch", failedCreating)
+	}
+	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
+	defaultFilterOnly, _ := cmd.Flags().GetBool(commonParams.DefaultFilterFlag)
+	if skipDefaultFilter && defaultFilterOnly {
+		return errors.Errorf("%s: --%s and --%s cannot be used together", failedCreating, commonParams.DefaultFilterFlag, commonParams.SkipDefaultFilterFlag)
 	}
 	exploitablePath, _ := cmd.Flags().GetString(commonParams.ExploitablePathFlag)
 	lastSastScanTime, _ := cmd.Flags().GetString(commonParams.LastSastScanTime)

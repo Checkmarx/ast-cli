@@ -221,12 +221,12 @@ var BaseExcludeFilters = []string{
 	"!.vscode",
 	"!.idea",
 	"!node_modules",
-	"*.png",
-	"*.exe",
-	"*.jpg",
-	"*.log",
-	"*.dll",
-	"*.pdf",
+	"!*.png",
+	"!*.exe",
+	"!*.jpg",
+	"!*.log",
+	"!*.dll",
+	"!*.pdf",
 }
 
 var KicsBaseFilters = []string{

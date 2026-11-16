@@ -18,6 +18,7 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
+	"github.com/spf13/cobra"
 	"gotest.tools/assert"
 )
 
@@ -229,4 +230,75 @@ func TestHandleFile_LogsOversizedFile(t *testing.T) {
 		filtering.NopMatcher{}, false)
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(logs.String(), "Excluded (larger than 0MB)") && strings.Contains(logs.String(), "big.java"), logs.String())
+}
+
+// filterFlagsCommand builds a command with the flags getScanDefaultIncludeFilters reads.
+func filterFlagsCommand(t *testing.T, args ...string) *cobra.Command {
+	t.Helper()
+	cmd := &cobra.Command{}
+	cmd.Flags().String(commonParams.SourcesFlag, "", "")
+	cmd.Flags().Bool(commonParams.SkipDefaultFilterFlag, false, "")
+	cmd.Flags().Bool(commonParams.DefaultFilterFlag, false, "")
+	assert.NilError(t, cmd.Flags().Parse(args))
+	return cmd
+}
+
+func TestGetScanDefaultIncludeFilters(t *testing.T) {
+	tests := []struct {
+		name         string
+		args         []string
+		expected     []string
+		tenantCalled bool
+	}{
+		{name: "LLM settings decide by default", args: []string{"--" + commonParams.SourcesFlag, "."},
+			expected: commonParams.BaseIncludeFilters, tenantCalled: true},
+		{name: "--default-filter keeps SAST patterns only", args: []string{"--" + commonParams.SourcesFlag, ".", "--" + commonParams.DefaultFilterFlag},
+			expected: commonParams.SastIncludeFilters, tenantCalled: false},
+		{name: "--skip-default-filter uses no default filter", args: []string{"--" + commonParams.SourcesFlag, ".", "--" + commonParams.SkipDefaultFilterFlag},
+			expected: nil, tenantCalled: false},
+		{name: "git source builds no zip", args: []string{"--" + commonParams.SourcesFlag, "https://github.com/org/repo.git", "--" + commonParams.DefaultFilterFlag},
+			expected: nil, tenantCalled: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tenantCalled, projectCalled := false, false
+			llmOn := mock.TenantConfigurationMockWrapper{
+				CustomGetTenantConfiguration: func() (*[]*wrappers.TenantConfigurationResponse, *wrappers.WebError, error) {
+					tenantCalled = true
+					config := []*wrappers.TenantConfigurationResponse{
+						{Key: allowAiUsageKey, Value: "true"},
+						{Key: sastFindingsAnalysisKey, Value: "true"},
+						{Key: sastExtendedAnalysisKey, Value: "true"},
+					}
+					return &config, nil, nil
+				},
+			}
+			got := getScanDefaultIncludeFilters(filterFlagsCommand(t, tt.args...), llmOn, projectSettings(&projectCalled), "p1")
+			assert.DeepEqual(t, tt.expected, got)
+			assert.Equal(t, tt.tenantCalled, tenantCalled, "tenant configuration call")
+			assert.Assert(t, !projectCalled, "tenant settings decide here, so the project must not be read")
+		})
+	}
+}
+
+func TestCompressFolder_DefaultFilterFlagLeavesOutLinguistFiles(t *testing.T) {
+	root := writeSizedFiles(t, map[string]int{"Main.java": 5, "deploy.sh": 5, "Jenkinsfile": 5})
+	cmd := filterFlagsCommand(t, "--"+commonParams.SourcesFlag, root, "--"+commonParams.DefaultFilterFlag)
+	filters := getScanDefaultIncludeFilters(cmd, tenantSettings(), projectSettings(new(bool)), "p1")
+	assert.DeepEqual(t, []string{"Main.java"}, compressedEntries(t, root, "", false, filters))
+}
+
+func TestCreateScanDefaultFilter_Wiring(t *testing.T) {
+	execCmdNilAssertion(t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch",
+		"--default-filter",
+	)
+}
+
+func TestCreateScanDefaultFilterWithSkipDefaultFilter_Fails(t *testing.T) {
+	err := execCmdNotNilAssertion(t,
+		"scan", "create", "--project-name", "MOCK", "-s", "data", "-b", "dummy_branch",
+		"--default-filter", "--skip-default-filter",
+	)
+	assert.ErrorContains(t, err, "--default-filter and --skip-default-filter cannot be used together")
 }

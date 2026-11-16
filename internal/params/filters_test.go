@@ -99,6 +99,12 @@ func TestBaseExcludeFiltersUnchanged(t *testing.T) {
 		"!.vscode",
 		"!.idea",
 		"!node_modules",
+		"!*.png",
+		"!*.exe",
+		"!*.jpg",
+		"!*.log",
+		"!*.dll",
+		"!*.pdf",
 	}
 
 	assert.Assert(t, len(BaseExcludeFilters) == len(expectedExclusions), "BaseExcludeFilters length should be %d, got %d", len(expectedExclusions), len(BaseExcludeFilters))

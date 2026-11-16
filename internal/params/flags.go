@@ -198,6 +198,8 @@ const (
 	LogFileConsoleUsage          = "Saves logs to the specified file path as well as to the console"
 	SkipDefaultFilterFlag        = "skip-default-filter"
 	SkipDefaultFilterFlagUsage   = "Skip the default file filter."
+	DefaultFilterFlag            = "default-filter"
+	DefaultFilterFlagUsage       = "Use only the default file filter; Linguist extensions and filenames are not added, even when LLM-based scanning is enabled."
 	ExcludeGitFolderFlag         = "exclude-git-folder"
 	ExcludeGitFolderFlagUsage    = "Exclude .git folder from scan source upload zip."
 	GitIgnoreFileFilterFlag      = "use-gitignore"
