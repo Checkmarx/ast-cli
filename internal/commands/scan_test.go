@@ -5472,7 +5472,7 @@ func TestSbomFileExcludedFromZip_WithCustomOutputName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5503,7 +5503,7 @@ func TestDefaultSbomFileAlwaysExcludedFromZip(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5536,7 +5536,7 @@ func TestSbomFileExcludedFromZip_InSubdirectory(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5575,7 +5575,7 @@ func TestSbomFileExcludedFromZip_AbsoluteSubdirWithCustomName(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5635,10 +5635,10 @@ func cleanupMockAccessToken() {
 // --skip-default-filter tests
 
 func TestGetFilters_SkipDefaultFilter(t *testing.T) {
-	assert.DeepEqual(t, getIncludeFilters("*.foo", true), []string{"*.foo"})
+	assert.DeepEqual(t, getIncludeFilters("*.foo", true, commonParams.BaseIncludeFilters), []string{"*.foo"})
 	assert.DeepEqual(t, getExcludeFilters("!bar", true), []string{"!bar"})
 
-	includeDefault := getIncludeFilters("*.foo", false)
+	includeDefault := getIncludeFilters("*.foo", false, commonParams.BaseIncludeFilters)
 	assert.Assert(t, slices.Contains(includeDefault, "*.go"))
 	assert.Assert(t, slices.Contains(includeDefault, "*.foo"))
 
@@ -5660,7 +5660,7 @@ func TestCompressFolder_DefaultBehaviorUnchanged(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5681,7 +5681,7 @@ func TestCompressFolder_SkipDefaultFilter(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, true, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5711,7 +5711,7 @@ func TestCompressFolder_SkipDefaultFilter_WithAntFilterExclude(t *testing.T) {
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!excluded_by_ant/**"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5732,7 +5732,7 @@ func TestCompressFolder_SkipDefaultFilter_WithAntFilterIncludeOnly(t *testing.T)
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"**/*.customext"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, true, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -5758,7 +5758,7 @@ func TestCompressFolder_DefaultFilters_WithAntFilter(t *testing.T) {
 	antMatcher, matcherErr := filtering.NewAntMatcher([]string{"!keep_dir/**"})
 	assert.NilError(t, matcherErr)
 
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", antMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -6181,7 +6181,7 @@ func TestCompressFolder_GitExcluded_WhenContributorsCsvEnabled(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, true)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, true, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -6202,7 +6202,7 @@ func TestCompressFolder_GitIncluded_WhenContributorsCsvDisabled(t *testing.T) {
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -6226,7 +6226,7 @@ func TestCompressFolder_ContributorsFilesForceIncluded_WhenEnabled(t *testing.T)
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, true, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -6250,7 +6250,7 @@ func TestCompressFolder_ContributorsFilesNotIncluded_WhenDisabled(t *testing.T) 
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, false, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 
@@ -6278,7 +6278,7 @@ func TestCompressFolder_StaleFilesNotIncluded_WhenGenerationFailedThisRun(t *tes
 
 	noopMatcher, matcherErr := filtering.NewAntMatcher(nil)
 	assert.NilError(t, matcherErr)
-	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, true)
+	zipPath, err := compressFolder(sbomTestSourceDir(projectDir), "", "", "", noopMatcher, false, false, true, commonParams.BaseIncludeFilters)
 	assert.NilError(t, err)
 	defer func() { _ = os.Remove(zipPath) }()
 

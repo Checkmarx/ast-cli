@@ -77,7 +77,7 @@ func TestAddDirFilesIncludesLinguistFiles(t *testing.T) {
 	zw := zip.NewWriter(&out)
 
 	err := addDirFiles(zw, "", root+string(os.PathSeparator), commonParams.BaseExcludeFilters, commonParams.BaseIncludeFilters,
-		filtering.NopMatcher{}, false)
+		commonParams.BaseIncludeFilters, filtering.NopMatcher{}, false)
 	assert.NilError(t, err)
 	assert.NilError(t, zw.Close())
 
@@ -86,12 +86,12 @@ func TestAddDirFilesIncludesLinguistFiles(t *testing.T) {
 
 func TestIsDirEmptyWithLinguistFiles(t *testing.T) {
 	onlyLinguist := writeLinguistTree(t, []string{"logo.png", "ci/deploy.sh"})
-	empty, err := isDirEmpty(onlyLinguist, commonParams.BaseExcludeFilters, commonParams.BaseIncludeFilters, filtering.NopMatcher{})
+	empty, err := isDirEmpty(onlyLinguist, commonParams.BaseExcludeFilters, commonParams.BaseIncludeFilters, commonParams.BaseIncludeFilters, filtering.NopMatcher{})
 	assert.NilError(t, err)
 	assert.Assert(t, !empty, "a Linguist-only file must count as scannable content")
 
 	onlyBinary := writeLinguistTree(t, []string{"logo.png", "data.bin", "node_modules/dep.sh"})
-	empty, err = isDirEmpty(onlyBinary, commonParams.BaseExcludeFilters, commonParams.BaseIncludeFilters, filtering.NopMatcher{})
+	empty, err = isDirEmpty(onlyBinary, commonParams.BaseExcludeFilters, commonParams.BaseIncludeFilters, commonParams.BaseIncludeFilters, filtering.NopMatcher{})
 	assert.NilError(t, err)
 	assert.Assert(t, empty, "files outside the filters and excluded directories must not count")
 }

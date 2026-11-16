@@ -65,8 +65,9 @@ func TestScanWithConservativeFiltering_VerifyGenericPatternsExcluded(t *testing.
 	assert.NilError(t, err, "Scan with conservative filtering should succeed")
 }
 
-// TestScanWithLinguistFilters_VerifyFilesUploaded asserts that Linguist extensions and filenames from the default
-// include filter reach the source zip, while files outside the filter are still left out.
+// TestScanWithLinguistFilters_VerifyFilesUploaded asserts that Linguist extensions and filenames reach the source zip
+// only when the tenant or project has LLM-based scanning enabled, that SAST files are always uploaded, and that files
+// outside the filter are still left out.
 func TestScanWithLinguistFilters_VerifyFilesUploaded(t *testing.T) {
 	sourceDir := t.TempDir()
 	files := map[string]string{
@@ -103,8 +104,15 @@ func TestScanWithLinguistFilters_VerifyFilesUploaded(t *testing.T) {
 	assert.NilError(t, err, "Scan with Linguist files should succeed")
 
 	logText := buf.String()
-	for _, name := range []string{"deploy.sh", "build.ps1", "Jenkinsfile", "Makefile", "Main.java"} {
-		assert.Assert(t, hasZipLogLine(logText, "Included: ", name), "%s should be included by the default filter", name)
+	assert.Assert(t, hasZipLogLine(logText, "Included: ", "Main.java"), "SAST files should always be included by the default filter")
+
+	llmEnabled := strings.Contains(logText, "LLM-based scanning is enabled: adding Linguist patterns")
+	linguistPrefix := "Excluded: "
+	if llmEnabled {
+		linguistPrefix = "Included: "
+	}
+	for _, name := range []string{"deploy.sh", "build.ps1", "Jenkinsfile", "Makefile"} {
+		assert.Assert(t, hasZipLogLine(logText, linguistPrefix, name), "%s should be %s (LLM-based scanning enabled: %v)", name, linguistPrefix, llmEnabled)
 	}
 	for _, name := range []string{"logo.png", "notes.bak"} {
 		assert.Assert(t, hasZipLogLine(logText, "Excluded: ", name), "%s should be excluded by the default filter", name)

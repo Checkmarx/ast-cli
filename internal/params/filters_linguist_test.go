@@ -82,3 +82,19 @@ func TestLinguistFiltersSamples(t *testing.T) {
 		assert.Assert(t, slices.Contains(BaseIncludeFilters, f), "%q should be in BaseIncludeFilters", f)
 	}
 }
+
+func TestDefaultIncludeFilters(t *testing.T) {
+	assert.Assert(t, slices.Equal(BaseIncludeFilters, DefaultIncludeFilters(true)), "LLM-based scanning on uses the full default filter")
+	assert.Assert(t, slices.Equal(sastIncludeFilters, DefaultIncludeFilters(false)), "LLM-based scanning off uses the SAST patterns only")
+	assert.Equal(t, len(SastIncludeFilters), cap(SastIncludeFilters), "SastIncludeFilters should be clipped so appends never alias")
+	for _, f := range linguistExtensionFilters {
+		assert.Assert(t, !slices.Contains(DefaultIncludeFilters(false), f), "%q must not be in the SAST-only filter", f)
+	}
+}
+
+func TestScaFileSuffixesAreLowerCase(t *testing.T) {
+	for _, s := range ScaFileSuffixes {
+		assert.Assert(t, strings.HasPrefix(s, "."), "SCA suffix %q must start with a dot", s)
+		assert.Equal(t, strings.ToLower(s), s, "SCA suffix %q must be lower-case", s)
+	}
+}

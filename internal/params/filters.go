@@ -5,6 +5,31 @@ import "slices"
 // BaseIncludeFilters is the default include filter: the SAST patterns followed by the Linguist extension and filename patterns.
 var BaseIncludeFilters = slices.Clip(slices.Concat(sastIncludeFilters, linguistExtensionFilters, linguistFilenameFilters))
 
+// SastIncludeFilters is the default include filter without the Linguist patterns, used when LLM-based scanning is off.
+var SastIncludeFilters = slices.Clip(sastIncludeFilters)
+
+// ScaFileSuffixes are the files that belong to the SCA engine; they are exempt from the default filter size limit.
+// Kept in step with the SCA group extensions in repostore.
+var ScaFileSuffixes = []string{
+	".cxsca-results.json",
+	".cxsca-sast-results.json",
+	".cxsca-topology-results.json",
+	".cxsca.sig",
+	".jar",
+	".war",
+	".ear",
+	".zip",
+	".gz",
+}
+
+// DefaultIncludeFilters returns the default include filter; the Linguist patterns are added only when LLM-based scanning is enabled.
+func DefaultIncludeFilters(includeLinguist bool) []string {
+	if includeLinguist {
+		return BaseIncludeFilters
+	}
+	return SastIncludeFilters
+}
+
 var sastIncludeFilters = []string{
 	"*.javasln",
 	"*.project",
@@ -196,6 +221,12 @@ var BaseExcludeFilters = []string{
 	"!.vscode",
 	"!.idea",
 	"!node_modules",
+	"*.png",
+	"*.exe",
+	"*.jpg",
+	"*.log",
+	"*.dll",
+	"*.pdf",
 }
 
 var KicsBaseFilters = []string{
