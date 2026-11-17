@@ -1,12 +1,6 @@
 package wrappers
 
-type EventAttributes struct {
-	InstallationID   string `json:"installationId"`
-	AuthMethod       string `json:"authMethod"`
-	VulnerabilityID  string `json:"vulnerabilityId"`
-	RemediationMode  string `json:"remediationMode"`
-	AiAgentSessionId string `json:"aiAgentSessionId"`
-}
+type EventAttributes map[string]string
 
 type DataForAITelemetry struct {
 	AIProvider       string           `json:"aiProvider"`

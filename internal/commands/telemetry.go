@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"strings"
+
 	"github.com/MakeNowJust/heredoc"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
@@ -28,7 +30,7 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 		Long:  "Collects telemetry data for user interactions related to AI features.",
 		Example: heredoc.Doc(
 			`
-			$ cx telemetry ai --ai-provider <AI Provider> --problem-severity <Problem Severity> --type<Event Type> --sub-type<Event Name> --agent <Agent> --engine <Engine>
+			$ cx telemetry ai --ai-provider <AI Provider> --problem-severity <Problem Severity> --type<Event Type> --sub-type<Event Name> --agent <Agent> --engine <Engine> --event-attributes "apiVersion=v2;vulnerabilityId=CVE-2021-44228;remediationMode=DevAssist"
 		`,
 		),
 
@@ -49,14 +51,39 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.CxPluginVersionFlag, "", "CX Plugin Version")
 	telemetryAICmd.PersistentFlags().String(params.PluginTypeFlag, "", "Plugin Type")
 	telemetryAICmd.PersistentFlags().String(params.RepoURLFlag, "", "Repository URL")
-	telemetryAICmd.PersistentFlags().String(params.InstallationIDFlag, "", "Installation ID")
-	telemetryAICmd.PersistentFlags().String(params.AuthMethodFlag, "", "Auth Method")
-	telemetryAICmd.PersistentFlags().String(params.VulnerabilityIDFlag, "", "Vulnerability ID")
-	telemetryAICmd.PersistentFlags().String(params.RemediationModeFlag, "", "Remediation Mode")
-	telemetryAICmd.PersistentFlags().String(params.AiAgentSessionIdFlag, "", "AI Agent Session ID")
+	telemetryAICmd.PersistentFlags().String(params.EventAttributesFlag, "", "Event Attributes in key=value;key=value format (e.g., apiVersion=v2;vulnerabilityId=CVE-2021-44228;remediationMode=DevAssist)")
 	telemetryAICmd.PersistentFlags().String(params.ApiVersionFlag, "", "API Version")
 
 	return telemetryAICmd
+}
+
+func parseEventAttributes(eventAttributesStr string) *wrappers.EventAttributes {
+	if eventAttributesStr == "" {
+		return nil
+	}
+
+	attrs := make(wrappers.EventAttributes)
+	pairs := strings.Split(eventAttributesStr, ";")
+
+	for _, pair := range pairs {
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+
+		if key != "" {
+			attrs[key] = value
+		}
+	}
+
+	if len(attrs) == 0 {
+		return nil
+	}
+
+	return &attrs
 }
 
 func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Command, []string) error {
@@ -75,11 +102,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		cxPluginVersion, _ := cmd.Flags().GetString(params.CxPluginVersionFlag)
 		pluginType, _ := cmd.Flags().GetString(params.PluginTypeFlag)
 		repoURL, _ := cmd.Flags().GetString(params.RepoURLFlag)
-		installationID, _ := cmd.Flags().GetString(params.InstallationIDFlag)
-		authMethod, _ := cmd.Flags().GetString(params.AuthMethodFlag)
-		vulnerabilityID, _ := cmd.Flags().GetString(params.VulnerabilityIDFlag)
-		remediationMode, _ := cmd.Flags().GetString(params.RemediationModeFlag)
-		aiAgentSessionIdFlag, _ := cmd.Flags().GetString(params.AiAgentSessionIdFlag)
+		eventAttributesStr, _ := cmd.Flags().GetString(params.EventAttributesFlag)
 		apiVersion, _ := cmd.Flags().GetString(params.ApiVersionFlag)
 
 		uniqueID := wrappers.GetUniqueID()
@@ -91,16 +114,8 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		} else {
 			sessionID = viper.GetString(params.SessionIDConfigKey)
 		}
-		var eventAttrs *wrappers.EventAttributes
-		if installationID != "" || authMethod != "" || vulnerabilityID != "" || remediationMode != "" || aiAgentSessionIdFlag != "" {
-			eventAttrs = &wrappers.EventAttributes{
-				InstallationID:   installationID,
-				AuthMethod:       authMethod,
-				VulnerabilityID:  vulnerabilityID,
-				RemediationMode:  remediationMode,
-				AiAgentSessionId: aiAgentSessionIdFlag,
-			}
-		}
+
+		eventAttrs := parseEventAttributes(eventAttributesStr)
 
 		err := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
 			AIProvider:      aiProvider,
