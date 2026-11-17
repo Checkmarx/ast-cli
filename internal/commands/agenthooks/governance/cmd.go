@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/governance/telemetry"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -65,7 +67,45 @@ func GovernanceDispatchCommands() []*cobra.Command {
 			},
 		})
 	}
+	cmds = append(cmds, newTelemetryWatchCommand())
 	return cmds
+}
+
+// telemetryWatchRoute is the hidden subcommand a PreToolUse hook spawns to
+// observe the OS process table while a shell command runs.
+const telemetryWatchRoute = "gov-telemetry-watch"
+
+// newTelemetryWatchCommand builds the detached process-telemetry watcher.
+//
+// Unlike the gov-claude-* routes this is not an agenthooks route: no agent ever
+// invokes it and it reads no hook JSON from stdin. It is spawned by our own
+// PreToolUse handler, which cannot do the watching itself — the hook must return
+// within milliseconds, while a process only becomes observable afterwards.
+func newTelemetryWatchCommand() *cobra.Command {
+	var dir, toolUseID, window string
+	cmd := &cobra.Command{
+		Use:               telemetryWatchRoute,
+		Short:             "Observe OS process state for a governance tool call (internal)",
+		Hidden:            true,
+		PersistentPreRunE: func(*cobra.Command, []string) error { return nil },
+		RunE: func(_ *cobra.Command, _ []string) error {
+			if toolUseID == "" {
+				return errors.New("governance telemetry: --tool-use-id is required")
+			}
+			if dir == "" {
+				dir = telemetryDir()
+			}
+			d, err := time.ParseDuration(window)
+			if err != nil || d <= 0 {
+				d = telemetry.DefaultWindow
+			}
+			return telemetry.RunProcessWatcher(dir, toolUseID, d)
+		},
+	}
+	cmd.Flags().StringVar(&dir, "telemetry-dir", "", "directory holding telemetry signature and verdict files")
+	cmd.Flags().StringVar(&toolUseID, "tool-use-id", "", "tool use id to observe")
+	cmd.Flags().StringVar(&window, "window", telemetry.DefaultWindow.String(), "how long to observe before concluding")
+	return cmd
 }
 
 // NewGovernanceCommand creates the `cx hooks governance` management subcommand tree.

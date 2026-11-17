@@ -41,6 +41,18 @@ func TestNormalizeTool_BashShell(t *testing.T) {
 	assert.Empty(t, ti.Paths)
 }
 
+func TestNormalizeTool_PowerShellShell(t *testing.T) {
+	// The PowerShell tool reaches the same OS shell surface as Bash, so shell
+	// policies must apply to it and its command must be available to telemetry.
+	input := json.RawMessage(`{"command": "Remove-Item -Recurse -Force ./tmp"}`)
+	ti := normalizeTool("PowerShell", input)
+	assert.Equal(t, "shell", ti.Category)
+	assert.Equal(t, "PowerShell", ti.Name)
+	assert.Equal(t, "PowerShell", ti.RawName)
+	assert.Equal(t, "Remove-Item -Recurse -Force ./tmp", ti.Command)
+	assert.Empty(t, ti.Paths)
+}
+
 func TestNormalizeTool_MCPTool(t *testing.T) {
 	ti := normalizeTool("mcp__github__create_issue", json.RawMessage(`{}`))
 	assert.Equal(t, "mcp", ti.Category)

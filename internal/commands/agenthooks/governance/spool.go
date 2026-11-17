@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 )
 
@@ -62,6 +63,11 @@ func FlushOnce(serverURL, token string, timeout time.Duration) {
 	if err != nil || len(files) == 0 {
 		return
 	}
+	// Glob sorts by filename, which is "evt_<random-uuid>.json" — unrelated to
+	// write order. Sort by mtime so dependent events (e.g. session.start before
+	// session.hook_inventory) are batched and processed in the order they
+	// actually happened; processOne relies on that order to resolve FKs.
+	sortFilesByModTime(files)
 
 	for i := 0; i < len(files); i += spoolBatchSize {
 		if !deadline.IsZero() && time.Now().After(deadline) {
@@ -75,6 +81,20 @@ func FlushOnce(serverURL, token string, timeout time.Duration) {
 			log.Printf("governance: spool flush error: %v", err)
 		}
 	}
+}
+
+// sortFilesByModTime orders spool files oldest-first. Files with an
+// unreadable mtime sort last rather than aborting the flush.
+func sortFilesByModTime(files []string) {
+	modTime := make(map[string]time.Time, len(files))
+	for _, f := range files {
+		if info, err := os.Stat(f); err == nil {
+			modTime[f] = info.ModTime()
+		}
+	}
+	sort.Slice(files, func(i, j int) bool {
+		return modTime[files[i]].Before(modTime[files[j]])
+	})
 }
 
 // flushBatch reads the given spool files, POSTs them to the backend, and

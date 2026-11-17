@@ -11,7 +11,38 @@ import (
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/Checkmarx/ast-cx-hooks/claude"
 	"github.com/Checkmarx/ast-cx-hooks/cursor"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/governance/telemetry"
 )
+
+// startProcessTelemetry launches a detached watcher that records whether the
+// shell command a tool call was about to run actually appears in the process
+// table. Only shell calls get one: everything else is either confirmable from
+// persistent filesystem state or has no OS-visible signal at all.
+//
+// Failures are logged and swallowed — governance is fail-open, and losing
+// telemetry only means the sweeper falls back to its old heuristic.
+func startProcessTelemetry(toolUseID string, tool ToolInfo) {
+	if tool.Category != "shell" || tool.Command == "" {
+		return
+	}
+	exePath, err := os.Executable()
+	if err != nil {
+		log.Printf("governance: telemetry watcher not started, cannot resolve cx path: %v", err)
+		return
+	}
+	workDir, _ := os.Getwd()
+	sig := telemetry.ProcessSignature{
+		Command:   tool.Command,
+		WorkDir:   workDir,
+		StartedAt: time.Now().UTC(),
+	}
+	if err := telemetry.SpawnProcessWatcher(
+		exePath, telemetryDir(), sanitizeID(toolUseID), sig, telemetry.DefaultWindow,
+		"hooks", telemetryWatchRoute,
+	); err != nil {
+		log.Printf("governance: telemetry watcher failed to start for tool_use %s: %v", toolUseID, err)
+	}
+}
 
 // safeIDPattern allows only alphanumeric, dash, and underscore — characters a
 // standards-compliant UUID or opaque token would contain. Prevents a crafted
@@ -209,7 +240,7 @@ func handleClaudePreToolUse(ev claude.PreToolUseEvent, cfg GovernanceConfig) cla
 
 	switch decision.Action {
 	case "BLOCK":
-		return claude.DenyToolUse(decision.Message())
+		return claude.DenyToolUse("[" + ev.ToolName + " blocked by governance] " + decision.Message())
 	case "ALERT":
 		savePendingAlert(ev.ToolUseID, pendingAlertPayload{
 			Decision:  decision,
@@ -220,12 +251,18 @@ func handleClaudePreToolUse(ev claude.PreToolUseEvent, cfg GovernanceConfig) cla
 	default:
 		// Our verdict is ALLOW — record pre-hook state so the correlation sweeper can
 		// detect if another hook blocked this tool call (PostToolUse won't fire if so).
+		// The OS baseline is captured here too: after the tool call the "before"
+		// state is gone, and a short-lived process leaves no trace to sample later.
 		writePreHookState(ev.ToolUseID, preHookState{
-			ToolUseID: ev.ToolUseID,
-			ToolName:  ev.ToolName,
-			SessionID: ev.SessionID,
-			Timestamp: time.Now().UTC(),
+			ToolUseID:      ev.ToolUseID,
+			ToolName:       ev.ToolName,
+			SessionID:      ev.SessionID,
+			Timestamp:      time.Now().UTC(),
+			ToolCategory:   event.Tool.Category,
+			FileSnapshots:  telemetry.SnapshotAll(event.Tool.Paths),
+			TranscriptPath: ev.TranscriptPath,
 		})
+		startProcessTelemetry(ev.ToolUseID, event.Tool)
 		return claude.ApproveToolUse()
 	}
 }
@@ -235,23 +272,47 @@ func handleClaudePostToolUse(ev claude.PostToolUseEvent, cfg GovernanceConfig) c
 	// to confirm the tool actually ran (i.e., no other hook blocked it).
 	markPostToolUseSeen(ev.ToolUseID)
 
-	// Mechanism B: read cx-guardrails WARN verdict written to .hook-verdicts/<id>.json.
-	// The guardrail hook writes this file when it issues a WARN/ALERT on a tool call.
-	if verdict := readAndDeleteHookVerdict(ev.ToolUseID); verdict != nil {
-		// verdict.Event is "PreToolUse:Bash" or "PreToolUse:Write" — extract the blocked tool.
-		blockedTool := ev.ToolName // fall back to the tool name from the PostToolUse event
+	// The marker settles it: no telemetry verdict is needed, so retire the
+	// watcher's artifacts rather than leaving them for the stale purge.
+	telemetry.Cleanup(telemetryDir(), sanitizeID(ev.ToolUseID))
+
+	// This call ran, so any third-party hook that weighed in allowed it, asked
+	// the user, or failed. The transcript has each verdict verbatim — record the
+	// ones that carry meaning.
+	transcriptFoundHook := observeThirdPartyDecisions(ev.TranscriptPath, ev.ToolUseID, ev.SessionID, ev.ToolName, cfg)
+
+	// The transcript only sees hooks. Some blockers act below that — antivirus,
+	// a firewall, an OS permission denial — and never register with Claude Code
+	// at all. Those still make the call fail, so its own response carries the
+	// evidence. Only worth checking when the transcript came up empty: if a hook
+	// already spoke, it is the stronger answer and this would only add noise.
+	if !transcriptFoundHook {
+		observeResponseSignatureBlock(ev, normalizeTool(ev.ToolName, ev.ToolInput).Category, cfg)
+	}
+
+	// Mechanism B: read a WARN/BLOCK verdict written to .hook-verdicts/<id>.json
+	// by a cooperating hook (cx-guardrails). This is a side file, not the
+	// transcript and not our own PreToolUse evaluation — source of truth for a
+	// decision is only those two. Record it for visibility only: no
+	// ThirdPartyTool, no ThirdPartyAction, no Decision.Action, and no fallback
+	// name when the file doesn't supply one.
+	//
+	// Always read-and-delete so the file doesn't linger, but only emit when the
+	// transcript didn't already account for this tool call: cx-guardrails is a
+	// hook like any other, so the transcript already carries its command and
+	// words too (see observeThirdPartyDecisions) — emitting both would report
+	// the same hook's verdict on the same tool call twice.
+	verdict := readAndDeleteHookVerdict(ev.ToolUseID)
+	if verdict != nil && !transcriptFoundHook {
+		blockedTool := ev.ToolName
 		if verdict.Event != "" {
 			if idx := len("PreToolUse:"); len(verdict.Event) > idx {
 				blockedTool = verdict.Event[idx:]
 			}
 		}
-		hookName := verdict.Source
-		if hookName == "" {
-			hookName = "cx-guardrails" // Mechanism B is always cx-guardrails
-		}
 		agentMsg := verdict.Reason
 		if agentMsg == "" {
-			agentMsg = hookName + " " + verdict.Verdict + "ed " + blockedTool
+			agentMsg = "No verdict verified for " + blockedTool + "; cause unconfirmed"
 		}
 		thirdPartyEvent := ActivityEvent{
 			EventID:   newEventID(),
@@ -267,12 +328,8 @@ func handleClaudePostToolUse(ev claude.PostToolUseEvent, cfg GovernanceConfig) c
 				Name:     blockedTool,
 				RawName:  blockedTool,
 			},
-			ThirdPartyTool:        hookName,
-			ThirdPartyAction:      verdict.Verdict,
-			AttributionConfidence: "definitive",
+			DetectionMethod: telemetry.MethodHookCorrelation,
 			Decision: DecisionInfo{
-				// Map verdict to action: block→BLOCK, anything else (warn)→ALERT
-				Action:       verdictToAction(verdict.Verdict),
 				AgentMessage: agentMsg,
 			},
 		}
@@ -591,16 +648,6 @@ func savePendingAlert(toolUseID string, payload pendingAlertPayload) {
 	path := filepath.Join(dir, safeID+".json")
 	if err := os.WriteFile(path, data, 0o600); err != nil {
 		log.Printf("governance: pending alert write error: %v", err)
-	}
-}
-
-// verdictToAction converts a third-party hook verdict string to a governance action.
-func verdictToAction(verdict string) string {
-	switch verdict {
-	case "block", "BLOCK", "deny", "DENY":
-		return "BLOCK"
-	default:
-		return "ALERT"
 	}
 }
 

@@ -83,6 +83,10 @@ func correlationDir() string { return filepath.Join(govBaseDir(), ".correlation"
 
 func hookVerdictsDir() string { return filepath.Join(govBaseDir(), ".hook-verdicts") }
 
+// telemetryDir holds OS-level observation state: process signatures written by
+// PreToolUse and the verdicts detached watchers leave behind for the sweeper.
+func telemetryDir() string { return filepath.Join(govBaseDir(), ".telemetry") }
+
 func sessionStateDir() string { return filepath.Join(govBaseDir(), ".session-state") }
 
 // ensureDir creates the directory if it does not exist.

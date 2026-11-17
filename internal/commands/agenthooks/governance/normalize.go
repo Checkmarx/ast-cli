@@ -73,8 +73,18 @@ type ActivityEvent struct {
 	ModelInfo *ModelDetectionResult `json:"modelInfo,omitempty"`
 	// Third-party enforcement fields — set when another hook's action is detected.
 	ThirdPartyTool           string `json:"thirdPartyTool,omitempty"`
-	ThirdPartyAction         string `json:"thirdPartyAction,omitempty"`           // "block" | "warn"
+	ThirdPartyAction         string `json:"thirdPartyAction,omitempty"`           // "block" | "warn" | "allow" | "ask" | "error"
 	AttributionConfidence    string `json:"attributionConfidence,omitempty"`      // "definitive" | "candidate"
+	// ThirdPartyReason is what the other tool actually said — its own words,
+	// read from the agent transcript rather than inferred by us.
+	ThirdPartyReason         string `json:"thirdPartyReason,omitempty"`
+	// ThirdPartyHookEvent is the hook that produced the decision, e.g.
+	// "PreToolUse:Bash" — identifies which tool call the third party ruled on.
+	ThirdPartyHookEvent      string `json:"thirdPartyHookEvent,omitempty"`
+	// DetectionMethod records how the third-party verdict was reached:
+	// "telemetry" (OS-level ground truth — process/file observation) or
+	// "hook_correlation" (marker-timing heuristic / cooperating hook verdict).
+	DetectionMethod          string `json:"detectionMethod,omitempty"`
 }
 
 // DecisionInfo is the policy evaluation result serialized into an ActivityEvent.
@@ -147,11 +157,11 @@ func normalizeTool(toolName string, rawInput json.RawMessage) ToolInfo {
 			RawName:  toolName,
 			Paths:    extractPaths(rawInput),
 		}
-	case toolName == "Bash":
+	case isShellTool(toolName):
 		return ToolInfo{
 			Category: "shell",
-			Name:     "Bash",
-			RawName:  "Bash",
+			Name:     toolName,
+			RawName:  toolName,
 			Command:  extractCommand(rawInput),
 		}
 	case strings.HasPrefix(toolName, "mcp__"):
@@ -182,6 +192,21 @@ func normalizeTool(toolName string, rawInput json.RawMessage) ToolInfo {
 	default:
 		return ToolInfo{Category: "other", Name: toolName, RawName: toolName}
 	}
+}
+
+// isShellTool returns true for tools that execute a command through an OS shell.
+//
+// All of them carry the command in a "command" field, so one branch handles the
+// lot. Treating these uniformly matters twice over: shell policies apply to
+// every shell an agent can reach (a rule blocking `rm -rf` should not be
+// sidestepped by choosing the PowerShell tool over Bash), and process telemetry
+// can confirm whether the command actually ran.
+func isShellTool(name string) bool {
+	switch name {
+	case "Bash", "PowerShell":
+		return true
+	}
+	return false
 }
 
 // isFilesystemTool returns true for Claude's built-in file operation tools.
