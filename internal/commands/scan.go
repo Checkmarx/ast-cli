@@ -1666,7 +1666,14 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool) (string, error) {
+// compressFolder zips sourceDir. defaultIncludeFilters is the default include filter in effect: the SAST patterns,
+// plus the Linguist patterns when LLM-based scanning is enabled.
+func compressFolder(
+	sourceDir, filter, userIncludeFilter, scaResolver string,
+	antMatcher filtering.Matcher,
+	skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool,
+	defaultIncludeFilters []string,
+) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1676,7 +1683,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	zipWriter := zip.NewWriter(outputFile)
 
 	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
-	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter, defaultIncludeFilters)
 
 	// First check if the directory is empty or all files are filtered out
 	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
@@ -1785,12 +1792,12 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 	return empty, err
 }
 
-func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
+func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool, defaultIncludeFilters []string) []string {
 	if skipDefaultFilter {
 		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
 		return buildFilters([]string{}, userIncludeFilter)
 	}
-	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
+	return buildFilters(defaultIncludeFilters, userIncludeFilter)
 }
 
 func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
@@ -2166,8 +2173,12 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
-	url, zipFilePath string, err error) {
+func getUploadURLFromSource(
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	defaultIncludeFilters []string,
+) (url, zipFilePath string, err error) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -2359,7 +2370,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 						includeGeneratedCsvJson = true
 					}
 				}
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder)
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher,
+					skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder, defaultIncludeFilters)
 
 				// Clean up generated contributors files after successful zip creation
 				if dirPathErr == nil && includeGeneratedCsvJson {
@@ -2842,7 +2854,9 @@ func runCreateScanCommand(
 		// those apply when the scan is not submitted (and it avoids an unnecessary policy
 		// permission API call for the no-scan case).
 		if noScan {
-			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+			// No project is created for --no-scan, so only the tenant-level settings apply.
+			defaultIncludeFilters := getScanDefaultIncludeFilters(cmd, tenantWrapper, projectsWrapper, "")
+			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 			defer cleanUpTempZip(zipFilePath)
 			if handlerErr != nil {
 				return errors.Errorf("%s", handlerErr)
@@ -3014,7 +3028,8 @@ func createScanModel(
 	}
 
 	// Set up the scan handler (either git or upload)
-	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+	defaultIncludeFilters := getScanDefaultIncludeFilters(cmd, tenantWrapper, projectsWrapper, scanModel.Project.ID)
+	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 	if err != nil {
 		return nil, zipFilePath, err
 	}
@@ -3041,7 +3056,27 @@ func getUploadType(cmd *cobra.Command) string {
 	return "upload"
 }
 
-func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
+// getScanDefaultIncludeFilters resolves the default include filter for a local source; git sources and
+// --skip-default-filter never build a filtered zip, so the settings are not fetched for them.
+func getScanDefaultIncludeFilters(
+	cmd *cobra.Command,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	projectID string,
+) []string {
+	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
+	if skipDefaultFilter || getUploadType(cmd) == git {
+		return nil
+	}
+	return resolveDefaultIncludeFilters(tenantWrapper, projectsWrapper, projectID)
+}
+
+func setupScanHandler(
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	defaultIncludeFilters []string,
+) (
 	wrappers.ScanHandler,
 	string,
 	error,
@@ -3058,7 +3093,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 	} else {
 		var err error
 		var uploadURL string
-		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper, featureFlagsWrapper)
+		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 		if err != nil {
 			return scanHandler, zipFilePath, err
 		}

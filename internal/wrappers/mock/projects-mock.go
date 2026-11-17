@@ -9,6 +9,9 @@ import (
 
 type ProjectsMockWrapper struct{}
 
+// ProjectConfiguration is returned by GetConfiguration; tests set it to simulate project-level settings.
+var ProjectConfiguration []wrappers.ProjectConfiguration
+
 func (p *ProjectsMockWrapper) Create(model *wrappers.Project) (
 	*wrappers.ProjectResponseModel,
 	*wrappers.ErrorModel,
@@ -35,6 +38,11 @@ func (p *ProjectsMockWrapper) Update(projectID string, model *wrappers.Project) 
 func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuration []wrappers.ProjectConfiguration) (*wrappers.ErrorModel, error) {
 	fmt.Println("Called Update Configuration for project", projectID, " in ProjectsMockWrapper with the configuration ", configuration)
 	return nil, nil
+}
+
+func (p *ProjectsMockWrapper) GetConfiguration(projectID string) ([]wrappers.ProjectConfiguration, *wrappers.ErrorModel, error) {
+	fmt.Println("Called Get Configuration for project", projectID, "in ProjectsMockWrapper")
+	return ProjectConfiguration, nil, nil
 }
 
 func (p *ProjectsMockWrapper) Get(params map[string]string) (
