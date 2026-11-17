@@ -33,3 +33,22 @@ CVE-2026-33997
 # Impact: CLI does not perform OpenPGP signing/verification.
 # Status: Risk accepted
 GO-2026-5932
+
+# ============================================================================
+# NEWLY DISCLOSED - Waiting on upstream fix
+# ============================================================================
+
+# CVE-2026-84243: glibc arbitrary code execution via directory traversal in LANGUAGE env var
+# Severity: MEDIUM
+# Component: glibc, glibc-2.44-locale-posix, ld-linux, libcrypt1 (checkmarx/bash base image)
+# Current Version: 2.44-r14 (fixed in 2.44-r16)
+# Reason: OS package inside the checkmarx/bash base image; no newer image is published yet.
+# Status: Temporary ignore - remove once the base image is rebuilt with glibc >= 2.44-r16
+CVE-2026-84243
+
+# CVE-2026-97054: Go stdlib net/http HTTP/1 MaxBytesReader limit handling
+# Severity: UNKNOWN
+# Component: stdlib (Go v1.26.10)
+# Reason: Fixed in Go 1.26.11 / 1.27.4.
+# Status: Temporary ignore - remove once go.mod / CI toolchain is bumped to Go >= 1.26.11
+CVE-2026-97054
