@@ -84,6 +84,7 @@ var (
 	ConfigFilePathKey                   = strings.ToLower(ConfigFilePathEnv)
 	RealtimeScannerPathKey              = strings.ToLower(RealtimeScannerPathEnv)
 	UniqueIDConfigKey                   = strings.ToLower(UniqueIDEnv)
+	SessionIDConfigKey                  = strings.ToLower(SessionIDEnv)
 	StartMultiPartUploadPathKey         = strings.ToLower(StartMultiPartUploadPathEnv)
 	MultipartPresignedPathKey           = strings.ToLower(MultipartPresignedPathEnv)
 	CompleteMultiPartUploadPathKey      = strings.ToLower(CompleteMultipartUploadPathEnv)

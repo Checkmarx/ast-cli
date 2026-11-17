@@ -1,17 +1,34 @@
 package wrappers
 
+type EventAttributes struct {
+	InstallationID   string `json:"installationId"`
+	AuthMethod       string `json:"authMethod"`
+	VulnerabilityID  string `json:"vulnerabilityId"`
+	RemediationMode  string `json:"remediationMode"`
+	AiAgentSessionId string `json:"aiAgentSessionId"`
+}
+
 type DataForAITelemetry struct {
-	AIProvider       string `json:"aiProvider"`
-	ProblemSeverity  string `json:"problemSeverity"`
-	Type             string `json:"type"`
-	SubType          string `json:"subType"`
-	Agent            string `json:"agent"`
-	Engine           string `json:"engine"`
-	ScanType         string `json:"scanType"`
-	Status           string `json:"status"`
-	TotalCount       int    `json:"totalCount"`
-	UniqueID         string `json:"uniqueId"`
-	AiAgentSessionId string `json:"aiAgentSessionId,omitempty"`
+	AIProvider       string           `json:"aiProvider"`
+	ProblemSeverity  string           `json:"problemSeverity"`
+	Type             string           `json:"type"`
+	SubType          string           `json:"subType"`
+	Agent            string           `json:"agent"`
+	AgentVersion     string           `json:"agentVersion"`
+	CxPluginVersion  string           `json:"cxPluginVersion"`
+	PluginType       string           `json:"pluginType"`
+	Engine           string           `json:"engine"`
+	ScanType         string           `json:"scanType"`
+	Status           string           `json:"status"`
+	StatusResult     string           `json:"statusResult"`
+	APIVersion       string           `json:"apiVersion,omitempty"`
+	TotalCount       int              `json:"totalCount"`
+	RepoURL          string           `json:"repoUrl"`
+	UniqueID         string           `json:"uniqueId"`
+	SessionID        string           `json:"sessionId"`
+	MachineID        string           `json:"machineId"`
+	EventAttributes  *EventAttributes `json:"eventAttributes"`
+	AiAgentSessionId string           `json:"aiAgentSessionId"`
 }
 
 type TelemetryWrapper interface {

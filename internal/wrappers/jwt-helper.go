@@ -1,7 +1,11 @@
 package wrappers
 
 import (
+	"bytes"
+	"os"
+	"os/exec"
 	"os/user"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -13,6 +17,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"golang.org/x/sys/windows/registry"
 )
 
 // JWTStruct model used to get all jwt fields
@@ -222,8 +227,12 @@ func GetUniqueID() string {
 
 	// Check if unique id is already set
 	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
-	if uniqueID != "" {
+	if uniqueID != "" && isValidUniqueIDFormat(uniqueID) {
 		return uniqueID
+	}
+
+	if uniqueID != "" {
+		logger.PrintIfVerbose("Existing unique ID invalid format, regenerating")
 	}
 
 	// Generate new unique id
@@ -246,4 +255,120 @@ func GetUniqueID() string {
 		return ""
 	}
 	return uniqueID
+}
+
+func isValidUniqueIDFormat(uniqueID string) bool {
+	parts := strings.Split(uniqueID, "_")
+	if len(parts) != 2 {
+		return false
+	}
+
+	guid := parts[0]
+	storedUsername := parts[1]
+
+	if len(guid) != 36 {
+		return false
+	}
+
+	if _, err := uuid.Parse(guid); err != nil {
+		return false
+	}
+
+	if storedUsername == "" {
+		return false
+	}
+
+	currentUser, err := user.Current()
+	if err != nil {
+		return false
+	}
+	currentUsername := currentUser.Username
+	currentUsername = strings.TrimSpace(currentUsername)
+	if strings.Contains(currentUsername, "\\") {
+		currentUsername = strings.Split(currentUsername, "\\")[1]
+	}
+
+	if storedUsername != currentUsername {
+		return false
+	}
+
+	return true
+}
+
+func GetSessionID() string {
+	sessionID := uuid.New().String()
+	viper.Set(commonParams.SessionIDConfigKey, sessionID)
+	configFilePath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get config file path: " + err.Error())
+		return sessionID
+	}
+
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.SessionIDConfigKey, sessionID)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to write session ID config: " + err.Error())
+	}
+	return sessionID
+}
+
+func GetMachineID() string {
+	switch runtime.GOOS {
+	case "windows":
+		return getWindowsMachineID()
+	case "darwin":
+		return getMacOSMachineID()
+	case "linux":
+		return getLinuxMachineID()
+	default:
+		return ""
+	}
+}
+
+func getWindowsMachineID() string {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Cryptography`, registry.QUERY_VALUE|registry.WOW64_64KEY)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to open registry key: " + err.Error())
+		return ""
+	}
+	defer k.Close()
+
+	machineID, _, err := k.GetStringValue("MachineGuid")
+	if err != nil {
+		logger.PrintIfVerbose("Failed to read MachineGuid from registry: " + err.Error())
+		return ""
+	}
+	return machineID
+}
+
+func getMacOSMachineID() string {
+	buf := &bytes.Buffer{}
+	cmd := exec.Command("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
+	cmd.Stdout = buf
+	err := cmd.Run()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to run ioreg: " + err.Error())
+		return ""
+	}
+	for _, line := range strings.Split(buf.String(), "\n") {
+		if strings.Contains(line, "IOPlatformUUID") {
+			parts := strings.SplitAfter(line, `" = "`)
+			if len(parts) == 2 {
+				machineID := strings.TrimRight(parts[1], `"`)
+				return strings.TrimSpace(machineID)
+			}
+		}
+	}
+	return ""
+}
+
+func getLinuxMachineID() string {
+	machineID, err := os.ReadFile("/var/lib/dbus/machine-id")
+	if err == nil {
+		return strings.TrimSpace(string(machineID))
+	}
+	machineID, err = os.ReadFile("/etc/machine-id")
+	if err == nil {
+		return strings.TrimSpace(string(machineID))
+	}
+	return ""
 }
