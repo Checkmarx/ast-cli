@@ -51,7 +51,9 @@ func projectSettings(called *bool, kv ...string) projectSettingsWrapper {
 }
 
 func TestIsLlmScanningEnabled(t *testing.T) {
-	llmOn := []string{sastFindingsAnalysisKey, "true", sastExtendedAnalysisKey, "true"}
+	aiOn := []string{allowAiUsageKey, "true"}
+	llmOn := []string{sastExtendedAnalysisKey, "true"}
+	llmOff := []string{sastExtendedAnalysisKey, "false"}
 	tests := []struct {
 		name          string
 		tenant        []string
@@ -60,19 +62,20 @@ func TestIsLlmScanningEnabled(t *testing.T) {
 		expected      bool
 		projectCalled bool
 	}{
-		{name: "AI usage off ignores LLM settings", tenant: append([]string{allowAiUsageKey, "false"}, llmOn...), project: llmOn,
-			projectID: "p1", expected: false, projectCalled: false},
-		{name: "AI usage missing is off", tenant: llmOn, project: llmOn, projectID: "p1", expected: false, projectCalled: false},
-		{name: "tenant LLM on", tenant: append([]string{allowAiUsageKey, "true"}, llmOn...), projectID: "p1", expected: true, projectCalled: false},
-		{name: "values are case-insensitive", tenant: []string{allowAiUsageKey, "TRUE", sastFindingsAnalysisKey, "True", sastExtendedAnalysisKey, " true "},
-			projectID: "p1", expected: true, projectCalled: false},
-		{name: "tenant needs both LLM keys, project on", tenant: []string{allowAiUsageKey, "true", sastExtendedAnalysisKey, "true"},
-			project: llmOn, projectID: "p1", expected: true, projectCalled: true},
-		{name: "tenant off, project on", tenant: []string{allowAiUsageKey, "true", sastFindingsAnalysisKey, "false", sastExtendedAnalysisKey, "false"},
-			project: llmOn, projectID: "p1", expected: true, projectCalled: true},
-		{name: "tenant off, project needs both keys", tenant: []string{allowAiUsageKey, "true"},
-			project: []string{sastFindingsAnalysisKey, "true", sastExtendedAnalysisKey, "false"}, projectID: "p1", expected: false, projectCalled: true},
-		{name: "tenant off, no project", tenant: []string{allowAiUsageKey, "true"}, project: llmOn, projectID: "", expected: false, projectCalled: false},
+		{name: "AI usage off: tenant and project LLM on ignored", tenant: slices.Concat([]string{allowAiUsageKey, "false"}, llmOn),
+			project: llmOn, projectID: "p1", expected: false},
+		{name: "AI usage missing is off", tenant: llmOn, project: llmOn, projectID: "p1", expected: false},
+		{name: "tenant on, project on", tenant: slices.Concat(aiOn, llmOn), project: llmOn, projectID: "p1", expected: true, projectCalled: true},
+		{name: "tenant on, project off", tenant: slices.Concat(aiOn, llmOn), project: llmOff, projectID: "p1", expected: false, projectCalled: true},
+		{name: "tenant off, project on", tenant: slices.Concat(aiOn, llmOff), project: llmOn, projectID: "p1", expected: true, projectCalled: true},
+		{name: "tenant off, project off", tenant: slices.Concat(aiOn, llmOff), project: llmOff, projectID: "p1", expected: false, projectCalled: true},
+		{name: "tenant on, project not set", tenant: slices.Concat(aiOn, llmOn), projectID: "p1", expected: true, projectCalled: true},
+		{name: "tenant off, project not set", tenant: aiOn, projectID: "p1", expected: false, projectCalled: true},
+		{name: "tenant on, no project", tenant: slices.Concat(aiOn, llmOn), project: llmOff, projectID: "", expected: true},
+		{name: "values are case-insensitive", tenant: []string{allowAiUsageKey, "TRUE"}, project: []string{sastExtendedAnalysisKey, " True "},
+			projectID: "p1", expected: true, projectCalled: true},
+		{name: "findings analysis is not checked", tenant: aiOn,
+			project: []string{"scan.config.sast.findingsAnalysis", "false", sastExtendedAnalysisKey, "true"}, projectID: "p1", expected: true, projectCalled: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -84,35 +87,36 @@ func TestIsLlmScanningEnabled(t *testing.T) {
 	}
 }
 
-func TestIsLlmScanningEnabled_SettingsErrorsDisableLinguist(t *testing.T) {
-	called := false
+func TestIsLlmScanningEnabled_SettingsErrors(t *testing.T) {
 	failingTenant := mock.TenantConfigurationMockWrapper{
 		CustomGetTenantConfiguration: func() (*[]*wrappers.TenantConfigurationResponse, *wrappers.WebError, error) {
 			return nil, nil, errors.New("tenant unavailable")
 		},
 	}
-	assert.Assert(t, !isLlmScanningEnabled(failingTenant, projectSettings(&called), "p1"))
-	assert.Assert(t, !called, "project settings must not be read when the tenant call fails")
-
 	tenantWebError := mock.TenantConfigurationMockWrapper{
 		CustomGetTenantConfiguration: func() (*[]*wrappers.TenantConfigurationResponse, *wrappers.WebError, error) {
 			return nil, &wrappers.WebError{Message: "bad request"}, nil
 		},
 	}
-	assert.Assert(t, !isLlmScanningEnabled(tenantWebError, projectSettings(&called), "p1"))
+	// Allow AI Usage cannot be confirmed, so the project is not read and the filter stays as it is.
+	called := false
+	assert.Assert(t, !isLlmScanningEnabled(failingTenant, projectSettings(&called, sastExtendedAnalysisKey, "true"), "p1"))
+	assert.Assert(t, !isLlmScanningEnabled(tenantWebError, projectSettings(&called, sastExtendedAnalysisKey, "true"), "p1"))
+	assert.Assert(t, !called, "project settings must not be read when the tenant call fails")
 
-	failingProject := projectSettings(&called)
+	// A failed project call uses the tenant setting.
+	failingProject := projectSettings(&called, sastExtendedAnalysisKey, "false")
 	failingProject.err = errors.New("project unavailable")
-	assert.Assert(t, !isLlmScanningEnabled(tenantSettings(allowAiUsageKey, "true"), failingProject, "p1"))
-	assert.Assert(t, called)
+	assert.Assert(t, isLlmScanningEnabled(tenantSettings(allowAiUsageKey, "true", sastExtendedAnalysisKey, "true"), failingProject, "p1"))
+	assert.Assert(t, !isLlmScanningEnabled(tenantSettings(allowAiUsageKey, "true", sastExtendedAnalysisKey, "false"), failingProject, "p1"))
 }
 
 func TestResolveDefaultIncludeFilters(t *testing.T) {
 	called := false
-	on := tenantSettings(allowAiUsageKey, "true", sastFindingsAnalysisKey, "true", sastExtendedAnalysisKey, "true")
+	on := tenantSettings(allowAiUsageKey, "true", sastExtendedAnalysisKey, "true")
 	assert.DeepEqual(t, resolveDefaultIncludeFilters(on, projectSettings(&called), "p1"), commonParams.BaseIncludeFilters)
 
-	off := tenantSettings(allowAiUsageKey, "false")
+	off := tenantSettings(allowAiUsageKey, "false", sastExtendedAnalysisKey, "true")
 	filters := resolveDefaultIncludeFilters(off, projectSettings(&called), "p1")
 	assert.DeepEqual(t, filters, commonParams.SastIncludeFilters)
 	assert.Assert(t, !slices.Contains(filters, "*.sh"), "Linguist patterns must be left out when LLM-based scanning is off")
@@ -182,7 +186,6 @@ func TestGetScanDefaultIncludeFilters(t *testing.T) {
 					tenantCalled = true
 					config := []*wrappers.TenantConfigurationResponse{
 						{Key: allowAiUsageKey, Value: "true"},
-						{Key: sastFindingsAnalysisKey, Value: "true"},
 						{Key: sastExtendedAnalysisKey, Value: "true"},
 					}
 					return &config, nil, nil
@@ -191,7 +194,7 @@ func TestGetScanDefaultIncludeFilters(t *testing.T) {
 			got := getScanDefaultIncludeFilters(filterFlagsCommand(t, tt.args...), llmOn, projectSettings(&projectCalled), "p1")
 			assert.DeepEqual(t, tt.expected, got)
 			assert.Equal(t, tt.tenantCalled, tenantCalled, "tenant configuration call")
-			assert.Assert(t, !projectCalled, "tenant settings decide here, so the project must not be read")
+			assert.Equal(t, tt.tenantCalled, projectCalled, "the project is read first; it does not set the value here, so the tenant decides")
 		})
 	}
 }
