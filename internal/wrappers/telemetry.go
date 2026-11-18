@@ -20,7 +20,7 @@ type DataForAITelemetry struct {
 	RepoURL          string           `json:"repoUrl"`
 	UniqueID         string           `json:"uniqueId"`
 	SessionID        string           `json:"sessionId"`
-	MachineID        string           `json:"machineId"`
+	MachineUniqueId  string           `json:"machineUniqueId"`
 	EventAttributes  *EventAttributes `json:"eventAttributes"`
 	AiAgentSessionId string           `json:"aiAgentSessionId"`
 }

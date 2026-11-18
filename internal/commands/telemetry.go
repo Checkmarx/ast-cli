@@ -106,7 +106,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		apiVersion, _ := cmd.Flags().GetString(params.ApiVersionFlag)
 
 		uniqueID := wrappers.GetUniqueID()
-		machineID := wrappers.GetMachineID()
+		machineUniqueId := wrappers.GetMachineID()
 
 		var sessionID string
 		if eventType == "authentication" && status == "success" {
@@ -135,7 +135,7 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 			RepoURL:         repoURL,
 			UniqueID:        uniqueID,
 			SessionID:       sessionID,
-			MachineID:       machineID,
+			MachineUniqueId: machineUniqueId,
 			EventAttributes: eventAttrs,
 		})
 
