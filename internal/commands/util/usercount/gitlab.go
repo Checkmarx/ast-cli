@@ -23,6 +23,7 @@ const (
 	gitLabGroupsFlagUsage          = "List of groups(organizations) to scan for contributors"
 	gitLabAPIURL                   = "https://gitlab.com"
 	gitLabTooManyGroupsAndProjects = "Projects and Groups both cannot be provided at the same time."
+	missingGroupsOrProjects        = "Provide at least one group or project"
 	gitLabBot                      = "bot"
 	repoAccessLevelDisabled        = "disabled"
 	repoAccessLevelPrivate         = "private"
@@ -50,6 +51,9 @@ func newUserCountGitLabCommand(gitLabWrapper wrappers.GitLabWrapper) *cobra.Comm
 }
 
 func preRunGitLabUserCount(*cobra.Command, []string) error {
+	if len(gitLabProjects) == 0 && len(gitLabGroups) == 0 {
+		return errors.New(missingGroupsOrProjects)
+	}
 	if len(gitLabProjects) > 0 && len(gitLabGroups) > 0 {
 		return errors.New(gitLabTooManyGroupsAndProjects)
 	}
