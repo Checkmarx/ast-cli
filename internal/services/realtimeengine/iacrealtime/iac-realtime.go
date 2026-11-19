@@ -76,6 +76,21 @@ func filterIgnoredFindings(results []IacRealtimeResult, ignoreMap map[string]boo
 	return filtered
 }
 
+// FilterResultsBySeverity keeps only the IaC findings whose severity is allowed by f.
+// A nil filter returns the input unchanged.
+func FilterResultsBySeverity(results []IacRealtimeResult, f realtimeengine.SeverityFilter) []IacRealtimeResult {
+	if f == nil {
+		return results
+	}
+	filtered := make([]IacRealtimeResult, 0, len(results))
+	for i := range results {
+		if f.Allows(results[i].Severity) {
+			filtered = append(filtered, results[i])
+		}
+	}
+	return filtered
+}
+
 func (svc *IacRealtimeService) RunIacRealtimeScan(filePath, engine, ignoredFilePath string) ([]IacRealtimeResult, error) {
 	err := svc.runValidations(filePath)
 	if err != nil {

@@ -17,7 +17,38 @@ import (
 	"github.com/pkg/errors"
 )
 
-const defaultTag = "latest"
+const (
+	defaultTag = "latest"
+
+	// statusMalicious is the realtime scanner status for a malicious image.
+	statusMalicious = "Malicious"
+)
+
+// FilterImagesBySeverity trims each image's Vulnerabilities to the severities allowed by f.
+// Malicious images carry no severity and are always kept untouched. Every image entry is kept
+// in place even when its vulnerability list becomes empty. A nil filter returns the input unchanged.
+func FilterImagesBySeverity(images []ContainerImage, f realtimeengine.SeverityFilter) []ContainerImage {
+	if f == nil {
+		return images
+	}
+	filtered := make([]ContainerImage, 0, len(images))
+	for i := range images {
+		img := images[i]
+		if strings.EqualFold(img.Status, statusMalicious) {
+			filtered = append(filtered, img)
+			continue
+		}
+		vulns := make([]Vulnerability, 0, len(img.Vulnerabilities))
+		for _, v := range img.Vulnerabilities {
+			if f.Allows(v.Severity) {
+				vulns = append(vulns, v)
+			}
+		}
+		img.Vulnerabilities = vulns
+		filtered = append(filtered, img)
+	}
+	return filtered
+}
 
 // ContainersRealtimeService is the service responsible for performing real-time container scanning.
 type ContainersRealtimeService struct {

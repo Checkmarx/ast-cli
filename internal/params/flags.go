@@ -33,6 +33,8 @@ const (
 	RetryDelayUsage                = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                    = "file-source"
 	IgnoredFilePathFlag            = "ignored-file-path"
+	SeverityFilterFlag             = "severity-filter"
+	SeverityFilterFlagUsage        = "Comma-separated list of severities to return (critical, high, medium, low, info). Omit to return all severities."
 	SourcesFlagSh                  = "s"
 	TenantFlag                     = "tenant"
 	TenantFlagUsage                = "Checkmarx tenant"

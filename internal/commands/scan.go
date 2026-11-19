@@ -479,7 +479,8 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 		Example: heredoc.Doc(
 			`
 			$ cx scan asca --file-source <path to a single file> --asca-latest-version
-			$ cx scan asca --file-source <path to a single file> --ignored-file-path <path to ignored in file>	
+			$ cx scan asca --file-source <path to a single file> --ignored-file-path <path to ignored in file>
+			$ cx scan asca --file-source <path to a single file> --severity-filter "critical,high"
 		`,
 		),
 		Annotations: map[string]string{
@@ -503,6 +504,7 @@ func scanASCASubCommand(jwtWrapper wrappers.JWTWrapper, featureFlagsWrapper wrap
 	)
 
 	scanASCACmd.PersistentFlags().String(commonParams.IgnoredFilePathFlag, "", "Path to a JSON file listing ignored ASCA findings")
+	scanASCACmd.PersistentFlags().String(commonParams.SeverityFilterFlag, "", commonParams.SeverityFilterFlagUsage)
 	scanASCACmd.PersistentFlags().String(commonParams.ASCALocationFlag, "", "Path to custom location where ASCA engine is installed")
 	_ = viper.BindPFlag(commonParams.ASCALocationKey, scanASCACmd.PersistentFlags().Lookup(commonParams.ASCALocationFlag))
 
@@ -522,6 +524,7 @@ func scanOssRealtimeSubCommand(
 		Example: heredoc.Doc(
 			`
 			$ cx scan oss-realtime -s <path to a manifest file> --ignored-file-path <path to ignored packages JSON>
+			$ cx scan oss-realtime -s <path to a manifest file> --severity-filter "critical,high"
 			`,
 		),
 		Annotations: map[string]string{
@@ -547,6 +550,8 @@ func scanOssRealtimeSubCommand(
 		"Path to a JSON file listing ignored packages",
 	)
 
+	scanOssRealtimeCmd.Flags().String(commonParams.SeverityFilterFlag, "", commonParams.SeverityFilterFlagUsage)
+
 	return scanOssRealtimeCmd
 }
 
@@ -562,6 +567,7 @@ func scanIacRealtimeSubCommand(
 		Example: heredoc.Doc(
 			`
 			$ cx scan iac-realtime -s <path to a manifest file> --ignored-file-path <path to ignored iac vulnerabilities JSON file>
+			$ cx scan iac-realtime -s <path to a manifest file> --severity-filter "critical,high"
 			`,
 		),
 		Annotations: map[string]string{
@@ -593,6 +599,8 @@ func scanIacRealtimeSubCommand(
 		"Name of the container engine to run IaC-Realtime. (ex. docker, podman)",
 	)
 
+	scanIacRealtimeCmd.Flags().String(commonParams.SeverityFilterFlag, "", commonParams.SeverityFilterFlagUsage)
+
 	return scanIacRealtimeCmd
 }
 
@@ -606,6 +614,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 			`
 			$ cx scan containers-realtime -s <path to containers file>
 			$ cx scan containers-realtime -s <path to file> --ignored-file-path <path to ignored containers file>
+			$ cx scan containers-realtime -s <path to file> --severity-filter "critical,high"
 		`,
 		),
 		Annotations: map[string]string{
@@ -625,6 +634,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
 	)
 	scanContainersRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored containers file")
+	scanContainersRealtimeCmd.Flags().String(commonParams.SeverityFilterFlag, "", commonParams.SeverityFilterFlagUsage)
 
 	return scanContainersRealtimeCmd
 }
@@ -641,6 +651,7 @@ func scanSecretsRealtimeSubCommand(
 		Example: heredoc.Doc(`
 			$ cx scan secrets-realtime -s <path to file>
 			$ cx scan secrets-realtime -s <path to file> --ignored-file-path <path to ignored secrets file>
+			$ cx scan secrets-realtime -s <path to file> --severity-filter "critical,high"
 		`),
 		Annotations: map[string]string{
 			"command:doc": heredoc.Doc(`
@@ -652,6 +663,7 @@ func scanSecretsRealtimeSubCommand(
 
 	scanSecretsRealtimeCmd.Flags().StringP(commonParams.SourcesFlag, "s", "", "Path to the file to scan")
 	scanSecretsRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored secrets file")
+	scanSecretsRealtimeCmd.Flags().String(commonParams.SeverityFilterFlag, "", commonParams.SeverityFilterFlagUsage)
 
 	return scanSecretsRealtimeCmd
 }
