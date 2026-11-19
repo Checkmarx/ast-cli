@@ -98,7 +98,7 @@ func TestExceedsDefaultFilterSizeLimit(t *testing.T) {
 	assert.Assert(t, exceedsDefaultFilterSizeLimit(filters, "Main.java", big))
 	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "Main.java", testSizeLimitBytes), "a file at the limit is kept")
 	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "pom.xml", big), "SCA files are exempt")
-	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "custom.xyz", big), "files outside the default filter are exempt")
+	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "custom.xyz", big), "files outside the given filter are exempt")
 	assert.Assert(t, !exceedsDefaultFilterSizeLimit(nil, "Main.java", big), "no limit without the default filter")
 }
 
@@ -127,15 +127,21 @@ func TestCompressFolder_SkipsOversizedFilesExceptSca(t *testing.T) {
 		"package-lock.json", "pom.xml", "requirements-dev.txt", "src/App.java", "web/yarn.lock",
 	})
 
-	// Files added only by --file-include are not limited.
-	entries := compressWith(t, root, "*.xyz", false)
-	assert.Assert(t, contains(entries, "custom.xyz"))
+	// Files matched by --file-include are limited too, SCA files stay exempt.
+	entries := compressWith(t, root, "*.xyz,*.lock", false)
+	assert.Assert(t, !contains(entries, "custom.xyz"))
 	assert.Assert(t, !contains(entries, "src/Main.java"))
+	assert.Assert(t, contains(entries, "web/yarn.lock"))
+
+	// A small file matched by --file-include is kept.
+	small := writeSizedFiles(t, map[string]int{"custom.xyz": 1})
+	assert.Assert(t, contains(compressWith(t, small, "*.xyz", false), "custom.xyz"))
 
 	// --skip-default-filter turns the limit off.
 	entries = compressWith(t, root, "", true)
 	assert.Assert(t, contains(entries, "src/Main.java"))
 	assert.Assert(t, contains(entries, "dotnet/data.json"))
+	assert.Assert(t, contains(compressWith(t, root, "*.xyz", true), "custom.xyz"))
 }
 
 func TestCompressFolder_AllFilesOversizedAddsPlaceholder(t *testing.T) {

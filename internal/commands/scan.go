@@ -1672,8 +1672,8 @@ func scanTypeEnabled(scanType string) bool {
 }
 
 // compressFolder zips sourceDir. defaultIncludeFilters is the default include filter in effect: the SAST patterns,
-// plus the Linguist patterns when LLM-based scanning is enabled. Files it matches are subject to the size limit,
-// except SCA files.
+// plus the Linguist patterns when LLM-based scanning is enabled. Files matched by the default filter or by
+// --file-include are subject to the size limit, except SCA files.
 func compressFolder(
 	sourceDir, filter, userIncludeFilter, scaResolver string,
 	antMatcher filtering.Matcher,
@@ -1691,8 +1691,8 @@ func compressFolder(
 	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
 	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter, defaultIncludeFilters)
 
-	// The size limit only applies when the default include filter is in use.
-	sizeLimitedFilters := defaultIncludeFilters
+	// The size limit applies to files matched by the default filter or --file-include, unless --skip-default-filter is set.
+	sizeLimitedFilters := includeFilters
 	if skipDefaultFilter {
 		sizeLimitedFilters = nil
 	}
@@ -1813,9 +1813,9 @@ func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool, default
 	return buildFilters(defaultIncludeFilters, userIncludeFilter)
 }
 
-// exceedsDefaultFilterSizeLimit reports whether a file picked up by the default include filter is too large for the
-// source zip. SCA files are exempt, and files matched only by --file-include are never limited. The size is compared
-// first so the pattern matching only runs for the rare oversized file.
+// exceedsDefaultFilterSizeLimit reports whether a file picked up by the include filter (default filter plus
+// --file-include) is too large for the source zip. SCA files are exempt. The size is compared first so the pattern
+// matching only runs for the rare oversized file.
 func exceedsDefaultFilterSizeLimit(sizeLimitedFilters []string, fileName string, size int64) bool {
 	return size > MaxDefaultFilterFileSizeBytes && len(sizeLimitedFilters) > 0 &&
 		!isScaFile(fileName) && filterMatched(sizeLimitedFilters, fileName)
