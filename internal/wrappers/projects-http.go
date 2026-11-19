@@ -116,9 +116,7 @@ func (p *ProjectsHTTPWrapper) GetConfiguration(projectID string) ([]ProjectConfi
 		return nil, nil, err
 	}
 	defer func() {
-		if err == nil {
-			_ = resp.Body.Close()
-		}
+		_ = resp.Body.Close()
 	}()
 
 	decoder := json.NewDecoder(resp.Body)

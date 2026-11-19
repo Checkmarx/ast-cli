@@ -2225,6 +2225,11 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
+// getUploadURLFromSource prepares the scan source (SBOM file, zip or directory), applies filters,
+// runs the SCA/container resolvers when needed, compresses the result and uploads it.
+// Its length and cyclomatic complexity predate the default include filter changes.
+//
+//nolint:gocyclo,funlen
 func getUploadURLFromSource(
 	cmd *cobra.Command,
 	uploadsWrapper wrappers.UploadsWrapper,

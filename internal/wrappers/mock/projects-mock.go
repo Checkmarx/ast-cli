@@ -40,6 +40,7 @@ func (p *ProjectsMockWrapper) UpdateConfiguration(projectID string, configuratio
 	return nil, nil
 }
 
+// GetConfiguration returns the mock project configuration for the given project ID.
 func (p *ProjectsMockWrapper) GetConfiguration(projectID string) ([]wrappers.ProjectConfiguration, *wrappers.ErrorModel, error) {
 	fmt.Println("Called Get Configuration for project", projectID, "in ProjectsMockWrapper")
 	return ProjectConfiguration, nil, nil
