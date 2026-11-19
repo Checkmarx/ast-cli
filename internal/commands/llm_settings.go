@@ -34,13 +34,12 @@ func resolveDefaultIncludeFilters(
 
 // isLlmScanningEnabled reports whether LLM-based scanning is enabled for the scan.
 func isLlmScanningEnabled(tenantWrapper wrappers.TenantConfigurationWrapper, projectsWrapper wrappers.ProjectsWrapper, projectID string) bool {
-	tenantConfig, errorModel, err := tenantWrapper.GetTenantConfiguration()
-	if err != nil || errorModel != nil {
-		logger.PrintfIfVerbose("Failed to read the tenant configuration, LLM-based scanning treated as disabled: %v %v", err, errorModel)
+	tenantConfig, err := GetTenantConfigurationResponses(tenantWrapper)
+	if err != nil {
+		logger.PrintfIfVerbose("Failed to read the tenant configuration, LLM-based scanning treated as disabled: %v", err)
 		return false
 	}
-	tenantSettings := tenantSettingsMap(tenantConfig)
-	if !isSettingTrue(tenantSettings, allowAiUsageKey) {
+	if !isTenantSettingTrue(tenantConfig, allowAiUsageKey) {
 		logger.PrintIfVerbose("Allow AI Usage is off at tenant level.")
 		return false
 	}
@@ -50,7 +49,7 @@ func isLlmScanningEnabled(tenantWrapper wrappers.TenantConfigurationWrapper, pro
 			return enabled
 		}
 	}
-	enabled := isLlmScanningOn(tenantSettings)
+	enabled := isTenantSettingTrue(tenantConfig, sastExtendedAnalysisKey)
 	logger.PrintfIfVerbose("LLM-based scanning is %s at tenant level.", enabledText(enabled))
 	return enabled
 }
@@ -63,11 +62,11 @@ func projectLlmScanningSetting(projectsWrapper wrappers.ProjectsWrapper, project
 		logger.PrintfIfVerbose("Failed to read the project configuration, using the tenant setting: %v %v", err, errorModel)
 		return false, false
 	}
-	settings := projectSettingsMap(projectConfig)
-	if strings.TrimSpace(settings[sastExtendedAnalysisKey]) == "" {
+	value := projectSettingsMap(projectConfig)[sastExtendedAnalysisKey]
+	if strings.TrimSpace(value) == "" {
 		return false, false
 	}
-	return isLlmScanningOn(settings), true
+	return isTrueValue(value), true
 }
 
 func enabledText(enabled bool) string {
@@ -77,26 +76,15 @@ func enabledText(enabled bool) string {
 	return "disabled"
 }
 
-// isLlmScanningOn reports whether the LLM-based scanning setting (scan.config.sast.extendedAnalysis) is on.
-func isLlmScanningOn(settings map[string]string) bool {
-	return isSettingTrue(settings, sastExtendedAnalysisKey)
+// isTenantSettingTrue reports whether a tenant setting is on; a missing setting is off.
+func isTenantSettingTrue(tenantConfig *[]*wrappers.TenantConfigurationResponse, key string) bool {
+	value, _ := GetTenantConfiguration(tenantConfig, key)
+	return isTrueValue(value)
 }
 
-func isSettingTrue(settings map[string]string, key string) bool {
-	return strings.EqualFold(strings.TrimSpace(settings[key]), "true")
-}
-
-func tenantSettingsMap(config *[]*wrappers.TenantConfigurationResponse) map[string]string {
-	settings := map[string]string{}
-	if config == nil {
-		return settings
-	}
-	for _, c := range *config {
-		if c != nil {
-			settings[c.Key] = c.Value
-		}
-	}
-	return settings
+// isTrueValue reports whether a setting value is "true", ignoring case and surrounding spaces.
+func isTrueValue(value string) bool {
+	return strings.EqualFold(strings.TrimSpace(value), "true")
 }
 
 func projectSettingsMap(config []wrappers.ProjectConfiguration) map[string]string {

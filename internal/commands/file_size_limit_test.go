@@ -3,6 +3,8 @@
 package commands
 
 import (
+	"bytes"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,11 +18,11 @@ import (
 
 const testSizeLimitBytes = 64
 
-// withSizeLimit lowers the default filter size limit for the duration of the test.
-func withSizeLimit(t *testing.T, limit int64) {
+// withTestSizeLimit lowers the default filter size limit to testSizeLimitBytes for the duration of the test.
+func withTestSizeLimit(t *testing.T) {
 	t.Helper()
 	previous := MaxDefaultFilterFileSizeBytes
-	MaxDefaultFilterFileSizeBytes = limit
+	MaxDefaultFilterFileSizeBytes = testSizeLimitBytes
 	t.Cleanup(func() { MaxDefaultFilterFileSizeBytes = previous })
 }
 
@@ -91,19 +93,17 @@ func TestScaFilePatterns_ComeFromExistingCode(t *testing.T) {
 }
 
 func TestExceedsDefaultFilterSizeLimit(t *testing.T) {
-	withSizeLimit(t, testSizeLimitBytes)
-	filters := commonParams.DefaultIncludeFilters(true)
+	withTestSizeLimit(t)
 	big := int64(testSizeLimitBytes + 1)
 
-	assert.Assert(t, exceedsDefaultFilterSizeLimit(filters, "Main.java", big))
-	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "Main.java", testSizeLimitBytes), "a file at the limit is kept")
-	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "pom.xml", big), "SCA files are exempt")
-	assert.Assert(t, !exceedsDefaultFilterSizeLimit(filters, "custom.xyz", big), "files outside the given filter are exempt")
-	assert.Assert(t, !exceedsDefaultFilterSizeLimit(nil, "Main.java", big), "no limit without the default filter")
+	assert.Assert(t, exceedsDefaultFilterSizeLimit(true, "Main.java", big))
+	assert.Assert(t, !exceedsDefaultFilterSizeLimit(true, "Main.java", testSizeLimitBytes), "a file at the limit is kept")
+	assert.Assert(t, !exceedsDefaultFilterSizeLimit(true, "pom.xml", big), "SCA files are exempt")
+	assert.Assert(t, !exceedsDefaultFilterSizeLimit(false, "Main.java", big), "no limit with --skip-default-filter")
 }
 
 func TestCompressFolder_SkipsOversizedFilesExceptSca(t *testing.T) {
-	withSizeLimit(t, testSizeLimitBytes)
+	withTestSizeLimit(t)
 	big := testSizeLimitBytes + 1
 	root := writeSizedFiles(t, map[string]int{
 		"src/Main.java":         big,
@@ -145,8 +145,31 @@ func TestCompressFolder_SkipsOversizedFilesExceptSca(t *testing.T) {
 }
 
 func TestCompressFolder_AllFilesOversizedAddsPlaceholder(t *testing.T) {
-	withSizeLimit(t, testSizeLimitBytes)
+	withTestSizeLimit(t)
 	root := writeSizedFiles(t, map[string]int{"Main.java": testSizeLimitBytes + 1})
 
+	logs := captureStdLog(t)
+
 	assert.DeepEqual(t, compressWith(t, root, "", false), []string{".container-scan"})
+	assert.Equal(t, strings.Count(logs.String(), "Excluded (larger than 100MB)"), 1)
+	assert.Assert(t, strings.Contains(logs.String(), "Main.java"))
+}
+
+func TestCompressFolder_OversizedFileLoggedOnceWhenOtherFilesIncluded(t *testing.T) {
+	withTestSizeLimit(t)
+	root := writeSizedFiles(t, map[string]int{"Big.java": testSizeLimitBytes + 1, "Small.java": 1})
+	logs := captureStdLog(t)
+
+	assert.DeepEqual(t, compressWith(t, root, "", false), []string{"Small.java"})
+	assert.Equal(t, strings.Count(logs.String(), "Excluded (larger than 100MB)"), 1)
+	assert.Assert(t, strings.Contains(logs.String(), "Big.java"))
+}
+
+// captureStdLog redirects the standard logger, which logger.Print writes to, for the duration of the test.
+func captureStdLog(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	return &buf
 }

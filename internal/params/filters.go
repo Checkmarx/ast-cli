@@ -27,7 +27,6 @@ var ScaFilePatterns = []string{
 	"setup.cfg",
 	"setup.py",
 	"pyproject.toml",
-	"requirement*.txt",
 	"packages*.txt",
 	"constraint*.txt",
 	"Podfile",

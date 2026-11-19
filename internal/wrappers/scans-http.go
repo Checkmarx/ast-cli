@@ -17,7 +17,6 @@ const (
 	failedToParseGetAll    = "Failed to parse list response"
 	failedToParseTags      = "Failed to parse tags response"
 	failedToParseBranches  = "Failed to parse branches response"
-	failedToParseConfig    = "Failed to parse project configuration response"
 	queueCapacityErrorCode = 142
 )
 

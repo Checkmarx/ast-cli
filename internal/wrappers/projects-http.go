@@ -14,6 +14,8 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
+const failedToParseConfig = "Failed to parse project configuration response"
+
 type ProjectsHTTPWrapper struct {
 	path string
 }

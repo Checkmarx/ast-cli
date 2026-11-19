@@ -178,7 +178,7 @@ func GetTenantConfigurationResponses(tenantWrapper wrappers.TenantConfigurationW
 func GetTenantConfiguration(tenantConfigurationResponses *[]*wrappers.TenantConfigurationResponse, configKey string) (string, error) {
 	if tenantConfigurationResponses != nil {
 		for _, resp := range *tenantConfigurationResponses {
-			if resp.Key == configKey {
+			if resp != nil && resp.Key == configKey {
 				return resp.Value, nil
 			}
 		}
