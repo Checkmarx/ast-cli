@@ -5,8 +5,13 @@ release:
   name_template: 'Checkmarx One CLI {{.Version}}'
   disable: true
 
+before:
+  hooks:
+  # embed Windows version info so the firewall/Explorer show Checkmarx as publisher
+    - go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64 --file-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0 --product-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}.0
+
 builds:
-  - main: ./cmd/main.go
+  - main: ./cmd
     env:
       - CGO_ENABLED=0
     binary: cx
