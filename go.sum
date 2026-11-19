@@ -69,10 +69,10 @@ github.com/Checkmarx/ast-cx-hooks v1.0.10 h1:tY4XwacIOnMelOYZFsN7Mpv2qcfQWzjcCLS
 github.com/Checkmarx/ast-cx-hooks v1.0.10/go.mod h1:GPHk8IJHQlCW7l8ye9/Bij57zYQGRG+pxJPiGgsR8cY=
 github.com/Checkmarx/containers-images-extractor v1.0.22 h1:kJZgwk28LwJZ7Xky+kzwL+JSZOlpwrGsZQhhz4L2t6s=
 github.com/Checkmarx/containers-images-extractor v1.0.22/go.mod h1:HyzVb8TtTDf56hGlSakalPXtzjJ6VhTYe9fmAcOS+V8=
-github.com/Checkmarx/containers-resolver v1.0.38 h1:gskavArA5ob68jaxZVkY67n5pVjQq2lLJK89/RDyIL4=
-github.com/Checkmarx/containers-resolver v1.0.38/go.mod h1:h6gZL++XMrkw82MGqypK4vMHtxmdhbzQDikqrabkq4U=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.29 h1:fv0xcDl8iafN8Wm+wSNk1SBbS8GbGJZFfLod4pHQv28=
-github.com/Checkmarx/containers-syft-packages-extractor v1.0.29/go.mod h1:J4GeT3ymIilb6LRLumovqQ/wnouwN84Jldsbnsc9LHA=
+github.com/Checkmarx/containers-resolver v1.0.37 h1:VkLuw8QXt04VvdWzjfoTHAqC7imizUp3fvLaTRRmHYs=
+github.com/Checkmarx/containers-resolver v1.0.37/go.mod h1:aFcQhIKw98lYzh9Wl6LX11WRa3OarixFnx1IR7uMj9U=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.28 h1:Eh34cC1yeBqEZHmZbqNMHvZYILDoB2ZcEo+Icr7NHTM=
+github.com/Checkmarx/containers-syft-packages-extractor v1.0.28/go.mod h1:J4GeT3ymIilb6LRLumovqQ/wnouwN84Jldsbnsc9LHA=
 github.com/Checkmarx/containers-types v1.0.9 h1:LbHDj9LZ0x3f28wDx398WC19sw0U0EfEewHMLStBwvs=
 github.com/Checkmarx/containers-types v1.0.9/go.mod h1:KR0w8XCosq3+6jRCfQrH7i//Nj2u11qaUJM62CREFZA=
 github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63 h1:SCuTcE+CFvgjbIxUNL8rsdB2sAhfuNx85HvxImKta3g=
