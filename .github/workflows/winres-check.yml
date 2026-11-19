@@ -1,0 +1,51 @@
+name: Windows Version Resource Check
+
+on:
+  pull_request:
+    paths:
+      - 'cmd/**'
+      - '.github/workflows/winres-check.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  winres-check:
+    name: Verify Windows version resource
+    runs-on: cx-public-ubuntu-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      # committed .syso files must match what winres.json generates
+      - name: Committed resources match winres.json
+        run: |
+          tmp="$(mktemp -d)"
+          go run github.com/tc-hib/go-winres@v0.3.3 make --in cmd/winres/winres.json --out "$tmp/rsrc" --arch amd64,386,arm64
+          for a in amd64 386 arm64; do
+            cmp "$tmp/rsrc_windows_$a.syso" "cmd/rsrc_windows_$a.syso" \
+              || { echo "::error::cmd/rsrc_windows_$a.syso is out of date, run 'make winres' and commit"; exit 1; }
+          done
+
+      # the built Windows exe must carry the publisher info
+      - name: Built Windows binaries carry Checkmarx version info
+        run: |
+          tmp="$(mktemp -d)"
+          for a in amd64 386 arm64; do
+            CGO_ENABLED=0 GOOS=windows GOARCH=$a go build -o "$tmp/cx_$a.exe" ./cmd
+            for s in "Checkmarx" "Checkmarx One CLI"; do
+              strings -el "$tmp/cx_$a.exe" | grep -qx "$s" \
+                || { echo "::error::windows/$a build is missing version info '$s'"; exit 1; }
+            done
+          done

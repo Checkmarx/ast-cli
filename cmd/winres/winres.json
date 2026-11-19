@@ -10,12 +10,12 @@
           "0409": {
             "CompanyName": "Checkmarx",
             "FileDescription": "Checkmarx One CLI",
-            "FileVersion": "0.0.0.0",
+            "FileVersion": "0.0.0",
             "InternalName": "cx",
             "LegalCopyright": "Copyright (c) Checkmarx Ltd.",
             "OriginalFilename": "cx.exe",
             "ProductName": "Checkmarx One CLI",
-            "ProductVersion": "0.0.0.0"
+            "ProductVersion": "0.0.0"
           }
         }
       }
