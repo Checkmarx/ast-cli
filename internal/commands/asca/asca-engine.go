@@ -6,6 +6,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 	"github.com/checkmarx/ast-cli/internal/wrappers/utils"
@@ -26,6 +27,12 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		agent, _ := cmd.Flags().GetString(commonParams.AgentFlag)
 		err := validateASCALocationFlags(cmd)
+		if err != nil {
+			return err
+		}
+
+		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
+		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
 		if err != nil {
 			return err
 		}
@@ -54,6 +61,9 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 		scanResult, err := services.CreateASCAScanRequest(ASCAParams, wrapperParams)
 		if err != nil {
 			return err
+		}
+		if scanResult != nil && scanResult.Error == nil {
+			scanResult.ScanDetails = services.FilterScanDetailsBySeverity(scanResult.ScanDetails, severityFilter)
 		}
 		err = printer.Print(cmd.OutOrStdout(), scanResult, printer.FormatJSON)
 		if err != nil {

@@ -4,6 +4,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
@@ -22,12 +23,20 @@ func RunScanIacRealtimeCommand(
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
 
+		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
+		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
+		if err != nil {
+			return err
+		}
+
 		iacRealtimeService := iacrealtime.NewIacRealtimeService(jwtWrapper, featureFlagWrapper, iacrealtime.NewContainerManager())
 
 		results, err := iacRealtimeService.RunIacRealtimeScan(fileSourceFlag, engine, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
+
+		results = iacrealtime.FilterResultsBySeverity(results, severityFilter)
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {

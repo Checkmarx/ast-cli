@@ -24,6 +24,9 @@ const (
 	pkgManagerCocoapods = "cocoapods"
 	pkgManagerCarthage  = "carthage"
 	pkgManagerSwift     = "swift"
+
+	// statusMalicious is the realtime scanner status for a malicious package.
+	statusMalicious = "Malicious"
 )
 
 // convertLocations converts models.Location to realtimeengine.Location
@@ -111,6 +114,33 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	}
 
 	return response, nil
+}
+
+// FilterPackagesBySeverity trims each package's Vulnerabilities to the severities allowed by f.
+// Malicious packages carry no severity and are always kept untouched. Every package entry is
+// kept in place even when its vulnerability list becomes empty, so consumers still receive one
+// entry per manifest package. A nil filter returns the input unchanged.
+func FilterPackagesBySeverity(packages []OssPackage, f realtimeengine.SeverityFilter) []OssPackage {
+	if f == nil {
+		return packages
+	}
+	filtered := make([]OssPackage, 0, len(packages))
+	for i := range packages {
+		pkg := packages[i]
+		if strings.EqualFold(pkg.Status, statusMalicious) {
+			filtered = append(filtered, pkg)
+			continue
+		}
+		vulns := make([]Vulnerability, 0, len(pkg.Vulnerabilities))
+		for _, v := range pkg.Vulnerabilities {
+			if f.Allows(v.Severity) {
+				vulns = append(vulns, v)
+			}
+		}
+		pkg.Vulnerabilities = vulns
+		filtered = append(filtered, pkg)
+	}
+	return filtered
 }
 
 func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {

@@ -4,6 +4,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
@@ -22,12 +23,20 @@ func RunScanOssRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
+		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
+		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
+		if err != nil {
+			return err
+		}
+
 		ossRealtimeService := ossrealtime.NewOssRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
 		packages, err := ossRealtimeService.RunOssRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
+
+		packages.Packages = ossrealtime.FilterPackagesBySeverity(packages.Packages, severityFilter)
 
 		err = printer.Print(cmd.OutOrStdout(), packages, printer.FormatJSON)
 		if err != nil {
