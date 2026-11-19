@@ -67,6 +67,3 @@ vendor/*
 
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
-
-# Generated Windows version resource
-cmd/*.syso
