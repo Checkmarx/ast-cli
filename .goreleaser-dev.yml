@@ -5,6 +5,11 @@ release:
   name_template: 'Checkmarx One CLI {{.Version}}'
   disable: true
 
+before:
+  hooks:
+    # embed the real version into the Windows exe (cmd/rsrc_windows_*.syso is gitignored)
+    - go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version {{ .Version }} --file-version {{ .Version }}
+
 builds:
   - main: ./cmd
     env:
