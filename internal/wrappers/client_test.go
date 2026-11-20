@@ -452,3 +452,96 @@ func TestGetRealmURLPropagatesKeyringUnavailable(t *testing.T) {
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, credentialstore.ErrKeyringUnavailable)
 }
+
+func setProxyViperConfig(t *testing.T, authType, proxy string, ignoreProxy bool) {
+	t.Helper()
+	viper.Set(commonParams.ProxyTypeKey, authType)
+	viper.Set(commonParams.ProxyKey, proxy)
+	viper.Set(commonParams.IgnoreProxyKey, ignoreProxy)
+	t.Cleanup(func() {
+		viper.Set(commonParams.ProxyTypeKey, "")
+		viper.Set(commonParams.ProxyKey, "")
+		viper.Set(commonParams.IgnoreProxyKey, false)
+	})
+}
+
+func TestValidateProxyAuthType_SupportedValues(t *testing.T) {
+	supported := []string{
+		"", "basic", "ntlm", "kerberos", "kerberos-native",
+		"BASIC", "NTLM", "Ntlm", "Kerberos", "KERBEROS-NATIVE", " ntlm ",
+	}
+	for _, value := range supported {
+		t.Run(fmt.Sprintf("%q", value), func(t *testing.T) {
+			setProxyViperConfig(t, value, "", false)
+			assert.NoError(t, ValidateProxyAuthType())
+		})
+	}
+}
+
+func TestValidateProxyAuthType_UnsupportedValues(t *testing.T) {
+	unsupported := []string{"NotARealAuthType", "digest", "none", "ntlm2", "kerberos_native", "basic,ntlm"}
+	for _, value := range unsupported {
+		t.Run(value, func(t *testing.T) {
+			setProxyViperConfig(t, value, "", false)
+			err := ValidateProxyAuthType()
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), fmt.Sprintf("invalid proxy authentication type %q", value))
+			assert.Contains(t, err.Error(), "basic, ntlm, kerberos, kerberos-native")
+		})
+	}
+}
+
+func TestValidateProxyAuthType_ValidatesOnlyTheAuthType(t *testing.T) {
+	const classicProxy = "http://classic.company.com:8080"
+
+	setProxyViperConfig(t, "NTLM", classicProxy, false)
+	assert.NoError(t, ValidateProxyAuthType())
+
+	setProxyViperConfig(t, "", classicProxy, false)
+	assert.NoError(t, ValidateProxyAuthType())
+
+	setProxyViperConfig(t, "NotARealAuthType", classicProxy, true)
+	assert.Error(t, ValidateProxyAuthType(), "an invalid type must be rejected even with --ignore-proxy")
+}
+
+func proxyTransport(t *testing.T) *http.Transport {
+	t.Helper()
+	transport, ok := GetClient(1).Transport.(*http.Transport)
+	assert.True(t, ok, "expected an *http.Transport")
+	return transport
+}
+
+func TestGetClient_ProxyAuthTypeSelectsClient(t *testing.T) {
+	const classicProxy = "http://classic.company.com:8080"
+
+	basicWithProxy := []string{"", "basic", "BASIC", "Basic", "NotARealAuthType"}
+	for _, authType := range basicWithProxy {
+		t.Run(fmt.Sprintf("basic client for %q", authType), func(t *testing.T) {
+			setProxyViperConfig(t, authType, classicProxy, false)
+			transport := proxyTransport(t)
+			assert.Nil(t, transport.DialContext)
+			assert.NotNil(t, transport.Proxy)
+			req, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
+			assert.NoError(t, err)
+			proxyURL, err := transport.Proxy(req)
+			assert.NoError(t, err)
+			assert.Equal(t, classicProxy, proxyURL.String(), "proxy address must be used as given")
+		})
+	}
+
+	for _, authType := range []string{"ntlm", "NTLM", "Ntlm"} {
+		t.Run(fmt.Sprintf("ntlm client for %q", authType), func(t *testing.T) {
+			setProxyViperConfig(t, authType, classicProxy, false)
+			transport := proxyTransport(t)
+			assert.Nil(t, transport.Proxy)
+			assert.NotNil(t, transport.DialContext)
+		})
+	}
+
+	t.Run("ignore proxy bypasses the auth type", func(t *testing.T) {
+		setProxyViperConfig(t, "NTLM", classicProxy, true)
+		transport := proxyTransport(t)
+		assert.Nil(t, transport.Proxy)
+		assert.Nil(t, transport.DialContext)
+	})
+}
