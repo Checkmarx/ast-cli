@@ -3,7 +3,11 @@
 package integration
 
 import (
+	"bytes"
+	"log"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -59,4 +63,69 @@ func TestScanWithConservativeFiltering_VerifyGenericPatternsExcluded(t *testing.
 
 	err, _ := executeCommand(t, args...)
 	assert.NilError(t, err, "Scan with conservative filtering should succeed")
+}
+
+// TestScanWithLinguistFilters_VerifyFilesUploaded asserts that Linguist extensions and filenames reach the source zip
+// only when the tenant or project has LLM-based scanning enabled, that SAST files are always uploaded, and that files
+// outside the filter are still left out.
+func TestScanWithLinguistFilters_VerifyFilesUploaded(t *testing.T) {
+	sourceDir := t.TempDir()
+	files := map[string]string{
+		"deploy.sh":   "#!/bin/sh\necho deploy\n",
+		"build.ps1":   "Write-Host 'build'\n",
+		"Jenkinsfile": "pipeline { agent any }\n",
+		"Makefile":    "all:\n\techo build\n",
+		"Main.java":   "public class Main {}\n",
+		"logo.png":    "not a real image",
+		"notes.bak":   "backup",
+	}
+	for name, content := range files {
+		assert.NilError(t, os.WriteFile(filepath.Join(sourceDir, name), []byte(content), 0o600))
+	}
+
+	args := []string{
+		scanCommand, "create",
+		flag(params.ProjectName), GenerateRandomProjectNameForScan(),
+		flag(params.BranchFlag), "test-linguist-filters",
+		flag(params.SourcesFlag), sourceDir,
+		flag(params.ScanTypes), params.SastType,
+		flag(params.AsyncFlag),
+		flag(params.DebugFlag),
+	}
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+	defer func() {
+		log.SetOutput(os.Stderr)
+	}()
+
+	cmd := createASTIntegrationTestCommand(t)
+	err := execute(cmd, args...)
+	assert.NilError(t, err, "Scan with Linguist files should succeed")
+
+	logText := buf.String()
+	assert.Assert(t, hasZipLogLine(logText, "Included: ", "Main.java"), "SAST files should always be included by the default filter")
+
+	llmEnabled := strings.Contains(logText, "LLM-based scanning is enabled: adding Linguist patterns")
+	linguistPrefix := "Excluded: "
+	if llmEnabled {
+		linguistPrefix = "Included: "
+	}
+	for _, name := range []string{"deploy.sh", "build.ps1", "Jenkinsfile", "Makefile"} {
+		assert.Assert(t, hasZipLogLine(logText, linguistPrefix, name), "%s should be %s (LLM-based scanning enabled: %v)", name, linguistPrefix, llmEnabled)
+	}
+	for _, name := range []string{"logo.png", "notes.bak"} {
+		assert.Assert(t, hasZipLogLine(logText, "Excluded: ", name), "%s should be excluded by the default filter", name)
+	}
+}
+
+// hasZipLogLine reports whether the zip walk logged prefix for a file whose path ends with name.
+func hasZipLogLine(logText, prefix, name string) bool {
+	for _, line := range strings.Split(logText, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, prefix) && (strings.HasSuffix(line, "/"+name) || strings.HasSuffix(line, `\`+name)) {
+			return true
+		}
+	}
+	return false
 }

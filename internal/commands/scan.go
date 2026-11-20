@@ -47,6 +47,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// maxDefaultFilterFileSizeMB is the size limit for files picked up by the default include filter.
+const maxDefaultFilterFileSizeMB = 100
+
 const (
 	failedCreating           = "Failed creating a scan"
 	failedGetting            = "Failed showing a scan"
@@ -179,6 +182,8 @@ var (
 	kicsErrorCodes      = []string{"60", "50", "40", "30", "20"}
 	containerResolver   wrappers.ContainerResolverWrapper
 	MaxSizeBytes        int64 = 5 * 1024 * 1024 * 1024 // 5 GB in bytes
+	// MaxDefaultFilterFileSizeBytes caps files picked up by the default include filter; larger ones are left out of the zip.
+	MaxDefaultFilterFileSizeBytes int64 = maxDefaultFilterFileSizeMB * mbBytes
 )
 
 func NewScanCommand(
@@ -1666,7 +1671,15 @@ func scanTypeEnabled(scanType string) bool {
 	return false
 }
 
-func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, antMatcher filtering.Matcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool) (string, error) {
+// compressFolder zips sourceDir. defaultIncludeFilters is the default include filter in effect: the SAST patterns,
+// plus the Linguist patterns when LLM-based scanning is enabled. Files matched by the default filter or by
+// --file-include are subject to the size limit, except SCA files.
+func compressFolder(
+	sourceDir, filter, userIncludeFilter, scaResolver string,
+	antMatcher filtering.Matcher,
+	skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder bool,
+	defaultIncludeFilters []string,
+) (string, error) {
 	scaToolPath := scaResolver
 	outputFile, err := os.CreateTemp(os.TempDir(), "cx-*.zip")
 	if err != nil {
@@ -1676,10 +1689,13 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 	zipWriter := zip.NewWriter(outputFile)
 
 	excludeFilters := getExcludeFilters(filter, skipDefaultFilter)
-	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter)
+	includeFilters := getIncludeFilters(userIncludeFilter, skipDefaultFilter, defaultIncludeFilters)
+
+	// The size limit applies to files matched by the default filter or --file-include, unless --skip-default-filter is set.
+	applySizeLimit := !skipDefaultFilter
 
 	// First check if the directory is empty or all files are filtered out
-	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, antMatcher)
+	isEmpty, err := isDirEmpty(sourceDir, excludeFilters, includeFilters, applySizeLimit, antMatcher)
 	if err != nil {
 		return "", err
 	}
@@ -1697,7 +1713,7 @@ func compressFolder(sourceDir, filter, userIncludeFilter, scaResolver string, an
 		}
 	} else {
 		// Add directory files normally
-		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, antMatcher, excludeGitFolder)
+		err = addDirFiles(zipWriter, "", sourceDir, excludeFilters, includeFilters, applySizeLimit, antMatcher, excludeGitFolder)
 		if err != nil {
 			return "", err
 		}
@@ -1735,9 +1751,15 @@ func isSingleContainerScanTriggered() bool {
 	return len(scanTypeList) == 1 && scanTypeList[0] == commonParams.ContainersType
 }
 
-// isDirEmpty checks if a directory is empty or if all files are filtered out
-func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher filtering.Matcher) (bool, error) {
+// isDirEmpty checks if a directory is empty or if all files are filtered out. When the only matching files are over
+// the size limit, they are logged here, because addDirFiles (which logs them otherwise) does not run for an empty folder.
+func isDirEmpty(dir string, excludeFilters, includeFilters []string, applySizeLimit bool, antMatcher filtering.Matcher) (bool, error) {
 	empty := true
+	type oversizedFile struct {
+		path string
+		size int64
+	}
+	var oversized []oversizedFile
 
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -1756,25 +1778,18 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 		}
 		relPathSlash := filepath.ToSlash(relPath)
 
-		// Prune excluded directories rather than descending into them.
 		if info.IsDir() {
-			legacyFiltered, fErr := isDirFiltered(info.Name(), excludeFilters)
-			if fErr != nil {
-				return fErr
-			}
-			if legacyFiltered {
-				return filepath.SkipDir
-			}
-			if antMatcher.Excluded(relPathSlash, true) && !antMatcher.MustDescend(relPathSlash) {
-				return filepath.SkipDir
-			}
-			return nil
+			return pruneExcludedDir(info.Name(), relPathSlash, excludeFilters, antMatcher)
 		}
 
 		// Check if file passes filters
 		filename := filepath.Base(relPath)
 		if filterMatched(includeFilters, filename) && filterMatched(excludeFilters, filename) &&
 			!antMatcher.Excluded(relPathSlash, false) {
+			if size := targetFileSize(path, info); exceedsDefaultFilterSizeLimit(applySizeLimit, filename, size) {
+				oversized = append(oversized, oversizedFile{path: path, size: size})
+				return nil
+			}
 			empty = false
 			return filepath.SkipAll // We found at least one file that will be included
 		}
@@ -1782,15 +1797,67 @@ func isDirEmpty(dir string, excludeFilters, includeFilters []string, antMatcher 
 		return nil
 	})
 
+	if err == nil && empty {
+		for _, f := range oversized {
+			logSizeLimitExclusion(f.path, f.size)
+		}
+	}
 	return empty, err
 }
 
-func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool) []string {
+// pruneExcludedDir returns filepath.SkipDir for an excluded directory so the walk does not descend into it.
+func pruneExcludedDir(name, relPathSlash string, excludeFilters []string, antMatcher filtering.Matcher) error {
+	legacyFiltered, err := isDirFiltered(name, excludeFilters)
+	if err != nil {
+		return err
+	}
+	if legacyFiltered {
+		return filepath.SkipDir
+	}
+	if antMatcher.Excluded(relPathSlash, true) && !antMatcher.MustDescend(relPathSlash) {
+		return filepath.SkipDir
+	}
+	return nil
+}
+
+// logSizeLimitExclusion reports a file left out of the zip because it is over the default filter size limit.
+func logSizeLimitExclusion(fileName string, size int64) {
+	logger.Printf("Excluded (larger than %dMB): %s (%.2fMB)", maxDefaultFilterFileSizeMB, fileName, float64(size)/mbBytes)
+}
+
+func getIncludeFilters(userIncludeFilter string, skipDefaultFilter bool, defaultIncludeFilters []string) []string {
 	if skipDefaultFilter {
 		logger.PrintIfVerbose("--skip-default-filter set: skipping default base include file filter.")
 		return buildFilters([]string{}, userIncludeFilter)
 	}
-	return buildFilters(commonParams.BaseIncludeFilters, userIncludeFilter)
+	return buildFilters(defaultIncludeFilters, userIncludeFilter)
+}
+
+// exceedsDefaultFilterSizeLimit reports whether a file is too large for the source zip. Callers only use it for files
+// already matched by the include filter (default filter plus --file-include); applySizeLimit is false with
+// --skip-default-filter. SCA files are exempt. The size is compared first so the SCA check only runs for the rare
+// oversized file.
+func exceedsDefaultFilterSizeLimit(applySizeLimit bool, fileName string, size int64) bool {
+	return applySizeLimit && size > MaxDefaultFilterFileSizeBytes && !isScaFile(fileName)
+}
+
+// isScaFile reports whether the file belongs to the SCA (OSS) engine: a manifest, lock file, SCA Resolver output
+// or packaged binary.
+func isScaFile(fileName string) bool {
+	return filterMatched(commonParams.ScaFilePatterns, fileName)
+}
+
+// targetFileSize returns the size of the file, following a symlink to its target. A size that cannot be read is
+// reported as 0 so the file is handled as it was before the size limit (e.g. a dangling symlink).
+func targetFileSize(filePath string, info fs.FileInfo) int64 {
+	if info.Mode()&fs.ModeSymlink == 0 {
+		return info.Size()
+	}
+	target, err := os.Stat(filePath)
+	if err != nil {
+		return 0
+	}
+	return target.Size()
 }
 
 func getExcludeFilters(userExcludeFilter string, skipDefaultFilter bool) []string {
@@ -1835,7 +1902,14 @@ func addDirFilesIgnoreFilter(zipWriter *zip.Writer, baseDir, parentDir string) e
 	return nil
 }
 
-func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, includeFilters []string, antMatcher filtering.Matcher, excludeGitFolder bool) error {
+func addDirFiles(
+	zipWriter *zip.Writer,
+	baseDir, parentDir string,
+	filters, includeFilters []string,
+	applySizeLimit bool,
+	antMatcher filtering.Matcher,
+	excludeGitFolder bool,
+) error {
 	fileEntries, err := os.ReadDir(parentDir)
 	if err != nil {
 		return err
@@ -1848,9 +1922,9 @@ func addDirFiles(zipWriter *zip.Writer, baseDir, parentDir string, filters, incl
 		}
 
 		if util.IsDirOrSymLinkToDir(parentDir, fileInfo) {
-			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher, excludeGitFolder)
+			err = handleDir(zipWriter, baseDir, parentDir, filters, includeFilters, applySizeLimit, fileInfo, antMatcher, excludeGitFolder)
 		} else {
-			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, fileInfo, antMatcher)
+			err = handleFile(zipWriter, baseDir, parentDir, filters, includeFilters, applySizeLimit, fileInfo, antMatcher)
 		}
 
 		if err != nil {
@@ -1866,6 +1940,7 @@ func handleFile(
 	parentDir string,
 	filters,
 	includeFilters []string,
+	applySizeLimit bool,
 	file fs.FileInfo,
 	antMatcher filtering.Matcher,
 ) error {
@@ -1885,6 +1960,10 @@ func handleFile(
 		return nil
 	}
 	if filterMatched(includeFilters, file.Name()) && filterMatched(filters, file.Name()) && !antMatcher.Excluded(relPath, false) {
+		if size := targetFileSize(fileName, file); exceedsDefaultFilterSizeLimit(applySizeLimit, file.Name(), size) {
+			logSizeLimitExclusion(fileName, size)
+			return nil
+		}
 		logger.PrintIfVerbose("Included: " + fileName)
 		dat, err := ioutil.ReadFile(parentDir + file.Name())
 		if err != nil {
@@ -1914,6 +1993,7 @@ func handleDir(
 	parentDir string,
 	filters,
 	includeFilters []string,
+	applySizeLimit bool,
 	file fs.FileInfo,
 	antMatcher filtering.Matcher,
 	excludeGitFolder bool,
@@ -1955,7 +2035,7 @@ func handleDir(
 	}
 
 	newParent, newBase := GetNewParentAndBase(parentDir, file, baseDir)
-	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, antMatcher, excludeGitFolder)
+	return addDirFiles(zipWriter, newBase, newParent, filters, includeFilters, applySizeLimit, antMatcher, excludeGitFolder)
 }
 
 func isDirFiltered(filename string, filters []string) (bool, error) {
@@ -2166,8 +2246,17 @@ func addScaResults(zipWriter *zip.Writer) error {
 	return nil
 }
 
-func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
-	url, zipFilePath string, err error) {
+// getUploadURLFromSource prepares the scan source (SBOM file, zip or directory), applies filters,
+// runs the SCA/container resolvers when needed, compresses the result and uploads it.
+// Its length and cyclomatic complexity predate the default include filter changes.
+//
+//nolint:gocyclo,funlen
+func getUploadURLFromSource(
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	defaultIncludeFilters []string,
+) (url, zipFilePath string, err error) {
 	var preSignedURL string
 
 	sourceDirFilter, _ := cmd.Flags().GetString(commonParams.SourceDirFilterFlag)
@@ -2359,7 +2448,8 @@ func getUploadURLFromSource(cmd *cobra.Command, uploadsWrapper wrappers.UploadsW
 						includeGeneratedCsvJson = true
 					}
 				}
-				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher, skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder)
+				zipFilePath, dirPathErr = compressFolder(directoryPath, sourceDirFilter, userIncludeFilter, scaResolver, antMatcher,
+					skipDefaultFilter, includeGeneratedCsvJson, excludeGitFolder, defaultIncludeFilters)
 
 				// Clean up generated contributors files after successful zip creation
 				if dirPathErr == nil && includeGeneratedCsvJson {
@@ -2842,7 +2932,9 @@ func runCreateScanCommand(
 		// those apply when the scan is not submitted (and it avoids an unnecessary policy
 		// permission API call for the no-scan case).
 		if noScan {
-			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+			// No project is created for --no-scan, so only the tenant-level settings apply.
+			defaultIncludeFilters := getScanDefaultIncludeFilters(cmd, tenantWrapper, projectsWrapper, "")
+			_, zipFilePath, handlerErr := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 			defer cleanUpTempZip(zipFilePath)
 			if handlerErr != nil {
 				return errors.Errorf("%s", handlerErr)
@@ -3014,7 +3106,8 @@ func createScanModel(
 	}
 
 	// Set up the scan handler (either git or upload)
-	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper)
+	defaultIncludeFilters := getScanDefaultIncludeFilters(cmd, tenantWrapper, projectsWrapper, scanModel.Project.ID)
+	scanHandler, zipFilePath, err := setupScanHandler(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 	if err != nil {
 		return nil, zipFilePath, err
 	}
@@ -3041,7 +3134,27 @@ func getUploadType(cmd *cobra.Command) string {
 	return "upload"
 }
 
-func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper, featureFlagsWrapper wrappers.FeatureFlagsWrapper) (
+// getScanDefaultIncludeFilters resolves the default include filter for a local source; git sources and
+// --skip-default-filter never build a filtered zip, so the settings are not fetched for them.
+func getScanDefaultIncludeFilters(
+	cmd *cobra.Command,
+	tenantWrapper wrappers.TenantConfigurationWrapper,
+	projectsWrapper wrappers.ProjectsWrapper,
+	projectID string,
+) []string {
+	skipDefaultFilter, _ := cmd.Flags().GetBool(commonParams.SkipDefaultFilterFlag)
+	if skipDefaultFilter || getUploadType(cmd) == git {
+		return nil
+	}
+	return resolveDefaultIncludeFilters(tenantWrapper, projectsWrapper, projectID)
+}
+
+func setupScanHandler(
+	cmd *cobra.Command,
+	uploadsWrapper wrappers.UploadsWrapper,
+	featureFlagsWrapper wrappers.FeatureFlagsWrapper,
+	defaultIncludeFilters []string,
+) (
 	wrappers.ScanHandler,
 	string,
 	error,
@@ -3058,7 +3171,7 @@ func setupScanHandler(cmd *cobra.Command, uploadsWrapper wrappers.UploadsWrapper
 	} else {
 		var err error
 		var uploadURL string
-		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper, featureFlagsWrapper)
+		uploadURL, zipFilePath, err = getUploadURLFromSource(cmd, uploadsWrapper, featureFlagsWrapper, defaultIncludeFilters)
 		if err != nil {
 			return scanHandler, zipFilePath, err
 		}
