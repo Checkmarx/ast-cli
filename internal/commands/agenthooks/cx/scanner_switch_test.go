@@ -181,63 +181,45 @@ func TestCxBeforeFileEdit_SeverityThreshold_SecretsMixed(t *testing.T) {
 	}
 }
 
-// The switches and secret detection are features of every agent except Claude, Cursor, Gemini and Codex: those four skip secret
-// detection and, with the shared properties file present, keeps ASCA/KICS/SCA blocking at any severity.
-func TestSwitches_IgnoredForOtherAgents(t *testing.T) {
-	const secret = "ghp_other_agent_secret_value"
-	others := []agenthooks.AgentID{
+// Secret detection, the scanner switches and the severity threshold apply to every agent alike.
+func TestSwitches_HonouredForEveryAgent(t *testing.T) {
+	const secret = "ghp_every_agent_secret_value"
+	agents := []agenthooks.AgentID{
 		agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex,
+		agenthooks.AgentCopilotCLI, agenthooks.AgentDroid, agenthooks.AgentWindsurf,
 	}
-	for _, agent := range others {
-		t.Run(agentToString(agent)+"/secrets are skipped", func(t *testing.T) {
+	for _, agent := range agents {
+		t.Run(agentToString(agent)+"/secrets block by default", func(t *testing.T) {
 			resetHookGlobals(t)
 			useScannerConfig(t, "")
 			secretsScanner = stubSecretsScanner(secret)
-			if v := cxBeforeFileEdit(secretsEdit(secret, agent)); !v.Permit {
-				t.Fatal("secret detection must not run for this agent")
+			if v := cxBeforeFileEdit(secretsEdit(secret, agent)); v.Permit {
+				t.Fatal("secret detection must run for this agent")
 			}
 		})
-		t.Run(agentToString(agent)+"/kics switch off still blocks", func(t *testing.T) {
+		t.Run(agentToString(agent)+"/secrets switch off allows", func(t *testing.T) {
+			resetHookGlobals(t)
+			useScannerConfig(t, "cx_secret_scanner_enabled=false\n")
+			secretsScanner = stubSecretsScanner(secret)
+			if v := cxBeforeFileEdit(secretsEdit(secret, agent)); !v.Permit {
+				t.Fatal("secrets switch must apply to this agent")
+			}
+		})
+		t.Run(agentToString(agent)+"/kics switch off allows", func(t *testing.T) {
 			resetHookGlobals(t)
 			useScannerConfig(t, "cx_kics_scanner_enabled=false\n")
 			kicsScanner = kicsFinding("HIGH")
-			if v := cxBeforeFileEdit(kicsEdit(agent)); v.Permit {
-				t.Fatal("kics switch must not apply to this agent")
+			if v := cxBeforeFileEdit(kicsEdit(agent)); !v.Permit {
+				t.Fatal("kics switch must apply to this agent")
 			}
 		})
-		t.Run(agentToString(agent)+"/threshold does not relax", func(t *testing.T) {
+		t.Run(agentToString(agent)+"/threshold relaxes", func(t *testing.T) {
 			resetHookGlobals(t)
 			useScannerConfig(t, "cx_severity_threshold=critical\n")
 			kicsScanner = kicsFinding("LOW")
-			if v := cxBeforeFileEdit(kicsEdit(agent)); v.Permit {
-				t.Fatal("severity threshold must not apply to this agent")
+			if v := cxBeforeFileEdit(kicsEdit(agent)); !v.Permit {
+				t.Fatal("severity threshold must apply to this agent")
 			}
 		})
-	}
-}
-
-func TestSwitchesApply_ExcludesFourAgents(t *testing.T) {
-	for agent, want := range map[agenthooks.AgentID]bool{
-		agenthooks.AgentCopilotCLI: true, agenthooks.AgentCopilot: true,
-		agenthooks.AgentDroid: true, agenthooks.AgentWindsurf: true,
-		agenthooks.AgentClaude: false, agenthooks.AgentCursor: false, agenthooks.AgentGemini: false,
-		agenthooks.AgentCodex: false,
-	} {
-		if got := switchesApply(agent); got != want {
-			t.Errorf("%s: got %v, want %v", agentToString(agent), got, want)
-		}
-	}
-}
-
-func TestSecretsApply_ExcludesFourAgents(t *testing.T) {
-	for agent, want := range map[agenthooks.AgentID]bool{
-		agenthooks.AgentCopilotCLI: true, agenthooks.AgentCopilot: true,
-		agenthooks.AgentDroid: true, agenthooks.AgentWindsurf: true,
-		agenthooks.AgentClaude: false, agenthooks.AgentCursor: false,
-		agenthooks.AgentGemini: false, agenthooks.AgentCodex: false,
-	} {
-		if got := secretsApply(agent); got != want {
-			t.Errorf("%s: got %v, want %v", agentToString(agent), got, want)
-		}
 	}
 }

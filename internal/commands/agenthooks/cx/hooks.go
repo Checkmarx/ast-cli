@@ -40,7 +40,7 @@ var kicsScanner *kics.Scanner
 
 // bindThreshold points each guardrail's finding filter at the severity threshold for this event's
 // agent, so findings below cx_severity_threshold are left out of a deny and the agent is not told to
-// fix them. Agents the switches do not apply to keep every finding.
+// fix them.
 func bindThreshold(agent agenthooks.AgentID) {
 	below := func(severity string) bool { return belowThreshold(agent, severity) }
 	secrets.BelowThreshold = below
@@ -168,7 +168,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 			}
 		}
 	}
-	if secretsScanner != nil && secretsApply(ev.Agent) && scannerOn(ev.Agent, scannerconfig.Secrets) {
+	if secretsScanner != nil && scannerOn(ev.Agent, scannerconfig.Secrets) {
 		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
 			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
@@ -310,32 +310,10 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 	}
 }
 
-// switchesApply reports whether the ~/.checkmarx/cx-onboarding.properties scanner switches and severity
-// threshold are honoured for this agent. Claude, Cursor, Gemini and Codex are excluded for now: they keep
-// scanning with ASCA / KICS / SCA and blocking at any severity even when the shared file exists on the
-// machine. Every other agent (GitHub Copilot, Droid, Windsurf, ...) honours it. Add an agent to
-// the case list below to hold it back, or remove one to roll the feature out to it.
-func switchesApply(agent agenthooks.AgentID) bool {
-	switch agent {
-	case agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex:
-		return false
-	}
-	return true
-}
-
-// secretsApply reports whether the secret-detection guardrail runs for this agent. Claude, Cursor, Gemini
-// and Codex skip it entirely and keep the ASCA / KICS / SCA guardrails; every other agent runs it. It
-// shares switchesApply's agent list so the two cannot drift apart.
-func secretsApply(agent agenthooks.AgentID) bool {
-	return switchesApply(agent)
-}
-
-// scannerOn is scannerconfig.Enabled, limited to the agents the switches apply to. GitHub Copilot inside
-// VS Code takes the switches from the VS Code extension's IDE file instead, while that file is valid.
+// scannerOn reports whether scanner s is switched on in ~/.checkmarx/cx-onboarding.properties; every agent
+// honours it. GitHub Copilot inside VS Code takes the switches from the VS Code extension's IDE file
+// instead, while that file is valid.
 func scannerOn(agent agenthooks.AgentID, s scannerconfig.Scanner) bool {
-	if !switchesApply(agent) {
-		return true
-	}
 	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
 		return scannerconfig.IDEEnabled(s)
 	}
@@ -355,12 +333,9 @@ func selfHealingOff(agent agenthooks.AgentID, hook string) bool {
 	return true
 }
 
-// belowThreshold is scannerconfig.BelowThreshold, limited to the agents the switches apply to. GitHub
-// Copilot inside VS Code has no threshold setting, so it uses the IDE file's threshold, low when unset.
+// belowThreshold is scannerconfig.BelowThreshold for every agent. GitHub Copilot inside VS Code has no
+// threshold setting, so it uses the IDE file's threshold, low when unset.
 func belowThreshold(agent agenthooks.AgentID, severity string) bool {
-	if !switchesApply(agent) {
-		return false
-	}
 	if agent == agenthooks.AgentCopilotCLI && hostenv.InVSCode() {
 		return scannerconfig.IDEBelowThreshold(severity)
 	}
