@@ -4,8 +4,13 @@ release:
   name_template: 'Checkmarx One CLI {{.Version}}'
   disable: true
 
+before:
+  hooks:
+    # embed the real version into the Windows exe (cmd/rsrc_windows_*.syso is gitignored)
+    - go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version {{ .Version }} --file-version {{ .Version }}
+
 builds:
-  - main: ./cmd/main.go
+  - main: ./cmd
     env:
       - CGO_ENABLED=0
     binary: cx
@@ -42,7 +47,7 @@ builds:
     #         - SIGNING_HSM_CREDS={{ .Env.SIGNING_HSM_CREDS }}
     #         - SIGNING_REMOTE_SSH_PRIVATE_KEY={{ .Env.SIGNING_REMOTE_SSH_PRIVATE_KEY }}
 
-  - main: ./cmd/main.go
+  - main: ./cmd
     env:
       - CGO_ENABLED=0
     binary: cx

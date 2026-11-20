@@ -1,0 +1,47 @@
+name: Windows Version Resource Check
+
+on:
+  pull_request:
+    paths:
+      - 'cmd/**'
+      - 'go.mod'
+      - 'go.sum'
+      - '.goreleaser*.yml'
+      - 'Makefile'
+      - '.github/workflows/winres-check.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  winres-check:
+    name: Verify Windows version resource
+    runs-on: cx-public-ubuntu-x64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Go
+        uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
+        with:
+          go-version-file: go.mod
+
+      # the build hook generates the resources from the release version, same command as .goreleaser.yml
+      - name: Built Windows binaries carry Checkmarx version info
+        run: |
+          tmp="$(mktemp -d)"
+          version="9.8.7-rc.1"
+          go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version "$version" --file-version "$version"
+          for a in amd64 386 arm64; do
+            CGO_ENABLED=0 GOOS=windows GOARCH=$a go build -o "$tmp/cx_$a.exe" ./cmd
+            for s in "Checkmarx" "Checkmarx One CLI" "Copyright (c) Checkmarx Ltd." "$version"; do
+              strings -el "$tmp/cx_$a.exe" | grep -qxF "$s" \
+                || { echo "::error::windows/$a build is missing version info '$s'"; exit 1; }
+            done
+          done
