@@ -335,3 +335,96 @@ func TestOptionalFlag(t *testing.T) {
 	err := executeTestCommand(cmd, baseArgs...)
 	assert.NilError(t, err)
 }
+
+const (
+	classicProxyAddress    = "http://classic.company.com:8080"
+	invalidProxyAuthType   = "NotARealAuthType"
+	invalidProxyAuthErrMsg = "invalid proxy authentication type"
+	supportedProxyAuthMsg  = "basic, ntlm, kerberos, kerberos-native"
+)
+
+func TestProxyAuthType_SupportedValues_Pass(t *testing.T) {
+	supported := []string{
+		"basic", "ntlm", "kerberos", "kerberos-native",
+		"BASIC", "NTLM", "Ntlm", "Kerberos", "KERBEROS-NATIVE",
+	}
+	for _, value := range supported {
+		t.Run(value, func(t *testing.T) {
+			execCmdNilAssertion(t, "version", "--proxy-auth-type", value)
+		})
+	}
+}
+
+func TestProxyAuthType_EmptyOrUnset_Pass(t *testing.T) {
+	execCmdNilAssertion(t, "version")
+	execCmdNilAssertion(t, "version", "--proxy-auth-type", "")
+}
+
+func TestProxyAuthType_InvalidFlagValue_Fails(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "version", "--proxy-auth-type", invalidProxyAuthType)
+	assertError(t, err, invalidProxyAuthErrMsg)
+	assertError(t, err, `"`+invalidProxyAuthType+`"`)
+	assertError(t, err, supportedProxyAuthMsg)
+}
+
+func TestProxyAuthType_InvalidFlagValue_WithIgnoreProxy_Fails(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "version", "--ignore-proxy", "--proxy-auth-type", invalidProxyAuthType)
+	assertError(t, err, invalidProxyAuthErrMsg)
+}
+
+func TestProxyAuthType_ValidFlagValue_WithIgnoreProxy_Pass(t *testing.T) {
+	execCmdNilAssertion(t, "version", "--ignore-proxy", "--proxy-auth-type", "NTLM")
+}
+
+func TestProxyAuthType_InvalidEnvVar_Fails(t *testing.T) {
+	_ = viper.BindEnv(params.ProxyTypeKey, params.ProxyTypeEnv)
+	t.Setenv(params.ProxyTypeEnv, invalidProxyAuthType)
+	err := execCmdNotNilAssertion(t, "version")
+	assertError(t, err, invalidProxyAuthErrMsg)
+	assertError(t, err, params.ProxyTypeEnv)
+}
+
+func TestProxyAuthType_UppercaseEnvVar_Pass(t *testing.T) {
+	_ = viper.BindEnv(params.ProxyTypeKey, params.ProxyTypeEnv)
+	t.Setenv(params.ProxyTypeEnv, "NTLM")
+	execCmdNilAssertion(t, "version")
+}
+
+func writeProxyAuthConfigFile(t *testing.T, value string) string {
+	t.Helper()
+	configPath := filepath.Join(t.TempDir(), "checkmarxcli.yaml")
+	content := fmt.Sprintf("%s: %s\n", params.ProxyTypeKey, value)
+	assert.NilError(t, os.WriteFile(configPath, []byte(content), 0o600))
+	return configPath
+}
+
+func TestProxyAuthType_InvalidConfigFileValue_Fails(t *testing.T) {
+	configPath := writeProxyAuthConfigFile(t, invalidProxyAuthType)
+	err := execCmdNotNilAssertion(t, "version", "--config-file-path", configPath)
+	assertError(t, err, invalidProxyAuthErrMsg)
+}
+
+func TestProxyAuthType_UppercaseConfigFileValue_Pass(t *testing.T) {
+	configPath := writeProxyAuthConfigFile(t, "KERBEROS")
+	execCmdNilAssertion(t, "version", "--config-file-path", configPath)
+}
+
+func TestProxyAuthType_ProxyAddressIsNotValidated(t *testing.T) {
+	addresses := []string{
+		classicProxyAddress,
+		"http://user:pass@proxy.example.com:3128",
+		"proxy.example.com:8080",
+	}
+	for _, address := range addresses {
+		t.Run(address, func(t *testing.T) {
+			execCmdNilAssertion(t, "version", "--proxy", address)
+			execCmdNilAssertion(t, "version", "--proxy", address, "--proxy-auth-type", "NTLM")
+		})
+	}
+}
+
+func TestProxyAuthType_InvalidTypeWithValidProxyAddress_ReportsAuthType(t *testing.T) {
+	err := execCmdNotNilAssertion(t, "version", "--proxy", classicProxyAddress, "--proxy-auth-type", invalidProxyAuthType)
+	assertError(t, err, invalidProxyAuthErrMsg)
+	assert.Assert(t, !strings.Contains(err.Error(), "classic.company.com"), "error must not blame the proxy address")
+}
