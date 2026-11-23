@@ -1,11 +1,7 @@
 package wrappers
 
 import (
-	"bytes"
-	"os"
-	"os/exec"
 	"os/user"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -308,51 +304,4 @@ func GetSessionID() string {
 		logger.PrintIfVerbose("Failed to write session ID config: " + err.Error())
 	}
 	return sessionID
-}
-
-func GetMachineID() string {
-	switch runtime.GOOS {
-	case "windows":
-		return getWindowsMachineID()
-	case "darwin":
-		return getMacOSMachineID()
-	case "linux":
-		return getLinuxMachineID()
-	default:
-		return ""
-	}
-}
-
-
-func getMacOSMachineID() string {
-	buf := &bytes.Buffer{}
-	cmd := exec.Command("ioreg", "-rd1", "-c", "IOPlatformExpertDevice")
-	cmd.Stdout = buf
-	err := cmd.Run()
-	if err != nil {
-		logger.PrintIfVerbose("Failed to run ioreg: " + err.Error())
-		return ""
-	}
-	for _, line := range strings.Split(buf.String(), "\n") {
-		if strings.Contains(line, "IOPlatformUUID") {
-			parts := strings.SplitAfter(line, `" = "`)
-			if len(parts) == 2 {
-				machineID := strings.TrimRight(parts[1], `"`)
-				return strings.TrimSpace(machineID)
-			}
-		}
-	}
-	return ""
-}
-
-func getLinuxMachineID() string {
-	machineID, err := os.ReadFile("/var/lib/dbus/machine-id")
-	if err == nil {
-		return strings.TrimSpace(string(machineID))
-	}
-	machineID, err = os.ReadFile("/etc/machine-id")
-	if err == nil {
-		return strings.TrimSpace(string(machineID))
-	}
-	return ""
 }
