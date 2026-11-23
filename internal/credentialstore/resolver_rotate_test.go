@@ -9,6 +9,11 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
+const (
+	rotateOldToken = "old-token"
+	rotateNewToken = "new-token"
+)
+
 func newRotateResolver(t *testing.T) *Resolver {
 	keyring.MockInit()
 	t.Cleanup(keyring.MockInit)
@@ -16,16 +21,22 @@ func newRotateResolver(t *testing.T) *Resolver {
 	return NewResolver(filepath.Join(t.TempDir(), "checkmarxcli.yaml"), PolicyRequired, store)
 }
 
+func assertStored(t *testing.T, resolver *Resolver, expected string) {
+	value, err := resolver.Resolve(context.Background(), CredentialAPIKey)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, value)
+}
+
 func TestRotateReplacesStoredCredential(t *testing.T) {
 	resolver := newRotateResolver(t)
 	ctx := context.Background()
-	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "old"))
+	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, rotateOldToken))
 
-	assert.NoError(t, resolver.Rotate(ctx, CredentialAPIKey, "old", "new"))
+	saved, err := resolver.Rotate(ctx, CredentialAPIKey, rotateOldToken, rotateNewToken)
 
-	value, err := resolver.Resolve(ctx, CredentialAPIKey)
 	assert.NoError(t, err)
-	assert.Equal(t, "new", value)
+	assert.True(t, saved)
+	assertStored(t, resolver, rotateNewToken)
 }
 
 func TestRotateSkipsWhenStoredValueChanged(t *testing.T) {
@@ -33,22 +44,26 @@ func TestRotateSkipsWhenStoredValueChanged(t *testing.T) {
 	ctx := context.Background()
 	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "fresh-login"))
 
-	assert.NoError(t, resolver.Rotate(ctx, CredentialAPIKey, "old", "new"))
+	saved, err := resolver.Rotate(ctx, CredentialAPIKey, rotateOldToken, rotateNewToken)
 
-	value, _ := resolver.Resolve(ctx, CredentialAPIKey)
-	assert.Equal(t, "fresh-login", value)
+	assert.NoError(t, err)
+	assert.False(t, saved)
+	assertStored(t, resolver, "fresh-login")
 }
 
 func TestRotateNoOpForEmptyOrUnchangedValue(t *testing.T) {
 	resolver := newRotateResolver(t)
 	ctx := context.Background()
-	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "old"))
+	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, rotateOldToken))
 
-	assert.NoError(t, resolver.Rotate(ctx, CredentialAPIKey, "old", ""))
-	assert.NoError(t, resolver.Rotate(ctx, CredentialAPIKey, "old", "old"))
+	saved, err := resolver.Rotate(ctx, CredentialAPIKey, rotateOldToken, "")
+	assert.NoError(t, err)
+	assert.False(t, saved)
+	saved, err = resolver.Rotate(ctx, CredentialAPIKey, rotateOldToken, rotateOldToken)
+	assert.NoError(t, err)
+	assert.False(t, saved)
 
-	value, _ := resolver.Resolve(ctx, CredentialAPIKey)
-	assert.Equal(t, "old", value)
+	assertStored(t, resolver, rotateOldToken)
 }
 
 func TestRotateDoesNotWriteWhenExplicitOverrideSupplies(t *testing.T) {
@@ -57,14 +72,31 @@ func TestRotateDoesNotWriteWhenExplicitOverrideSupplies(t *testing.T) {
 	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "stored"))
 	resolver.SetExplicit(CredentialAPIKey, "from-flag")
 
-	assert.NoError(t, resolver.Rotate(ctx, CredentialAPIKey, "from-flag", "new"))
+	saved, err := resolver.Rotate(ctx, CredentialAPIKey, "from-flag", rotateNewToken)
 
+	assert.NoError(t, err)
+	assert.False(t, saved)
 	resolver.ResetExplicit()
-	value, _ := resolver.Resolve(ctx, CredentialAPIKey)
-	assert.Equal(t, "stored", value)
+	assertStored(t, resolver, "stored")
+}
+
+func TestRotateDoesNotWriteWhenEnvVarSupplies(t *testing.T) {
+	resolver := newRotateResolver(t)
+	ctx := context.Background()
+	assert.NoError(t, resolver.Store(ctx, CredentialAPIKey, "stored"))
+	t.Setenv("CX_APIKEY", "from-env")
+
+	saved, err := resolver.Rotate(ctx, CredentialAPIKey, "from-env", rotateNewToken)
+
+	assert.NoError(t, err)
+	assert.False(t, saved)
+	t.Setenv("CX_APIKEY", "")
+	assertStored(t, resolver, "stored")
 }
 
 func TestRotateRejectsInvalidName(t *testing.T) {
 	resolver := newRotateResolver(t)
-	assert.ErrorIs(t, resolver.Rotate(context.Background(), "bogus", "a", "b"), ErrInvalidName)
+	saved, err := resolver.Rotate(context.Background(), "bogus", "a", "b")
+	assert.ErrorIs(t, err, ErrInvalidName)
+	assert.False(t, saved)
 }

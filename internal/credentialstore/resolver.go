@@ -105,32 +105,36 @@ func (r *Resolver) Store(ctx context.Context, credentialName, value string) erro
 }
 
 // Rotate replaces a credential that the identity provider has just rotated
-// (e.g. a refresh token exchanged for a new one). It is a no-op when an
-// explicit override or environment variable supplies the credential, because
-// that source wins on resolve and the rotated value would never be read back.
-// It also skips the write when the stored value is no longer oldValue, so a
-// concurrent login or rotation is not overwritten with a stale value.
-func (r *Resolver) Rotate(ctx context.Context, credentialName, oldValue, newValue string) error {
+// (e.g. a refresh token exchanged for a new one) and reports whether it wrote
+// the new value. It does nothing when an explicit override or environment
+// variable supplies the credential, because that source wins on resolve and the
+// rotated value would never be read back. It also skips the write when the
+// stored value is no longer oldValue, so a concurrent login or rotation is not
+// overwritten with a stale value.
+func (r *Resolver) Rotate(ctx context.Context, credentialName, oldValue, newValue string) (bool, error) {
 	if !IsValidCredentialName(credentialName) {
-		return ErrInvalidName
+		return false, ErrInvalidName
 	}
 	if newValue == "" || newValue == oldValue {
-		return nil
+		return false, nil
 	}
 	if _, ok := r.explicitValue(credentialName); ok {
-		return nil
+		return false, nil
 	}
 	if envValue(credentialName) != "" {
-		return nil
+		return false, nil
 	}
 	current, err := r.resolve(ctx, credentialName)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if current != oldValue {
-		return nil
+		return false, nil
 	}
-	return r.Store(ctx, credentialName, newValue)
+	if err := r.Store(ctx, credentialName, newValue); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // Clear removes a credential following the policy, mirroring Store. A missing

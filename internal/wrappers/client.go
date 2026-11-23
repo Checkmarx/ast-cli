@@ -1087,9 +1087,13 @@ func persistRotatedRefreshToken(oldToken, newToken string) {
 		return
 	}
 	logger.RegisterSensitiveValue(newToken)
-	err := credentialstore.Default().Rotate(context.Background(), credentialstore.CredentialAPIKey, oldToken, newToken)
+	saved, err := credentialstore.Default().Rotate(context.Background(), credentialstore.CredentialAPIKey, oldToken, newToken)
 	if err != nil {
 		logger.PrintIfVerbose(fmt.Sprintf("Failed to save rotated refresh token: %v", err))
+		return
+	}
+	if !saved {
+		logger.PrintIfVerbose("Rotated refresh token not saved: the credential comes from a flag or environment variable, or was changed by another login.")
 		return
 	}
 	logger.PrintIfVerbose("Saved rotated refresh token.")
