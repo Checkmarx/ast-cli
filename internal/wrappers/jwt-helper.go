@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	uuidLength       = 36
+	uniqueIDPartsCnt = 2
+)
+
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
 	Tenant     string `json:"tenant_name"`
@@ -254,14 +259,14 @@ func GetUniqueID() string {
 
 func isValidUniqueIDFormat(uniqueID string) bool {
 	parts := strings.Split(uniqueID, "_")
-	if len(parts) != 2 {
+	if len(parts) != uniqueIDPartsCnt {
 		return false
 	}
 
 	guid := parts[0]
 	storedUsername := parts[1]
 
-	if len(guid) != 36 {
+	if len(guid) != uuidLength {
 		return false
 	}
 
@@ -290,6 +295,7 @@ func isValidUniqueIDFormat(uniqueID string) bool {
 	return true
 }
 
+// GetSessionID generates and returns a new session ID UUID, persisting it to the config file.
 func GetSessionID() string {
 	sessionID := uuid.New().String()
 	viper.Set(commonParams.SessionIDConfigKey, sessionID)

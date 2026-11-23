@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const keyValuePairsSplit = 2
+
 func NewTelemetryCommand(telemetryWrapper wrappers.TelemetryWrapper) *cobra.Command {
 	telemetryCmd := &cobra.Command{
 		Use:   "telemetry",
@@ -66,8 +68,8 @@ func parseEventAttributes(eventAttributesStr string) *wrappers.EventAttributes {
 	pairs := strings.Split(eventAttributesStr, ";")
 
 	for _, pair := range pairs {
-		kv := strings.SplitN(pair, "=", 2)
-		if len(kv) != 2 {
+		kv := strings.SplitN(pair, "=", keyValuePairsSplit)
+		if len(kv) != keyValuePairsSplit {
 			continue
 		}
 

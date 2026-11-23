@@ -1,5 +1,6 @@
 package wrappers
 
+// EventAttributes is a flexible map for telemetry event key-value pairs.
 type EventAttributes map[string]string
 
 type DataForAITelemetry struct {
