@@ -150,7 +150,7 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 		symlinkPath := filepath.Join(parentDir, fileInfo.Name())
 		realPath, err := os.Readlink(symlinkPath)
 		if err != nil {
-			fmt.Println("Error reading symlink:", err)
+			logger.PrintfIfVerbose("Error reading symlink: %v", err)
 			return false
 		}
 
@@ -160,7 +160,7 @@ func IsDirOrSymLinkToDir(parentDir string, fileInfo fs.FileInfo) bool {
 
 		targetInfo, err := os.Stat(realPath)
 		if err != nil {
-			fmt.Println("Error getting target info:", err)
+			logger.PrintfIfVerbose("Error getting target info: %v", err)
 			return false
 		}
 		return targetInfo.IsDir()
