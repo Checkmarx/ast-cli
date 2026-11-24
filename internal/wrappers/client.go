@@ -1081,7 +1081,7 @@ func exchangeAPIKey(astAPIKey, authURI string) (string, error) {
 }
 
 // persistRotatedRefreshToken is best effort: the access token is already valid,
-// so a failed write is only logged.
+// so a failed write only prints a warning.
 func persistRotatedRefreshToken(oldToken, newToken string) {
 	if newToken == "" || newToken == oldToken {
 		return
@@ -1089,7 +1089,7 @@ func persistRotatedRefreshToken(oldToken, newToken string) {
 	logger.RegisterSensitiveValue(newToken)
 	saved, err := credentialstore.Default().Rotate(context.Background(), credentialstore.CredentialAPIKey, oldToken, newToken)
 	if err != nil {
-		logger.PrintIfVerbose(fmt.Sprintf("Failed to save rotated refresh token: %v", err))
+		logger.Printf("Warning: could not save the refreshed credential: %v. You may need to run 'cx auth login' again.", err)
 		return
 	}
 	if !saved {

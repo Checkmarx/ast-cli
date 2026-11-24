@@ -1,14 +1,17 @@
 package wrappers
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/credentialstore"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/zalando/go-keyring"
 )
@@ -73,4 +76,38 @@ func TestExchangeAPIKeyKeepsTokenWhenResponseHasNone(t *testing.T) {
 	assert.NoError(t, err)
 	stored, _ := resolver.Resolve(context.Background(), credentialstore.CredentialAPIKey)
 	assert.Equal(t, "old-refresh", stored)
+}
+
+// brokenStore reads the stored token but fails every write, like a locked keyring.
+type brokenStore struct {
+	token string
+}
+
+func (s brokenStore) Get(_ context.Context, _ string) (string, error) { return s.token, nil }
+
+func (s brokenStore) Set(_ context.Context, _, _ string) error {
+	return credentialstore.ErrAccessDenied
+}
+
+func (s brokenStore) Delete(_ context.Context, _ string) error { return nil }
+
+func TestExchangeAPIKeyWarnsButSucceedsWhenSaveFails(t *testing.T) {
+	keyring.MockInit()
+	t.Cleanup(keyring.MockInit)
+	resolver := credentialstore.NewResolver(
+		filepath.Join(t.TempDir(), "checkmarxcli.yaml"), credentialstore.PolicyRequired, brokenStore{token: "old-refresh"})
+	credentialstore.SetDefaultResolverForTest(resolver)
+	t.Cleanup(credentialstore.ResetForTest)
+	var output bytes.Buffer
+	logger.SetOutput(&output)
+	t.Cleanup(func() { logger.SetOutput(os.Stderr) })
+	server := tokenServer(t, `{"access_token":"new-access","refresh_token":"new-refresh"}`, nil)
+
+	access, err := exchangeAPIKey("old-refresh", server.URL)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "new-access", access)
+	assert.Contains(t, output.String(), "Warning: could not save the refreshed credential")
+	assert.Contains(t, output.String(), "cx auth login")
+	assert.NotContains(t, output.String(), "new-refresh")
 }
