@@ -2,6 +2,7 @@ package util
 
 import (
 	"archive/zip"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -302,6 +303,35 @@ func TestIsDirOrSymLinkToDir_SymLinkToFile(t *testing.T) {
 
 	isDir := IsDirOrSymLinkToDir(parentDir, fileInfo)
 	assert.Assert(t, !isDir, "Symlink to file should return false")
+}
+
+// TestIsDirOrSymLinkToDir_DanglingSymlinkIsQuiet covers a relative alias whose
+// target is missing. Preparing a scan zip used to print "Error getting target info".
+func TestIsDirOrSymLinkToDir_DanglingSymlinkIsQuiet(t *testing.T) {
+	parent := t.TempDir()
+	linkPath := filepath.Join(parent, "testalias")
+	err := os.Symlink("../jiti/bin/jiti.js", linkPath)
+	if err != nil {
+		t.Skip("Symlinks not available on this system")
+	}
+
+	fileInfo, err := os.Lstat(linkPath)
+	assert.NilError(t, err)
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	assert.NilError(t, err)
+	os.Stdout = w
+
+	isDir := IsDirOrSymLinkToDir(parent, fileInfo)
+	assert.NilError(t, w.Close())
+	os.Stdout = old
+
+	out, err := io.ReadAll(r)
+	assert.NilError(t, err)
+	assert.Assert(t, !isDir, "Dangling symlink should not be treated as a directory")
+	assert.Assert(t, !strings.Contains(string(out), "Error getting target info"),
+		"dangling symlink should stay quiet, got %q", out)
 }
 
 // TestIsGitURL_Extended tests more Git URL variations
