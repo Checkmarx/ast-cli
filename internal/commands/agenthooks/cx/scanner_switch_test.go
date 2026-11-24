@@ -181,14 +181,71 @@ func TestCxBeforeFileEdit_SeverityThreshold_SecretsMixed(t *testing.T) {
 	}
 }
 
-// Secret detection, the scanner switches and the severity threshold apply to every agent alike.
-func TestSwitches_HonouredForEveryAgent(t *testing.T) {
-	const secret = "ghp_every_agent_secret_value"
-	agents := []agenthooks.AgentID{
-		agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex,
-		agenthooks.AgentCopilotCLI, agenthooks.AgentDroid, agenthooks.AgentWindsurf,
+// The switches and secret detection are features of every agent except Cursor, Gemini and Codex: those three skip secret
+// detection and, with the shared properties file present, keeps ASCA/KICS/SCA blocking at any severity.
+func TestSwitches_IgnoredForOtherAgents(t *testing.T) {
+	const secret = "ghp_other_agent_secret_value"
+	others := []agenthooks.AgentID{
+		agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex,
 	}
-	for _, agent := range agents {
+	for _, agent := range others {
+		t.Run(agentToString(agent)+"/secrets are skipped", func(t *testing.T) {
+			resetHookGlobals(t)
+			useScannerConfig(t, "")
+			secretsScanner = stubSecretsScanner(secret)
+			if v := cxBeforeFileEdit(secretsEdit(secret, agent)); !v.Permit {
+				t.Fatal("secret detection must not run for this agent")
+			}
+		})
+		t.Run(agentToString(agent)+"/kics switch off still blocks", func(t *testing.T) {
+			resetHookGlobals(t)
+			useScannerConfig(t, "cx_kics_scanner_enabled=false\n")
+			kicsScanner = kicsFinding("HIGH")
+			if v := cxBeforeFileEdit(kicsEdit(agent)); v.Permit {
+				t.Fatal("kics switch must not apply to this agent")
+			}
+		})
+		t.Run(agentToString(agent)+"/threshold does not relax", func(t *testing.T) {
+			resetHookGlobals(t)
+			useScannerConfig(t, "cx_severity_threshold=critical\n")
+			kicsScanner = kicsFinding("LOW")
+			if v := cxBeforeFileEdit(kicsEdit(agent)); v.Permit {
+				t.Fatal("severity threshold must not apply to this agent")
+			}
+		})
+	}
+}
+
+func TestSwitchesApply_ExcludesThreeAgents(t *testing.T) {
+	for agent, want := range map[agenthooks.AgentID]bool{
+		agenthooks.AgentCopilotCLI: true, agenthooks.AgentCopilot: true,
+		agenthooks.AgentDroid: true, agenthooks.AgentWindsurf: true,
+		agenthooks.AgentClaude: true, agenthooks.AgentCursor: false, agenthooks.AgentGemini: false,
+		agenthooks.AgentCodex: false,
+	} {
+		if got := switchesApply(agent); got != want {
+			t.Errorf("%s: got %v, want %v", agentToString(agent), got, want)
+		}
+	}
+}
+
+func TestSecretsApply_ExcludesThreeAgents(t *testing.T) {
+	for agent, want := range map[agenthooks.AgentID]bool{
+		agenthooks.AgentCopilotCLI: true, agenthooks.AgentCopilot: true,
+		agenthooks.AgentDroid: true, agenthooks.AgentWindsurf: true,
+		agenthooks.AgentClaude: true, agenthooks.AgentCursor: false,
+		agenthooks.AgentGemini: false, agenthooks.AgentCodex: false,
+	} {
+		if got := secretsApply(agent); got != want {
+			t.Errorf("%s: got %v, want %v", agentToString(agent), got, want)
+		}
+	}
+}
+
+// Claude Code and GitHub Copilot CLI honour secret detection, the scanner switches and the severity threshold.
+func TestSwitches_HonouredForClaudeAndCopilot(t *testing.T) {
+	const secret = "ghp_supported_agent_secret_value"
+	for _, agent := range []agenthooks.AgentID{agenthooks.AgentClaude, agenthooks.AgentCopilotCLI} {
 		t.Run(agentToString(agent)+"/secrets block by default", func(t *testing.T) {
 			resetHookGlobals(t)
 			useScannerConfig(t, "")
