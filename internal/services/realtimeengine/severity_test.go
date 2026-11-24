@@ -30,8 +30,8 @@ func TestParseSeverityFilter_MixedCaseSpacesAndTrailingComma_Normalised(t *testi
 func TestParseSeverityFilter_AllAcceptedValues(t *testing.T) {
 	f, err := ParseSeverityFilter("critical,high,medium,low,info")
 	assert.NoError(t, err)
-	assert.Len(t, f, len(AcceptedSeverities))
-	for _, s := range AcceptedSeverities {
+	assert.Len(t, f, len(acceptedSeverities))
+	for _, s := range acceptedSeverities {
 		assert.True(t, f.Allows(s))
 	}
 	assert.False(t, f.Allows("unknown"))
@@ -58,4 +58,36 @@ func TestSeverityFilter_Allows_CaseInsensitive(t *testing.T) {
 	assert.True(t, f.Allows("High"))
 	assert.True(t, f.Allows("HIGH"))
 	assert.False(t, f.Allows("medium"))
+}
+
+type finding struct{ id, severity string }
+
+func severityOf(f finding) string { return f.severity }
+
+func TestFilterBySeverity_NilFilter_ReturnsInput(t *testing.T) {
+	in := []finding{{"1", "High"}, {"2", "Low"}}
+	assert.Equal(t, in, FilterBySeverity(in, nil, severityOf))
+}
+
+func TestFilterBySeverity_KeepsOnlyAllowedSeveritiesIgnoringCase(t *testing.T) {
+	f, _ := ParseSeverityFilter("critical,high")
+	in := []finding{{"1", "Critical"}, {"2", "HIGH"}, {"3", "Medium"}, {"4", "Low"}, {"5", "Unknown"}, {"6", ""}}
+
+	out := FilterBySeverity(in, f, severityOf)
+
+	assert.Equal(t, []finding{{"1", "Critical"}, {"2", "HIGH"}}, out)
+	assert.Len(t, in, 6, "input must not be modified")
+}
+
+func TestFilterBySeverity_NoMatch_ReturnsEmptyNonNil(t *testing.T) {
+	f, _ := ParseSeverityFilter("low")
+	out := FilterBySeverity([]finding{{"1", "High"}}, f, severityOf)
+	assert.NotNil(t, out)
+	assert.Empty(t, out)
+}
+
+func TestFilterBySeverity_EmptyInput_ReturnedUnchanged(t *testing.T) {
+	f, _ := ParseSeverityFilter("high")
+	assert.Nil(t, FilterBySeverity(nil, f, severityOf))
+	assert.NotNil(t, FilterBySeverity([]finding{}, f, severityOf))
 }

@@ -66,9 +66,7 @@ func TestOssRealtimeScan_SeverityFilter_InvalidValue_ReturnsError(t *testing.T) 
 }
 
 func TestContainersRealtimeScan_SeverityFilter_OnlyAllowedSeveritiesReturned(t *testing.T) {
-	// The positive Dockerfile case is skipped in this environment until the containers RT API
-	// is deployed (see containers-realtime_test.go), so this test uses the same empty Dockerfile
-	// the existing success test relies on: it proves the flag is accepted end to end.
+	// Uses the empty Dockerfile because the positive case is skipped until the containers RT API is deployed.
 	configuration.LoadConfiguration()
 	args := []string{
 		"scan", "containers-realtime",

@@ -23,8 +23,7 @@ func RunScanContainersRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
-		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
+		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
 		if err != nil {
 			return err
 		}

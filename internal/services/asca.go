@@ -183,21 +183,6 @@ func filterIgnoredAscaFindings(results []grpcs.ScanDetail, ignoreMap map[string]
 	return filtered
 }
 
-// FilterScanDetailsBySeverity keeps only the ASCA findings whose severity is allowed by f.
-// A nil filter returns the input unchanged.
-func FilterScanDetailsBySeverity(details []grpcs.ScanDetail, f realtimeengine.SeverityFilter) []grpcs.ScanDetail {
-	if f == nil {
-		return details
-	}
-	filtered := make([]grpcs.ScanDetail, 0, len(details))
-	for i := range details {
-		if f.Allows(details[i].Severity) {
-			filtered = append(filtered, details[i])
-		}
-	}
-	return filtered
-}
-
 func buildAscaIgnoreMap(ignored []grpcs.AscaIgnoreFinding) map[string]bool {
 	m := make(map[string]bool)
 	for _, f := range ignored {

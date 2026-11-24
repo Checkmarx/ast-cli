@@ -23,8 +23,7 @@ func RunScanIacRealtimeCommand(
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 		engine, _ := cmd.Flags().GetString(commonParams.EngineFlag)
 
-		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
-		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
+		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -36,7 +35,7 @@ func RunScanIacRealtimeCommand(
 			return err
 		}
 
-		results = iacrealtime.FilterResultsBySeverity(results, severityFilter)
+		results = realtimeengine.FilterBySeverity(results, severityFilter, func(r iacrealtime.IacRealtimeResult) string { return r.Severity })
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {

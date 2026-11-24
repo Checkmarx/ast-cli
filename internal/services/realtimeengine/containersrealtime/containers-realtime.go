@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor"
@@ -18,34 +19,20 @@ import (
 )
 
 const (
-	defaultTag = "latest"
-
-	// statusMalicious is the realtime scanner status for a malicious image.
+	defaultTag      = "latest"
 	statusMalicious = "Malicious"
 )
 
-// FilterImagesBySeverity trims each image's Vulnerabilities to the severities allowed by f.
-// Malicious images carry no severity and are always kept untouched. Every image entry is kept
-// in place even when its vulnerability list becomes empty. A nil filter returns the input unchanged.
+// FilterImagesBySeverity trims each non-malicious image's vulnerabilities to those allowed by f, keeping every image.
 func FilterImagesBySeverity(images []ContainerImage, f realtimeengine.SeverityFilter) []ContainerImage {
 	if f == nil {
 		return images
 	}
-	filtered := make([]ContainerImage, 0, len(images))
-	for i := range images {
-		img := images[i]
-		if strings.EqualFold(img.Status, statusMalicious) {
-			filtered = append(filtered, img)
-			continue
+	filtered := slices.Clone(images)
+	for i := range filtered {
+		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
+			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, f, func(v Vulnerability) string { return v.Severity })
 		}
-		vulns := make([]Vulnerability, 0, len(img.Vulnerabilities))
-		for _, v := range img.Vulnerabilities {
-			if f.Allows(v.Severity) {
-				vulns = append(vulns, v)
-			}
-		}
-		img.Vulnerabilities = vulns
-		filtered = append(filtered, img)
 	}
 	return filtered
 }

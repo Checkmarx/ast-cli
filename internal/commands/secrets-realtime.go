@@ -22,8 +22,7 @@ func RunScanSecretsRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		severityFilterFlag, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
-		severityFilter, err := realtimeengine.ParseSeverityFilter(severityFilterFlag)
+		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -35,7 +34,7 @@ func RunScanSecretsRealtimeCommand(
 			return err
 		}
 
-		results = secretsrealtime.FilterResultsBySeverity(results, severityFilter)
+		results = realtimeengine.FilterBySeverity(results, severityFilter, func(r secretsrealtime.SecretsRealtimeResult) string { return r.Severity })
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {

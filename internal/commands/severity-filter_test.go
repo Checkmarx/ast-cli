@@ -30,10 +30,6 @@ func enableRealtimeFlag() {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 }
 
-// ---------------------------------------------------------------------------
-// oss-realtime
-// ---------------------------------------------------------------------------
-
 func TestOssRealtime_SeverityFilter_ValidValue_Success(t *testing.T) {
 	enableRealtimeFlag()
 	execCmdNilAssertion(t,
@@ -102,10 +98,6 @@ func TestOssRealtime_SeverityFilter_OutputOnlyContainsAllowedSeverities(t *testi
 	}
 }
 
-// ---------------------------------------------------------------------------
-// containers-realtime
-// ---------------------------------------------------------------------------
-
 func TestContainersRealtime_SeverityFilter_ValidValue_Success(t *testing.T) {
 	enableRealtimeFlag()
 	execCmdNilAssertion(t, "scan", "containers-realtime", "-s", "data/Dockerfile", "--severity-filter", "critical,high")
@@ -162,10 +154,6 @@ func TestContainersRealtime_SeverityFilter_OutputOnlyContainsAllowedSeverities(t
 	}
 }
 
-// ---------------------------------------------------------------------------
-// secrets-realtime
-// ---------------------------------------------------------------------------
-
 func TestSecretsRealtime_SeverityFilter_ValidValue_Success(t *testing.T) {
 	enableRealtimeFlag()
 	execCmdNilAssertion(t, "scan", "secrets-realtime", "-s", "data/secret-exposed.txt", "--severity-filter", "critical,high")
@@ -189,17 +177,12 @@ func TestSecretsRealtime_SeverityFilter_OutputOnlyContainsAllowedSeverities(t *t
 	}
 }
 
-// ---------------------------------------------------------------------------
-// iac-realtime
-// ---------------------------------------------------------------------------
-
 func TestIacRealtime_SeverityFilter_InvalidValue_FailsBeforeEngineStarts(t *testing.T) {
 	enableRealtimeFlag()
 	testFile := filepath.Join(t.TempDir(), "test.tf")
 	assert.NoError(t, os.WriteFile(testFile, []byte("resource \"aws_s3_bucket\" {}"), 0o600))
 
 	err := execCmdNotNilAssertion(t, "scan", "iac-realtime", "-s", testFile, "--severity-filter", invalidSeverityFilterValue)
-	// The parse error must win: no container engine error should be reported.
 	assert.Contains(t, err.Error(), invalidSeverityFilterMsg)
 }
 
@@ -217,9 +200,7 @@ func TestIacRealtime_SeverityFilter_ValidValue_FlagAccepted(t *testing.T) {
 
 	err := RunScanIacRealtimeCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})(cmd, nil)
 	if err != nil {
-		// A container engine is not guaranteed in the unit-test environment; the only
-		// failure this test must rule out is the severity-filter parse error.
+		// Without a container engine an engine error is fine; only a severity-filter error fails the test.
 		assert.NotContains(t, err.Error(), "severity-filter")
-		t.Logf("iac-realtime returned an engine error (acceptable without docker): %v", err)
 	}
 }

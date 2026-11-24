@@ -2,66 +2,71 @@ package realtimeengine
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/cobra"
 )
 
-// AcceptedSeverities lists the values the --severity-filter flag accepts, in display order.
-var AcceptedSeverities = []string{"critical", "high", "medium", "low", "info"}
+var acceptedSeverities = []string{"critical", "high", "medium", "low", "info"}
 
-// SeverityFilter is the set of lowercase severities a realtime command should return.
-// A nil filter means "no filtering": every severity is allowed.
+// SeverityFilter is the set of lowercase severities to return; nil means no filtering.
 type SeverityFilter map[string]struct{}
 
-// ParseSeverityFilter parses the raw --severity-filter flag value.
-// An empty or whitespace-only value returns a nil filter (allow all).
-// Tokens are trimmed, lowercased and blank tokens are skipped, matching the
-// other comma-separated flags on `cx scan`. Every unknown token is collected
-// into a single RealtimeEngineError that also lists the accepted values.
+// ParseSeverityFilter parses a comma-separated severity list; empty or separator-only input returns a nil filter.
 func ParseSeverityFilter(raw string) (SeverityFilter, error) {
-	if strings.TrimSpace(raw) == "" {
-		return nil, nil
-	}
-
-	accepted := make(map[string]struct{}, len(AcceptedSeverities))
-	for _, s := range AcceptedSeverities {
-		accepted[s] = struct{}{}
-	}
-
-	filter := make(SeverityFilter)
+	filter := SeverityFilter{}
 	var invalid []string
 	for _, token := range strings.Split(raw, ",") {
 		token = strings.ToLower(strings.TrimSpace(token))
-		if token == "" {
-			continue
-		}
-		if _, ok := accepted[token]; !ok {
+		switch {
+		case token == "":
+		case slices.Contains(acceptedSeverities, token):
+			filter[token] = struct{}{}
+		default:
 			invalid = append(invalid, token)
-			continue
 		}
-		filter[token] = struct{}{}
 	}
 
 	if len(invalid) > 0 {
 		return nil, errorconstants.NewRealtimeEngineError(fmt.Sprintf(
 			"invalid severity-filter value(s): %s. Accepted values: %s",
-			strings.Join(invalid, ", "), strings.Join(AcceptedSeverities, ", "),
+			strings.Join(invalid, ", "), strings.Join(acceptedSeverities, ", "),
 		)).Error()
 	}
-
 	if len(filter) == 0 {
 		return nil, nil
 	}
 	return filter, nil
 }
 
-// Allows reports whether a finding with the given severity should be returned.
-// A nil filter allows everything; comparison is case insensitive.
+// SeverityFilterFromCmd parses the --severity-filter flag of cmd.
+func SeverityFilterFromCmd(cmd *cobra.Command) (SeverityFilter, error) {
+	raw, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
+	return ParseSeverityFilter(raw)
+}
+
+// Allows reports whether a finding of the given severity should be returned, ignoring case.
 func (f SeverityFilter) Allows(severity string) bool {
 	if f == nil {
 		return true
 	}
 	_, ok := f[strings.ToLower(strings.TrimSpace(severity))]
 	return ok
+}
+
+// FilterBySeverity returns the items allowed by f; a nil filter or empty input is returned unchanged.
+func FilterBySeverity[T any](items []T, f SeverityFilter, severity func(T) string) []T {
+	if f == nil || len(items) == 0 {
+		return items
+	}
+	kept := make([]T, 0, len(items))
+	for _, item := range items {
+		if f.Allows(severity(item)) {
+			kept = append(kept, item)
+		}
+	}
+	return kept
 }

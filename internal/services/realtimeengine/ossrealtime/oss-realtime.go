@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -24,9 +25,7 @@ const (
 	pkgManagerCocoapods = "cocoapods"
 	pkgManagerCarthage  = "carthage"
 	pkgManagerSwift     = "swift"
-
-	// statusMalicious is the realtime scanner status for a malicious package.
-	statusMalicious = "Malicious"
+	statusMalicious     = "Malicious"
 )
 
 // convertLocations converts models.Location to realtimeengine.Location
@@ -116,29 +115,16 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	return response, nil
 }
 
-// FilterPackagesBySeverity trims each package's Vulnerabilities to the severities allowed by f.
-// Malicious packages carry no severity and are always kept untouched. Every package entry is
-// kept in place even when its vulnerability list becomes empty, so consumers still receive one
-// entry per manifest package. A nil filter returns the input unchanged.
+// FilterPackagesBySeverity trims each non-malicious package's vulnerabilities to those allowed by f, keeping every package.
 func FilterPackagesBySeverity(packages []OssPackage, f realtimeengine.SeverityFilter) []OssPackage {
 	if f == nil {
 		return packages
 	}
-	filtered := make([]OssPackage, 0, len(packages))
-	for i := range packages {
-		pkg := packages[i]
-		if strings.EqualFold(pkg.Status, statusMalicious) {
-			filtered = append(filtered, pkg)
-			continue
+	filtered := slices.Clone(packages)
+	for i := range filtered {
+		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
+			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, f, func(v Vulnerability) string { return v.Severity })
 		}
-		vulns := make([]Vulnerability, 0, len(pkg.Vulnerabilities))
-		for _, v := range pkg.Vulnerabilities {
-			if f.Allows(v.Severity) {
-				vulns = append(vulns, v)
-			}
-		}
-		pkg.Vulnerabilities = vulns
-		filtered = append(filtered, pkg)
 	}
 	return filtered
 }

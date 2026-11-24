@@ -53,21 +53,6 @@ func filterIgnoredSecrets(results []SecretsRealtimeResult, ignoreMap map[string]
 	return filtered
 }
 
-// FilterResultsBySeverity keeps only the secrets whose severity is allowed by f.
-// A nil filter returns the input unchanged.
-func FilterResultsBySeverity(results []SecretsRealtimeResult, f realtimeengine.SeverityFilter) []SecretsRealtimeResult {
-	if f == nil {
-		return results
-	}
-	filtered := make([]SecretsRealtimeResult, 0, len(results))
-	for i := range results {
-		if f.Allows(results[i].Severity) {
-			filtered = append(filtered, results[i])
-		}
-	}
-	return filtered
-}
-
 func buildIgnoreMap(ignored []IgnoredSecret) map[string]bool {
 	m := make(map[string]bool)
 	for _, s := range ignored {
