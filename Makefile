@@ -1,7 +1,8 @@
 .DEFAULT_GOAL := vet
 
-# version embedded in the Windows exe, override with: make winres VERSION=2.3.60
-VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo 0.0.0)
+# version embedded in the Windows exe as X.Y.Z (v2.3.72-fix -> 2.3.72, else 0.0.0), override with: make winres VERSION=2.3.60
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null)
+WINRES_VERSION := $(shell v='$(VERSION)'; v=$$(echo "$$v" | sed -E 's/^v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/'); echo "$$v" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$' || echo 0.0.0)
 
 .PHONY:fmt vet build lint winres
 fmt:
@@ -14,4 +15,4 @@ lint: fmt
 	golangci-lint run -c .golangci.yml
 # generate the (gitignored) Windows version resources used when building for Windows
 winres:
-	go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version $(VERSION) --file-version $(VERSION)
+	go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version $(WINRES_VERSION) --file-version $(WINRES_VERSION)

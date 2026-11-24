@@ -8,7 +8,7 @@ release:
 before:
   hooks:
     # embed the real version into the Windows exe (cmd/rsrc_windows_*.syso is gitignored)
-    - go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version {{ .Version }} --file-version {{ .Version }}
+    - go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version {{ .Major }}.{{ .Minor }}.{{ .Patch }} --file-version {{ .Major }}.{{ .Minor }}.{{ .Patch }}
 
 builds:
   - main: ./cmd
@@ -38,6 +38,11 @@ builds:
       - -s
       - -w
       - -X github.com/checkmarx/ast-cli/internal/params.Version={{.Version}}
+    hooks:
+      post:
+        # fail the build before archives and S3 upload if a Windows exe lacks the version info (other targets are skipped)
+        - cmd: go run .github/scripts/verify-winres.go {{ .Major }}.{{ .Minor }}.{{ .Patch }} {{ .Path }}
+          output: true
     # hooks:
     #   post:
     #     - cmd: bash .github/scripts/signing_win.sh dist/cx_windows_amd64_v1/cx.exe {{.Os}}
