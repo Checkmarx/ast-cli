@@ -52,3 +52,11 @@ CVE-2026-84243
 # Reason: Fixed in Go 1.26.11 / 1.27.4.
 # Status: Temporary ignore - remove once go.mod / CI toolchain is bumped to Go >= 1.26.11
 CVE-2026-97054
+
+# CVE-2026-128085: OpenTelemetry-Go denial of service via attribute truncation bypass
+# Severity: MEDIUM
+# Component: go.opentelemetry.io/otel/trace v1.45.0 (indirect dependency)
+# Current Version: v1.45.0 (fixed in 1.47.0)
+# Reason: Indirect dependency; not yet bumped in go.mod.
+# Status: Temporary ignore - remove once go.opentelemetry.io/otel modules are bumped to >= 1.47.0
+CVE-2026-128085
