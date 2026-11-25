@@ -50,5 +50,5 @@ jobs:
           for a in amd64 386 arm64; do
             CGO_ENABLED=0 GOOS=windows GOARCH=$a go build -o "$tmp/cx_$a.exe" ./cmd
           done
-          go run .github/scripts/verify-winres.go "$version" "$tmp"/cx_amd64.exe "$tmp"/cx_386.exe "$tmp"/cx_arm64.exe \
+          go run .github/scripts/verify-winres.go windows "$version" "$tmp"/cx_amd64.exe "$tmp"/cx_386.exe "$tmp"/cx_arm64.exe \
             || { echo "::error::Windows build is missing the Checkmarx version info"; exit 1; }

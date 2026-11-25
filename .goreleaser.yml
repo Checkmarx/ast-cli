@@ -40,7 +40,7 @@ builds:
     hooks:
       post:
         # fail the build before archives and S3 upload if a Windows exe lacks the version info (other targets are skipped)
-        - cmd: go run .github/scripts/verify-winres.go {{ .Major }}.{{ .Minor }}.{{ .Patch }} {{ .Path }}
+        - cmd: go run .github/scripts/verify-winres.go {{ .Os }} {{ .Major }}.{{ .Minor }}.{{ .Patch }} {{ .Path }}
           output: true
     # hooks:
     #   post:
