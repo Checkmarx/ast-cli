@@ -57,7 +57,7 @@ func (r *PdfHTTPWrapper) GeneratePdfReport(payload *PdfReportsPayload) (*PdfRepo
 		return nil, nil, errors.Wrapf(err, "Failed to parse request body")
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(params), true, clientTimeout)
 	if err != nil {
 		return nil, nil, err
 	}

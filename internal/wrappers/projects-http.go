@@ -34,7 +34,7 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
@@ -56,7 +56,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {

@@ -228,7 +228,7 @@ func startMultipartUpload(startMultipartUploadRequest StartMultipartUploadReques
 	if err != nil {
 		return StartMultipartUploadResponse{}, err
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return StartMultipartUploadResponse{}, err
 	}
@@ -272,7 +272,7 @@ func getPresignedURLForMultipartUploading(response StartMultipartUploadResponse,
 		return "", err
 	}
 
-	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return "", err
 	}
@@ -363,7 +363,7 @@ func completeMultipartUpload(completeMultipartUploadRequest CompleteMultipartUpl
 	if err != nil {
 		return err
 	}
-	resp, err := SendHTTPRequest(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return err
 	}
