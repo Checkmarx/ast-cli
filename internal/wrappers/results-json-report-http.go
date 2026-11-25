@@ -94,7 +94,7 @@ func (r *JSONHTTPWrapper) GenerateJSONReport(payload *JSONReportsPayload) (*JSON
 		return nil, nil, errors.Wrapf(err1, "Failed to parse request body")
 	}
 
-	response, err1 := SendHTTPRequest(http.MethodPost, r.path, bytes.NewBuffer(param), true, clientTimeOut)
+	response, err1 := SendHTTPRequestWithJSONContentType(http.MethodPost, r.path, bytes.NewBuffer(param), true, clientTimeOut)
 
 	if err1 != nil {
 		return nil, nil, err1

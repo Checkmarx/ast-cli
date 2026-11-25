@@ -55,7 +55,7 @@ func (s *ScansHTTPWrapper) Create(model *Scan) (*ScanResponseModel, *ErrorModel,
 	for attempt := 0; attempt <= scanEnqueueRetries; attempt++ {
 		// Standard HTTP retry (for 502, 401)
 		fn := func() (*http.Response, error) {
-			return SendHTTPRequest(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+			return SendHTTPRequestWithJSONContentType(http.MethodPost, s.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 		}
 		resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 		if err != nil {
@@ -223,7 +223,7 @@ func (s *ScansHTTPWrapper) Cancel(scanID string) (*ErrorModel, error) {
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPatch, s.path+"/"+scanID, bytes.NewBuffer(b), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
