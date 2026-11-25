@@ -14,6 +14,8 @@ import (
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 )
 
+const failedToParseConfig = "Failed to parse project configuration response"
+
 type ProjectsHTTPWrapper struct {
 	path string
 }
@@ -32,7 +34,7 @@ func (p *ProjectsHTTPWrapper) Create(model *Project) (*ProjectResponseModel, *Er
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPost, p.path, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
@@ -54,7 +56,7 @@ func (p *ProjectsHTTPWrapper) Update(projectID string, model *Project) error {
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPut, fmt.Sprintf("%s/%s", p.path, projectID), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
 	if err != nil {
@@ -99,6 +101,46 @@ func (p *ProjectsHTTPWrapper) UpdateConfiguration(projectID string, configuratio
 		}
 	}()
 	return handleProjectResponseWithNoBody(resp, err, http.StatusNoContent)
+}
+
+// GetConfiguration returns the effective configuration of a project; settings it does not override come from the tenant.
+func (p *ProjectsHTTPWrapper) GetConfiguration(projectID string) ([]ProjectConfiguration, *ErrorModel, error) {
+	clientTimeout := viper.GetUint(commonParams.ClientTimeoutKey)
+	params := map[string]string{
+		commonParams.ProjectIDFlag: projectID,
+	}
+
+	fn := func() (*http.Response, error) {
+		return SendHTTPRequestWithQueryParams(http.MethodGet, "api/configuration/project", params, nil, clientTimeout)
+	}
+	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay*time.Millisecond)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	decoder := json.NewDecoder(resp.Body)
+
+	switch resp.StatusCode {
+	case http.StatusBadRequest, http.StatusInternalServerError:
+		errorModel := ErrorModel{}
+		err = decoder.Decode(&errorModel)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseConfig)
+		}
+		return nil, &errorModel, nil
+	case http.StatusOK:
+		var configuration []ProjectConfiguration
+		err = decoder.Decode(&configuration)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, failedToParseConfig)
+		}
+		return configuration, nil, nil
+	default:
+		return nil, nil, errors.Errorf("response status code %d", resp.StatusCode)
+	}
 }
 
 func (p *ProjectsHTTPWrapper) Get(params map[string]string) (

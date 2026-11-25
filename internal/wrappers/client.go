@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -51,8 +52,17 @@ const (
 	defaultDialerDuration   = 30 * time.Second
 )
 
+const (
+	basicProxyToken          = "basic"
+	kerberosNativeProxyToken = "kerberos-native"
+	invalidProxyAuthTypeFmt  = "invalid proxy authentication type %q: supported types are %s " +
+		"(set via --%s, %s or the %s config key)"
+)
+
 var (
 	credentialsMutex sync.Mutex
+
+	supportedProxyAuthTypes = []string{basicProxyToken, ntlmProxyToken, kerberosProxyToken, kerberosNativeProxyToken}
 )
 
 type ClientCredentialsInfo struct {
@@ -151,8 +161,25 @@ func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 	}
 }
 
+func normalizeProxyAuthType(proxyAuthType string) string {
+	return strings.ToLower(strings.TrimSpace(proxyAuthType))
+}
+
+// ValidateProxyAuthType validates the configured proxy authentication type. An empty value defaults to basic.
+func ValidateProxyAuthType() error {
+	configured := viper.GetString(commonParams.ProxyTypeKey)
+	normalized := normalizeProxyAuthType(configured)
+	if normalized == "" || slices.Contains(supportedProxyAuthTypes, normalized) {
+		return nil
+	}
+	return errors.Errorf(
+		invalidProxyAuthTypeFmt, configured, strings.Join(supportedProxyAuthTypes, ", "),
+		commonParams.ProxyTypeFlag, commonParams.ProxyTypeEnv, commonParams.ProxyTypeKey,
+	)
+}
+
 func GetClient(timeout uint) *http.Client {
-	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
+	proxyTypeStr := normalizeProxyAuthType(viper.GetString(commonParams.ProxyTypeKey))
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyKey)
 
@@ -163,9 +190,13 @@ func GetClient(timeout uint) *http.Client {
 		client = ntmlProxyClient(timeout, proxyStr)
 	} else if proxyTypeStr == kerberosProxyToken {
 		client = kerberosProxyClient(timeout, proxyStr)
-	} else if proxyTypeStr == "kerberos-native" {
+	} else if proxyTypeStr == kerberosNativeProxyToken {
 		client = kerberosNativeProxyClient(timeout, proxyStr)
 	} else {
+		// Unknown values are rejected by the root PersistentPreRunE; commands that skip it end up here.
+		if proxyTypeStr != "" && proxyTypeStr != basicProxyToken {
+			logger.PrintIfVerbose(fmt.Sprintf("Unrecognized proxy authentication type %q, falling back to basic", proxyTypeStr))
+		}
 		client = basicProxyClient(timeout, proxyStr)
 	}
 
