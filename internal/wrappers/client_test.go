@@ -1,13 +1,16 @@
 package wrappers
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -487,6 +490,9 @@ func TestValidateProxyAuthType_UnsupportedValues(t *testing.T) {
 			assert.Error(t, err)
 			assert.Contains(t, err.Error(), fmt.Sprintf("invalid proxy authentication type %q", value))
 			assert.Contains(t, err.Error(), "basic, ntlm, kerberos, kerberos-native")
+			for _, location := range []string{"--proxy-auth-type", "CX_PROXY_AUTH_TYPE", "cx_proxy_auth_type"} {
+				assert.Contains(t, err.Error(), location)
+			}
 		})
 	}
 }
@@ -544,4 +550,23 @@ func TestGetClient_ProxyAuthTypeSelectsClient(t *testing.T) {
 		assert.Nil(t, transport.Proxy)
 		assert.Nil(t, transport.DialContext)
 	})
+}
+
+func TestGetClient_UnrecognizedProxyAuthTypeIsLoggedWhenVerbose(t *testing.T) {
+	var logBuffer bytes.Buffer
+	log.SetOutput(&logBuffer)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+	viper.Set(commonParams.DebugFlag, true)
+	t.Cleanup(func() { viper.Set(commonParams.DebugFlag, false) })
+
+	setProxyViperConfig(t, "NotARealAuthType", "http://classic.company.com:8080", false)
+	GetClient(1)
+	assert.Contains(t, logBuffer.String(), "falling back to basic")
+
+	logBuffer.Reset()
+	for _, authType := range []string{"", "basic", "BASIC"} {
+		setProxyViperConfig(t, authType, "http://classic.company.com:8080", false)
+		GetClient(1)
+	}
+	assert.NotContains(t, logBuffer.String(), "falling back to basic")
 }

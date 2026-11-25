@@ -350,36 +350,37 @@ func TestProxyAuthType_SupportedValues_Pass(t *testing.T) {
 	}
 	for _, value := range supported {
 		t.Run(value, func(t *testing.T) {
-			execCmdNilAssertion(t, "version", "--proxy-auth-type", value)
+			execCmdNilAssertion(t, "utils", "env", "--proxy-auth-type", value)
 		})
 	}
 }
 
 func TestProxyAuthType_EmptyOrUnset_Pass(t *testing.T) {
-	execCmdNilAssertion(t, "version")
-	execCmdNilAssertion(t, "version", "--proxy-auth-type", "")
+	execCmdNilAssertion(t, "utils", "env")
+	execCmdNilAssertion(t, "utils", "env", "--proxy-auth-type", "")
 }
 
 func TestProxyAuthType_InvalidFlagValue_Fails(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "version", "--proxy-auth-type", invalidProxyAuthType)
+	err := execCmdNotNilAssertion(t, "utils", "env", "--proxy-auth-type", invalidProxyAuthType)
 	assertError(t, err, invalidProxyAuthErrMsg)
 	assertError(t, err, `"`+invalidProxyAuthType+`"`)
 	assertError(t, err, supportedProxyAuthMsg)
+	assertError(t, err, "--"+params.ProxyTypeFlag)
 }
 
 func TestProxyAuthType_InvalidFlagValue_WithIgnoreProxy_Fails(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "version", "--ignore-proxy", "--proxy-auth-type", invalidProxyAuthType)
+	err := execCmdNotNilAssertion(t, "utils", "env", "--ignore-proxy", "--proxy-auth-type", invalidProxyAuthType)
 	assertError(t, err, invalidProxyAuthErrMsg)
 }
 
 func TestProxyAuthType_ValidFlagValue_WithIgnoreProxy_Pass(t *testing.T) {
-	execCmdNilAssertion(t, "version", "--ignore-proxy", "--proxy-auth-type", "NTLM")
+	execCmdNilAssertion(t, "utils", "env", "--ignore-proxy", "--proxy-auth-type", "NTLM")
 }
 
 func TestProxyAuthType_InvalidEnvVar_Fails(t *testing.T) {
 	_ = viper.BindEnv(params.ProxyTypeKey, params.ProxyTypeEnv)
 	t.Setenv(params.ProxyTypeEnv, invalidProxyAuthType)
-	err := execCmdNotNilAssertion(t, "version")
+	err := execCmdNotNilAssertion(t, "utils", "env")
 	assertError(t, err, invalidProxyAuthErrMsg)
 	assertError(t, err, params.ProxyTypeEnv)
 }
@@ -387,7 +388,7 @@ func TestProxyAuthType_InvalidEnvVar_Fails(t *testing.T) {
 func TestProxyAuthType_UppercaseEnvVar_Pass(t *testing.T) {
 	_ = viper.BindEnv(params.ProxyTypeKey, params.ProxyTypeEnv)
 	t.Setenv(params.ProxyTypeEnv, "NTLM")
-	execCmdNilAssertion(t, "version")
+	execCmdNilAssertion(t, "utils", "env")
 }
 
 func writeProxyAuthConfigFile(t *testing.T, value string) string {
@@ -400,13 +401,14 @@ func writeProxyAuthConfigFile(t *testing.T, value string) string {
 
 func TestProxyAuthType_InvalidConfigFileValue_Fails(t *testing.T) {
 	configPath := writeProxyAuthConfigFile(t, invalidProxyAuthType)
-	err := execCmdNotNilAssertion(t, "version", "--config-file-path", configPath)
+	err := execCmdNotNilAssertion(t, "utils", "env", "--config-file-path", configPath)
 	assertError(t, err, invalidProxyAuthErrMsg)
+	assertError(t, err, params.ProxyTypeKey)
 }
 
 func TestProxyAuthType_UppercaseConfigFileValue_Pass(t *testing.T) {
 	configPath := writeProxyAuthConfigFile(t, "KERBEROS")
-	execCmdNilAssertion(t, "version", "--config-file-path", configPath)
+	execCmdNilAssertion(t, "utils", "env", "--config-file-path", configPath)
 }
 
 func TestProxyAuthType_ProxyAddressIsNotValidated(t *testing.T) {
@@ -417,14 +419,74 @@ func TestProxyAuthType_ProxyAddressIsNotValidated(t *testing.T) {
 	}
 	for _, address := range addresses {
 		t.Run(address, func(t *testing.T) {
-			execCmdNilAssertion(t, "version", "--proxy", address)
-			execCmdNilAssertion(t, "version", "--proxy", address, "--proxy-auth-type", "NTLM")
+			execCmdNilAssertion(t, "utils", "env", "--proxy", address)
+			execCmdNilAssertion(t, "utils", "env", "--proxy", address, "--proxy-auth-type", "NTLM")
 		})
 	}
 }
 
 func TestProxyAuthType_InvalidTypeWithValidProxyAddress_ReportsAuthType(t *testing.T) {
-	err := execCmdNotNilAssertion(t, "version", "--proxy", classicProxyAddress, "--proxy-auth-type", invalidProxyAuthType)
+	err := execCmdNotNilAssertion(t, "utils", "env", "--proxy", classicProxyAddress, "--proxy-auth-type", invalidProxyAuthType)
 	assertError(t, err, invalidProxyAuthErrMsg)
 	assert.Assert(t, !strings.Contains(err.Error(), "classic.company.com"), "error must not blame the proxy address")
+}
+
+func commandChain(names ...string) *cobra.Command {
+	parent := &cobra.Command{Use: "cx"}
+	for _, name := range names {
+		child := &cobra.Command{Use: name}
+		parent.AddCommand(child)
+		parent = child
+	}
+	return parent
+}
+
+func TestSkipsProxyAuthTypeValidation(t *testing.T) {
+	exempt := [][]string{
+		{"configure"}, {"configure", "set"}, {"configure", "show"}, {"version"}, {"help"},
+		{"completion"}, {"utils", "completion"}, {"__complete"}, {"__completeNoDesc"},
+	}
+	for _, names := range exempt {
+		t.Run("exempt "+strings.Join(names, " "), func(t *testing.T) {
+			assert.Assert(t, skipsProxyAuthTypeValidation(commandChain(names...)))
+		})
+	}
+
+	validated := [][]string{
+		{"scan", "create"}, {"auth", "validate"}, {"utils", "env"}, {"project", "list"}, {"results", "show"},
+	}
+	for _, names := range validated {
+		t.Run("validated "+strings.Join(names, " "), func(t *testing.T) {
+			assert.Assert(t, !skipsProxyAuthTypeValidation(commandChain(names...)))
+		})
+	}
+}
+
+func TestProxyAuthType_InvalidConfigFileValue_DoesNotBlockRecoveryCommands(t *testing.T) {
+	configPath := writeProxyAuthConfigFile(t, invalidProxyAuthType)
+	recoveryCommands := [][]string{{"version"}, {"help"}, {"configure", "show"}}
+	for _, args := range recoveryCommands {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			execCmdNilAssertion(t, append(args, "--config-file-path", configPath)...)
+		})
+	}
+}
+
+func TestProxyAuthType_InvalidEnvVar_DoesNotBlockVersion(t *testing.T) {
+	_ = viper.BindEnv(params.ProxyTypeKey, params.ProxyTypeEnv)
+	t.Setenv(params.ProxyTypeEnv, invalidProxyAuthType)
+	execCmdNilAssertion(t, "version")
+}
+
+func TestProxyAuthType_ConfigureSetRepairsInvalidPersistedValue(t *testing.T) {
+	configPath := writeProxyAuthConfigFile(t, invalidProxyAuthType)
+
+	err := execCmdNotNilAssertion(t, "utils", "env", "--config-file-path", configPath)
+	assertError(t, err, invalidProxyAuthErrMsg)
+
+	execCmdNilAssertion(
+		t, "configure", "set", "--prop-name", params.ProxyTypeKey, "--prop-value", "basic", "--config-file-path", configPath,
+	)
+
+	execCmdNilAssertion(t, "utils", "env", "--config-file-path", configPath)
 }

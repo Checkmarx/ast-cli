@@ -140,9 +140,11 @@ func NewAstCLI(
 		if err != nil {
 			return err
 		}
-		err = wrappers.ValidateProxyAuthType()
-		if err != nil {
-			return err
+		if !skipsProxyAuthTypeValidation(cmd) {
+			err = wrappers.ValidateProxyAuthType()
+			if err != nil {
+				return err
+			}
 		}
 		// Need to check the __complete command to allow correct behavior of the autocomplete
 		if len(args) > 0 && cmd.Name() != params.Help && cmd.Name() != "__complete" {
@@ -297,6 +299,17 @@ var extraFilter = map[string]map[string]string{
 	"severity": {},
 	"status":   {},
 	"sort":     {},
+}
+
+// skipsProxyAuthTypeValidation identifies commands that must remain accessible to fix or inspect invalid proxy settings.
+func skipsProxyAuthTypeValidation(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		switch c.Name() {
+		case "configure", "version", "completion", params.Help, "__complete", "__completeNoDesc":
+			return true
+		}
+	}
+	return false
 }
 
 func PrintConfiguration() {

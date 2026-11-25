@@ -56,7 +56,7 @@ const (
 	basicProxyToken          = "basic"
 	kerberosNativeProxyToken = "kerberos-native"
 	invalidProxyAuthTypeFmt  = "invalid proxy authentication type %q: supported types are %s " +
-		"(set via --proxy-auth-type or CX_PROXY_AUTH_TYPE)"
+		"(set via --%s, %s or the %s config key)"
 )
 
 var (
@@ -172,7 +172,10 @@ func ValidateProxyAuthType() error {
 	if normalized == "" || slices.Contains(supportedProxyAuthTypes, normalized) {
 		return nil
 	}
-	return errors.Errorf(invalidProxyAuthTypeFmt, configured, strings.Join(supportedProxyAuthTypes, ", "))
+	return errors.Errorf(
+		invalidProxyAuthTypeFmt, configured, strings.Join(supportedProxyAuthTypes, ", "),
+		commonParams.ProxyTypeFlag, commonParams.ProxyTypeEnv, commonParams.ProxyTypeKey,
+	)
 }
 
 func GetClient(timeout uint) *http.Client {
@@ -190,6 +193,10 @@ func GetClient(timeout uint) *http.Client {
 	} else if proxyTypeStr == kerberosNativeProxyToken {
 		client = kerberosNativeProxyClient(timeout, proxyStr)
 	} else {
+		// Unknown values are rejected by the root PersistentPreRunE; commands that skip it end up here.
+		if proxyTypeStr != "" && proxyTypeStr != basicProxyToken {
+			logger.PrintIfVerbose(fmt.Sprintf("Unrecognized proxy authentication type %q, falling back to basic", proxyTypeStr))
+		}
 		client = basicProxyClient(timeout, proxyStr)
 	}
 
