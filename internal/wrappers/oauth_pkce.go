@@ -29,7 +29,7 @@ const (
 	tokenEndpointSuffix     = "protocol/openid-connect/token"
 )
 
-// pkceScopes matches the ide-integration client's scopes; offline_access yields
+// pkceScopes matches the cx-mcp-client client's scopes; offline_access yields
 // the refresh token stored as cx_apikey.
 const pkceScopes = "openid offline_access"
 
@@ -84,7 +84,7 @@ func LoginWithPKCE(ctx context.Context, opts PKCELoginOptions) (*PKCETokenRespon
 	if !ok {
 		return nil, errors.New("local listener did not bind to a TCP address")
 	}
-	// /checkmarx1/callback on localhost matches the ide-integration client's
+	// /checkmarx1/callback on localhost matches the cx-mcp-client client's
 	// whitelisted redirect pattern.
 	redirectURI := fmt.Sprintf("http://localhost:%d/checkmarx1/callback", tcpAddr.Port)
 	authURL := buildAuthorizeURL(authorizationEndpoint, opts.ClientID, redirectURI, state, challenge)
