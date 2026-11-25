@@ -6427,3 +6427,24 @@ func TestToScanTypes_MapsAPISecEngineToAPISecurityScanType(t *testing.T) {
 	result := toScanTypes([]string{"sast", "apisec", "kics", "scs"})
 	assert.DeepEqual(t, result, []string{"sast", "api-security", "kics", "scs"})
 }
+
+type apiSecScansMockWrapper struct {
+	mock.ScansMockWrapper
+}
+
+func (m *apiSecScansMockWrapper) Get(map[string]string) (*wrappers.ScansCollectionResponseModel, *wrappers.ErrorModel, error) {
+	return &wrappers.ScansCollectionResponseModel{
+		Scans: []wrappers.ScanResponseModel{{ID: "MOCK", Engines: []string{"sast", "apisec"}}},
+	}, nil, nil
+}
+
+func TestGetResubmitConfiguration_KeepsAPISecurityFromLatestScan(t *testing.T) {
+	originalScanTypes := actualScanTypes
+	defer func() { actualScanTypes = originalScanTypes }()
+
+	_, err := getResubmitConfiguration(&apiSecScansMockWrapper{}, "project-id", "")
+
+	assert.NilError(t, err)
+	assert.Assert(t, scanTypeEnabled(commonParams.APISecurityType), "api-security should stay enabled on resubmit")
+	assert.Assert(t, scanTypeEnabled(commonParams.SastType), "sast should stay enabled on resubmit")
+}
