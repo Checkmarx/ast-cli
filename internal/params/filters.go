@@ -1,6 +1,77 @@
 package params
 
-var BaseIncludeFilters = []string{
+import "slices"
+
+// BaseIncludeFilters is the default include filter: the SAST patterns followed by the Linguist extension and filename patterns.
+var BaseIncludeFilters = slices.Clip(slices.Concat(sastIncludeFilters, linguistExtensionFilters, linguistFilenameFilters))
+
+// SastIncludeFilters is the default include filter without the Linguist patterns, used when LLM-based scanning is off.
+var SastIncludeFilters = slices.Clip(sastIncludeFilters)
+
+// ScaFilePatterns are the files that belong to the SCA (OSS) engine: package manifests, lock files, SCA Resolver
+// output and packaged binaries. They are exempt from the default filter size limit because they can exceed it.
+// the exemption never adds a file to the zip.
+var ScaFilePatterns = []string{
+	// Manifests supported by the OSS realtime scanner (ossrealtime.IsSupportedManifestFile).
+	"pom.xml",
+	"package.json",
+	"bower.json",
+	"Directory.Packages.props",
+	"packages.config",
+	"*.csproj",
+	"go.mod",
+	"build.gradle",
+	"build.gradle.kts",
+	"libs.versions.toml",
+	"*.sbt",
+	"setup.cfg",
+	"setup.py",
+	"pyproject.toml",
+	"packages*.txt",
+	"constraint*.txt",
+	"Podfile",
+	"*.podspec",
+	"*.podspec.json",
+	"Cartfile",
+	"Cartfile.private",
+	"Gemfile",
+	"composer.json",
+	"pubspec.yaml",
+	"Package.swift",
+	"Package@swift-*.swift",
+	// Other manifests already in the default include filter.
+	"*requirement*.txt",
+	"build.sbt",
+	"Directory.Build.props",
+	// Lock files of the same package managers.
+	"package-lock.json",
+	"npm-shrinkwrap.json",
+	"yarn.lock",
+	"pnpm-lock.yaml",
+	"packages.lock.json",
+	"go.sum",
+	"poetry.lock",
+	"composer.lock",
+	"Gemfile.lock",
+	"Podfile.lock",
+	// SCA Resolver output.
+	"*.cxsca-results.json",
+	"*.cxsca-sast-results.json",
+	"*.cxsca-topology-results.json",
+	"*.cxsca.sig",
+	// Packaged binaries analysed by SCA.
+	"*.jar",
+}
+
+// DefaultIncludeFilters returns the default include filter; the Linguist patterns are added only when LLM-based scanning is enabled.
+func DefaultIncludeFilters(includeLinguist bool) []string {
+	if includeLinguist {
+		return BaseIncludeFilters
+	}
+	return SastIncludeFilters
+}
+
+var sastIncludeFilters = []string{
 	"*.javasln",
 	"*.project",
 	"*.java",
@@ -26,7 +97,6 @@ var BaseIncludeFilters = []string{
 	"*.cls",
 	"*.dsr",
 	"*.ctl",
-	"*.vb",
 	"*.cpp",
 	"*.c++",
 	"*.cxx",
@@ -52,7 +122,6 @@ var BaseIncludeFilters = []string{
 	"*.apexp",
 	"*.page",
 	"*.component",
-	"*.cls",
 	"*.trigger",
 	"*.tgr",
 	"*.object",
@@ -76,14 +145,9 @@ var BaseIncludeFilters = []string{
 	"*.pm",
 	"*.plx",
 	"*.psgi",
-	"*.java",
-	"*.kt",
 	"*.m",
-	"*.h",
 	"*.swift",
 	"*.xib",
-	"*.html",
-	"*.htm",
 	"*.pls",
 	"*.sql",
 	"*.pkh",
@@ -112,12 +176,10 @@ var BaseIncludeFilters = []string{
 	"*.cpy",
 	"*.aspx",
 	"*.ascx",
-	"*.config",
 	"*.xml",
 	"*.cgi",
 	"*.inc",
 	"*.jar",
-	"*.js",
 	"*.xsjs",
 	"*.xsjslib",
 	"*.dll",
@@ -154,7 +216,6 @@ var BaseIncludeFilters = []string{
 	"*.mjs",
 	"*.mts",
 	"*.cts",
-	"*.html",
 	"*.xhtml",
 	"*.vm",
 	"*.ac",
