@@ -4,7 +4,7 @@ go 1.26.10
 
 require (
 	github.com/Checkmarx/ast-cx-hooks v1.0.10
-	github.com/Checkmarx/containers-resolver v1.0.37
+	github.com/Checkmarx/containers-resolver v1.0.38
 	github.com/Checkmarx/containers-types v1.0.9
 	github.com/Checkmarx/gen-ai-prompts v0.0.0-20240807143411-708ceec12b63
 	github.com/Checkmarx/gen-ai-wrapper v1.0.3
@@ -78,7 +78,7 @@ require (
 	github.com/BobuSumisu/aho-corasick v1.0.3 // indirect
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Checkmarx/containers-images-extractor v1.0.22
-	github.com/Checkmarx/containers-syft-packages-extractor v1.0.28
+	github.com/Checkmarx/containers-syft-packages-extractor v1.0.29
 	github.com/CycloneDX/cyclonedx-go v0.10.0 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
