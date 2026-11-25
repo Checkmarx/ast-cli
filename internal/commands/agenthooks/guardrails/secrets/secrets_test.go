@@ -272,7 +272,11 @@ func TestFormatFindings_OmitsInjectionTriggers(t *testing.T) {
 		if !strings.Contains(ctx, "cx scan secrets-realtime -s") {
 			t.Errorf("%s context missing secrets re-scan", agent)
 		}
-		if !strings.Contains(ctx, "that re-scan validates the finding") {
+		if agent == agenthooks.AgentClaude {
+			if !strings.Contains(ctx, "cannot validate your fix") || !strings.Contains(ctx, "not (a): remediate anyway") {
+				t.Errorf("%s context missing retry-as-verification / use-as-is guidance", agent)
+			}
+		} else if !strings.Contains(ctx, "that re-scan validates the finding") {
 			t.Errorf("%s context missing re-scan validation", agent)
 		}
 		if !strings.Contains(ctx, "partial fix") {
