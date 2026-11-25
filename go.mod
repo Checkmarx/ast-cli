@@ -47,6 +47,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/displaywidth v0.10.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.6.0 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/danieljoos/wincred v1.2.3 // indirect
 	github.com/distribution/distribution/v3 v3.1.1 // indirect
 	github.com/docker/docker v28.0.3+incompatible // indirect
@@ -60,6 +61,7 @@ require (
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423092549-19e70c243037 // indirect
 	github.com/morikuni/aec v1.1.0 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/opencontainers/selinux v1.13.1 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
@@ -67,7 +69,12 @@ require (
 	github.com/secDre4mer/pkcs7 v0.0.0-20240322103146-665324a4461d // indirect
 	github.com/segmentio/asm v1.1.3 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
+	github.com/tc-hib/go-winres v0.3.3 // indirect
+	github.com/tc-hib/winres v0.2.1 // indirect
+	github.com/urfave/cli/v2 v2.27.7 // indirect
+	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+	golang.org/x/image v0.41.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.3 // indirect
 )
 
@@ -340,3 +347,5 @@ replace github.com/opencontainers/selinux => github.com/opencontainers/selinux v
 replace github.com/opencontainers/runtime-spec => github.com/opencontainers/runtime-spec v1.2.0
 
 replace github.com/zalando/go-keyring => github.com/checkmarx/go-keyring v0.0.0-20260812105354-1168609d33ac
+
+tool github.com/tc-hib/go-winres
