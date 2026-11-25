@@ -82,7 +82,7 @@ func TestGetUniqueID(t *testing.T) {
 
 	t.Run("returns existing unique ID from config", func(t *testing.T) {
 		// Setup: set existing ID
-		existingID := "test-uuid-456_testuser"
+		existingID := "550e8400-e29b-41d4-a716-446655440000_testuser"
 		viper.Set(commonParams.UniqueIDConfigKey, existingID)
 
 		result := GetUniqueID()
@@ -143,9 +143,9 @@ func TestIsValidUniqueIDFormat(t *testing.T) {
 			valid:    false,
 		},
 		{
-			name:     "invalid - multiple underscores",
+			name:     "valid - username containing underscore",
 			uniqueID: "550e8400-e29b-41d4-a716-446655440000_test_user",
-			valid:    false,
+			valid:    true,
 		},
 	}
 
@@ -157,7 +157,7 @@ func TestIsValidUniqueIDFormat(t *testing.T) {
 	}
 }
 
-func TestGetSessionID(t *testing.T) {
+func TestGetSessionIDAlwaysGeneratesNewID(t *testing.T) {
 	// Save original value and restore after test
 	originalID := viper.GetString(commonParams.SessionIDConfigKey)
 	defer viper.Set(commonParams.SessionIDConfigKey, originalID)
@@ -172,16 +172,18 @@ func TestGetSessionID(t *testing.T) {
 		assert.Assert(t, strings.Count(result, "-") == 4, "Should have 4 dashes in UUID")
 	})
 
-	t.Run("returns existing valid session ID from config", func(t *testing.T) {
-		validID := "550e8400-e29b-41d4-a716-446655440000"
-		viper.Set(commonParams.SessionIDConfigKey, validID)
+	t.Run("replaces existing valid session ID", func(t *testing.T) {
+		existingID := "550e8400-e29b-41d4-a716-446655440000"
+		viper.Set(commonParams.SessionIDConfigKey, existingID)
 
 		result := GetSessionID()
 
-		assert.Equal(t, validID, result, "Should return existing valid session ID")
+		assert.Assert(t, result != existingID, "Should generate a new ID even when a valid one exists")
+		assert.Assert(t, len(result) == 36, "Should generate valid UUID format")
+		assert.Equal(t, result, viper.GetString(commonParams.SessionIDConfigKey), "Should store the new ID in config")
 	})
 
-	t.Run("regenerates invalid session ID", func(t *testing.T) {
+	t.Run("replaces invalid session ID", func(t *testing.T) {
 		invalidID := "550e8400-e29b-41d4-invalid-446655440000"
 		viper.Set(commonParams.SessionIDConfigKey, invalidID)
 

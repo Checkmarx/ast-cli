@@ -9,20 +9,20 @@ type DataForAITelemetry struct {
 	Type             string           `json:"type"`
 	SubType          string           `json:"subType"`
 	Agent            string           `json:"agent"`
-	AgentVersion     string           `json:"agentVersion"`
-	CxPluginVersion  string           `json:"cxPluginVersion"`
-	PluginType       string           `json:"pluginType"`
+	AgentVersion     string           `json:"agentVersion,omitempty"`
+	CxPluginVersion  string           `json:"cxPluginVersion,omitempty"`
+	PluginType       string           `json:"pluginType,omitempty"`
 	Engine           string           `json:"engine"`
 	ScanType         string           `json:"scanType"`
 	Status           string           `json:"status"`
-	StatusResult     string           `json:"statusResult"`
+	StatusResult     string           `json:"statusResult,omitempty"`
 	APIVersion       string           `json:"apiVersion,omitempty"`
 	TotalCount       int              `json:"totalCount"`
-	RepoURL          string           `json:"repoUrl"`
+	RepoURL          string           `json:"repoUrl,omitempty"`
 	UniqueID         string           `json:"uniqueId"`
 	SessionID        string           `json:"sessionId"`
-	EventAttributes  *EventAttributes `json:"eventAttributes"`
-	AiAgentSessionId string           `json:"aiAgentSessionId"`
+	EventAttributes  *EventAttributes `json:"eventAttributes,omitempty"`
+	AiAgentSessionId string           `json:"aiAgentSessionId,omitempty"`
 }
 
 type TelemetryWrapper interface {

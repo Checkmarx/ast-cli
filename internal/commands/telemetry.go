@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/pkg/errors"
@@ -53,7 +54,7 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.CxPluginVersionFlag, "", "CX Plugin Version")
 	telemetryAICmd.PersistentFlags().String(params.PluginTypeFlag, "", "Plugin Type")
 	telemetryAICmd.PersistentFlags().String(params.RepoURLFlag, "", "Repository URL")
-	telemetryAICmd.PersistentFlags().String(params.EventAttributesFlag, "", "Event Attributes in key=value;key=value format (e.g., apiVersion=v2;vulnerabilityId=CVE-2021-44228;remediationMode=DevAssist)")
+	telemetryAICmd.PersistentFlags().String(params.EventAttributesFlag, "", "Event Attributes in key=value;key=value format (e.g., apiVersion=v2;vulnerabilityId=CVE-2021-44228;remediationMode=DevAssist). Pairs are split on ';', a pair without '=' is skipped, and values cannot contain ';'")
 	telemetryAICmd.PersistentFlags().String(params.ApiVersionFlag, "", "API Version")
 
 	return telemetryAICmd
@@ -70,15 +71,18 @@ func parseEventAttributes(eventAttributesStr string) *wrappers.EventAttributes {
 	for _, pair := range pairs {
 		kv := strings.SplitN(pair, "=", keyValuePairsSplit)
 		if len(kv) != keyValuePairsSplit {
+			logger.PrintIfVerbose("Skipping event attribute without '=': " + pair)
 			continue
 		}
 
 		key := strings.TrimSpace(kv[0])
 		value := strings.TrimSpace(kv[1])
 
-		if key != "" {
-			attrs[key] = value
+		if key == "" {
+			logger.PrintIfVerbose("Skipping event attribute with empty key: " + pair)
+			continue
 		}
+		attrs[key] = value
 	}
 
 	if len(attrs) == 0 {

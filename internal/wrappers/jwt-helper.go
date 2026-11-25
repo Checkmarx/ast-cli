@@ -258,7 +258,7 @@ func GetUniqueID() string {
 }
 
 func isValidUniqueIDFormat(uniqueID string) bool {
-	parts := strings.Split(uniqueID, "_")
+	parts := strings.SplitN(uniqueID, "_", uniqueIDPartsCnt)
 	if len(parts) != uniqueIDPartsCnt {
 		return false
 	}
@@ -274,28 +274,10 @@ func isValidUniqueIDFormat(uniqueID string) bool {
 		return false
 	}
 
-	if storedUsername == "" {
-		return false
-	}
-
-	currentUser, err := user.Current()
-	if err != nil {
-		return false
-	}
-	currentUsername := currentUser.Username
-	currentUsername = strings.TrimSpace(currentUsername)
-	if strings.Contains(currentUsername, "\\") {
-		currentUsername = strings.Split(currentUsername, "\\")[1]
-	}
-
-	if storedUsername != currentUsername {
-		return false
-	}
-
-	return true
+	return storedUsername != ""
 }
 
-// GetSessionID generates and returns a new session ID UUID, persisting it to the config file.
+// GetSessionID always generates a new session ID UUID, overwriting any existing value, and persists it to the config file.
 func GetSessionID() string {
 	sessionID := uuid.New().String()
 	viper.Set(commonParams.SessionIDConfigKey, sessionID)
