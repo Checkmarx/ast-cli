@@ -6422,3 +6422,8 @@ func TestCleanGeneratedContributorsFiles(t *testing.T) {
 		assert.Equal(t, true, fileExists(checkmarxDir), ".checkmarx should still exist")
 	})
 }
+
+func TestToScanTypes_MapsAPISecEngineToAPISecurityScanType(t *testing.T) {
+	result := toScanTypes([]string{"sast", "apisec", "kics", "scs"})
+	assert.DeepEqual(t, result, []string{"sast", "api-security", "kics", "scs"})
+}
