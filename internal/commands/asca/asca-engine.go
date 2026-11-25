@@ -31,7 +31,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			return err
 		}
 
-		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
+		severityThreshold, err := realtimeengine.SeverityThresholdFromCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func RunScanASCACommand(jwtWrapper wrappers.JWTWrapper) func(cmd *cobra.Command,
 			return err
 		}
 		if scanResult != nil && scanResult.Error == nil {
-			scanResult.ScanDetails = realtimeengine.FilterBySeverity(scanResult.ScanDetails, severityFilter, func(d grpcs.ScanDetail) string { return d.Severity })
+			scanResult.ScanDetails = realtimeengine.FilterBySeverity(scanResult.ScanDetails, severityThreshold, func(d grpcs.ScanDetail) string { return d.Severity })
 		}
 		err = printer.Print(cmd.OutOrStdout(), scanResult, printer.FormatJSON)
 		if err != nil {

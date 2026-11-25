@@ -30,14 +30,14 @@ func ossPackages() []OssPackage {
 	}
 }
 
-func TestFilterPackagesBySeverity_NilFilter_ReturnsInput(t *testing.T) {
+func TestFilterPackagesBySeverity_ZeroThreshold_ReturnsInput(t *testing.T) {
 	in := ossPackages()
-	assert.Equal(t, in, FilterPackagesBySeverity(in, nil))
+	assert.Equal(t, in, FilterPackagesBySeverity(in, 0))
 }
 
 func TestFilterPackagesBySeverity_MaliciousKeptUntouched(t *testing.T) {
-	f, _ := realtimeengine.ParseSeverityFilter("critical")
-	out := FilterPackagesBySeverity(ossPackages(), f)
+	threshold, _ := realtimeengine.ParseSeverityThreshold("critical")
+	out := FilterPackagesBySeverity(ossPackages(), threshold)
 
 	assert.Equal(t, "evil", out[0].PackageName)
 	assert.Equal(t, statusMalicious, out[0].Status)
@@ -45,9 +45,9 @@ func TestFilterPackagesBySeverity_MaliciousKeptUntouched(t *testing.T) {
 	assert.Equal(t, "Low", out[0].Vulnerabilities[0].Severity)
 }
 
-func TestFilterPackagesBySeverity_VulnerabilitiesTrimmedToFilter(t *testing.T) {
-	f, _ := realtimeengine.ParseSeverityFilter("critical,high")
-	out := FilterPackagesBySeverity(ossPackages(), f)
+func TestFilterPackagesBySeverity_VulnerabilitiesTrimmedToThresholdAndAbove(t *testing.T) {
+	threshold, _ := realtimeengine.ParseSeverityThreshold("high")
+	out := FilterPackagesBySeverity(ossPackages(), threshold)
 
 	mixed := out[1]
 	assert.Equal(t, "mixed", mixed.PackageName)
@@ -56,10 +56,18 @@ func TestFilterPackagesBySeverity_VulnerabilitiesTrimmedToFilter(t *testing.T) {
 	assert.Equal(t, "CVE-3", mixed.Vulnerabilities[1].CVE)
 }
 
+func TestFilterPackagesBySeverity_LowerThresholdKeepsMoreVulnerabilities(t *testing.T) {
+	medium, _ := realtimeengine.ParseSeverityThreshold("medium")
+	low, _ := realtimeengine.ParseSeverityThreshold("low")
+
+	assert.Len(t, FilterPackagesBySeverity(ossPackages(), medium)[1].Vulnerabilities, 3)
+	assert.Len(t, FilterPackagesBySeverity(ossPackages(), low)[1].Vulnerabilities, 4)
+}
+
 func TestFilterPackagesBySeverity_EntryKeptWhenListBecomesEmpty(t *testing.T) {
-	f, _ := realtimeengine.ParseSeverityFilter("critical")
+	threshold, _ := realtimeengine.ParseSeverityThreshold("critical")
 	in := ossPackages()
-	out := FilterPackagesBySeverity(in, f)
+	out := FilterPackagesBySeverity(in, threshold)
 
 	assert.Len(t, out, len(in), "every package entry must be kept")
 	lowOnly := out[2]
@@ -70,8 +78,8 @@ func TestFilterPackagesBySeverity_EntryKeptWhenListBecomesEmpty(t *testing.T) {
 }
 
 func TestFilterPackagesBySeverity_DoesNotMutateInput(t *testing.T) {
-	f, _ := realtimeengine.ParseSeverityFilter("critical")
+	threshold, _ := realtimeengine.ParseSeverityThreshold("critical")
 	in := ossPackages()
-	_ = FilterPackagesBySeverity(in, f)
+	_ = FilterPackagesBySeverity(in, threshold)
 	assert.Len(t, in[1].Vulnerabilities, 4, "input slice must not be mutated")
 }

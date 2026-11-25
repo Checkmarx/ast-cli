@@ -10,61 +10,46 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var acceptedSeverities = []string{"critical", "high", "medium", "low", "info"}
+var severityOrder = []string{"info", "low", "medium", "high", "critical"}
 
-// SeverityFilter is the set of lowercase severities to return; nil means no filtering.
-type SeverityFilter map[string]struct{}
+// SeverityThreshold is the rank of the lowest severity to return (1 = info ... 5 = critical); zero means no filtering.
+type SeverityThreshold int
 
-// ParseSeverityFilter parses a comma-separated severity list; empty or separator-only input returns a nil filter.
-func ParseSeverityFilter(raw string) (SeverityFilter, error) {
-	filter := SeverityFilter{}
-	var invalid []string
-	for _, token := range strings.Split(raw, ",") {
-		token = strings.ToLower(strings.TrimSpace(token))
-		switch {
-		case token == "":
-		case slices.Contains(acceptedSeverities, token):
-			filter[token] = struct{}{}
-		default:
-			invalid = append(invalid, token)
-		}
+// ParseSeverityThreshold parses a single severity level, ignoring case; empty input returns zero (no filtering).
+func ParseSeverityThreshold(raw string) (SeverityThreshold, error) {
+	level := strings.ToLower(strings.TrimSpace(raw))
+	if level == "" {
+		return 0, nil
 	}
-
-	if len(invalid) > 0 {
-		return nil, errorconstants.NewRealtimeEngineError(fmt.Sprintf(
-			"invalid severity-filter value(s): %s. Accepted values: %s",
-			strings.Join(invalid, ", "), strings.Join(acceptedSeverities, ", "),
+	rank := slices.Index(severityOrder, level) + 1
+	if rank == 0 {
+		return 0, errorconstants.NewRealtimeEngineError(fmt.Sprintf(
+			"invalid severity-threshold value %q. Use a single level: critical, high, medium, low or info", strings.TrimSpace(raw),
 		)).Error()
 	}
-	if len(filter) == 0 {
-		return nil, nil
-	}
-	return filter, nil
+	return SeverityThreshold(rank), nil
 }
 
-// SeverityFilterFromCmd parses the --severity-filter flag of cmd.
-func SeverityFilterFromCmd(cmd *cobra.Command) (SeverityFilter, error) {
-	raw, _ := cmd.Flags().GetString(commonParams.SeverityFilterFlag)
-	return ParseSeverityFilter(raw)
+// SeverityThresholdFromCmd parses the --severity-threshold flag of cmd.
+func SeverityThresholdFromCmd(cmd *cobra.Command) (SeverityThreshold, error) {
+	raw, _ := cmd.Flags().GetString(commonParams.SeverityThresholdFlag)
+	return ParseSeverityThreshold(raw)
 }
 
-// Allows reports whether a finding of the given severity should be returned, ignoring case.
-func (f SeverityFilter) Allows(severity string) bool {
-	if f == nil {
-		return true
-	}
-	_, ok := f[strings.ToLower(strings.TrimSpace(severity))]
-	return ok
+// Allows reports whether a severity is at or above the threshold, ignoring case; unrecognised severities are kept.
+func (t SeverityThreshold) Allows(severity string) bool {
+	rank := slices.Index(severityOrder, strings.ToLower(strings.TrimSpace(severity))) + 1
+	return t == 0 || rank == 0 || SeverityThreshold(rank) >= t
 }
 
-// FilterBySeverity returns the items allowed by f; a nil filter or empty input is returned unchanged.
-func FilterBySeverity[T any](items []T, f SeverityFilter, severity func(T) string) []T {
-	if f == nil || len(items) == 0 {
+// FilterBySeverity returns the items at or above t; a zero threshold or empty input is returned unchanged.
+func FilterBySeverity[T any](items []T, t SeverityThreshold, severity func(T) string) []T {
+	if t == 0 || len(items) == 0 {
 		return items
 	}
 	kept := make([]T, 0, len(items))
 	for _, item := range items {
-		if f.Allows(severity(item)) {
+		if t.Allows(severity(item)) {
 			kept = append(kept, item)
 		}
 	}

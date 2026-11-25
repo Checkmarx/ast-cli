@@ -115,15 +115,15 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	return response, nil
 }
 
-// FilterPackagesBySeverity trims each non-malicious package's vulnerabilities to those allowed by f, keeping every package.
-func FilterPackagesBySeverity(packages []OssPackage, f realtimeengine.SeverityFilter) []OssPackage {
-	if f == nil {
+// FilterPackagesBySeverity trims each non-malicious package's vulnerabilities to those at or above t, keeping every package.
+func FilterPackagesBySeverity(packages []OssPackage, t realtimeengine.SeverityThreshold) []OssPackage {
+	if t == 0 {
 		return packages
 	}
 	filtered := slices.Clone(packages)
 	for i := range filtered {
 		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
-			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, f, func(v Vulnerability) string { return v.Severity })
+			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
 		}
 	}
 	return filtered

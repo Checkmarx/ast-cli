@@ -23,7 +23,7 @@ func RunScanContainersRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
+		severityThreshold, err := realtimeengine.SeverityThresholdFromCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ func RunScanContainersRealtimeCommand(
 			return err
 		}
 
-		images.Images = containersrealtime.FilterImagesBySeverity(images.Images, severityFilter)
+		images.Images = containersrealtime.FilterImagesBySeverity(images.Images, severityThreshold)
 
 		err = printer.Print(cmd.OutOrStdout(), images, printer.FormatJSON)
 		if err != nil {

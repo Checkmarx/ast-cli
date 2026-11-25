@@ -23,15 +23,15 @@ const (
 	statusMalicious = "Malicious"
 )
 
-// FilterImagesBySeverity trims each non-malicious image's vulnerabilities to those allowed by f, keeping every image.
-func FilterImagesBySeverity(images []ContainerImage, f realtimeengine.SeverityFilter) []ContainerImage {
-	if f == nil {
+// FilterImagesBySeverity trims each non-malicious image's vulnerabilities to those at or above t, keeping every image.
+func FilterImagesBySeverity(images []ContainerImage, t realtimeengine.SeverityThreshold) []ContainerImage {
+	if t == 0 {
 		return images
 	}
 	filtered := slices.Clone(images)
 	for i := range filtered {
 		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
-			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, f, func(v Vulnerability) string { return v.Severity })
+			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
 		}
 	}
 	return filtered

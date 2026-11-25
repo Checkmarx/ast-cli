@@ -23,7 +23,7 @@ func RunScanOssRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
-		severityFilter, err := realtimeengine.SeverityFilterFromCmd(cmd)
+		severityThreshold, err := realtimeengine.SeverityThresholdFromCmd(cmd)
 		if err != nil {
 			return err
 		}
@@ -35,7 +35,7 @@ func RunScanOssRealtimeCommand(
 			return err
 		}
 
-		packages.Packages = ossrealtime.FilterPackagesBySeverity(packages.Packages, severityFilter)
+		packages.Packages = ossrealtime.FilterPackagesBySeverity(packages.Packages, severityThreshold)
 
 		err = printer.Print(cmd.OutOrStdout(), packages, printer.FormatJSON)
 		if err != nil {

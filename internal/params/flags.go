@@ -33,8 +33,8 @@ const (
 	RetryDelayUsage                = "Time between retries in seconds, use with --" + RetryFlag
 	SourcesFlag                    = "file-source"
 	IgnoredFilePathFlag            = "ignored-file-path"
-	SeverityFilterFlag             = "severity-filter"
-	SeverityFilterFlagUsage        = "Comma-separated severities to return (critical, high, medium, low, info); omit for all. Malicious packages and images are always returned."
+	SeverityThresholdFlag          = "severity-threshold"
+	SeverityThresholdFlagUsage     = "Lowest severity to return, with higher ones included (critical, high, medium, low or info); omit for all. Malicious packages and images are always returned."
 	SourcesFlagSh                  = "s"
 	TenantFlag                     = "tenant"
 	TenantFlagUsage                = "Checkmarx tenant"
