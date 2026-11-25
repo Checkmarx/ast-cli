@@ -27,7 +27,6 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v6
         with:
           persist-credentials: false
-          fetch-depth: 0 # full history and tags, needed to read the latest release tag below
 
       - name: Setup Go
         uses: actions/setup-go@4d34df0c2316fe8122ab82dc22947d607c0c91f9 #v4
@@ -38,14 +37,8 @@ jobs:
       - name: Built Windows binaries carry Checkmarx version info
         run: |
           tmp="$(mktemp -d)"
-          # latest tag on main (else current commit) reduced to X.Y.Z, e.g. 2.3.72-Windowsversioninfo -> 2.3.72
-          ref="origin/main"
-          git rev-parse --verify -q "$ref" >/dev/null || ref="HEAD"
-          tag="$(git describe --tags --abbrev=0 "$ref")"
-          version="$(echo "$tag" | sed -E 's/^v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-          echo "latest tag on $ref: $tag -> version: $version"
-          echo "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' \
-            || { echo "::error::could not derive X.Y.Z version from tag '$tag'"; exit 1; }
+          # placeholder version, only used to prove the version passed to go-winres ends up in the exe
+          version="9.9.9"
           go tool go-winres make --in cmd/winres/winres.json --out cmd/rsrc --arch amd64,386,arm64 --product-version "$version" --file-version "$version"
           for a in amd64 386 arm64; do
             CGO_ENABLED=0 GOOS=windows GOARCH=$a go build -o "$tmp/cx_$a.exe" ./cmd
