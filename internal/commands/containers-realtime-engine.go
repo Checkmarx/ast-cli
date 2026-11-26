@@ -4,6 +4,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/containersrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
@@ -22,12 +23,19 @@ func RunScanContainersRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
+		severityThreshold, err := realtimeengine.SeverityThresholdFromCmd(cmd)
+		if err != nil {
+			return err
+		}
+
 		containersRealtimeService := containersrealtime.NewContainersRealtimeService(jwtWrapper, featureFlagWrapper, realtimeScannerWrapper)
 
 		images, err := containersRealtimeService.RunContainersRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
+
+		images.Images = containersrealtime.FilterImagesBySeverity(images.Images, severityThreshold)
 
 		err = printer.Print(cmd.OutOrStdout(), images, printer.FormatJSON)
 		if err != nil {

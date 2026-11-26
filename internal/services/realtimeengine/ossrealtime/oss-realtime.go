@@ -24,6 +24,7 @@ const (
 	pkgManagerCocoapods = "cocoapods"
 	pkgManagerCarthage  = "carthage"
 	pkgManagerSwift     = "swift"
+	statusMalicious     = "Malicious"
 )
 
 // convertLocations converts models.Location to realtimeengine.Location
@@ -111,6 +112,20 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	}
 
 	return response, nil
+}
+
+// FilterPackagesBySeverity drops packages whose Status is a severity below t and trims the rest's vulnerabilities to t and above; OK, Unknown and Malicious packages are kept unchanged.
+func FilterPackagesBySeverity(packages []OssPackage, t realtimeengine.SeverityThreshold) []OssPackage {
+	if t == 0 {
+		return packages
+	}
+	kept := realtimeengine.FilterBySeverity(packages, t, func(p OssPackage) string { return p.Status })
+	for i := range kept {
+		if !strings.EqualFold(kept[i].Status, statusMalicious) {
+			kept[i].Vulnerabilities = realtimeengine.FilterBySeverity(kept[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
+		}
+	}
+	return kept
 }
 
 func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {

@@ -4,6 +4,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/util/printer"
 	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/secretsrealtime"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/spf13/cobra"
@@ -21,12 +22,19 @@ func RunScanSecretsRealtimeCommand(
 
 		ignoredFilePathFlag, _ := cmd.Flags().GetString(commonParams.IgnoredFilePathFlag)
 
+		severityThreshold, err := realtimeengine.SeverityThresholdFromCmd(cmd)
+		if err != nil {
+			return err
+		}
+
 		secretsRealtimeService := secretsrealtime.NewSecretsRealtimeService(jwtWrapper, featureFlagWrapper)
 
 		results, err := secretsRealtimeService.RunSecretsRealtimeScan(fileSourceFlag, ignoredFilePathFlag)
 		if err != nil {
 			return err
 		}
+
+		results = realtimeengine.FilterBySeverity(results, severityThreshold, func(r secretsrealtime.SecretsRealtimeResult) string { return r.Severity })
 
 		err = printer.Print(cmd.OutOrStdout(), results, printer.FormatJSON)
 		if err != nil {
