@@ -168,3 +168,41 @@ func TestRemoveKeyLockHeldByOtherProcessFails(t *testing.T) {
 
 	assert.ErrorContains(t, RemoveKey(path, "k"), "held by another process")
 }
+
+func TestSetKeyIfEqualReplacesMatchingValue(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cfg.yaml")
+	assert.NoError(t, SetKey(path, "token", "old"))
+	assert.NoError(t, SetKey(path, "other", "keep"))
+
+	written, err := SetKeyIfEqual(path, "token", "old", "new")
+
+	assert.NoError(t, err)
+	assert.True(t, written)
+	config, _ := Load(path)
+	assert.Equal(t, "new", config["token"])
+	assert.Equal(t, "keep", config["other"])
+}
+
+func TestSetKeyIfEqualLeavesDifferentValueUntouched(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cfg.yaml")
+	assert.NoError(t, SetKey(path, "token", "newer-login"))
+
+	written, err := SetKeyIfEqual(path, "token", "old", "new")
+
+	assert.NoError(t, err)
+	assert.False(t, written)
+	config, _ := Load(path)
+	assert.Equal(t, "newer-login", config["token"])
+}
+
+func TestSetKeyIfEqualDoesNotCreateMissingKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "cfg.yaml")
+	assert.NoError(t, SetKey(path, "other", "keep"))
+
+	written, err := SetKeyIfEqual(path, "token", "old", "new")
+
+	assert.NoError(t, err)
+	assert.False(t, written)
+	config, _ := Load(path)
+	assert.NotContains(t, config, "token")
+}

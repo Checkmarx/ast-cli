@@ -124,3 +124,34 @@ func SetKey(path, key string, value interface{}) error {
 	config[key] = value
 	return Save(path, config)
 }
+
+// SetKeyIfEqual assigns key to value only when the key currently holds expected,
+// under the same file lock as SetKey, and reports whether it wrote. A missing key
+// or a different value leaves the file untouched.
+func SetKeyIfEqual(path, key, expected, value string) (bool, error) {
+	fileLock := flock.New(path + lockFileSuffix)
+	locked, err := fileLock.TryLock()
+	if err != nil {
+		return false, fmt.Errorf("locking config file: %w", err)
+	}
+	if !locked {
+		return false, fmt.Errorf("config file lock is held by another process")
+	}
+	defer func() {
+		_ = fileLock.Unlock()
+	}()
+
+	config, err := Load(path)
+	if err != nil {
+		return false, err
+	}
+	current, ok := config[key]
+	if !ok || fmt.Sprint(current) != expected {
+		return false, nil
+	}
+	config[key] = value
+	if err := Save(path, config); err != nil {
+		return false, err
+	}
+	return true, nil
+}
