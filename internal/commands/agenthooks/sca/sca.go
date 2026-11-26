@@ -3,6 +3,7 @@ package sca
 import (
 	"os"
 
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
 
@@ -80,10 +81,22 @@ func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, se
 	}
 	vulnerable = aboveThreshold(vulnerable)
 	if len(vulnerable) > 0 {
+		hooktelemetry.SetFindingIDs(vulnerableCVEs(vulnerable))
 		f, r := DenyVulnerable(vulnerable, workDir, agent, sessionID)
 		return tag + " " + f, tag + " " + r, highestVulnSeverity(vulnerable)
 	}
 	return "", "", ""
+}
+
+// vulnerableCVEs lists the CVE ids of the denied vulnerable packages, reported as vulnerabilityId.
+func vulnerableCVEs(pkgs []ossrealtime.OssPackage) []string {
+	var ids []string
+	for i := range pkgs {
+		for _, v := range pkgs[i].Vulnerabilities {
+			ids = append(ids, v.CVE)
+		}
+	}
+	return ids
 }
 
 // aboveThreshold drops CVEs below the developer's severity threshold, and any package left with

@@ -3,9 +3,11 @@ package asca
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services"
@@ -42,6 +44,7 @@ var BelowThreshold func(severity string) bool
 // verdict. Fail-open on infrastructure errors (ASCA install fail, engine unavailable, panic).
 func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, severity string) {
 	findingCount := 0
+	var severities []string
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -49,7 +52,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 			reason = ""
 			context = ""
 		}
-		logASCATelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
+		logASCATelemetry(telemetryWrapper, agent, ev.SessionID, ev.WorkDir, findingCount, severities)
 	}()
 
 	if !isSupportedByASCA(ev.FilePath) {
@@ -104,14 +107,23 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 			newFindings = nil
 		}
 	}
+	// Telemetry reports what was DETECTED; the threshold only decides what is denied.
+	detected := newFindings
+	findingCount = len(detected)
+	for i := range detected {
+		severities = append(severities, detected[i].Severity)
+	}
 	newFindings = aboveThreshold(newFindings)
 	if len(newFindings) == 0 {
-		findingCount = 0
 		return false, "", "", ""
 	}
 
+	ids := make([]string, 0, len(newFindings))
+	for i := range newFindings {
+		ids = append(ids, strconv.FormatUint(uint64(newFindings[i].RuleID), 10))
+	}
+	hooktelemetry.SetFindingIDs(ids)
 	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir, agent, ev.SessionID)
-	findingCount = len(newFindings)
 	return true, r, c, highestSeverity(newFindings)
 }
 
@@ -187,7 +199,7 @@ func shouldUpdateVersion() bool {
 
 // logASCATelemetry sends a telemetry event for ASCA scan results.
 // Called once after ASCA scan is performed with the actual finding count.
-func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
+func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID, workDir string, totalCount int, severities []string) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
@@ -201,8 +213,10 @@ func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		Type:             "hooks-detect",
 		SubType:          "scan",
 		ScanType:         "asca",
+		StatusResult:     hooktelemetry.SeverityCounts(severities),
 		AiAgentSessionId: sessionID,
 	}
+	hooktelemetry.Enrich(telemetryData, workDir)
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		// fail-open

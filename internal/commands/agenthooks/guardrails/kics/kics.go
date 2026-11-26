@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/params"
@@ -55,6 +56,7 @@ var BelowThreshold func(severity string) bool
 // returning a skippedNote so the skipped check is visible.
 func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper wrappers.TelemetryWrapper, agent string) (blocked bool, reason, context, note, severity string) {
 	findingCount := 0
+	var severities []string
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -65,7 +67,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 			note = skippedNote(ev.FilePath, fmt.Errorf("internal error: %v", r))
 			severity = ""
 		}
-		logKicsTelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
+		logKicsTelemetry(telemetryWrapper, agent, ev.SessionID, ev.WorkDir, findingCount, severities)
 	}()
 
 	if !isSupportedByKICS(ev.FilePath) {
@@ -100,12 +102,15 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 
 	// For new files (no original content), every finding is new
 	if originalContent == "" {
+		detected := newResults
+		findingCount = len(detected)
+		severities = resultSeverities(detected)
 		newResults = aboveThreshold(newResults)
 		if len(newResults) == 0 {
 			return false, "", "", "", ""
 		}
+		hooktelemetry.SetFindingIDs(resultIDs(newResults))
 		r, c := formatFindings(ev.FilePath, newResults, ev.Agent, ev.WorkDir, ev.SessionID)
-		findingCount = len(newResults)
 		return true, r, c, "", highestSeverity(newResults)
 	}
 
@@ -123,14 +128,36 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		return false, "", "", skippedNote(ev.FilePath, err), ""
 	}
 
-	newFindings := aboveThreshold(NewFindings(origResults, newResults))
+	// Telemetry reports what was DETECTED; the threshold only decides what is denied.
+	detected := NewFindings(origResults, newResults)
+	findingCount = len(detected)
+	severities = resultSeverities(detected)
+	newFindings := aboveThreshold(detected)
 	if len(newFindings) == 0 {
 		return false, "", "", "", ""
 	}
 
+	hooktelemetry.SetFindingIDs(resultIDs(newFindings))
 	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent, ev.WorkDir, ev.SessionID)
-	findingCount = len(newFindings)
 	return true, r, c, "", highestSeverity(newFindings)
+}
+
+// resultIDs lists each finding's similarity id, the identifier reported as vulnerabilityId.
+func resultIDs(findings []iacrealtime.IacRealtimeResult) []string {
+	out := make([]string, 0, len(findings))
+	for i := range findings {
+		out = append(out, findings[i].SimilarityID)
+	}
+	return out
+}
+
+// resultSeverities lists each finding's severity, for the scan event's per-severity counts.
+func resultSeverities(findings []iacrealtime.IacRealtimeResult) []string {
+	out := make([]string, 0, len(findings))
+	for i := range findings {
+		out = append(out, findings[i].Severity)
+	}
+	return out
 }
 
 // aboveThreshold drops findings below the developer's severity threshold.
@@ -165,7 +192,7 @@ func highestSeverity(findings []iacrealtime.IacRealtimeResult) string {
 
 // logKicsTelemetry sends a telemetry event for KICS scan results.
 // Called once after KICS scan is performed with the actual finding count.
-func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
+func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID, workDir string, totalCount int, severities []string) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
@@ -179,8 +206,10 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		Type:             "hooks-detect",
 		SubType:          "scan",
 		ScanType:         "iac",
+		StatusResult:     hooktelemetry.SeverityCounts(severities),
 		AiAgentSessionId: sessionID,
 	}
+	hooktelemetry.Enrich(telemetryData, workDir)
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		// fail-open: telemetry is best-effort and must never block the guardrail

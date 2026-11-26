@@ -4,6 +4,7 @@ import (
 	"os"
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/logger"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
@@ -36,6 +37,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 	}
 
 	findingCount := 0
+	var severities []string
 	defer func() {
 		if r := recover(); r != nil {
 			logger.PrintfIfVerbose("secrets guardrail: recovered from panic, failing open: %v", r)
@@ -44,7 +46,7 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 			context = ""
 			severity = ""
 		}
-		logSecretsTelemetry(telemetryWrapper, agent, ev.SessionID, findingCount)
+		logSecretsTelemetry(telemetryWrapper, agent, ev.SessionID, ev.WorkDir, findingCount, severities)
 	}()
 
 	newContent, originalContent, ok := proposedContent(ev.FilePath, ev.Changes)
@@ -79,13 +81,23 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		}
 	}
 
+	// Telemetry reports what was DETECTED; the threshold only decides what is denied.
+	detected := findings
+	findingCount = len(detected)
+	for i := range detected {
+		severities = append(severities, detected[i].Severity)
+	}
 	findings = aboveThreshold(findings)
 	if len(findings) == 0 {
 		return false, "", "", ""
 	}
 
+	ids := make([]string, 0, len(findings))
+	for i := range findings {
+		ids = append(ids, findings[i].Title)
+	}
+	hooktelemetry.SetFindingIDs(ids)
 	r, c := formatFindings(ev.FilePath, findings, ev.Agent, ev.WorkDir, ev.SessionID)
-	findingCount = len(findings)
 	return true, r, c, highestSeverity(findings)
 }
 
@@ -116,7 +128,7 @@ func highestSeverity(findings []secretsrealtime.SecretsRealtimeResult) string {
 	return best
 }
 
-func logSecretsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID string, totalCount int) {
+func logSecretsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sessionID, workDir string, totalCount int, severities []string) {
 	if telemetryWrapper == nil || totalCount == 0 {
 		return
 	}
@@ -130,8 +142,10 @@ func logSecretsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, sess
 		Type:             "hooks-detect",
 		SubType:          "scan",
 		ScanType:         "secrets",
+		StatusResult:     hooktelemetry.SeverityCounts(severities),
 		AiAgentSessionId: sessionID,
 	}
+	hooktelemetry.Enrich(telemetryData, workDir)
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		logger.PrintfIfVerbose("secrets guardrail: failed to send telemetry: %v", err)

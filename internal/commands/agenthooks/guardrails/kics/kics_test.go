@@ -239,7 +239,7 @@ func TestScanFileEdit_EngineDownProducesNote(t *testing.T) {
 
 func TestLogKicsTelemetry_NilWrapper_NoOp(t *testing.T) {
 	assert.NotPanics(t, func() {
-		logKicsTelemetry(nil, "Claude", "", 3)
+		logKicsTelemetry(nil, "Claude", "", "", 3, nil)
 	})
 }
 
@@ -251,7 +251,7 @@ func TestLogKicsTelemetry_ZeroCount_DoesNotSend(t *testing.T) {
 			return nil
 		},
 	}
-	logKicsTelemetry(telemetry, "Claude", "", 0)
+	logKicsTelemetry(telemetry, "Claude", "", "", 0, nil)
 	assert.False(t, sent)
 }
 
@@ -263,7 +263,7 @@ func TestLogKicsTelemetry_WithFindings_Sends(t *testing.T) {
 			return nil
 		},
 	}
-	logKicsTelemetry(telemetry, "Claude", "sess-1", 2)
+	logKicsTelemetry(telemetry, "Claude", "sess-1", "", 2, nil)
 	assert.NotNil(t, captured)
 	assert.Equal(t, "IaC", captured.Engine)
 	assert.Equal(t, 2, captured.TotalCount)

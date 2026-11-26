@@ -628,13 +628,13 @@ func TestLogRemediationTelemetry(t *testing.T) {
 
 	t.Run("nil_wrapper_noop", func(t *testing.T) {
 		telemetryWrapper = nil
-		logRemediationTelemetry("Claude", "SCA", "High", "s1") // must not panic
+		logRemediationTelemetry("Claude", "SCA", "High", "s1", "") // must not panic
 	})
 
 	t.Run("sends_payload", func(t *testing.T) {
 		tel := &recordingTelemetry{}
 		telemetryWrapper = tel
-		logRemediationTelemetry("Cursor", "Asca", "Critical", "sess-9")
+		logRemediationTelemetry("Cursor", "Asca", "Critical", "sess-9", "")
 		if len(tel.calls) != 1 {
 			t.Fatalf("got %d calls, want 1", len(tel.calls))
 		}
@@ -656,7 +656,7 @@ func TestLogRemediationTelemetry(t *testing.T) {
 	t.Run("send_error_fail_open", func(t *testing.T) {
 		tel := &recordingTelemetry{err: os.ErrPermission}
 		telemetryWrapper = tel
-		logRemediationTelemetry("Claude", "SCA", "High", "s2") // must not panic
+		logRemediationTelemetry("Claude", "SCA", "High", "s2", "") // must not panic
 		if len(tel.calls) != 1 {
 			t.Fatalf("got %d calls, want 1", len(tel.calls))
 		}
@@ -858,7 +858,7 @@ func TestLogRemediationTelemetry_NilWrapper_NoOp(t *testing.T) {
 
 	telemetryWrapper = nil
 	assert.NotPanics(t, func() {
-		logRemediationTelemetry("Claude", "SCA", "finding", "remediation")
+		logRemediationTelemetry("Claude", "SCA", "finding", "remediation", "")
 	})
 }
 
@@ -868,7 +868,7 @@ func TestLogRemediationTelemetry_WithWrapper_Sends(t *testing.T) {
 
 	telemetryWrapper = mock.TelemetryMockWrapper{}
 	assert.NotPanics(t, func() {
-		logRemediationTelemetry("Claude", "SCA", "finding", "remediation")
+		logRemediationTelemetry("Claude", "SCA", "finding", "remediation", "")
 	})
 }
 

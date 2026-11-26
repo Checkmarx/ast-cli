@@ -568,7 +568,7 @@ func TestShouldUpdateVersion_DisabledReturnsFalse(t *testing.T) {
 
 func TestLogASCATelemetry_NilWrapper_NoOp(t *testing.T) {
 	assert.NotPanics(t, func() {
-		logASCATelemetry(nil, "Claude", "", 3)
+		logASCATelemetry(nil, "Claude", "", "", 3, nil)
 	})
 }
 
@@ -580,7 +580,7 @@ func TestLogASCATelemetry_ZeroCount_DoesNotSend(t *testing.T) {
 			return nil
 		},
 	}
-	logASCATelemetry(telemetry, "Claude", "", 0)
+	logASCATelemetry(telemetry, "Claude", "", "", 0, nil)
 	assert.False(t, sent)
 }
 
@@ -592,7 +592,7 @@ func TestLogASCATelemetry_WithFindings_Sends(t *testing.T) {
 			return nil
 		},
 	}
-	logASCATelemetry(telemetry, "Claude", "", 2)
+	logASCATelemetry(telemetry, "Claude", "", "", 2, nil)
 	assert.NotNil(t, captured)
 	assert.Equal(t, "Asca", captured.Engine)
 	assert.Equal(t, 2, captured.TotalCount)
