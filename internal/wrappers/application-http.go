@@ -29,7 +29,7 @@ func (a *ApplicationsHTTPWrapper) CreateProjectAssociation(applicationID string,
 		return nil, err
 	}
 	associationPath := fmt.Sprintf("%s/%s/%s", a.path, applicationID, "projects")
-	resp, err := SendHTTPRequest(http.MethodPost, associationPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPost, associationPath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (a *ApplicationsHTTPWrapper) Update(applicationID string, applicationBody *
 	if err != nil {
 		return nil, err
 	}
-	resp, err := SendHTTPRequest(http.MethodPut, updatePath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
+	resp, err := SendHTTPRequestWithJSONContentType(http.MethodPut, updatePath, bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	if err != nil {
 		return nil, err
 	}

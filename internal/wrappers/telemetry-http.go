@@ -29,7 +29,7 @@ func (r *TelemetryHTTPWrapper) SendAIDataToLog(data *DataForAITelemetry) error {
 	}
 
 	fn := func() (*http.Response, error) {
-		return SendHTTPRequest(http.MethodPost, fmt.Sprint(r.path, "/log"), bytes.NewBuffer(jsonBytes), true, clientTimeout)
+		return SendHTTPRequestWithJSONContentType(http.MethodPost, fmt.Sprint(r.path, "/log"), bytes.NewBuffer(jsonBytes), true, clientTimeout)
 	}
 	resp, err := retryHTTPRequest(fn, retryAttempts, retryDelay)
 	if err != nil {
