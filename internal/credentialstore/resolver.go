@@ -104,6 +104,59 @@ func (r *Resolver) Store(ctx context.Context, credentialName, value string) erro
 	return err
 }
 
+// Rotate replaces a credential that the identity provider has just rotated
+// (e.g. a refresh token exchanged for a new one) and reports whether it wrote
+// the new value. It does nothing when an explicit override or environment
+// variable supplies the credential, because that source wins on resolve and the
+// rotated value would never be read back.
+//
+// The write only happens while the stored value is still oldValue, so a login
+// made in the meantime is not replaced by a stale token. That check is atomic
+// for config-file storage (done under the config file lock). The keyring has no
+// compare-and-set, so there it is best effort: a login that lands between the
+// read and the write can still be overwritten.
+//
+// In auto mode, when the keyring is unavailable and the token lives in the
+// config file, the rotated token is written to the config file instead.
+func (r *Resolver) Rotate(ctx context.Context, credentialName, oldValue, newValue string) (bool, error) {
+	if !IsValidCredentialName(credentialName) {
+		return false, ErrInvalidName
+	}
+	if newValue == "" || newValue == oldValue {
+		return false, nil
+	}
+	if _, ok := r.explicitValue(credentialName); ok {
+		return false, nil
+	}
+	if envValue(credentialName) != "" {
+		return false, nil
+	}
+	if r.policy == PolicyDisabled {
+		return r.rotateInConfigFile(credentialName, oldValue, newValue)
+	}
+	current, err := r.resolve(ctx, credentialName)
+	if err != nil {
+		return false, err
+	}
+	if current != oldValue {
+		return false, nil
+	}
+	err = r.Store(ctx, credentialName, newValue)
+	if err == nil {
+		return true, nil
+	}
+	if r.policy == PolicyAuto && errors.Is(err, ErrKeyringUnavailable) {
+		return r.rotateInConfigFile(credentialName, oldValue, newValue)
+	}
+	return false, err
+}
+
+// rotateInConfigFile replaces the config file entry only if it still holds oldValue,
+// so it never writes a token to the file that was not already stored there.
+func (r *Resolver) rotateInConfigFile(credentialName, oldValue, newValue string) (bool, error) {
+	return configfile.SetKeyIfEqual(r.filePath, viperKeyFor(credentialName), oldValue, newValue)
+}
+
 // Clear removes a credential following the policy, mirroring Store. A missing
 // credential is reported as ErrNotFound.
 func (r *Resolver) Clear(ctx context.Context, credentialName string) error {

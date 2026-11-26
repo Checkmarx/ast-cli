@@ -169,6 +169,17 @@ func TestFailProxyAuth(t *testing.T) {
 	assert.Assert(t, strings.Contains(strings.ToLower(err.Error()), "could not reach provided"))
 }
 
+func TestAuthValidateInvalidProxyAuthTypeFailsBeforeConnecting(t *testing.T) {
+	err, _ := executeCommand(t, "auth", "validate", flag(params.ProxyTypeFlag), "NotARealAuthType")
+	assertError(t, err, "invalid proxy authentication type")
+	assertError(t, err, "basic, ntlm, kerberos, kerberos-native")
+}
+
+func TestAuthValidateInvalidProxyAuthTypeWithIgnoreProxyFails(t *testing.T) {
+	err, _ := executeCommand(t, "auth", "validate", flag(params.IgnoreProxyFlag), flag(params.ProxyTypeFlag), "NotARealAuthType")
+	assertError(t, err, "invalid proxy authentication type")
+}
+
 //func TestFailProxyAuthByEnv(t *testing.T) {
 //	proxyValue := os.Getenv(params.ProxyEnv)
 //	defer func() {

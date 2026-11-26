@@ -67,3 +67,5 @@ vendor/*
 
 # Build artifacts and temporary directories
 internal/commands/data/manifests/obj/
+# generated Windows version resources (created by go-winres at build time)
+*.syso

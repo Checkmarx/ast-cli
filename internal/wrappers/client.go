@@ -2,6 +2,7 @@ package wrappers
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -51,8 +53,17 @@ const (
 	defaultDialerDuration   = 30 * time.Second
 )
 
+const (
+	basicProxyToken          = "basic"
+	kerberosNativeProxyToken = "kerberos-native"
+	invalidProxyAuthTypeFmt  = "invalid proxy authentication type %q: supported types are %s " +
+		"(set via --%s, %s or the %s config key)"
+)
+
 var (
 	credentialsMutex sync.Mutex
+
+	supportedProxyAuthTypes = []string{basicProxyToken, ntlmProxyToken, kerberosProxyToken, kerberosNativeProxyToken}
 )
 
 type ClientCredentialsInfo struct {
@@ -151,8 +162,25 @@ func setAgentNameAndOrigin(req *http.Request, isAuth bool) {
 	}
 }
 
+func normalizeProxyAuthType(proxyAuthType string) string {
+	return strings.ToLower(strings.TrimSpace(proxyAuthType))
+}
+
+// ValidateProxyAuthType validates the configured proxy authentication type. An empty value defaults to basic.
+func ValidateProxyAuthType() error {
+	configured := viper.GetString(commonParams.ProxyTypeKey)
+	normalized := normalizeProxyAuthType(configured)
+	if normalized == "" || slices.Contains(supportedProxyAuthTypes, normalized) {
+		return nil
+	}
+	return errors.Errorf(
+		invalidProxyAuthTypeFmt, configured, strings.Join(supportedProxyAuthTypes, ", "),
+		commonParams.ProxyTypeFlag, commonParams.ProxyTypeEnv, commonParams.ProxyTypeKey,
+	)
+}
+
 func GetClient(timeout uint) *http.Client {
-	proxyTypeStr := viper.GetString(commonParams.ProxyTypeKey)
+	proxyTypeStr := normalizeProxyAuthType(viper.GetString(commonParams.ProxyTypeKey))
 	proxyStr := viper.GetString(commonParams.ProxyKey)
 	ignoreProxy := viper.GetBool(commonParams.IgnoreProxyKey)
 
@@ -163,9 +191,13 @@ func GetClient(timeout uint) *http.Client {
 		client = ntmlProxyClient(timeout, proxyStr)
 	} else if proxyTypeStr == kerberosProxyToken {
 		client = kerberosProxyClient(timeout, proxyStr)
-	} else if proxyTypeStr == "kerberos-native" {
+	} else if proxyTypeStr == kerberosNativeProxyToken {
 		client = kerberosNativeProxyClient(timeout, proxyStr)
 	} else {
+		// Unknown values are rejected by the root PersistentPreRunE; commands that skip it end up here.
+		if proxyTypeStr != "" && proxyTypeStr != basicProxyToken {
+			logger.PrintIfVerbose(fmt.Sprintf("Unrecognized proxy authentication type %q, falling back to basic", proxyTypeStr))
+		}
 		client = basicProxyClient(timeout, proxyStr)
 	}
 
@@ -631,14 +663,12 @@ func configureClientCredentialsAndGetNewToken() (string, error) {
 	}
 
 	if astAPIKey != "" && credType == "apikey" {
-		accessToken, err = getNewToken(
-			getAPIKeyPayload(astAPIKey), authURI)
+		accessToken, err = exchangeAPIKey(astAPIKey, authURI)
 	} else if accessKeyID != "" && accessKeySecret != "" && credType == "oauth" {
 		accessToken, err = getNewToken(
 			getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
 	} else if astAPIKey != "" {
-		accessToken, err = getNewToken(
-			getAPIKeyPayload(astAPIKey), authURI)
+		accessToken, err = exchangeAPIKey(astAPIKey, authURI)
 	} else if accessKeyID != "" && accessKeySecret != "" {
 		accessToken, err = getNewToken(
 			getCredentialsPayload(accessKeyID, accessKeySecret), authURI)
@@ -698,12 +728,12 @@ func SetCachedAccessTokenForTest(token string) {
 	cachedAccessTime = time.Now()
 }
 
-func getNewToken(credentialsPayload, authServerURI string) (string, error) {
+func getNewTokenInfo(credentialsPayload, authServerURI string) (ClientCredentialsInfo, error) {
 	payload := strings.NewReader(credentialsPayload)
 	req, err := http.NewRequest(http.MethodPost, authServerURI, payload)
 	setAgentNameAndOrigin(req, true)
 	if err != nil {
-		return "", err
+		return ClientCredentialsInfo{}, err
 	}
 	req = addReqMonitor(req)
 	req.Header.Add(contentTypeHeader, formURLContentType)
@@ -715,7 +745,7 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	if req.Body != nil {
 		body, err = io.ReadAll(req.Body)
 		if err != nil {
-			return "", fmt.Errorf("failed to read request body: %w", err)
+			return ClientCredentialsInfo{}, fmt.Errorf("failed to read request body: %w", err)
 		}
 		if req.Body != nil {
 			req.Body.Close()
@@ -732,16 +762,16 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 
 	if err != nil {
 		authURL, _ := GetAuthURI()
-		return "", errors.Errorf("%s %s", checkmarxURLError, authURL)
+		return ClientCredentialsInfo{}, errors.Errorf("%s %s", checkmarxURLError, authURL)
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
+		return ClientCredentialsInfo{}, errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return "", errors.Errorf("%d %s \n", res.StatusCode, "Provided Tenant Name is invalid")
+		return ClientCredentialsInfo{}, errors.Errorf("%d %s \n", res.StatusCode, "Provided Tenant Name is invalid")
 	}
 	if res.StatusCode == http.StatusUnauthorized {
-		return "", errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
+		return ClientCredentialsInfo{}, errors.Errorf("%d %s \n", res.StatusCode, invalidCredentialsError)
 	}
 
 	body, _ = ioutil.ReadAll(res.Body)
@@ -750,10 +780,10 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 		err = json.Unmarshal(body, &credentialsErr)
 
 		if err != nil {
-			return "", err
+			return ClientCredentialsInfo{}, err
 		}
 
-		return "", errors.Errorf("%d %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
+		return ClientCredentialsInfo{}, errors.Errorf("%d %s %s", res.StatusCode, credentialsErr.Error, credentialsErr.Description)
 	}
 
 	defer func() {
@@ -763,11 +793,11 @@ func getNewToken(credentialsPayload, authServerURI string) (string, error) {
 	credentialsInfo := ClientCredentialsInfo{}
 	err = json.Unmarshal(body, &credentialsInfo)
 	if err != nil {
-		return "", err
+		return ClientCredentialsInfo{}, err
 	}
 
 	logger.PrintIfVerbose("Successfully retrieved API token.")
-	return credentialsInfo.AccessToken, nil
+	return credentialsInfo, nil
 }
 
 func getCredentialsPayload(accessKeyID, accessKeySecret string) string {
@@ -1059,4 +1089,43 @@ func extractAZPFromToken(astToken string) (string, error) {
 		return "ast-app", nil // default value in case of error
 	}
 	return azp, nil
+}
+
+func getNewToken(credentialsPayload, authServerURI string) (string, error) {
+	info, err := getNewTokenInfo(credentialsPayload, authServerURI)
+	if err != nil {
+		return "", err
+	}
+	return info.AccessToken, nil
+}
+
+// exchangeAPIKey trades the stored refresh token for an access token. When IAM
+// rotates the refresh token in the response, the new one is saved; otherwise the
+// old one is invalidated and the next exchange fails, logging the user out.
+func exchangeAPIKey(astAPIKey, authURI string) (string, error) {
+	info, err := getNewTokenInfo(getAPIKeyPayload(astAPIKey), authURI)
+	if err != nil {
+		return "", err
+	}
+	persistRotatedRefreshToken(astAPIKey, info.RefreshToken)
+	return info.AccessToken, nil
+}
+
+// persistRotatedRefreshToken is best effort: the access token is already valid,
+// so a failed write only prints a warning.
+func persistRotatedRefreshToken(oldToken, newToken string) {
+	if newToken == "" || newToken == oldToken {
+		return
+	}
+	logger.RegisterSensitiveValue(newToken)
+	saved, err := credentialstore.Default().Rotate(context.Background(), credentialstore.CredentialAPIKey, oldToken, newToken)
+	if err != nil {
+		logger.Printf("Warning: could not save the refreshed credential: %v. You may need to run 'cx auth login' again.", err)
+		return
+	}
+	if !saved {
+		logger.PrintIfVerbose("Rotated refresh token not saved: the credential comes from a flag or environment variable, or was changed by another login.")
+		return
+	}
+	logger.PrintIfVerbose("Saved rotated refresh token.")
 }

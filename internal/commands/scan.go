@@ -1125,11 +1125,23 @@ func getResubmitConfiguration(scansWrapper wrappers.ScansWrapper, projectID, use
 		engines := scanModelResponse.Engines
 		// Check if there are no scan types sent using the flags, and use the latest scan engine types
 		if userScanTypes == "" {
-			actualScanTypes = strings.Join(engines, ",")
+			actualScanTypes = strings.Join(toScanTypes(engines), ",")
 		}
 	}
 
 	return config, nil
+}
+
+// toScanTypes maps engine names returned by the scans API to scan type names (apisec -> api-security).
+func toScanTypes(engines []string) []string {
+	scanTypes := make([]string, len(engines))
+	for i, engine := range engines {
+		if strings.EqualFold(engine, commonParams.APISecType) {
+			engine = commonParams.APISecurityType
+		}
+		scanTypes[i] = engine
+	}
+	return scanTypes
 }
 
 func addSastScan(cmd *cobra.Command, resubmitConfig []wrappers.Config) map[string]interface{} {
