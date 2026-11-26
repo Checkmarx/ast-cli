@@ -14,7 +14,7 @@ func containerImages() []ContainerImage {
 			Vulnerabilities: []Vulnerability{{CVE: "CVE-1", Severity: "Low"}},
 		},
 		{
-			ImageName: "mixed", ImageTag: "1.0", Status: "OK",
+			ImageName: "critical-img", ImageTag: "1.0", Status: "Critical",
 			Vulnerabilities: []Vulnerability{
 				{CVE: "CVE-2", Severity: "Critical"},
 				{CVE: "CVE-3", Severity: "High"},
@@ -22,10 +22,20 @@ func containerImages() []ContainerImage {
 			},
 		},
 		{
-			ImageName: "low-only", ImageTag: "2.0", Status: "OK",
+			ImageName: "low-img", ImageTag: "2.0", Status: "Low",
 			Vulnerabilities: []Vulnerability{{CVE: "CVE-5", Severity: "Low"}},
 		},
+		{ImageName: "clean", ImageTag: "3.0", Status: "OK"},
+		{ImageName: "pinned", ImageTag: "sha256:abc", Status: "Unknown"},
 	}
+}
+
+func imageNames(images []ContainerImage) []string {
+	names := make([]string, 0, len(images))
+	for i := range images {
+		names = append(names, images[i].ImageName)
+	}
+	return names
 }
 
 func TestFilterImagesBySeverity_ZeroThreshold_ReturnsInput(t *testing.T) {
@@ -33,32 +43,29 @@ func TestFilterImagesBySeverity_ZeroThreshold_ReturnsInput(t *testing.T) {
 	assert.Equal(t, in, FilterImagesBySeverity(in, 0))
 }
 
+func TestFilterImagesBySeverity_High_DropsImagesBelowAndTrimsTheRest(t *testing.T) {
+	threshold, _ := realtimeengine.ParseSeverityThreshold("high")
+	out := FilterImagesBySeverity(containerImages(), threshold)
+
+	assert.Equal(t, []string{"evil", "critical-img", "clean", "pinned"}, imageNames(out))
+	assert.Equal(t, []Vulnerability{{CVE: "CVE-2", Severity: "Critical"}, {CVE: "CVE-3", Severity: "High"}}, out[1].Vulnerabilities)
+}
+
+func TestFilterImagesBySeverity_Low_KeepsEverything(t *testing.T) {
+	threshold, _ := realtimeengine.ParseSeverityThreshold("low")
+	assert.Equal(t, containerImages(), FilterImagesBySeverity(containerImages(), threshold))
+}
+
 func TestFilterImagesBySeverity_MaliciousKeptUntouched(t *testing.T) {
 	threshold, _ := realtimeengine.ParseSeverityThreshold("critical")
 	out := FilterImagesBySeverity(containerImages(), threshold)
 
-	assert.Equal(t, "evil", out[0].ImageName)
-	assert.Len(t, out[0].Vulnerabilities, 1)
-	assert.Equal(t, "Low", out[0].Vulnerabilities[0].Severity)
+	assert.Equal(t, containerImages()[0], out[0], "malicious image must be returned unchanged")
 }
 
-func TestFilterImagesBySeverity_VulnerabilitiesTrimmedToThresholdAndAbove(t *testing.T) {
-	threshold, _ := realtimeengine.ParseSeverityThreshold("high")
-	out := FilterImagesBySeverity(containerImages(), threshold)
-
-	assert.Len(t, out[1].Vulnerabilities, 2)
-	assert.Equal(t, "CVE-2", out[1].Vulnerabilities[0].CVE)
-	assert.Equal(t, "CVE-3", out[1].Vulnerabilities[1].CVE)
-}
-
-func TestFilterImagesBySeverity_EntryKeptWhenListBecomesEmpty(t *testing.T) {
+func TestFilterImagesBySeverity_DoesNotMutateInput(t *testing.T) {
 	threshold, _ := realtimeengine.ParseSeverityThreshold("critical")
 	in := containerImages()
-	out := FilterImagesBySeverity(in, threshold)
-
-	assert.Len(t, out, len(in))
-	assert.Equal(t, "low-only", out[2].ImageName)
-	assert.NotNil(t, out[2].Vulnerabilities)
-	assert.Len(t, out[2].Vulnerabilities, 0)
-	assert.Len(t, in[2].Vulnerabilities, 1, "input slice must not be mutated")
+	_ = FilterImagesBySeverity(in, threshold)
+	assert.Equal(t, containerImages(), in, "input slice must not be mutated")
 }

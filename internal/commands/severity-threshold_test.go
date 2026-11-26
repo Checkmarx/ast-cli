@@ -31,7 +31,7 @@ func enableRealtimeFlag() {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 }
 
-func ossMockWithHighAndLow() *mock.RealtimeScannerMockWrapper {
+func ossMockWithHighAndLow(status string) *mock.RealtimeScannerMockWrapper {
 	return &mock.RealtimeScannerMockWrapper{
 		CustomScanPackages: func(req *wrappers.RealtimeScannerPackageRequest) (*wrappers.RealtimeScannerPackageResponse, error) {
 			var resp wrappers.RealtimeScannerPackageResponse
@@ -40,7 +40,7 @@ func ossMockWithHighAndLow() *mock.RealtimeScannerMockWrapper {
 					PackageManager: p.PackageManager,
 					PackageName:    p.PackageName,
 					Version:        p.Version,
-					Status:         "OK",
+					Status:         status,
 					Vulnerabilities: []wrappers.RealtimeScannerVulnerability{
 						{CVE: "CVE-H", Severity: "High"},
 						{CVE: "CVE-L", Severity: "Low"},
@@ -53,6 +53,10 @@ func ossMockWithHighAndLow() *mock.RealtimeScannerMockWrapper {
 }
 
 func runOssRealtimeWithThreshold(t *testing.T, threshold string) ossrealtime.OssPackageResults {
+	return runOssRealtime(t, "High", threshold)
+}
+
+func runOssRealtime(t *testing.T, status, threshold string) ossrealtime.OssPackageResults {
 	enableRealtimeFlag()
 	// A fresh temp folder keeps the OSS cache of earlier runs from replacing the mocked response.
 	cacheDir := t.TempDir()
@@ -66,12 +70,11 @@ func runOssRealtimeWithThreshold(t *testing.T, threshold string) ossrealtime.Oss
 	cmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "")
 	cmd.Flags().String(commonParams.SeverityThresholdFlag, threshold, "")
 
-	err := RunScanOssRealtimeCommand(ossMockWithHighAndLow(), &mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})(cmd, nil)
+	err := RunScanOssRealtimeCommand(ossMockWithHighAndLow(status), &mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})(cmd, nil)
 	assert.NoError(t, err)
 
 	var results ossrealtime.OssPackageResults
 	assert.NoError(t, json.Unmarshal(out.Bytes(), &results))
-	assert.NotEmpty(t, results.Packages)
 	return results
 }
 
@@ -132,13 +135,23 @@ func TestOssRealtime_SeverityThreshold_Low_KeepsLowAndAbove(t *testing.T) {
 	}
 }
 
-func TestOssRealtime_SeverityThreshold_Critical_KeepsEveryPackageWithNoVulnerabilities(t *testing.T) {
+func TestOssRealtime_SeverityThreshold_Critical_DropsPackagesWithLowerStatus(t *testing.T) {
 	all := runOssRealtimeWithThreshold(t, "")
 	filtered := runOssRealtimeWithThreshold(t, "critical")
 
 	assert.NotEmpty(t, scannedPackages(all), "the mock returns vulnerabilities for scanned packages")
-	assert.Len(t, filtered.Packages, len(all.Packages), "every package entry must be kept")
-	assert.Empty(t, scannedPackages(filtered), "no mock vulnerability is critical")
+	assert.Len(t, filtered.Packages, len(all.Packages)-len(scannedPackages(all)), "packages with status High must be dropped")
+	for i := range filtered.Packages {
+		assert.NotEqual(t, "High", filtered.Packages[i].Status, "package %s", filtered.Packages[i].PackageName)
+	}
+}
+
+func TestOssRealtime_SeverityThreshold_Critical_ReturnsMaliciousPackagesUnchanged(t *testing.T) {
+	all := runOssRealtime(t, "Malicious", "")
+	filtered := runOssRealtime(t, "Malicious", "critical")
+
+	assert.NotEmpty(t, scannedPackages(all))
+	assert.Equal(t, all.Packages, filtered.Packages)
 }
 
 func TestOssRealtime_SeverityThreshold_Omitted_ReturnsAllSeverities(t *testing.T) {
@@ -159,7 +172,7 @@ func runContainersRealtimeWithThreshold(t *testing.T, threshold string) containe
 				resp.Images = append(resp.Images, wrappers.ContainerImageResponseItem{
 					ImageName: img.ImageName,
 					ImageTag:  img.ImageTag,
-					Status:    "OK",
+					Status:    "High",
 					Vulnerabilities: []wrappers.ContainerImageVulnerability{
 						{CVE: "CVE-H", Severity: "High"},
 						{CVE: "CVE-L", Severity: "Low"},
@@ -181,7 +194,6 @@ func runContainersRealtimeWithThreshold(t *testing.T, threshold string) containe
 
 	var results containersrealtime.ContainerImageResults
 	assert.NoError(t, json.Unmarshal(out.Bytes(), &results))
-	assert.NotEmpty(t, results.Images)
 	return results
 }
 
@@ -197,16 +209,25 @@ func TestContainersRealtime_SeverityThreshold_InvalidValue_Fails(t *testing.T) {
 }
 
 func TestContainersRealtime_SeverityThreshold_High_KeepsOnlyHighAndAbove(t *testing.T) {
-	for _, img := range runContainersRealtimeWithThreshold(t, "high").Images {
+	images := runContainersRealtimeWithThreshold(t, "high").Images
+	assert.NotEmpty(t, images)
+	for _, img := range images {
 		assert.Len(t, img.Vulnerabilities, 1, "image %s", img.ImageName)
 		assert.Equal(t, "CVE-H", img.Vulnerabilities[0].CVE)
 	}
 }
 
 func TestContainersRealtime_SeverityThreshold_Low_KeepsLowAndAbove(t *testing.T) {
-	for _, img := range runContainersRealtimeWithThreshold(t, "low").Images {
+	images := runContainersRealtimeWithThreshold(t, "low").Images
+	assert.NotEmpty(t, images)
+	for _, img := range images {
 		assert.Len(t, img.Vulnerabilities, 2, "image %s", img.ImageName)
 	}
+}
+
+func TestContainersRealtime_SeverityThreshold_Critical_DropsImagesWithLowerStatus(t *testing.T) {
+	assert.NotEmpty(t, runContainersRealtimeWithThreshold(t, "").Images)
+	assert.Empty(t, runContainersRealtimeWithThreshold(t, "critical").Images, "images with status High must be dropped")
 }
 
 func secretsRealtimeResults(t *testing.T, extraArgs ...string) []secretsrealtime.SecretsRealtimeResult {

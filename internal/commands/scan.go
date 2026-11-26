@@ -555,7 +555,7 @@ func scanOssRealtimeSubCommand(
 		"Path to a JSON file listing ignored packages",
 	)
 
-	scanOssRealtimeCmd.Flags().String(commonParams.SeverityThresholdFlag, "", commonParams.SeverityThresholdFlagUsage)
+	scanOssRealtimeCmd.Flags().String(commonParams.SeverityThresholdFlag, "", commonParams.SeverityThresholdFlagUsage+commonParams.SeverityThresholdMaliciousNote)
 
 	return scanOssRealtimeCmd
 }
@@ -639,7 +639,7 @@ func scanContainersRealtimeSubCommand(realtimeScannerWrapper wrappers.RealtimeSc
 		"The file source should be the path to a single containers file (Dockerfile, docker-compose.yml, or Helm template)",
 	)
 	scanContainersRealtimeCmd.Flags().String(commonParams.IgnoredFilePathFlag, "", "Path to ignored containers file")
-	scanContainersRealtimeCmd.Flags().String(commonParams.SeverityThresholdFlag, "", commonParams.SeverityThresholdFlagUsage)
+	scanContainersRealtimeCmd.Flags().String(commonParams.SeverityThresholdFlag, "", commonParams.SeverityThresholdFlagUsage+commonParams.SeverityThresholdMaliciousNote)
 
 	return scanContainersRealtimeCmd
 }

@@ -82,9 +82,16 @@ func TestOssRealtimeScan_SeverityThreshold_High_ReturnsSubsetAtOrAboveHigh(t *te
 	filtered := ossResults(t, thresholdFlag, "high")
 
 	assert.Greater(t, ossVulnerabilityCount(all), 0, "the fixture manifest must have vulnerabilities")
-	assert.Equal(t, len(all.Packages), len(filtered.Packages), "every manifest package must still be returned")
+	expected := 0
+	for i := range all.Packages {
+		if atOrAbove(all.Packages[i].Status, highRank) {
+			expected++
+		}
+	}
+	assert.Equal(t, expected, len(filtered.Packages), "only packages with a status below High must be dropped")
 	assert.LessOrEqual(t, ossVulnerabilityCount(filtered), ossVulnerabilityCount(all))
 	for _, pkg := range filtered.Packages {
+		assert.True(t, atOrAbove(pkg.Status, highRank), "package %s returned with status %s", pkg.PackageName, pkg.Status)
 		if strings.EqualFold(pkg.Status, "Malicious") {
 			continue
 		}

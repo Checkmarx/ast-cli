@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/Checkmarx/manifest-parser/pkg/parser"
@@ -115,18 +114,18 @@ func (o *OssRealtimeService) RunOssRealtimeScan(filePath, ignoredFilePath string
 	return response, nil
 }
 
-// FilterPackagesBySeverity trims each non-malicious package's vulnerabilities to those at or above t, keeping every package.
+// FilterPackagesBySeverity drops packages whose Status is a severity below t and trims the rest's vulnerabilities to t and above; OK, Unknown and Malicious packages are kept unchanged.
 func FilterPackagesBySeverity(packages []OssPackage, t realtimeengine.SeverityThreshold) []OssPackage {
 	if t == 0 {
 		return packages
 	}
-	filtered := slices.Clone(packages)
-	for i := range filtered {
-		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
-			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
+	kept := realtimeengine.FilterBySeverity(packages, t, func(p OssPackage) string { return p.Status })
+	for i := range kept {
+		if !strings.EqualFold(kept[i].Status, statusMalicious) {
+			kept[i].Vulnerabilities = realtimeengine.FilterBySeverity(kept[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
 		}
 	}
-	return filtered
+	return kept
 }
 
 func buildIgnoreMap(ignored []IgnoredPackage) map[string]bool {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/Checkmarx/containers-images-extractor/pkg/imagesExtractor"
@@ -23,18 +22,18 @@ const (
 	statusMalicious = "Malicious"
 )
 
-// FilterImagesBySeverity trims each non-malicious image's vulnerabilities to those at or above t, keeping every image.
+// FilterImagesBySeverity drops images whose Status is a severity below t and trims the rest's vulnerabilities to t and above; OK, Unknown and Malicious images are kept unchanged.
 func FilterImagesBySeverity(images []ContainerImage, t realtimeengine.SeverityThreshold) []ContainerImage {
 	if t == 0 {
 		return images
 	}
-	filtered := slices.Clone(images)
-	for i := range filtered {
-		if !strings.EqualFold(filtered[i].Status, statusMalicious) {
-			filtered[i].Vulnerabilities = realtimeengine.FilterBySeverity(filtered[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
+	kept := realtimeengine.FilterBySeverity(images, t, func(img ContainerImage) string { return img.Status })
+	for i := range kept {
+		if !strings.EqualFold(kept[i].Status, statusMalicious) {
+			kept[i].Vulnerabilities = realtimeengine.FilterBySeverity(kept[i].Vulnerabilities, t, func(v Vulnerability) string { return v.Severity })
 		}
 	}
-	return filtered
+	return kept
 }
 
 // ContainersRealtimeService is the service responsible for performing real-time container scanning.
