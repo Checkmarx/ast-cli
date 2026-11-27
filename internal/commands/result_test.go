@@ -1413,25 +1413,23 @@ func TestPrintPoliciesSummary_WhenNoRolViolated_ShouldNotContainPolicyViolation(
 	assert.Assert(t, !strings.Contains(output, "Policy Management Violation "), "Output should not contain 'Policy Management Violation'")
 }
 
-func TestPrintPoliciesSummary_BreakBuildWording(t *testing.T) {
+func TestPrintPoliciesSummary_PolicyEvaluationOutcome(t *testing.T) {
 	tests := []struct {
-		name              string
-		rootBreakBuild    bool
-		policyBreakBuild  bool
-		expectedHeader    string
-		expectedPolicyTag string
+		name           string
+		breakBuild     bool
+		rulesViolated  []string
+		expectedOutput string
 	}{
-		{"root true, policy true", true, true, "Policy Management Violation - Build is broken:", "Break Build: enabled"},
-		{"root false, policy false", false, false, "Policy Management Violation - Build passed:", "Break Build: disabled"},
+		{"violated and break build", true, []string{"rule1"}, "Policy Evaluation Outcome: Break the build. Below are the Policy  & Rule Details:"},
+		{"violated and build continues", false, []string{"rule1"}, "Policy Evaluation Outcome: Build will continue. Below are the Policy  & Rule Details:"},
+		{"no violations and build continues", false, []string{}, "Policy Evaluation Outcome: Build will continue."},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			summary := &wrappers.ResultSummary{
 				Policies: &wrappers.PolicyResponseModel{
-					Policies: []wrappers.Policy{
-						{Name: "p1", RulesViolated: []string{"rule1"}, BreakBuild: tt.policyBreakBuild},
-					},
-					BreakBuild: tt.rootBreakBuild,
+					Policies:   []wrappers.Policy{{Name: "p1", RulesViolated: tt.rulesViolated}},
+					BreakBuild: tt.breakBuild,
 				},
 			}
 			r, w, _ := os.Pipe()
@@ -1447,9 +1445,7 @@ func TestPrintPoliciesSummary_BreakBuildWording(t *testing.T) {
 			if _, err := io.Copy(&buf, r); err != nil {
 				t.Fatalf("failed to copy output: %v", err)
 			}
-			output := buf.String()
-			assert.Assert(t, strings.Contains(output, tt.expectedHeader), output)
-			assert.Assert(t, strings.Contains(output, tt.expectedPolicyTag), output)
+			assert.Assert(t, strings.Contains(buf.String(), tt.expectedOutput), buf.String())
 		})
 	}
 }
