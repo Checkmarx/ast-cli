@@ -12,6 +12,8 @@ import (
 
 var severityOrder = []string{"info", "low", "medium", "high", "critical"}
 
+const emptyThresholdNote = "No severity threshold specified -- all severity levels (critical, high, medium, low, info) will be scanned and reported."
+
 // SeverityThreshold is the rank of the lowest severity to return (1 = info ... 5 = critical); zero means no filtering.
 type SeverityThreshold int
 
@@ -30,9 +32,12 @@ func ParseSeverityThreshold(raw string) (SeverityThreshold, error) {
 	return SeverityThreshold(rank), nil
 }
 
-// SeverityThresholdFromCmd parses the --severity-threshold flag of cmd.
+// SeverityThresholdFromCmd parses the --severity-threshold flag of cmd, printing a note on stderr when it is passed empty.
 func SeverityThresholdFromCmd(cmd *cobra.Command) (SeverityThreshold, error) {
 	raw, _ := cmd.Flags().GetString(commonParams.SeverityThresholdFlag)
+	if cmd.Flags().Changed(commonParams.SeverityThresholdFlag) && strings.TrimSpace(raw) == "" {
+		_, _ = fmt.Fprintln(cmd.ErrOrStderr(), emptyThresholdNote)
+	}
 	return ParseSeverityThreshold(raw)
 }
 
