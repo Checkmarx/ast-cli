@@ -266,6 +266,9 @@ func promptWorkspaceRoots(raw any) []string {
 // RegisterGuardrails wires the four guardrail handlers and instantiates the
 // SCA, KICS, and secret-detection scanners used by the Bash and FileEdit handlers.
 func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
+	if transport, ok := tel.(*wrappers.TelemetryHTTPWrapper); ok {
+		tel = transport.ForAgentHooks()
+	}
 	scaScanner = sca.NewScanner(jwt, ff, rt)
 	scaScanner.Telemetry = tel
 	kicsScanner = kics.NewScanner(jwt, ff)

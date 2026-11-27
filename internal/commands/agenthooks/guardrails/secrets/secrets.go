@@ -51,7 +51,6 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 
 	newContent, originalContent, ok := proposedContent(ev.FilePath, ev.Changes)
 	if !ok {
-		findingCount = 1
 		return true, provenanceTag() + " " + unresolvedEditReason, provenanceTag() + " " + unresolvedEditContext, ""
 	}
 	if newContent == "" {

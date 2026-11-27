@@ -317,6 +317,48 @@ func unsignedJWT(claims map[string]interface{}) string {
 	return header + "." + payload + ".sig"
 }
 
+func TestAgentHookTelemetryTimesOutWithoutRetrying(t *testing.T) {
+	requests := make(chan string, 2)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests <- req.URL.Path
+		<-release
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+	for key, value := range map[string]any{
+		commonParams.IgnoreProxyKey:        true,
+		commonParams.ApikeyOverrideFlag:    false,
+		commonParams.TokenExpirySecondsKey: 300,
+	} {
+		previous := viper.Get(key)
+		t.Cleanup(func() { viper.Set(key, previous) })
+		viper.Set(key, value)
+	}
+	credentialsMutex.Lock()
+	previousToken, previousTime := cachedAccessToken, cachedAccessTime
+	credentialsMutex.Unlock()
+	t.Cleanup(func() {
+		credentialsMutex.Lock()
+		defer credentialsMutex.Unlock()
+		cachedAccessToken, cachedAccessTime = previousToken, previousTime
+	})
+	writeCredentialsToCache(unsignedJWT(map[string]any{BaseURLKey: server.URL}))
+
+	telemetry := NewHTTPTelemetryAIWrapper("telemetry").ForAgentHooks()
+	err := telemetry.SendAIDataToLog(&DataForAITelemetry{})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected telemetry request to time out, got %v", err)
+	}
+	if got := len(requests); got != 1 {
+		t.Fatalf("got %d telemetry requests, want 1", got)
+	}
+	if path := <-requests; path != "/telemetry/log" {
+		t.Fatalf("telemetry request used path %q", path)
+	}
+}
+
 // TestExtractFromTokenClaims covers fix #10: the "aud" (and any) claim may be a
 // string or an array of strings. The array form must not panic.
 func TestExtractFromTokenClaims(t *testing.T) {
