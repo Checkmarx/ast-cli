@@ -52,11 +52,11 @@ func TestResultsExitCode_OnSuccessfulScan_ShouldReturnStatusCompleted(t *testing
 	scansWrapper := wrappers.NewHTTPScansWrapper(scansPath)
 	results, _ := commands.GetScannerResults(scansWrapper, scanID, "sast,sca")
 
-	assert.Equal(t, 1, len(results))
+	assert.Equal(t, 2, len(results))
 	assert.Equal(t, wrappers.ScanCompleted, (results[0]).Status)
 	assert.Equal(t, "", (results[0]).Details)
 	assert.Equal(t, "", (results[0]).ErrorCode)
-	assert.Equal(t, "", (results[0]).Name)
+	assert.Equal(t, "sast", (results[0]).Name)
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
