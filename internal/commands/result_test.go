@@ -1413,6 +1413,43 @@ func TestPrintPoliciesSummary_WhenNoRolViolated_ShouldNotContainPolicyViolation(
 	assert.Assert(t, !strings.Contains(output, "Policy Management Violation "), "Output should not contain 'Policy Management Violation'")
 }
 
+func TestPrintPoliciesSummary_PolicyEvaluationOutcome(t *testing.T) {
+	tests := []struct {
+		name           string
+		breakBuild     bool
+		rulesViolated  []string
+		expectedOutput string
+	}{
+		{"violated and break build", true, []string{"rule1"}, "Policy Evaluation Outcome: Break the build. Below are the Policy  & Rule Details:"},
+		{"violated and build continues", false, []string{"rule1"}, "Policy Evaluation Outcome: Build will continue. Below are the Policy  & Rule Details:"},
+		{"no violations and build continues", false, []string{}, "Policy Evaluation Outcome: Build will continue."},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			summary := &wrappers.ResultSummary{
+				Policies: &wrappers.PolicyResponseModel{
+					Policies:   []wrappers.Policy{{Name: "p1", RulesViolated: tt.rulesViolated}},
+					BreakBuild: tt.breakBuild,
+				},
+			}
+			r, w, _ := os.Pipe()
+			old := os.Stdout
+			os.Stdout = w
+
+			printPoliciesSummary(summary, false)
+
+			w.Close()
+			os.Stdout = old
+
+			var buf bytes.Buffer
+			if _, err := io.Copy(&buf, r); err != nil {
+				t.Fatalf("failed to copy output: %v", err)
+			}
+			assert.Assert(t, strings.Contains(buf.String(), tt.expectedOutput), buf.String())
+		})
+	}
+}
+
 func TestRunGetResultsByScanIdJSONFormat_SCSFlagEnabled_SCSPresentInReport(t *testing.T) {
 	clearFlags()
 	mock.HasScs = true

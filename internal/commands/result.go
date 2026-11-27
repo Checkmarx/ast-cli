@@ -976,9 +976,9 @@ func printPoliciesSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit 
 			printWarningIfIgnorePolicyOmiited()
 		}
 		if summary.Policies.BreakBuild {
-			fmt.Printf("            Policy Management Violation - Break Build Enabled:                     \n")
+			fmt.Printf("            Policy Evaluation Outcome: Break the build. Below are the Policy  & Rule Details:                   \n")
 		} else {
-			fmt.Printf("            Policy Management Violation:                     \n")
+			fmt.Printf("            Policy Evaluation Outcome: Build will continue. Below are the Policy  & Rule Details:                   \n")
 		}
 		for _, police := range summary.Policies.Policies {
 			if len(police.RulesViolated) > 0 {
@@ -990,6 +990,9 @@ func printPoliciesSummary(summary *wrappers.ResultSummary, ignorePolicyFlagOmit 
 			fmt.Printf("\n")
 		}
 		fmt.Printf("\n")
+	} else if !summary.Policies.BreakBuild {
+		fmt.Printf(tableLine + "\n")
+		fmt.Printf("            Policy Evaluation Outcome: Build will continue.                     \n\n")
 	}
 }
 
