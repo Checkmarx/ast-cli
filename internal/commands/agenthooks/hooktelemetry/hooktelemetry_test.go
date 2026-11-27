@@ -44,10 +44,14 @@ func TestSanitizeRepoURL(t *testing.T) {
 	}
 }
 
-func TestSeverityCounts(t *testing.T) {
-	got := SeverityCounts([]string{"High", "critical", "High", "Low", "unknown"})
-	assert.Equal(t, got, "Critical=1,High=2,Medium=0,Low=1,Info=0")
-	assert.Equal(t, SeverityCounts(nil), "Critical=0,High=0,Medium=0,Low=0,Info=0")
+func TestScanSeveritySummary(t *testing.T) {
+	highest, counts := ScanSeveritySummary([]string{"High", "critical", "High", "Low", "unknown"})
+	assert.Equal(t, highest, "Critical")
+	assert.Equal(t, counts, "Critical=1,High=2,Medium=0,Low=1,Info=0")
+
+	highest, counts = ScanSeveritySummary(nil)
+	assert.Equal(t, highest, "")
+	assert.Equal(t, counts, "Critical=0,High=0,Medium=0,Low=0,Info=0")
 }
 
 func TestEnrich(t *testing.T) {
@@ -75,17 +79,24 @@ func TestEnrich(t *testing.T) {
 	assert.Equal(t, data.Status, StatusSuccess)
 }
 
-func TestFindingIDs(t *testing.T) {
-	SetFindingIDs([]string{"CVE-1", " ", "CVE-2", "CVE-1"})
-	assert.Equal(t, TakeFindingIDs(), "CVE-1,CVE-2", "blanks and duplicates are dropped")
-	assert.Equal(t, TakeFindingIDs(), "", "taking clears the recorded ids")
+func TestRemediationFindings(t *testing.T) {
+	SetRemediationFindings([]string{"CVE-1", " ", "CVE-2", "CVE-1"}, 4)
+	ids, count := TakeRemediationFindings()
+	assert.Equal(t, ids, "CVE-1,CVE-2")
+	assert.Equal(t, count, 4)
+
+	ids, count = TakeRemediationFindings()
+	assert.Equal(t, ids, "")
+	assert.Equal(t, count, 0)
 
 	many := make([]string, 0, maxFindingIDs+5)
 	for i := 0; i < maxFindingIDs+5; i++ {
 		many = append(many, "id"+string(rune('a'+i)))
 	}
-	SetFindingIDs(many)
-	assert.Equal(t, len(strings.Split(TakeFindingIDs(), ",")), maxFindingIDs, "capped at maxFindingIDs")
+	SetRemediationFindings(many, len(many))
+	ids, count = TakeRemediationFindings()
+	assert.Equal(t, len(strings.Split(ids, ",")), maxFindingIDs)
+	assert.Equal(t, count, len(many))
 }
 
 func TestEnrichToleratesMissingContext(t *testing.T) {

@@ -122,8 +122,8 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, telemetryWrapper wrappers.Teleme
 	for i := range newFindings {
 		ids = append(ids, strconv.FormatUint(uint64(newFindings[i].RuleID), 10))
 	}
-	hooktelemetry.SetFindingIDs(ids)
 	r, c := formatFindings(ev.FilePath, newFindings, ev.WorkDir, agent, ev.SessionID)
+	hooktelemetry.SetRemediationFindings(ids, len(newFindings))
 	return true, r, c, highestSeverity(newFindings)
 }
 
@@ -204,6 +204,7 @@ func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		return
 	}
 
+	severity, statusResult := hooktelemetry.ScanSeveritySummary(severities)
 	telemetryData := &wrappers.DataForAITelemetry{
 		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
@@ -213,7 +214,8 @@ func logASCATelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		Type:             "hooks-detect",
 		SubType:          "scan",
 		ScanType:         "asca",
-		StatusResult:     hooktelemetry.SeverityCounts(severities),
+		ProblemSeverity:  severity,
+		StatusResult:     statusResult,
 		AiAgentSessionId: sessionID,
 	}
 	hooktelemetry.Enrich(telemetryData, workDir)

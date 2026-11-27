@@ -109,8 +109,8 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		if len(newResults) == 0 {
 			return false, "", "", "", ""
 		}
-		hooktelemetry.SetFindingIDs(resultIDs(newResults))
 		r, c := formatFindings(ev.FilePath, newResults, ev.Agent, ev.WorkDir, ev.SessionID)
+		hooktelemetry.SetRemediationFindings(resultIDs(newResults), len(newResults))
 		return true, r, c, "", highestSeverity(newResults)
 	}
 
@@ -137,8 +137,8 @@ func ScanFileEdit(ev *agenthooks.FileEditEvent, svc *Scanner, telemetryWrapper w
 		return false, "", "", "", ""
 	}
 
-	hooktelemetry.SetFindingIDs(resultIDs(newFindings))
 	r, c := formatFindings(ev.FilePath, newFindings, ev.Agent, ev.WorkDir, ev.SessionID)
+	hooktelemetry.SetRemediationFindings(resultIDs(newFindings), len(newFindings))
 	return true, r, c, "", highestSeverity(newFindings)
 }
 
@@ -197,6 +197,7 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		return
 	}
 
+	severity, statusResult := hooktelemetry.ScanSeveritySummary(severities)
 	telemetryData := &wrappers.DataForAITelemetry{
 		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
@@ -206,7 +207,8 @@ func logKicsTelemetry(telemetryWrapper wrappers.TelemetryWrapper, agent, session
 		Type:             "hooks-detect",
 		SubType:          "scan",
 		ScanType:         "iac",
-		StatusResult:     hooktelemetry.SeverityCounts(severities),
+		ProblemSeverity:  severity,
+		StatusResult:     statusResult,
 		AiAgentSessionId: sessionID,
 	}
 	hooktelemetry.Enrich(telemetryData, workDir)

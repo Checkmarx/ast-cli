@@ -612,3 +612,39 @@ func TestGetClient_UnrecognizedProxyAuthTypeIsLoggedWhenVerbose(t *testing.T) {
 	}
 	assert.NotContains(t, logBuffer.String(), "falling back to basic")
 }
+
+func TestExchangeLoginAPIKey_VerifiesSuppliedCredential(t *testing.T) {
+	var apiKey string
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		calls++
+		if req.URL.Path != "/auth/realms/organization/"+BaseAuthURLSuffix {
+			t.Errorf("unexpected request path: %s", req.URL.Path)
+		}
+		if err := req.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		if req.Form.Get("refresh_token") != apiKey {
+			t.Error("request did not use the supplied API key")
+		}
+		if calls == 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, _ = w.Write([]byte(`{"access_token":"verified-access-token"}`))
+	}))
+	defer server.Close()
+	apiKey = unsignedJWT(map[string]interface{}{"aud": server.URL + "/auth/realms/organization"})
+	SetCachedAccessTokenForTest("different-cached-token")
+	t.Cleanup(InvalidateAccessTokenCache)
+
+	if token, err := ExchangeLoginAPIKey(apiKey); err == nil || token != "" {
+		t.Fatal("IAM rejected the supplied key, so login must fail")
+	}
+	if token, err := ExchangeLoginAPIKey(apiKey); err != nil || token != "verified-access-token" {
+		t.Fatalf("IAM accepted the supplied key, got error %v", err)
+	}
+	if calls != 2 {
+		t.Fatalf("expected two fresh token requests, got %d", calls)
+	}
+}

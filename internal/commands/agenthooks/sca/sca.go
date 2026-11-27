@@ -80,14 +80,15 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, sessionID string) (finding, remediation, severity string) {
 	tag := provenanceTag(agent)
 	if len(malicious) > 0 {
-		hooktelemetry.SetFindingIDs(maliciousPackageIDs(malicious))
 		f, r := DenyMalicious(malicious, agent)
+		hooktelemetry.SetRemediationFindings(maliciousPackageIDs(malicious), len(malicious))
 		return tag + " " + f, tag + " " + r, statusMalicious
 	}
 	vulnerable = aboveThreshold(vulnerable)
 	if len(vulnerable) > 0 {
-		hooktelemetry.SetFindingIDs(vulnerableCVEs(vulnerable))
 		f, r := DenyVulnerable(vulnerable, workDir, agent, sessionID)
+		ids := vulnerableCVEs(vulnerable)
+		hooktelemetry.SetRemediationFindings(ids, len(ids))
 		return tag + " " + f, tag + " " + r, highestVulnSeverity(vulnerable)
 	}
 	return "", "", ""
@@ -112,16 +113,18 @@ func (s *Scanner) logScan(agent, sessionID, workDir string, malicious, vulnerabl
 	if len(severities) == 0 {
 		return
 	}
+	severity, statusResult := hooktelemetry.ScanSeveritySummary(severities)
 	data := &wrappers.DataForAITelemetry{
 		Agent:            hostenv.TelemetryAgent(agent),
 		AIProvider:       agent,
-		Engine:           "Oss",
+		Engine:           hooktelemetry.EngineOSS,
 		TotalCount:       len(severities),
 		UniqueID:         wrappers.GetUniqueID(),
 		Type:             "hooks-detect",
 		SubType:          "scan",
-		ScanType:         "oss",
-		StatusResult:     hooktelemetry.SeverityCounts(severities),
+		ScanType:         hooktelemetry.EngineOSS,
+		ProblemSeverity:  severity,
+		StatusResult:     statusResult,
 		AiAgentSessionId: sessionID,
 	}
 	hooktelemetry.Enrich(data, workDir)

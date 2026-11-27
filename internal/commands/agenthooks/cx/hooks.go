@@ -21,8 +21,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-// canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
-// the per-event remediation telemetry; ASCA already uses "Asca").
+// Canonical per-engine labels for the session summary.
 const (
 	engineAsca    = "Asca"
 	engineSca     = "Sca"
@@ -90,7 +89,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		sid := sessionIDFromToolCall(&ev)
 		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(sid, engineSca, 1, 1)
-			logRemediationTelemetry(agent, "SCA", severity, sid, ev.WorkDir)
+			logRemediationTelemetry(agent, hooktelemetry.EngineOSS, severity, sid, ev.WorkDir)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -164,7 +163,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		for _, diff := range ev.Changes {
 			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" && !belowThreshold(ev.Agent, severity) {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
-				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID, ev.WorkDir)
+				logRemediationTelemetry(agent, hooktelemetry.EngineOSS, severity, ev.SessionID, ev.WorkDir)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -294,12 +293,13 @@ func RegisterPassThrough() {
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
 func logRemediationTelemetry(agent, engine, severity, sessionID, workDir string) {
+	ids, count := hooktelemetry.TakeRemediationFindings()
 	if telemetryWrapper == nil {
 		return
 	}
 
 	attrs := wrappers.EventAttributes{"remediationMode": hooktelemetry.RemediationModeSelfHealing}
-	if ids := hooktelemetry.TakeFindingIDs(); ids != "" {
+	if ids != "" {
 		attrs["vulnerabilityId"] = ids
 	}
 	if sessionID != "" {
@@ -313,6 +313,8 @@ func logRemediationTelemetry(agent, engine, severity, sessionID, workDir string)
 		UniqueID:         wrappers.GetUniqueID(),
 		Type:             "hooks-remediate",
 		SubType:          "fixWithAIAssist",
+		StatusResult:     "Remediation instructions delivered.",
+		TotalCount:       count,
 		ProblemSeverity:  severity,
 		AiAgentSessionId: sessionID,
 		EventAttributes:  &attrs,

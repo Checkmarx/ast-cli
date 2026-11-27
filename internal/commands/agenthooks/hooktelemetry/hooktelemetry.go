@@ -22,6 +22,8 @@ import (
 const (
 	// StatusSuccess is the status sent for an event whose operation completed.
 	StatusSuccess = "success"
+	// EngineOSS identifies dependency scan, remediation, and ignore events.
+	EngineOSS = "oss"
 	// RemediationModeSelfHealing marks a remediation driven by a hook deny (the agent fixes its own edit).
 	RemediationModeSelfHealing = "SelfHealing"
 
@@ -39,15 +41,13 @@ var (
 	repoURLMu    sync.Mutex
 	repoURLCache = map[string]string{}
 
-	findingIDsMu sync.Mutex
-	findingIDs   []string
+	remediationMu    sync.Mutex
+	remediationIDs   string
+	remediationCount int
 )
 
-// SetFindingIDs records the IDs (CVE, rule id, ...) of the findings a guardrail is about to deny, so
-// the remediation event for that deny can report them as eventAttributes.vulnerabilityId. `cx hooks`
-// handles one hook event per process, so the last recorded set always belongs to the current deny.
-// Empty IDs and duplicates are dropped; at most maxFindingIDs are kept.
-func SetFindingIDs(ids []string) {
+// FormatFindingIDs returns a comma-separated list of up to maxFindingIDs unique, nonempty IDs.
+func FormatFindingIDs(ids []string) string {
 	seen := make(map[string]bool, len(ids))
 	kept := make([]string, 0, len(ids))
 	for _, id := range ids {
@@ -61,19 +61,26 @@ func SetFindingIDs(ids []string) {
 			break
 		}
 	}
-	findingIDsMu.Lock()
-	findingIDs = kept
-	findingIDsMu.Unlock()
+	return strings.Join(kept, ",")
 }
 
-// TakeFindingIDs returns the IDs recorded by SetFindingIDs, comma-separated ("" when none), and clears
-// them so a later event in the same process never reuses them.
-func TakeFindingIDs() string {
-	findingIDsMu.Lock()
-	defer findingIDsMu.Unlock()
-	ids := strings.Join(findingIDs, ",")
-	findingIDs = nil
-	return ids
+// SetRemediationFindings records the findings covered by the current hook's remediation instructions.
+// The count includes every covered finding even if its ID is missing, repeated, or omitted by the cap.
+func SetRemediationFindings(ids []string, count int) {
+	formattedIDs := FormatFindingIDs(ids)
+	remediationMu.Lock()
+	defer remediationMu.Unlock()
+	remediationIDs = formattedIDs
+	remediationCount = count
+}
+
+// TakeRemediationFindings returns and clears the recorded IDs and count.
+func TakeRemediationFindings() (ids string, count int) {
+	remediationMu.Lock()
+	defer remediationMu.Unlock()
+	ids, count = remediationIDs, remediationCount
+	remediationIDs, remediationCount = "", 0
+	return ids, count
 }
 
 // ignoreFlagValue keeps values safe in the optional flag parser and in generated shell commands.
@@ -115,9 +122,9 @@ func Enrich(data *wrappers.DataForAITelemetry, workDir string) {
 	}
 }
 
-// SeverityCounts renders severities as "Critical=n,High=n,Medium=n,Low=n,Info=n", the scan event's
-// statusResult. Severities outside the known five are not counted.
-func SeverityCounts(severities []string) string {
+// ScanSeveritySummary returns the highest detected severity and the counts for statusResult.
+// Severities outside the known five are not counted.
+func ScanSeveritySummary(severities []string) (highest, statusResult string) {
 	counts := make(map[string]int, len(severityOrder))
 	for _, s := range severities {
 		for _, known := range severityOrder {
@@ -129,9 +136,13 @@ func SeverityCounts(severities []string) string {
 	}
 	parts := make([]string, 0, len(severityOrder))
 	for _, s := range severityOrder {
-		parts = append(parts, fmt.Sprintf("%s=%d", s, counts[s]))
+		count := counts[s]
+		if highest == "" && count > 0 {
+			highest = s
+		}
+		parts = append(parts, fmt.Sprintf("%s=%d", s, count))
 	}
-	return strings.Join(parts, ",")
+	return highest, strings.Join(parts, ",")
 }
 
 // RepoURL returns the credential-free "origin" URL of the git repository containing workDir, or "" when

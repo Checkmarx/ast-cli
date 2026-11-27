@@ -4,12 +4,14 @@ package commands
 
 import (
 	"bytes"
+	"errors"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/checkmarx/ast-cli/internal/credentialstore"
 	"github.com/checkmarx/ast-cli/internal/params"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 	"github.com/checkmarx/ast-cli/internal/wrappers/configuration"
 	"github.com/checkmarx/ast-cli/internal/wrappers/mock"
 
@@ -237,5 +239,94 @@ func TestPersistLogin_PrintsSuccessMessage(t *testing.T) {
 	output := out.String()
 	if !strings.Contains(output, "Successfully authenticated to Checkmarx One server!") {
 		t.Errorf("expected success message in output, got: %q", output)
+	}
+}
+
+func TestCompleteAuthLogin_TelemetryAgentAllowlist(t *testing.T) {
+	const credential = "test-login-credential"
+	cases := []struct {
+		name  string
+		agent *string
+		want  string
+	}{
+		{name: "omitted"},
+		{name: "blank", agent: testLoginAgent(" ")},
+		{name: "default", agent: testLoginAgent("ASTCLI")},
+		{name: "other", agent: testLoginAgent("Copilot-VSCode")},
+		{name: "copilot", agent: testLoginAgent(" Copilot-CLI "), want: "Copilot-cli"},
+		{name: "claude", agent: testLoginAgent("claude-cli"), want: "Claude-cli"},
+		{name: "cursor", agent: testLoginAgent("cursor-cli"), want: "Cursor-cli"},
+		{name: "gemini", agent: testLoginAgent("gemini-cli"), want: "Gemini-cli"},
+		{name: "codex", agent: testLoginAgent("codex-cli"), want: "Codex-cli"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			withTempConfigDir(t)
+			store := swapCredentialResolver(t)
+			t.Setenv("CX_TELEMETRY_DISABLE", "")
+			oldExpiry, oldSession := viper.Get(params.TokenExpirySecondsKey), viper.Get(params.SessionIDConfigKey)
+			t.Cleanup(func() {
+				viper.Set(params.TokenExpirySecondsKey, oldExpiry)
+				viper.Set(params.SessionIDConfigKey, oldSession)
+				wrappers.InvalidateAccessTokenCache()
+			})
+			viper.Set(params.TokenExpirySecondsKey, 120)
+			viper.Set(params.SessionIDConfigKey, "")
+			cmd, _, _ := newBufferedCmd()
+			cmd.Flags().String(params.AgentFlag, params.DefaultAgent, "")
+			if tc.agent != nil {
+				if err := cmd.Flags().Set(params.AgentFlag, *tc.agent); err != nil {
+					t.Fatal(err)
+				}
+			}
+			calls := 0
+			telemetry := mock.TelemetryMockWrapper{CustomSendAIDataToLog: func(data *wrappers.DataForAITelemetry) error {
+				calls++
+				if store.Store[credentialstore.CredentialAPIKey] != credential {
+					t.Fatal("telemetry sent before credential was saved")
+				}
+				if data.Agent != tc.want || data.Type != authenticationEventType ||
+					data.SubType != authenticationEventType || data.Status != telemetrySuccessStatus ||
+					data.SessionID == "" || (*data.EventAttributes)["authMethod"] != "OAuth" {
+					t.Fatalf("unexpected authentication telemetry: %+v", data)
+				}
+				return errors.New("telemetry unavailable")
+			}}
+			if err := completeAuthLogin(cmd, telemetry, credential, "test-access-token", "OAuth"); err != nil {
+				t.Fatal(err)
+			}
+			if tc.want == "" {
+				if calls != 0 || viper.GetString(params.SessionIDConfigKey) != "" {
+					t.Fatal("non-eligible login sent telemetry or generated a session ID")
+				}
+			} else if calls != 1 || readYamlKey(t, params.SessionIDConfigKey) == "" {
+				t.Fatal("eligible login should send one event and persist a session ID")
+			}
+			if store.Store[credentialstore.CredentialAPIKey] != credential {
+				t.Fatal("login credential was not saved")
+			}
+		})
+	}
+}
+
+func testLoginAgent(agent string) *string {
+	return &agent
+}
+
+func TestRunAuthLogin_InvalidAPIKeyKeepsCredential(t *testing.T) {
+	withTempConfigDir(t)
+	store := swapCredentialResolver(t)
+	const oldCredential = "existing-credential"
+	store.Store[credentialstore.CredentialAPIKey] = oldCredential
+	cmd, _, _ := newBufferedCmd()
+	cmd.Flags().String(params.AstAPIKeyFlag, "", "")
+	if err := cmd.Flags().Set(params.AstAPIKeyFlag, "not-a-token"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runAuthLogin(cmd, nil); err == nil {
+		t.Fatal("expected API-key verification to fail")
+	}
+	if store.Store[credentialstore.CredentialAPIKey] != oldCredential {
+		t.Fatal("invalid API key replaced the existing credential")
 	}
 }

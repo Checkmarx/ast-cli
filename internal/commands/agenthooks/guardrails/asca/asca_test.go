@@ -592,10 +592,12 @@ func TestLogASCATelemetry_WithFindings_Sends(t *testing.T) {
 			return nil
 		},
 	}
-	logASCATelemetry(telemetry, "Claude", "", "", 2, nil)
+	logASCATelemetry(telemetry, "Claude", "", "", 2, []string{"HIGH", "Low"})
 	assert.NotNil(t, captured)
 	assert.Equal(t, "Asca", captured.Engine)
 	assert.Equal(t, 2, captured.TotalCount)
+	assert.Equal(t, "High", captured.ProblemSeverity)
+	assert.Equal(t, "Critical=0,High=1,Medium=0,Low=1,Info=0", captured.StatusResult)
 	assert.Equal(t, "Claude", captured.AIProvider)
 }
 

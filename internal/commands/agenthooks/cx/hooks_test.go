@@ -20,6 +20,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
@@ -222,8 +223,8 @@ func TestCxBeforeToolCall_SCAFinding_DeniesWithContext(t *testing.T) {
 	if len(tel.calls) != 1 {
 		t.Fatalf("expected 1 telemetry call, got %d", len(tel.calls))
 	}
-	if tel.calls[0].Engine != "SCA" {
-		t.Errorf("Engine = %q, want SCA", tel.calls[0].Engine)
+	if tel.calls[0].Engine != "oss" || tel.calls[0].ScanType != "oss" {
+		t.Errorf("Engine/ScanType = %q/%q, want oss/oss", tel.calls[0].Engine, tel.calls[0].ScanType)
 	}
 }
 
@@ -414,8 +415,8 @@ func TestCxBeforeFileEdit_SCAManifest_RejectsWithContext(t *testing.T) {
 	if len(tel.calls) != 1 {
 		t.Fatalf("expected 1 telemetry call, got %d", len(tel.calls))
 	}
-	if tel.calls[0].Engine != "Oss" {
-		t.Errorf("Engine = %q, want Oss", tel.calls[0].Engine)
+	if tel.calls[0].Engine != "oss" || tel.calls[0].ScanType != "oss" {
+		t.Errorf("Engine/ScanType = %q/%q, want oss/oss", tel.calls[0].Engine, tel.calls[0].ScanType)
 	}
 }
 
@@ -634,6 +635,8 @@ func TestLogRemediationTelemetry(t *testing.T) {
 	t.Run("sends_payload", func(t *testing.T) {
 		tel := &recordingTelemetry{}
 		telemetryWrapper = tel
+		const ruleID = "1027"
+		hooktelemetry.SetRemediationFindings([]string{ruleID, ruleID}, 2)
 		logRemediationTelemetry("Cursor", "Asca", "Critical", "sess-9", "")
 		if len(tel.calls) != 1 {
 			t.Fatalf("got %d calls, want 1", len(tel.calls))
@@ -647,6 +650,11 @@ func TestLogRemediationTelemetry(t *testing.T) {
 		}
 		if got.Type != telemetryTypeHooksRemediate || got.SubType != "fixWithAIAssist" {
 			t.Errorf("Type/SubType = %q/%q", got.Type, got.SubType)
+		}
+		assert.Equal(t, 2, got.TotalCount)
+		assert.Equal(t, ruleID, (*got.EventAttributes)["vulnerabilityId"])
+		if got.StatusResult != "Remediation instructions delivered." {
+			t.Errorf("StatusResult = %q", got.StatusResult)
 		}
 		if got.ProblemSeverity != "Critical" || got.AiAgentSessionId != "sess-9" {
 			t.Errorf("severity/session = %q/%q", got.ProblemSeverity, got.AiAgentSessionId)
