@@ -299,9 +299,11 @@ func TestResultsExitCode_OnCanceledScan_PrintOnlyScanIDAndStatusCanceledToConsol
 
 	results := getScannerResponse("", &model)
 
-	assert.Equal(t, len(results), 1, "Scanner results should be empty")
-	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
+	assert.Equal(t, len(results), 2, "Should return overall status + failed engines")
+	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "First result should be overall status")
 	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+	assert.Equal(t, results[1].Name, "kics", "Second result should be failed engine")
+	assert.Equal(t, results[1].Status, wrappers.ScanFailed, "")
 }
 
 func TestResultsExitCode_OnCanceledScanWithRequestedSuccessfulScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
@@ -317,9 +319,9 @@ func TestResultsExitCode_OnCanceledScanWithRequestedSuccessfulScanner_PrintOnlyS
 
 	results := getScannerResponse("sast", &model)
 
-	assert.Equal(t, len(results), 1, "Scanner results should be empty")
-	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
-	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+	assert.Equal(t, len(results), 1, "Should return requested engine details")
+	assert.Equal(t, results[0].Name, "sast", "Should return sast engine")
+	assert.Equal(t, results[0].Status, wrappers.ScanCompleted, "")
 }
 
 func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanIDAndStatusCanceledToConsole(t *testing.T) {
@@ -335,9 +337,10 @@ func TestResultsExitCode_OnCanceledScanWithRequestedFailedScanner_PrintOnlyScanI
 
 	results := getScannerResponse("kics", &model)
 
-	assert.Equal(t, len(results), 1, "Scanner results should be empty")
-	assert.Equal(t, results[0].ScanID, "fake-scan-id-kics-fail-sast-canceled-id", "")
-	assert.Equal(t, results[0].Status, wrappers.ScanCanceled, "")
+	assert.Equal(t, len(results), 1, "Should return requested engine details")
+	assert.Equal(t, results[0].Name, "kics", "Should return kics engine")
+	assert.Equal(t, results[0].Status, wrappers.ScanFailed, "")
+	assert.Equal(t, results[0].Details, "error message from kics scanner", "")
 }
 
 func TestResultsExitCode_NoScanIdSent_FailCommandWithError(t *testing.T) {
