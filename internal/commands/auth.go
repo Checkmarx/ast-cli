@@ -114,7 +114,7 @@ func NewAuthCommand(authWrapper wrappers.AuthWrapper, telemetryWrapper wrappers.
 		},
 		RunE: validLogin(telemetryWrapper),
 	}
-	authCmd.AddCommand(createClientCmd, validLoginCmd, newAuthLoginCommand(), newAuthLogoutCommand())
+	authCmd.AddCommand(createClientCmd, validLoginCmd, newAuthLoginCommand(telemetryWrapper), newAuthLogoutCommand())
 	return authCmd
 }
 
@@ -136,19 +136,18 @@ func validLogin(telemetryWrapper wrappers.TelemetryWrapper) func(cmd *cobra.Comm
 			authWrapper.SetPath(viper.GetString(params.ScansPathKey))
 			err := authWrapper.ValidateLogin()
 
-			// Send telemetry only for CLI agents
 			agent := viper.GetString(params.AgentNameKey)
 			if agent == params.DefaultAgent {
 				uniqueID := wrappers.GetUniqueID()
 				if uniqueID != "" {
-					telemetryErr := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
-						UniqueID: uniqueID,
-						Type:     "authentication",
-						SubType:  "authentication",
-					})
-					if telemetryErr != nil {
-						logger.PrintIfVerbose("Failed to send telemetry data: " + telemetryErr.Error())
-					}
+					// telemetryErr := telemetryWrapper.SendAIDataToLog(&wrappers.DataForAITelemetry{
+					// 	UniqueID: uniqueID,
+					// 	Type:     "authentication",
+					// 	SubType:  "authentication",
+					// })
+					// if telemetryErr != nil {
+					// 	logger.PrintIfVerbose("Failed to send telemetry data: " + telemetryErr.Error())
+					// }
 				}
 			}
 

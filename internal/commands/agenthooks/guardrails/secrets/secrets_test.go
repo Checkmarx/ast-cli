@@ -173,13 +173,17 @@ func TestScanFileEdit_BeforeTextNotFound_BlocksInsteadOfSkipping(t *testing.T) {
 		WorkDir:  dir,
 		Changes:  []agenthooks.FileDiff{{Before: "STALE_TEXT_NOT_ON_DISK", After: "TOKEN=" + sampleSecret}},
 	}
-	blocked, reason, context, _ := ScanFileEdit(ev, svc, nil, "Claude")
+	tel := &recordingTelemetry{}
+	blocked, reason, context, _ := ScanFileEdit(ev, svc, tel, "Claude")
 	if !blocked {
 		t.Fatal("an edit whose Before text cannot be located should be blocked, not silently dropped and allowed")
 	}
 	assertVerdictOmitsSecret(t, reason, context)
 	if scanCalled {
 		t.Fatal("should not scan content that silently omits the unresolved edit")
+	}
+	if len(tel.calls) != 0 {
+		t.Fatalf("unresolved edit should not emit scan telemetry, got %d events", len(tel.calls))
 	}
 }
 

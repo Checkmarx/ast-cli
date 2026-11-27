@@ -317,6 +317,48 @@ func unsignedJWT(claims map[string]interface{}) string {
 	return header + "." + payload + ".sig"
 }
 
+func TestAgentHookTelemetryTimesOutWithoutRetrying(t *testing.T) {
+	requests := make(chan string, 2)
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		requests <- req.URL.Path
+		<-release
+		w.WriteHeader(http.StatusBadGateway)
+	}))
+	t.Cleanup(server.Close)
+	t.Cleanup(func() { close(release) })
+	for key, value := range map[string]any{
+		commonParams.IgnoreProxyKey:        true,
+		commonParams.ApikeyOverrideFlag:    false,
+		commonParams.TokenExpirySecondsKey: 300,
+	} {
+		previous := viper.Get(key)
+		t.Cleanup(func() { viper.Set(key, previous) })
+		viper.Set(key, value)
+	}
+	credentialsMutex.Lock()
+	previousToken, previousTime := cachedAccessToken, cachedAccessTime
+	credentialsMutex.Unlock()
+	t.Cleanup(func() {
+		credentialsMutex.Lock()
+		defer credentialsMutex.Unlock()
+		cachedAccessToken, cachedAccessTime = previousToken, previousTime
+	})
+	writeCredentialsToCache(unsignedJWT(map[string]any{BaseURLKey: server.URL}))
+
+	telemetry := NewHTTPTelemetryAIWrapper("telemetry").ForAgentHooks()
+	err := telemetry.SendAIDataToLog(&DataForAITelemetry{})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected telemetry request to time out, got %v", err)
+	}
+	if got := len(requests); got != 1 {
+		t.Fatalf("got %d telemetry requests, want 1", got)
+	}
+	if path := <-requests; path != "/telemetry/log" {
+		t.Fatalf("telemetry request used path %q", path)
+	}
+}
+
 // TestExtractFromTokenClaims covers fix #10: the "aud" (and any) claim may be a
 // string or an array of strings. The array form must not panic.
 func TestExtractFromTokenClaims(t *testing.T) {
@@ -569,4 +611,40 @@ func TestGetClient_UnrecognizedProxyAuthTypeIsLoggedWhenVerbose(t *testing.T) {
 		GetClient(1)
 	}
 	assert.NotContains(t, logBuffer.String(), "falling back to basic")
+}
+
+func TestExchangeLoginAPIKey_VerifiesSuppliedCredential(t *testing.T) {
+	var apiKey string
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		calls++
+		if req.URL.Path != "/auth/realms/organization/"+BaseAuthURLSuffix {
+			t.Errorf("unexpected request path: %s", req.URL.Path)
+		}
+		if err := req.ParseForm(); err != nil {
+			t.Error(err)
+		}
+		if req.Form.Get("refresh_token") != apiKey {
+			t.Error("request did not use the supplied API key")
+		}
+		if calls == 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		_, _ = w.Write([]byte(`{"access_token":"verified-access-token"}`))
+	}))
+	defer server.Close()
+	apiKey = unsignedJWT(map[string]interface{}{"aud": server.URL + "/auth/realms/organization"})
+	SetCachedAccessTokenForTest("different-cached-token")
+	t.Cleanup(InvalidateAccessTokenCache)
+
+	if token, err := ExchangeLoginAPIKey(apiKey); err == nil || token != "" {
+		t.Fatal("IAM rejected the supplied key, so login must fail")
+	}
+	if token, err := ExchangeLoginAPIKey(apiKey); err != nil || token != "verified-access-token" {
+		t.Fatalf("IAM accepted the supplied key, got error %v", err)
+	}
+	if calls != 2 {
+		t.Fatalf("expected two fresh token requests, got %d", calls)
+	}
 }

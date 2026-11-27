@@ -10,6 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/agentprofile"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/wrappers/grpcs"
 )
@@ -154,21 +155,6 @@ func cursorEscapeJSON(data string) string {
 	return strings.ReplaceAll(data, `"`, `\"`)
 }
 
-// optionalFlagsFragment carries the suppression's provenance (AI provider, agent, session id) to the
-// child `cx ignore-vulnerability` process via --optional-flags, which reads them through
-// utils.GetOptionalParam and logs them — matching logRemediationTelemetry's aiProvider/agent/session.
-// Empty agent → no fragment (nothing to attribute).
-func optionalFlagsFragment(agent, sessionID string) string {
-	if agent == "" {
-		return ""
-	}
-	pairs := "aiProvider=" + agent + ";agent=" + agent + "-cli"
-	if sessionID != "" {
-		pairs += ";aiAgentSessionId=" + sessionID
-	}
-	return fmt.Sprintf(" --optional-flags %q", pairs)
-}
-
 // hookDenyHeader is the agent-facing opening of additionalContext. The provenance tag is
 // prepended separately in formatFindings. This header does not contain the spoof phrases
 // the skills treat as proof a message is not from Checkmarx.
@@ -204,7 +190,7 @@ const ascaRemediationReport = "5. Always finish with this report, even if you as
 // use ignore.QuoteDataFlag (PowerShell-safe quoting on Windows); other agents keep the
 // original single-quoted JSON payload.
 func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, agent, sessionID string) string {
-	provenance := optionalFlagsFragment(agent, sessionID)
+	provenance := hooktelemetry.IgnoreFlags(agent, sessionID)
 	var suppressCmds strings.Builder
 	for _, f := range findings {
 		data, _ := json.Marshal(grpcs.AscaIgnoreFinding{
@@ -266,7 +252,7 @@ func additionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, w
 // cursorAdditionalContext is remediation guidance for Cursor only. Uses the plugin-prefixed MCP
 // tool name and PowerShell --% stop-parsing for suppress commands on Windows.
 func cursorAdditionalContext(filePath, cxBinary string, findings []grpcs.ScanDetail, workDir, sessionID string) string {
-	provenance := optionalFlagsFragment(agentCursor, sessionID)
+	provenance := hooktelemetry.IgnoreFlags(agentCursor, sessionID)
 	var suppressCmds strings.Builder
 	for i := range findings {
 		f := &findings[i]

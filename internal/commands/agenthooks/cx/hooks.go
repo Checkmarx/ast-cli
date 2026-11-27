@@ -12,6 +12,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/asca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/kics"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/guardrails/secrets"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/sca"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/scannerconfig"
@@ -20,8 +21,7 @@ import (
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
-// canonical per-engine labels for the session summary (normalizes the legacy SCA/Oss split used by
-// the per-event remediation telemetry; ASCA already uses "Asca").
+// Canonical per-engine labels for the session summary.
 const (
 	engineAsca    = "Asca"
 	engineSca     = "Sca"
@@ -89,7 +89,7 @@ func cxBeforeToolCall(ev agenthooks.ToolCallEvent) agenthooks.ToolVerdict {
 		sid := sessionIDFromToolCall(&ev)
 		if finding, remediation, severity := scaScanner.CheckBashInstall(ev.Command, ev.WorkDir, agent, sid); finding != "" && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(sid, engineSca, 1, 1)
-			logRemediationTelemetry(agent, "SCA", severity, sid)
+			logRemediationTelemetry(agent, hooktelemetry.EngineOSS, severity, sid, ev.WorkDir)
 			return agenthooks.DenyWithContext(finding, remediation)
 		}
 	}
@@ -145,7 +145,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	if scannerOn(ev.Agent, scannerconfig.ASCA) {
 		if blocked, reason, context, severity := asca.ScanFileEdit(&ev, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineAsca, 1, 1)
-			logRemediationTelemetry(agent, "Asca", severity, ev.SessionID)
+			logRemediationTelemetry(agent, "Asca", severity, ev.SessionID, ev.WorkDir)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
@@ -154,7 +154,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		blocked, reason, context, note, severity := kics.ScanFileEdit(&ev, kicsScanner, telemetryWrapper, agent)
 		if blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineKics, 1, 1)
-			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID)
+			logRemediationTelemetry(agent, "IaC", severity, ev.SessionID, ev.WorkDir)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 		kicsNote = note
@@ -163,7 +163,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 		for _, diff := range ev.Changes {
 			if finding, remediation, severity := scaScanner.CheckManifestEdit(ev.FilePath, fullAfterContent(ev.FilePath, diff), ev.WorkDir, agent, ev.SessionID); finding != "" && !belowThreshold(ev.Agent, severity) {
 				sessiontally.Add(ev.SessionID, engineSca, 1, 1)
-				logRemediationTelemetry(agent, "Oss", severity, ev.SessionID)
+				logRemediationTelemetry(agent, hooktelemetry.EngineOSS, severity, ev.SessionID, ev.WorkDir)
 				return agenthooks.RejectEditWithContext(finding, remediation)
 			}
 		}
@@ -171,7 +171,7 @@ func cxBeforeFileEdit(ev agenthooks.FileEditEvent) agenthooks.FileEditVerdict {
 	if secretsScanner != nil && secretsApply(ev.Agent) && scannerOn(ev.Agent, scannerconfig.Secrets) {
 		if blocked, reason, context, severity := secrets.ScanFileEdit(&ev, secretsScanner, telemetryWrapper, agent); blocked && !belowThreshold(ev.Agent, severity) {
 			sessiontally.Add(ev.SessionID, engineSecrets, 1, 1)
-			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID)
+			logRemediationTelemetry(agent, "Secrets", severity, ev.SessionID, ev.WorkDir)
 			return agenthooks.RejectEditWithContext(reason, context)
 		}
 	}
@@ -265,7 +265,11 @@ func promptWorkspaceRoots(raw any) []string {
 // RegisterGuardrails wires the four guardrail handlers and instantiates the
 // SCA, KICS, and secret-detection scanners used by the Bash and FileEdit handlers.
 func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
+	if transport, ok := tel.(*wrappers.TelemetryHTTPWrapper); ok {
+		tel = transport.ForAgentHooks()
+	}
 	scaScanner = sca.NewScanner(jwt, ff, rt)
+	scaScanner.Telemetry = tel
 	kicsScanner = kics.NewScanner(jwt, ff)
 	secretsScanner = secrets.NewScanner(jwt, ff)
 	telemetryWrapper = tel
@@ -288,11 +292,19 @@ func RegisterPassThrough() {
 }
 
 // logRemediationTelemetry sends telemetry when remediation context is delivered to the agent.
-func logRemediationTelemetry(agent, engine, severity, sessionID string) {
+func logRemediationTelemetry(agent, engine, severity, sessionID, workDir string) {
+	ids, count := hooktelemetry.TakeRemediationFindings()
 	if telemetryWrapper == nil {
 		return
 	}
 
+	attrs := wrappers.EventAttributes{"remediationMode": hooktelemetry.RemediationModeSelfHealing}
+	if ids != "" {
+		attrs["vulnerabilityId"] = ids
+	}
+	if sessionID != "" {
+		attrs["aiAgentSessionId"] = sessionID
+	}
 	telemetryData := &wrappers.DataForAITelemetry{
 		AIProvider:       agent,
 		Agent:            hostenv.TelemetryAgent(agent),
@@ -301,9 +313,13 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 		UniqueID:         wrappers.GetUniqueID(),
 		Type:             "hooks-remediate",
 		SubType:          "fixWithAIAssist",
+		StatusResult:     "Remediation instructions delivered.",
+		TotalCount:       count,
 		ProblemSeverity:  severity,
 		AiAgentSessionId: sessionID,
+		EventAttributes:  &attrs,
 	}
+	hooktelemetry.Enrich(telemetryData, workDir)
 
 	if err := telemetryWrapper.SendAIDataToLog(telemetryData); err != nil {
 		// fail-open

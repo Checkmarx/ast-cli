@@ -705,6 +705,30 @@ func InvalidateAccessTokenCache() {
 	cachedAccessTime = time.Time{}
 }
 
+// ExchangeLoginAPIKey verifies the supplied key with IAM without using the access-token cache.
+func ExchangeLoginAPIKey(apiKey string) (string, error) {
+	logger.RegisterSensitiveValue(apiKey)
+	realmURL, err := ExtractFromTokenClaims(apiKey, audienceClaimKey)
+	if err != nil {
+		return "", err
+	}
+	parsedRealm, err := url.Parse(realmURL)
+	if err != nil || parsedRealm.Hostname() == "" || parsedRealm.User != nil ||
+		(parsedRealm.Scheme != "https" && parsedRealm.Scheme != "http") || parsedRealm.RawQuery != "" || parsedRealm.Fragment != "" {
+		return "", errors.New("API key has an invalid IAM realm URL")
+	}
+	accessToken, err := getNewToken(getAPIKeyPayload(apiKey), strings.TrimRight(realmURL, "/")+"/"+BaseAuthURLSuffix)
+	if err == nil && accessToken == "" {
+		return "", errors.New("API key sign-in returned no access token")
+	}
+	return accessToken, err
+}
+
+// CacheAuthenticatedAccessToken reuses the token from a successful login for same-process requests.
+func CacheAuthenticatedAccessToken(accessToken string) {
+	writeCredentialsToCache(accessToken)
+}
+
 func writeCredentialsToCache(accessToken string) {
 	credentialsMutex.Lock()
 	defer credentialsMutex.Unlock()

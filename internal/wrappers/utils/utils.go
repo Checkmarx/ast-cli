@@ -20,6 +20,9 @@ var allowedOptionalKeys = map[string]bool{
 	"aiProvider":         true,
 	"aiAgentSessionId":   true,
 	"agent":              true,
+	"agentVersion":       true,
+	"cxPluginVersion":    true,
+	"pluginType":         true,
 	"use-gitignore":      true,
 	"exclude-git-folder": true,
 }
