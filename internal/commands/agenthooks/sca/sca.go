@@ -4,7 +4,9 @@ import (
 	"os"
 
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
+	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
 
 // BelowThreshold is set by the hook dispatcher and reports whether a finding's severity is under the
@@ -25,6 +27,7 @@ func (s *Scanner) CheckBashInstall(command, workDir, agent, sessionID string) (f
 		if err != nil {
 			continue
 		}
+		s.logScan(agent, sessionID, workDir, mal, vuln)
 		if f, r, sev := denyFrom(mal, vuln, workDir, agent, sessionID); f != "" {
 			return f, r, sev
 		}
@@ -67,6 +70,7 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 	if err != nil {
 		return "", "", ""
 	}
+	s.logScan(agent, sessionID, workDir, mal, vuln)
 	return denyFrom(mal, vuln, workDir, agent, sessionID)
 }
 
@@ -76,6 +80,7 @@ func (s *Scanner) CheckManifestEdit(filePath string, afterContent []byte, workDi
 func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, sessionID string) (finding, remediation, severity string) {
 	tag := provenanceTag(agent)
 	if len(malicious) > 0 {
+		hooktelemetry.SetFindingIDs(maliciousPackageIDs(malicious))
 		f, r := DenyMalicious(malicious, agent)
 		return tag + " " + f, tag + " " + r, statusMalicious
 	}
@@ -86,6 +91,55 @@ func denyFrom(malicious, vulnerable []ossrealtime.OssPackage, workDir, agent, se
 		return tag + " " + f, tag + " " + r, highestVulnSeverity(vulnerable)
 	}
 	return "", "", ""
+}
+
+// logScan sends the SCA scan (hooks-detect) event: every detected CVE counted by severity, plus one
+// Critical per malicious package. Like the other engines it reports what was DETECTED (the severity
+// threshold only decides the deny) and sends nothing for a clean scan. Fail-open.
+func (s *Scanner) logScan(agent, sessionID, workDir string, malicious, vulnerable []ossrealtime.OssPackage) {
+	if s.Telemetry == nil {
+		return
+	}
+	severities := make([]string, 0, len(malicious))
+	for range malicious {
+		severities = append(severities, "Critical")
+	}
+	for i := range vulnerable {
+		for _, v := range vulnerable[i].Vulnerabilities {
+			severities = append(severities, v.Severity)
+		}
+	}
+	if len(severities) == 0 {
+		return
+	}
+	data := &wrappers.DataForAITelemetry{
+		Agent:            hostenv.TelemetryAgent(agent),
+		AIProvider:       agent,
+		Engine:           "Oss",
+		TotalCount:       len(severities),
+		UniqueID:         wrappers.GetUniqueID(),
+		Type:             "hooks-detect",
+		SubType:          "scan",
+		ScanType:         "oss",
+		StatusResult:     hooktelemetry.SeverityCounts(severities),
+		AiAgentSessionId: sessionID,
+	}
+	hooktelemetry.Enrich(data, workDir)
+	_ = s.Telemetry.SendAIDataToLog(data)
+}
+
+// maliciousPackageIDs identifies denied malicious packages as name@version (they have no CVE),
+// reported as vulnerabilityId.
+func maliciousPackageIDs(pkgs []ossrealtime.OssPackage) []string {
+	ids := make([]string, 0, len(pkgs))
+	for i := range pkgs {
+		id := pkgs[i].PackageName
+		if pkgs[i].PackageVersion != "" {
+			id += "@" + pkgs[i].PackageVersion
+		}
+		ids = append(ids, id)
+	}
+	return ids
 }
 
 // vulnerableCVEs lists the CVE ids of the denied vulnerable packages, reported as vulnerabilityId.

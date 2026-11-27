@@ -95,3 +95,19 @@ func TestEnrichToleratesMissingContext(t *testing.T) {
 	assert.Equal(t, data.RepoURL, "")
 	assert.Equal(t, data.Status, "failure", "an explicit status is kept")
 }
+
+func TestIgnoreFlags(t *testing.T) {
+	t.Setenv("PLUGIN_ROOT", "")
+	t.Setenv("CX_COPILOT_HOST", "vscode")
+	t.Setenv(params.AgentVersionEnv, " 1.2.3 ")
+	t.Setenv(params.CxPluginVersionEnv, "2.3.4")
+	t.Setenv(params.PluginTypeEnv, "CLI")
+
+	want := " --optional-flags \"aiProvider=Copilot;agent=Copilot-VSCode;aiAgentSessionId=session-1;agentVersion=1.2.3;cxPluginVersion=2.3.4;pluginType=CLI\""
+	assert.Equal(t, IgnoreFlags("Copilot", "session-1"), want)
+
+	t.Setenv(params.AgentVersionEnv, "1;pluginType=unexpected")
+	t.Setenv(params.CxPluginVersionEnv, "")
+	assert.Equal(t, IgnoreFlags("Cursor", "invalid session"), " --optional-flags \"aiProvider=Cursor;agent=Cursor-cli;pluginType=CLI\"")
+	assert.Equal(t, IgnoreFlags("", ""), "")
+}

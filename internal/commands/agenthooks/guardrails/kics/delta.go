@@ -10,6 +10,7 @@ import (
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/agentprofile"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/iacrealtime"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 )
@@ -118,18 +119,6 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 	return fmt.Sprintf(" --ignored-file-path %q", p)
 }
 
-func optionalFlagsFragment(agent agenthooks.AgentID, sessionID string) string {
-	label := agentLabel(agent)
-	if label == "" {
-		return ""
-	}
-	pairs := "aiProvider=" + label + ";agent=" + label + "-cli"
-	if sessionID != "" {
-		pairs += ";aiAgentSessionId=" + sessionID
-	}
-	return fmt.Sprintf(" --optional-flags %q", pairs)
-}
-
 func agentLabel(agent agenthooks.AgentID) string {
 	switch agent {
 	case agenthooks.AgentClaude:
@@ -148,7 +137,7 @@ func agentLabel(agent agenthooks.AgentID) string {
 }
 
 func kicsSuppressCommands(cxBinary string, findings []iacrealtime.IacRealtimeResult, workDir string, agent agenthooks.AgentID, sessionID string) string {
-	provenance := optionalFlagsFragment(agent, sessionID)
+	provenance := hooktelemetry.IgnoreFlags(agentLabel(agent), sessionID)
 	var suppressCmds strings.Builder
 	for i := range findings {
 		f := &findings[i]

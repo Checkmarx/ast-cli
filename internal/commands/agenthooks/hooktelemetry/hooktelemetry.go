@@ -7,12 +7,14 @@ package hooktelemetry
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 
 	gogit "github.com/go-git/go-git/v5"
 	"github.com/spf13/viper"
 
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hostenv"
 	"github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/wrappers"
 )
@@ -72,6 +74,29 @@ func TakeFindingIDs() string {
 	ids := strings.Join(findingIDs, ",")
 	findingIDs = nil
 	return ids
+}
+
+// ignoreFlagValue keeps values safe in the optional flag parser and in generated shell commands.
+var ignoreFlagValue = regexp.MustCompile(`^[A-Za-z0-9._:/+@-]+$`)
+
+// IgnoreFlags carries the hook's attribution to the separate ignore command.
+func IgnoreFlags(agent, sessionID string) string {
+	if !ignoreFlagValue.MatchString(agent) {
+		return ""
+	}
+	pairs := []string{"aiProvider=" + agent, "agent=" + hostenv.TelemetryAgent(agent)}
+	for _, field := range []struct{ key, value string }{
+		{"aiAgentSessionId", sessionID},
+		{"agentVersion", os.Getenv(params.AgentVersionEnv)},
+		{"cxPluginVersion", os.Getenv(params.CxPluginVersionEnv)},
+		{"pluginType", os.Getenv(params.PluginTypeEnv)},
+	} {
+		value := strings.TrimSpace(field.value)
+		if ignoreFlagValue.MatchString(value) {
+			pairs = append(pairs, field.key+"="+value)
+		}
+	}
+	return fmt.Sprintf(" --optional-flags %q", strings.Join(pairs, ";"))
 }
 
 // Enrich fills the fields every hook telemetry event shares. It never fails: a value that cannot be

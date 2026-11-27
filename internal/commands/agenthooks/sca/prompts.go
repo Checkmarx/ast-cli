@@ -10,6 +10,7 @@ import (
 
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/agentprofile"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
 )
@@ -170,7 +171,7 @@ func remediationNote(packages, agent string) string {
 // original single-quoted JSON payload.
 func vulnerableRemediationNote(pkgs []ossrealtime.OssPackage, workDir, agent, sessionID string) string {
 	cxBinary := cxExecutable()
-	provenance := optionalFlagsFragment(agent, sessionID)
+	provenance := hooktelemetry.IgnoreFlags(agent, sessionID)
 	var suppressCmds strings.Builder
 	for _, p := range pkgs {
 		data, _ := json.Marshal([]map[string]string{{
@@ -325,21 +326,6 @@ func cursorEscapeJSON(data string) string {
 		return strings.ReplaceAll(data, `"`, `""`)
 	}
 	return strings.ReplaceAll(data, `"`, `\"`)
-}
-
-// optionalFlagsFragment carries the suppression's provenance (AI provider, agent, session id) to the
-// child `cx ignore-vulnerability` process via --optional-flags, which reads them through
-// utils.GetOptionalParam and logs them — matching logRemediationTelemetry's aiProvider/agent/session.
-// Empty agent → no fragment (nothing to attribute).
-func optionalFlagsFragment(agent, sessionID string) string {
-	if agent == "" {
-		return ""
-	}
-	pairs := "aiProvider=" + agent + ";agent=" + agent + "-cli"
-	if sessionID != "" {
-		pairs += ";aiAgentSessionId=" + sessionID
-	}
-	return fmt.Sprintf(" --optional-flags %q", pairs)
 }
 
 func cxExecutable() string {

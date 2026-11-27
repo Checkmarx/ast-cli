@@ -31,6 +31,8 @@ type Scanner struct {
 	// workspace rather than the hook process's own working directory. A hook runs
 	// as a one-shot process handling a single event, so this single field is safe.
 	workDir string
+	// Telemetry, when set, receives one scan (hooks-detect) event per SCA scan with findings.
+	Telemetry wrappers.TelemetryWrapper
 }
 
 // NewScanner returns a Scanner backed by the given wrappers. The scan call

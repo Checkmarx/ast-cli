@@ -267,6 +267,7 @@ func promptWorkspaceRoots(raw any) []string {
 // SCA, KICS, and secret-detection scanners used by the Bash and FileEdit handlers.
 func RegisterGuardrails(jwt wrappers.JWTWrapper, ff wrappers.FeatureFlagsWrapper, rt wrappers.RealtimeScannerWrapper, tel wrappers.TelemetryWrapper) {
 	scaScanner = sca.NewScanner(jwt, ff, rt)
+	scaScanner.Telemetry = tel
 	kicsScanner = kics.NewScanner(jwt, ff)
 	secretsScanner = secrets.NewScanner(jwt, ff)
 	telemetryWrapper = tel

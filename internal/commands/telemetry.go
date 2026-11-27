@@ -45,7 +45,7 @@ func telemetryAISubCommand(telemetryAIWrapper wrappers.TelemetryWrapper) *cobra.
 	telemetryAICmd.PersistentFlags().String(params.TypeFlag, "", "Type")
 	telemetryAICmd.PersistentFlags().String(params.SubTypeFlag, "", "Sub Type")
 	telemetryAICmd.PersistentFlags().String(params.EngineFlag, "", "Engine")
-	telemetryAICmd.PersistentFlags().String(params.AgentFlag, "", "Agent")
+	telemetryAICmd.PersistentFlags().String(params.AgentFlag, "", "Agent (authentication telemetry is skipped when omitted)")
 	telemetryAICmd.PersistentFlags().String(params.ScanTypeFlag, "", "Scan Type")
 	telemetryAICmd.PersistentFlags().String(params.StatusFlag, "", "Status")
 	telemetryAICmd.PersistentFlags().String(params.StatusResultFlag, "", "Status Result")
@@ -99,6 +99,9 @@ func runTelemetryAI(telemetryWrapper wrappers.TelemetryWrapper) func(*cobra.Comm
 		eventType, _ := cmd.Flags().GetString("type")
 		subType, _ := cmd.Flags().GetString("sub-type")
 		agent, _ := cmd.Flags().GetString("agent")
+		if eventType == "authentication" && strings.TrimSpace(agent) == "" {
+			return nil
+		}
 		engine, _ := cmd.Flags().GetString("engine")
 		scanType, _ := cmd.Flags().GetString("scan-type")
 		status, _ := cmd.Flags().GetString("status")

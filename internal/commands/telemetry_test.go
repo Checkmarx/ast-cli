@@ -79,6 +79,36 @@ func TestRunTelemetryAI_PassesEventAttributesAndSessionID(t *testing.T) {
 	})
 }
 
+func TestRunTelemetryAI_AuthenticationWithoutAgentSkipsSend(t *testing.T) {
+	originalSessionID := viper.GetString(params.SessionIDConfigKey)
+	t.Cleanup(func() { viper.Set(params.SessionIDConfigKey, originalSessionID) })
+	viper.Set(params.SessionIDConfigKey, "existing-session")
+
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{name: "omitted"},
+		{name: "blank", args: []string{"--agent", " "}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			called := false
+			cmd := NewTelemetryCommand(mock.TelemetryMockWrapper{
+				CustomSendAIDataToLog: func(_ *wrappers.DataForAITelemetry) error {
+					called = true
+					return nil
+				},
+			})
+			cmd.SetOut(io.Discard)
+			cmd.SetArgs(append([]string{"ai", "--type", "authentication", "--status", "success"}, tc.args...))
+
+			assert.NilError(t, cmd.Execute())
+			assert.Assert(t, !called, "authentication telemetry should be skipped")
+			assert.Equal(t, viper.GetString(params.SessionIDConfigKey), "existing-session")
+		})
+	}
+}
+
 func TestRunTelemetryAI_SendToLogSuccess(t *testing.T) {
 	mock.Flag = wrappers.FeatureFlagResponseModel{Name: wrappers.OssRealtimeEnabled, Status: true}
 	execCmdNilAssertion(

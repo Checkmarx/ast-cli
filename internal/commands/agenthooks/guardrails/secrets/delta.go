@@ -9,6 +9,7 @@ import (
 
 	agenthooks "github.com/Checkmarx/ast-cx-hooks"
 	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/cursorplugin"
+	"github.com/checkmarx/ast-cli/internal/commands/agenthooks/hooktelemetry"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ignore"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/secretsrealtime"
 )
@@ -118,18 +119,6 @@ func cursorIgnoredFilePathFlag(workDir string) string {
 	return fmt.Sprintf(" --ignored-file-path %q", p)
 }
 
-func optionalFlagsFragment(agent agenthooks.AgentID, sessionID string) string {
-	label := agentLabel(agent)
-	if label == "" {
-		return ""
-	}
-	pairs := "aiProvider=" + label + ";agent=" + label + "-cli"
-	if sessionID != "" {
-		pairs += ";aiAgentSessionId=" + sessionID
-	}
-	return fmt.Sprintf(" --optional-flags %q", pairs)
-}
-
 func agentLabel(agent agenthooks.AgentID) string {
 	switch agent {
 	case agenthooks.AgentClaude:
@@ -151,7 +140,7 @@ func agentLabel(agent agenthooks.AgentID) string {
 // The finding JSON (which must include SecretValue) is stored in a temp file and passed as
 // --data @<file> so the secret value is not embedded in the agent-visible command.
 func secretsSuppressCommands(cxBinary string, findings []secretsrealtime.SecretsRealtimeResult, workDir string, agent agenthooks.AgentID, sessionID string) string {
-	provenance := optionalFlagsFragment(agent, sessionID)
+	provenance := hooktelemetry.IgnoreFlags(agentLabel(agent), sessionID)
 	var suppressCmds strings.Builder
 	for i := range findings {
 		f := &findings[i]
