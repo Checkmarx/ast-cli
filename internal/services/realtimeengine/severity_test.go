@@ -1,10 +1,40 @@
 package realtimeengine
 
 import (
+	"bytes"
 	"testing"
 
+	commonParams "github.com/checkmarx/ast-cli/internal/params"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
+
+func thresholdCmd(t *testing.T, args ...string) (*cobra.Command, *bytes.Buffer) {
+	cmd := &cobra.Command{}
+	cmd.Flags().String(commonParams.SeverityThresholdFlag, "", "")
+	stderr := &bytes.Buffer{}
+	cmd.SetErr(stderr)
+	assert.NoError(t, cmd.Flags().Parse(args))
+	return cmd, stderr
+}
+
+func TestSeverityThresholdFromCmd_EmptyValue_PrintsNoteAndReturnsZero(t *testing.T) {
+	for _, value := range []string{"", "   "} {
+		cmd, stderr := thresholdCmd(t, "--severity-threshold", value)
+		threshold, err := SeverityThresholdFromCmd(cmd)
+		assert.NoError(t, err, "input %q", value)
+		assert.Equal(t, SeverityThreshold(0), threshold, "input %q", value)
+		assert.Equal(t, emptyThresholdNote+"\n", stderr.String(), "input %q", value)
+	}
+}
+
+func TestSeverityThresholdFromCmd_FlagOmittedOrSet_PrintsNoNote(t *testing.T) {
+	for _, args := range [][]string{nil, {"--severity-threshold", "high"}, {"--severity-threshold", "hgh"}} {
+		cmd, stderr := thresholdCmd(t, args...)
+		_, _ = SeverityThresholdFromCmd(cmd)
+		assert.Empty(t, stderr.String(), "args %v", args)
+	}
+}
 
 func TestParseSeverityThreshold_EmptyOrWhitespace_ReturnsZero(t *testing.T) {
 	for _, raw := range []string{"", "   "} {
