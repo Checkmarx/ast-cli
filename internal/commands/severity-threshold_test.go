@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	errorconstants "github.com/checkmarx/ast-cli/internal/constants/errors"
 	commonParams "github.com/checkmarx/ast-cli/internal/params"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/containersrealtime"
 	"github.com/checkmarx/ast-cli/internal/services/realtimeengine/ossrealtime"
@@ -276,8 +277,8 @@ func TestIacRealtime_SeverityThreshold_InvalidValue_FailsBeforeEngineStarts(t *t
 	assert.Contains(t, err.Error(), invalidSeverityThresholdMsg)
 }
 
-func TestIacRealtime_SeverityThreshold_ValidValue_FlagAccepted(t *testing.T) {
-	enableRealtimeFlag()
+func TestIacRealtime_SeverityThreshold_ValidValue_PassesValidation(t *testing.T) {
+	clearFlags() // realtime stays disabled, so the command stops at the tenant check instead of starting a container
 	cmd := &cobra.Command{}
 	cmd.SetOut(bytes.NewBuffer(nil))
 	cmd.Flags().String(commonParams.SourcesFlag, writeTerraformFile(t), "")
@@ -286,8 +287,5 @@ func TestIacRealtime_SeverityThreshold_ValidValue_FlagAccepted(t *testing.T) {
 	cmd.Flags().String(commonParams.SeverityThresholdFlag, "high", "")
 
 	err := RunScanIacRealtimeCommand(&mock.JWTMockWrapper{}, &mock.FeatureFlagsMockWrapper{})(cmd, nil)
-	if err != nil {
-		// Without a container engine an engine error is fine; only a severity-threshold error fails the test.
-		assert.NotContains(t, err.Error(), "severity-threshold")
-	}
+	assert.ErrorContains(t, err, errorconstants.RealtimeEngineNotAvailable)
 }

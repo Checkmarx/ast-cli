@@ -12,7 +12,7 @@ import (
 
 var severityOrder = []string{"info", "low", "medium", "high", "critical"}
 
-const emptyThresholdNote = "Note: --" + commonParams.SeverityThresholdFlag + " is empty, so findings of all severities are returned."
+const emptyThresholdNote = "No severity threshold specified -- all severity levels (critical, high, medium, low, info) will be scanned and reported."
 
 // SeverityThreshold is the rank of the lowest severity to return (1 = info ... 5 = critical); zero means no filtering.
 type SeverityThreshold int
