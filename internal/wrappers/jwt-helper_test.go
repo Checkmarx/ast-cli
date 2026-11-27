@@ -82,7 +82,7 @@ func TestGetUniqueID(t *testing.T) {
 
 	t.Run("returns existing unique ID from config", func(t *testing.T) {
 		// Setup: set existing ID
-		existingID := "test-uuid-456_testuser"
+		existingID := "550e8400-e29b-41d4-a716-446655440000_testuser"
 		viper.Set(commonParams.UniqueIDConfigKey, existingID)
 
 		result := GetUniqueID()
@@ -113,6 +113,84 @@ func TestGetUniqueID(t *testing.T) {
 		parts := strings.Split(result, "_")
 		assert.Assert(t, len(parts) >= 2, "Should have at least 2 parts")
 		assert.Assert(t, !strings.Contains(parts[1], "\\"), "Username should not contain backslash")
+	})
+}
+
+func TestIsValidUniqueIDFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		uniqueID string
+		valid    bool
+	}{
+		{
+			name:     "valid format with UUID and username",
+			uniqueID: "550e8400-e29b-41d4-a716-446655440000_testuser",
+			valid:    true,
+		},
+		{
+			name:     "invalid - no underscore",
+			uniqueID: "550e8400-e29b-41d4-a716-446655440000testuser",
+			valid:    false,
+		},
+		{
+			name:     "invalid - empty username",
+			uniqueID: "550e8400-e29b-41d4-a716-446655440000_",
+			valid:    false,
+		},
+		{
+			name:     "invalid - malformed UUID",
+			uniqueID: "550e8400-e29b-41d4-invalid-446655440000_testuser",
+			valid:    false,
+		},
+		{
+			name:     "valid - username containing underscore",
+			uniqueID: "550e8400-e29b-41d4-a716-446655440000_test_user",
+			valid:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isValidUniqueIDFormat(tt.uniqueID)
+			assert.Equal(t, tt.valid, result, "validation result should match expected")
+		})
+	}
+}
+
+func TestGetSessionIDAlwaysGeneratesNewID(t *testing.T) {
+	// Save original value and restore after test
+	originalID := viper.GetString(commonParams.SessionIDConfigKey)
+	defer viper.Set(commonParams.SessionIDConfigKey, originalID)
+
+	t.Run("generates new session ID when none exists", func(t *testing.T) {
+		viper.Set(commonParams.SessionIDConfigKey, "")
+
+		result := GetSessionID()
+
+		assert.Assert(t, result != "", "Should generate new session ID")
+		assert.Assert(t, len(result) == 36, "Should be valid UUID format (36 chars)")
+		assert.Assert(t, strings.Count(result, "-") == 4, "Should have 4 dashes in UUID")
+	})
+
+	t.Run("replaces existing valid session ID", func(t *testing.T) {
+		existingID := "550e8400-e29b-41d4-a716-446655440000"
+		viper.Set(commonParams.SessionIDConfigKey, existingID)
+
+		result := GetSessionID()
+
+		assert.Assert(t, result != existingID, "Should generate a new ID even when a valid one exists")
+		assert.Assert(t, len(result) == 36, "Should generate valid UUID format")
+		assert.Equal(t, result, viper.GetString(commonParams.SessionIDConfigKey), "Should store the new ID in config")
+	})
+
+	t.Run("replaces invalid session ID", func(t *testing.T) {
+		invalidID := "550e8400-e29b-41d4-invalid-446655440000"
+		viper.Set(commonParams.SessionIDConfigKey, invalidID)
+
+		result := GetSessionID()
+
+		assert.Assert(t, result != invalidID, "Should regenerate when ID is invalid")
+		assert.Assert(t, len(result) == 36, "Should generate valid UUID format")
 	})
 }
 

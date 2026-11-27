@@ -86,6 +86,7 @@ const (
 	ConfigFilePathEnv                   = "CX_CONFIG_FILE_PATH"
 	RealtimeScannerPathEnv              = "CX_REALTIME_SCANNER_PATH"
 	UniqueIDEnv                         = "CX_UNIQUE_ID"
+	SessionIDEnv                        = "CX_SESSION_ID"
 	StartMultiPartUploadPathEnv         = "CX_START_MULTIPART_UPLOAD_PATH"
 	MultipartPresignedPathEnv           = "CX_MULTIPART_PRESIGNED_URL_PATH"
 	CompleteMultipartUploadPathEnv      = "CX_COMPLETE_MULTIPART_UPLOAD_PATH"

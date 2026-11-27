@@ -15,6 +15,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	uuidLength       = 36
+	uniqueIDPartsCnt = 2
+)
+
 // JWTStruct model used to get all jwt fields
 type JWTStruct struct {
 	Tenant     string `json:"tenant_name"`
@@ -222,8 +227,12 @@ func GetUniqueID() string {
 
 	// Check if unique id is already set
 	uniqueID = viper.GetString(commonParams.UniqueIDConfigKey)
-	if uniqueID != "" {
+	if uniqueID != "" && isValidUniqueIDFormat(uniqueID) {
 		return uniqueID
+	}
+
+	if uniqueID != "" {
+		logger.PrintIfVerbose("Existing unique ID invalid format, regenerating")
 	}
 
 	// Generate new unique id
@@ -246,4 +255,41 @@ func GetUniqueID() string {
 		return ""
 	}
 	return uniqueID
+}
+
+func isValidUniqueIDFormat(uniqueID string) bool {
+	parts := strings.SplitN(uniqueID, "_", uniqueIDPartsCnt)
+	if len(parts) != uniqueIDPartsCnt {
+		return false
+	}
+
+	guid := parts[0]
+	storedUsername := parts[1]
+
+	if len(guid) != uuidLength {
+		return false
+	}
+
+	if _, err := uuid.Parse(guid); err != nil {
+		return false
+	}
+
+	return storedUsername != ""
+}
+
+// GetSessionID always generates a new session ID UUID, overwriting any existing value, and persists it to the config file.
+func GetSessionID() string {
+	sessionID := uuid.New().String()
+	viper.Set(commonParams.SessionIDConfigKey, sessionID)
+	configFilePath, err := configuration.GetConfigFilePath()
+	if err != nil {
+		logger.PrintIfVerbose("Failed to get config file path: " + err.Error())
+		return sessionID
+	}
+
+	err = configuration.SafeWriteSingleConfigKeyString(configFilePath, commonParams.SessionIDConfigKey, sessionID)
+	if err != nil {
+		logger.PrintIfVerbose("Failed to write session ID config: " + err.Error())
+	}
+	return sessionID
 }
