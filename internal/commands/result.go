@@ -384,6 +384,11 @@ func runGetExitCodeCommand(scanWrapper wrappers.ScansWrapper) func(cmd *cobra.Co
 			return errors.New(errorConstants.ScanIDRequired)
 		}
 		scanTypesFlagValue, _ := cmd.Flags().GetString(commonParams.ScanTypes)
+		if scanTypesFlagValue != "" {
+			if err := validateExitCodeScanTypes(scanTypesFlagValue); err != nil {
+				return err
+			}
+		}
 		results, err := GetScannerResults(scanWrapper, scanID, scanTypesFlagValue)
 		if err != nil {
 			return err
@@ -447,21 +452,19 @@ func GetScannerResults(scanWrapper wrappers.ScansWrapper, scanID, scanTypesFlagV
 func getScannerResponse(scanTypesFlagValue string, scanResponseModel *wrappers.ScanResponseModel) []ScannerResponse {
 	var results []ScannerResponse
 
-	if scanResponseModel.Status == wrappers.ScanCanceled ||
-		scanResponseModel.Status == wrappers.ScanRunning ||
-		scanResponseModel.Status == wrappers.ScanQueued ||
-		scanResponseModel.Status == wrappers.ScanPartial ||
-		scanResponseModel.Status == wrappers.ScanCompleted {
-		result := ScannerResponse{
-			ScanID: scanResponseModel.ID,
-			Status: string(scanResponseModel.Status),
-		}
-		results = append(results, result)
-		return results
-	}
-
 	if scanTypesFlagValue == "" {
-		results = createAllFailedScannersResponse(scanResponseModel)
+		if scanResponseModel.Status == wrappers.ScanCanceled ||
+			scanResponseModel.Status == wrappers.ScanRunning ||
+			scanResponseModel.Status == wrappers.ScanQueued ||
+			scanResponseModel.Status == wrappers.ScanPartial ||
+			scanResponseModel.Status == wrappers.ScanCompleted {
+			result := ScannerResponse{
+				ScanID: scanResponseModel.ID,
+				Status: string(scanResponseModel.Status),
+			}
+			results = append(results, result)
+		}
+		results = append(results, createAllFailedScannersResponse(scanResponseModel)...)
 	} else {
 		scanTypes := sanitizeScannerNames(scanTypesFlagValue)
 		results = createRequestedScannersResponse(scanTypes, scanResponseModel)
@@ -493,12 +496,44 @@ func createAllFailedScannersResponse(scanResponseModel *wrappers.ScanResponseMod
 func sanitizeScannerNames(scanTypes string) map[string]string {
 	scanTypeSlice := strings.Split(scanTypes, ",")
 	scanTypeMap := make(map[string]string)
+
+	engineNameMapping := map[string]string{
+		commonParams.IacType:         commonParams.KicsType,
+		commonParams.APISecurityType: commonParams.APISecType,
+		commonParams.SastType:        commonParams.SastType,
+		commonParams.ScaType:         commonParams.ScaType,
+		commonParams.AiscType:        commonParams.AiscType,
+	}
+
 	for i := range scanTypeSlice {
-		lowered := strings.ToLower(scanTypeSlice[i])
-		scanTypeMap[lowered] = lowered
+		lowered := strings.ToLower(strings.TrimSpace(scanTypeSlice[i]))
+		if mapped, exists := engineNameMapping[lowered]; exists {
+			scanTypeMap[mapped] = mapped
+		} else {
+			scanTypeMap[lowered] = lowered
+		}
 	}
 
 	return scanTypeMap
+}
+
+func validateExitCodeScanTypes(scanTypes string) error {
+	validTypes := map[string]bool{
+		commonParams.SastType:        true,
+		commonParams.ScaType:         true,
+		commonParams.IacType:         true,
+		commonParams.APISecurityType: true,
+		commonParams.AiscType:        true,
+	}
+
+	scanTypeSlice := strings.Split(scanTypes, ",")
+	for _, scanType := range scanTypeSlice {
+		lowered := strings.ToLower(strings.TrimSpace(scanType))
+		if !validTypes[lowered] {
+			return errors.Errorf("Invalid scan-type: %s. Valid types are: sast,sca,iac-security,api-security,aisc", scanType)
+		}
+	}
+	return nil
 }
 
 func createScannerResponse(statusDetails *wrappers.StatusInfo) ScannerResponse {
