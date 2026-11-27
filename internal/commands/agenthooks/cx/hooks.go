@@ -311,20 +311,20 @@ func logRemediationTelemetry(agent, engine, severity, sessionID string) {
 }
 
 // switchesApply reports whether the ~/.checkmarx/cx-onboarding.properties scanner switches and severity
-// threshold are honoured for this agent. Claude, Cursor, Gemini and Codex are excluded for now: they keep
+// threshold are honoured for this agent. Cursor, Gemini and Codex are excluded for now: they keep
 // scanning with ASCA / KICS / SCA and blocking at any severity even when the shared file exists on the
-// machine. Every other agent (GitHub Copilot, Droid, Windsurf, ...) honours it. Add an agent to
+// machine. Every other agent (Claude, GitHub Copilot, Droid, Windsurf, ...) honours it. Add an agent to
 // the case list below to hold it back, or remove one to roll the feature out to it.
 func switchesApply(agent agenthooks.AgentID) bool {
 	switch agent {
-	case agenthooks.AgentClaude, agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex:
+	case agenthooks.AgentCursor, agenthooks.AgentGemini, agenthooks.AgentCodex:
 		return false
 	}
 	return true
 }
 
-// secretsApply reports whether the secret-detection guardrail runs for this agent. Claude, Cursor, Gemini
-// and Codex skip it entirely and keep the ASCA / KICS / SCA guardrails; every other agent runs it. It
+// secretsApply reports whether the secret-detection guardrail runs for this agent. Cursor, Gemini and
+// Codex skip it entirely and keep the ASCA / KICS / SCA guardrails; every other agent runs it. It
 // shares switchesApply's agent list so the two cannot drift apart.
 func secretsApply(agent agenthooks.AgentID) bool {
 	return switchesApply(agent)
